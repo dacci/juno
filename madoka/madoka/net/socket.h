@@ -28,13 +28,13 @@ class Socket : public AbstractSocket {
   bool Connect(const addrinfo* end_point) {
     if (connected_)
       return false;
-    if (!IsValid() && !Create(end_point))
+    if (!Create(end_point))
       return false;
 
     return Connect(end_point->ai_addr, end_point->ai_addrlen);
   }
 
-  virtual bool Connect(const char* node_name, const char* service) {
+  bool Connect(const char* node_name, const char* service) {
     if (connected_)
       return false;
 
@@ -53,7 +53,7 @@ class Socket : public AbstractSocket {
     return connected_;
   }
 
-  virtual bool Connect(const char* node_name, int port) {
+  bool Connect(const char* node_name, int port) {
     if (!IsValidPort(port))
       return false;
 
@@ -69,10 +69,15 @@ class Socket : public AbstractSocket {
 
 #ifdef WIN32
   bool Connect(const ADDRINFOW* end_point) {
+    if (connected_)
+      return false;
+    if (!Create(end_point))
+      return false;
+
     return Connect(end_point->ai_addr, end_point->ai_addrlen);
   }
 
-  virtual bool Connect(const wchar_t* node_name, const wchar_t* service) {
+  bool Connect(const wchar_t* node_name, const wchar_t* service) {
     if (connected_)
       return false;
 
@@ -82,7 +87,7 @@ class Socket : public AbstractSocket {
       return false;
 
     for (AddressInfoW::iterator i = info.begin(), l = info.end(); i != l; ++i) {
-      if (Create(*i) && Connect(*i))
+      if (Connect(*i))
         break;
 
       Close();
@@ -91,7 +96,7 @@ class Socket : public AbstractSocket {
     return connected_;
   }
 
-  virtual bool Connect(const wchar_t* node_name, int port) {
+  bool Connect(const wchar_t* node_name, int port) {
     if (!IsValidPort(port))
       return false;
 
@@ -106,7 +111,7 @@ class Socket : public AbstractSocket {
   }
 #endif  // WIN32
 
-  virtual bool Shutdown(int how) {
+  bool Shutdown(int how) {
     if (!IsValid())
       return false;
 
@@ -114,7 +119,7 @@ class Socket : public AbstractSocket {
     return ::shutdown(descriptor_, how) == 0;
   }
 
-  virtual int Receive(void* buffer, int length, int flags) {
+  int Receive(void* buffer, int length, int flags) {
     if (!IsValid() || !connected_ || buffer == NULL || length < 0)
       return SOCKET_ERROR;
     if (length == 0)
@@ -128,7 +133,7 @@ class Socket : public AbstractSocket {
     return result;
   }
 
-  virtual int Send(const void* buffer, int length, int flags) {
+  int Send(const void* buffer, int length, int flags) {
     if (!IsValid() || !connected_ || buffer == NULL || length < 0)
       return SOCKET_ERROR;
     if (length == 0)
@@ -149,6 +154,9 @@ class Socket : public AbstractSocket {
     return connected_;
   }
 
+ protected:
+  bool connected_;
+
  private:
   friend class ServerSocket;
 
@@ -163,10 +171,11 @@ class Socket : public AbstractSocket {
       return false;
 
     connected_ = ::connect(descriptor_, address, static_cast<int>(length)) == 0;
+    if (!connected_)
+      Close();
+
     return connected_;
   }
-
-  bool connected_;
 
   DISALLOW_COPY_AND_ASSIGN(Socket);
 };

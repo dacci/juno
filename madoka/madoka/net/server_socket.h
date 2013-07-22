@@ -24,22 +24,16 @@ class ServerSocket : public AbstractSocket {
     AbstractSocket::Close();
   }
 
-  bool Bind(const sockaddr* address, size_t length) {
+  bool Bind(const addrinfo* end_point) {
     if (bound_)
       return false;
-    if (!IsValid())
+    if (!Create(end_point))
       return false;
 
-    address_length_ = length;
-    bound_ = ::bind(descriptor_, address, static_cast<int>(length)) == 0;
-    return bound_;
-  }
-
-  bool Bind(const addrinfo* end_point) {
     return Bind(end_point->ai_addr, end_point->ai_addrlen);
   }
 
-  virtual bool Bind(const char* node_name, const char* service) {
+  bool Bind(const char* node_name, const char* service) {
     if (bound_)
       return false;
 
@@ -50,7 +44,7 @@ class ServerSocket : public AbstractSocket {
       return false;
 
     for (AddressInfo::iterator i = info.begin(), l = info.end(); i != l; ++i) {
-      if (Create(*i) && Bind(*i))
+      if (Bind(*i))
         break;
 
       Close();
@@ -59,7 +53,7 @@ class ServerSocket : public AbstractSocket {
     return bound_;
   }
 
-  virtual bool Bind(const char* node_name, int port) {
+  bool Bind(const char* node_name, int port) {
     if (!IsValidPort(port))
       return false;
 
@@ -75,10 +69,15 @@ class ServerSocket : public AbstractSocket {
 
 #ifdef WIN32
   bool Bind(const ADDRINFOW* end_point) {
+    if (bound_)
+      return false;
+    if (!Create(end_point))
+      return false;
+
     return Bind(end_point->ai_addr, end_point->ai_addrlen);
   }
 
-  virtual bool Bind(const wchar_t* node_name, const wchar_t* service) {
+  bool Bind(const wchar_t* node_name, const wchar_t* service) {
     if (bound_)
       return false;
 
@@ -89,7 +88,7 @@ class ServerSocket : public AbstractSocket {
       return false;
 
     for (AddressInfoW::iterator i = info.begin(), l = info.end(); i != l; ++i) {
-      if (Create(*i) && Bind(*i))
+      if (Bind(*i))
         break;
 
       Close();
@@ -98,7 +97,7 @@ class ServerSocket : public AbstractSocket {
     return bound_;
   }
 
-  virtual bool Bind(const wchar_t* node_name, int port) {
+  bool Bind(const wchar_t* node_name, int port) {
     if (!IsValidPort(port))
       return false;
 
@@ -120,7 +119,7 @@ class ServerSocket : public AbstractSocket {
     return ::listen(descriptor_, backlog) == 0;
   }
 
-  virtual Socket* Accept() {
+  Socket* Accept() {
     if (!bound_)
       return NULL;
 
@@ -136,9 +135,29 @@ class ServerSocket : public AbstractSocket {
     return new Socket(peer);
   }
 
- private:
-  bool bound_;
+  bool bound() const {
+    return bound_;
+  }
+
+ protected:
   size_t address_length_;
+  bool bound_;
+
+ private:
+  bool Bind(const sockaddr* address, size_t length) {
+    if (bound_)
+      return false;
+    if (!IsValid())
+      return false;
+
+    address_length_ = length;
+
+    bound_ = ::bind(descriptor_, address, static_cast<int>(length)) == 0;
+    if (!bound_)
+      Close();
+
+    return bound_;
+  }
 
   DISALLOW_COPY_AND_ASSIGN(ServerSocket);
 };

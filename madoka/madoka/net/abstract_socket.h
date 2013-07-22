@@ -69,6 +69,10 @@ class AbstractSocket {
       return false;
   }
 
+  operator SOCKET() const {
+    return descriptor_;
+  }
+
  protected:
   AbstractSocket() : descriptor_(INVALID_SOCKET) {
   }
