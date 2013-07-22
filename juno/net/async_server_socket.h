@@ -21,16 +21,27 @@ class AsyncServerSocket : public madoka::net::ServerSocket {
   AsyncServerSocket();
   virtual ~AsyncServerSocket();
 
+  virtual void Close();
+
+  bool SetThreadpool(PTP_CALLBACK_ENVIRON environment);
+
   bool Bind(const addrinfo* end_point);
 
-  AcceptContext* BeginAsyncAccept(HANDLE event);
-  AsyncSocket* EndAsyncAccept(AcceptContext* context);
+  AcceptContext* BeginAccept(HANDLE event);
+  AcceptContext* BeginAccept();
+  AsyncSocket* EndAccept(AcceptContext* context);
 
   operator HANDLE() const {
     return reinterpret_cast<HANDLE>(descriptor_);
   }
 
  private:
+  static void CALLBACK OnAccepted(PTP_CALLBACK_INSTANCE instance,
+                                  PVOID context, PVOID overlapped,
+                                  ULONG io_result, ULONG_PTR bytes, PTP_IO io);
+  void OnAccepted(AsyncSocket* peer, ULONG error);
+
+  PTP_IO io_;
   int family_;
   int protocol_;
 };

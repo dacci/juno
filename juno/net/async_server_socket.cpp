@@ -3,10 +3,39 @@
 #include "net/async_server_socket.h"
 #include "net/async_socket.h"
 
-AsyncServerSocket::AsyncServerSocket() : family_(), protocol_() {
+AsyncServerSocket::AsyncServerSocket() : io_(), family_(), protocol_() {
 }
 
 AsyncServerSocket::~AsyncServerSocket() {
+  Close();
+}
+
+void AsyncServerSocket::Close() {
+  ServerSocket::Close();
+
+  if (io_ != NULL) {
+    ::WaitForThreadpoolIoCallbacks(io_, FALSE);
+    ::CloseThreadpoolIo(io_);
+    io_ = NULL;
+  }
+}
+
+bool AsyncServerSocket::SetThreadpool(PTP_CALLBACK_ENVIRON environment) {
+  if (!IsValid())
+    return false;
+
+  PTP_IO new_io = ::CreateThreadpoolIo(*this, OnAccepted, this, environment);
+  if (new_io == NULL)
+    return false;
+
+  if (io_ != NULL) {
+    ::CloseThreadpoolIo(io_);
+    io_ = NULL;
+  }
+
+  io_ = new_io;
+
+  return true;
 }
 
 bool AsyncServerSocket::Bind(const addrinfo* end_point) {
@@ -19,8 +48,10 @@ bool AsyncServerSocket::Bind(const addrinfo* end_point) {
   return true;
 }
 
-AsyncServerSocket::AcceptContext* AsyncServerSocket::BeginAsyncAccept(
-    HANDLE event) {
+AsyncServerSocket::AcceptContext* AsyncServerSocket::BeginAccept(HANDLE event) {
+  if (!IsValid() || !bound_)
+    return NULL;
+
   AsyncSocket* peer = new AsyncSocket();
   if (!peer->Create(family_, SOCK_STREAM, protocol_)) {
     delete peer;
@@ -51,7 +82,20 @@ AsyncServerSocket::AcceptContext* AsyncServerSocket::BeginAsyncAccept(
   return context;
 }
 
-AsyncSocket* AsyncServerSocket::EndAsyncAccept(AcceptContext* context) {
+AsyncServerSocket::AcceptContext* AsyncServerSocket::BeginAccept() {
+  if (!IsValid() || !bound_ || io_ == NULL)
+    return NULL;
+
+  ::StartThreadpoolIo(io_);
+
+  AcceptContext* context = BeginAccept(NULL);
+  if (context == NULL)
+    ::CancelThreadpoolIo(io_);
+
+  return context;
+}
+
+AsyncSocket* AsyncServerSocket::EndAccept(AcceptContext* context) {
   AsyncSocket* peer = context->peer;
   BOOL succeeded = ::GetOverlappedResult(*peer, context,
                                          &context->bytes, TRUE);
@@ -68,4 +112,25 @@ AsyncSocket* AsyncServerSocket::EndAsyncAccept(AcceptContext* context) {
   }
 
   return peer;
+}
+
+void CALLBACK AsyncServerSocket::OnAccepted(PTP_CALLBACK_INSTANCE instance,
+                                            PVOID context, PVOID overlapped,
+                                            ULONG io_result, ULONG_PTR bytes,
+                                            PTP_IO io) {
+  AsyncServerSocket* server = static_cast<AsyncServerSocket*>(context);
+  AcceptContext* accept_context = static_cast<AcceptContext*>(
+      static_cast<OVERLAPPED*>(overlapped));
+
+  AsyncSocket* peer = server->EndAccept(accept_context);
+  server->OnAccepted(peer, io_result);
+}
+
+void AsyncServerSocket::OnAccepted(AsyncSocket* peer, ULONG error) {
+  if (error != 0)
+    return;
+
+  ::fprintf(stderr, "[%u] %p, %lu\n", __LINE__, peer, error);
+  peer->Shutdown(SD_BOTH);
+  delete peer;
 }

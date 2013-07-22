@@ -200,16 +200,17 @@ int main(int argc, char* argv[]) {
   if (!server.Listen(SOMAXCONN))
     return __LINE__;
 
+#if 1
   HANDLE event = ::CreateEvent(NULL, TRUE, FALSE, NULL);
 
   while (true) {
-    AsyncServerSocket::AcceptContext* context = server.BeginAsyncAccept(event);
+    AsyncServerSocket::AcceptContext* context = server.BeginAccept(event);
     if (context == NULL)
       return __LINE__;
 
     ::WaitForSingleObject(event, INFINITE);
 
-    AsyncSocket* client = server.EndAsyncAccept(context);
+    AsyncSocket* client = server.EndAccept(context);
     HANDLE thread = ::CreateThread(NULL, 0, ThreadProc, client, 0, NULL);
     if (thread == NULL) {
       delete client;
@@ -220,6 +221,17 @@ int main(int argc, char* argv[]) {
   }
 
   ::CloseHandle(event);
+#else
+  server.SetThreadpool(NULL);
+
+  AsyncServerSocket::AcceptContext* context = server.BeginAccept();
+  if (context == NULL)
+    return __LINE__;
+
+  ::getchar();
+
+  server.Close();
+#endif
 
   return 0;
 }

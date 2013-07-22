@@ -81,14 +81,21 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app\juno.cpp" />
+    <ClCompile Include="net\async_server_socket.cpp" />
+    <ClCompile Include="net\async_socket.cpp" />
     <ClCompile Include="net\http\http_headers.cpp" />
     <ClCompile Include="net\http\http_request.cpp" />
     <ClCompile Include="net\http\http_response.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="net\async_server_socket.h" />
+    <ClInclude Include="net\async_socket.h" />
     <ClInclude Include="net\http\http_headers.h" />
     <ClInclude Include="net\http\http_request.h" />
     <ClInclude Include="net\http\http_response.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="res\compatibility.manifest" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
