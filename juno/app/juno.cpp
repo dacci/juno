@@ -5,16 +5,17 @@
 #include <atlbase.h>
 #include <atlutil.h>
 
-#include <madoka/net/server_socket.h>
 #include <madoka/net/winsock.h>
 
+#include <string>
+
+#include "net/async_socket.h"
+#include "net/async_server_socket.h"
 #include "net/http/http_request.h"
 #include "net/http/http_response.h"
 
-namespace madonet = madoka::net;
-
 DWORD CALLBACK ThreadProc(void* param) {
-  madonet::Socket* client = static_cast<madonet::Socket*>(param);
+  AsyncSocket* client = static_cast<AsyncSocket*>(param);
   HttpRequest request;
   char buffer[4096];
 
@@ -57,7 +58,7 @@ DWORD CALLBACK ThreadProc(void* param) {
   char service[8];
   ::sprintf_s(service, "%d", url.GetPortNumber());
 
-  madonet::AddressInfo resolver;
+  madoka::net::AddressInfo resolver;
   resolver.ai_socktype = SOCK_STREAM;
   if (!resolver.Resolve(url.GetHostName(), service)) {
     client->Shutdown(SD_BOTH);
@@ -65,9 +66,9 @@ DWORD CALLBACK ThreadProc(void* param) {
     return __LINE__;
   }
 
-  madonet::Socket remote;
-  for (const addrinfo* end_point : resolver) {
-    if (remote.Connect(end_point))
+  AsyncSocket remote;
+  for (auto i = resolver.begin(), l = resolver.end(); i != l; ++i) {
+    if (remote.Connect(*i))
       break;
   }
   if (!remote.connected()) {
@@ -169,23 +170,46 @@ DWORD CALLBACK ThreadProc(void* param) {
   return 0;
 }
 
-int wmain(int, wchar_t**) {
-  madonet::WinSock winsock(WINSOCK_VERSION);
+int main(int argc, char* argv[]) {
+  const char* address = "127.0.0.1";
+  if (argc >= 2)
+    address = argv[1];
+
+  const char* port = "8080";
+  if (argc >= 3)
+    port = argv[2];
+
+  madoka::net::WinSock winsock(WINSOCK_VERSION);
   if (!winsock.Initialized())
     return winsock.error();
 
-  madonet::ServerSocket server;
-  if (!server.Bind("127.0.0.1", 8080))
+  madoka::net::AddressInfo address_info;
+  address_info.ai_flags = AI_PASSIVE;
+  address_info.ai_socktype = SOCK_STREAM;
+  if (!address_info.Resolve(address, port))
+    return __LINE__;
+
+  AsyncServerSocket server;
+  for (auto i = address_info.begin(), l = address_info.end(); i != l; ++i) {
+    if (server.Bind(*i))
+      break;
+  }
+  if (!server.bound())
     return __LINE__;
 
   if (!server.Listen(SOMAXCONN))
     return __LINE__;
 
+  HANDLE event = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+
   while (true) {
-    madonet::Socket* client = server.Accept();
-    if (client == NULL)
+    AsyncServerSocket::AcceptContext* context = server.BeginAsyncAccept(event);
+    if (context == NULL)
       return __LINE__;
 
+    ::WaitForSingleObject(event, INFINITE);
+
+    AsyncSocket* client = server.EndAsyncAccept(context);
     HANDLE thread = ::CreateThread(NULL, 0, ThreadProc, client, 0, NULL);
     if (thread == NULL) {
       delete client;
@@ -194,6 +218,8 @@ int wmain(int, wchar_t**) {
       ::CloseHandle(thread);
     }
   }
+
+  ::CloseHandle(event);
 
   return 0;
 }
