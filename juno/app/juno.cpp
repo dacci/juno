@@ -170,14 +170,29 @@ DWORD CALLBACK ThreadProc(void* param) {
   return 0;
 }
 
-int main(int argc, char* argv[]) {
-  const char* address = "127.0.0.1";
-  if (argc >= 2)
-    address = argv[1];
+class Listener : public AsyncServerSocket::Listener {
+ public:
+  void OnAccepted(AsyncSocket* client, DWORD error) {
+    if (error == 0) {
+      HANDLE thread = ::CreateThread(NULL, 0, ThreadProc, client, 0, NULL);
+      if (thread != NULL)
+        ::CloseHandle(thread);
+      else
+        delete client;
+    } else {
+      delete client;
+    }
+  }
+};
 
+int main(int argc, char* argv[]) {
   const char* port = "8080";
+  if (argc >= 2)
+    port = argv[1];
+
+  const char* address = "127.0.0.1";
   if (argc >= 3)
-    port = argv[2];
+    address = argv[2];
 
   madoka::net::WinSock winsock(WINSOCK_VERSION);
   if (!winsock.Initialized())
@@ -200,17 +215,17 @@ int main(int argc, char* argv[]) {
   if (!server.Listen(SOMAXCONN))
     return __LINE__;
 
-#if 1
+#if 0
   HANDLE event = ::CreateEvent(NULL, TRUE, FALSE, NULL);
 
   while (true) {
-    AsyncServerSocket::AcceptContext* context = server.BeginAccept(event);
-    if (context == NULL)
+    OVERLAPPED* overlapped = server.BeginAccept(event);
+    if (overlapped == NULL)
       return __LINE__;
 
     ::WaitForSingleObject(event, INFINITE);
 
-    AsyncSocket* client = server.EndAccept(context);
+    AsyncSocket* client = server.EndAccept(overlapped);
     HANDLE thread = ::CreateThread(NULL, 0, ThreadProc, client, 0, NULL);
     if (thread == NULL) {
       delete client;
@@ -222,10 +237,8 @@ int main(int argc, char* argv[]) {
 
   ::CloseHandle(event);
 #else
-  server.SetThreadpool(NULL);
-
-  AsyncServerSocket::AcceptContext* context = server.BeginAccept();
-  if (context == NULL)
+  Listener listener;
+  if (!server.AcceptAsync(&listener))
     return __LINE__;
 
   ::getchar();

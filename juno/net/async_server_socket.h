@@ -9,13 +9,11 @@ class AsyncSocket;
 
 class AsyncServerSocket : public madoka::net::ServerSocket {
  public:
-  struct AcceptContext : OVERLAPPED {
-    AcceptContext() : OVERLAPPED(), peer(), buffer(), bytes() {
-    }
+  class Listener {
+   public:
+    virtual ~Listener() {}
 
-    AsyncSocket* peer;
-    char* buffer;
-    DWORD bytes;
+    virtual void OnAccepted(AsyncSocket* client, DWORD error) = 0;
   };
 
   AsyncServerSocket();
@@ -23,25 +21,31 @@ class AsyncServerSocket : public madoka::net::ServerSocket {
 
   virtual void Close();
 
-  bool SetThreadpool(PTP_CALLBACK_ENVIRON environment);
-
   bool Bind(const addrinfo* end_point);
 
-  AcceptContext* BeginAccept(HANDLE event);
-  AcceptContext* BeginAccept();
-  AsyncSocket* EndAccept(AcceptContext* context);
+  bool AcceptAsync(Listener* listener);
+  OVERLAPPED* BeginAccept(HANDLE event);
+  AsyncSocket* EndAccept(OVERLAPPED* overlapped);
 
   operator HANDLE() const {
     return reinterpret_cast<HANDLE>(descriptor_);
   }
 
  private:
-  static void CALLBACK OnAccepted(PTP_CALLBACK_INSTANCE instance,
-                                  PVOID context, PVOID overlapped,
-                                  ULONG io_result, ULONG_PTR bytes, PTP_IO io);
-  void OnAccepted(AsyncSocket* peer, ULONG error);
+  struct AcceptContext : OVERLAPPED {
+    AsyncServerSocket* server;
+    AsyncSocket* client;
+    char* buffer;
+    Listener* listener;
+  };
 
-  PTP_IO io_;
+  AcceptContext* CreateAcceptContext();
+  void DestroyAcceptContext(AcceptContext* context);
+
+  static DWORD CALLBACK AcceptWork(void* param);
+  static void CALLBACK OnAccepted(DWORD error, DWORD bytes,
+                                  OVERLAPPED* overlapped);
+
   int family_;
   int protocol_;
 };
