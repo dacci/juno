@@ -1,5 +1,6 @@
 // Copyright (c) 2013 dacci.org
 
+#include <crtdbg.h>
 #include <stdint.h>
 
 #include <atlbase.h>
@@ -103,7 +104,7 @@ DWORD CALLBACK ThreadProc(void* param) {
       break;
   }
 #else
-  OVERLAPPED* context = remote.BeginConnect(&resolver, event);
+  OVERLAPPED* context = remote.BeginConnect(*resolver, event);
   if (context == NULL) {
     client->Shutdown(SD_BOTH);
     delete client;
@@ -218,8 +219,6 @@ class Listener : public AsyncServerSocket::Listener {
   }
 
   void OnAccepted(AsyncSocket* client, DWORD error) {
-    ::fprintf(stderr, "line:%u\tfunc:%s\tclient:%p\terror:%lu\n",
-              __LINE__, __FUNCTION__, client, error);
     if (error == 0) {
       server_->AcceptAsync(this);
 
@@ -237,6 +236,14 @@ class Listener : public AsyncServerSocket::Listener {
 };
 
 int main(int argc, char* argv[]) {
+#ifdef _DEBUG
+  {
+    int flags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
+    flags |= _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF;
+    _CrtSetDbgFlag(flags);
+  }
+#endif  // _DEBUG
+
   const char* port = "8080";
   if (argc >= 2)
     port = argv[1];

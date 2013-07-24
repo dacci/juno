@@ -49,6 +49,10 @@ class AddressInfoT : public InfoType {
     return iterator(NULL);
   }
 
+  const InfoType* operator*() const {
+    return entries_;
+  }
+
  protected:
   AddressInfoT() : InfoType(), entries_() {
   }

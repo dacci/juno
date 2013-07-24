@@ -64,7 +64,7 @@ class AsyncSocket : public madoka::net::Socket {
 
   friend class AsyncServerSocket;
 
-  LPFN_CONNECTEX ConnectEx;
+  static LPFN_CONNECTEX ConnectEx;
 };
 
 #endif  // JUNO_NET_ASYNC_SOCKET_H_

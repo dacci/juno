@@ -4,7 +4,9 @@
 
 #include <assert.h>
 
-AsyncSocket::AsyncSocket() : ConnectEx() {
+LPFN_CONNECTEX AsyncSocket::ConnectEx = NULL;
+
+AsyncSocket::AsyncSocket() {
 }
 
 AsyncSocket::~AsyncSocket() {
@@ -34,6 +36,7 @@ bool AsyncSocket::ConnectAsync(const addrinfo* end_points, Listener* listener) {
     return false;
 
   context->action = Connecting;
+  context->end_point = end_points;
   context->listener = listener;
 
   BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
@@ -58,7 +61,9 @@ OVERLAPPED* AsyncSocket::BeginConnect(const addrinfo* end_points,
     return NULL;
 
   context->action = Connecting;
+  context->end_point = end_points;
   context->event = event;
+  ::ResetEvent(event);
 
   BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
                                        WT_EXECUTEINIOTHREAD);
@@ -79,7 +84,12 @@ void AsyncSocket::EndConnect(OVERLAPPED* overlapped) {
     ::WaitForSingleObject(context->event, INFINITE);
 
   DWORD bytes = 0;
-  ::GetOverlappedResult(*context->socket, context, &bytes, TRUE);
+  BOOL succeeded = ::GetOverlappedResult(*context->socket, context, &bytes,
+                                         TRUE);
+  if (succeeded) {
+    SetOption(SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0);
+    connected_ = true;
+  }
 
   DestroyAsyncContext(context);
 }
@@ -259,6 +269,9 @@ int AsyncSocket::DoAsyncContext(AsyncContext* context) {
   const addrinfo* end_point = context->end_point;
 
   if (!Create(end_point))
+    return SOCKET_ERROR;
+
+  if (!Init())
     return SOCKET_ERROR;
 
   if (ConnectEx == NULL) {
