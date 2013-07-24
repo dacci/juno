@@ -14,15 +14,46 @@
 #include "net/http/http_request.h"
 #include "net/http/http_response.h"
 
+class Event {
+ public:
+  Event() : handle_(::CreateEvent(NULL, TRUE, FALSE, NULL)) {
+  }
+
+  ~Event() {
+    if (handle_)
+      ::CloseHandle(handle_);
+  }
+
+  bool Wait() {
+    return ::WaitForSingleObject(handle_, INFINITE) == WAIT_OBJECT_0;
+  }
+
+  operator HANDLE() const {
+    return handle_;
+  }
+
+ private:
+  HANDLE const handle_;
+
+  Event(const Event&);
+  Event& operator=(const Event&);
+};
+
 DWORD CALLBACK ThreadProc(void* param) {
   AsyncSocket* client = static_cast<AsyncSocket*>(param);
   HttpRequest request;
   char buffer[4096];
+  Event event;
 
-  int result = 0;
+  int result = HttpRequest::kError;
 
   while (true) {
-    int length = client->Receive(buffer, sizeof(buffer), 0);
+    OVERLAPPED* context = client->BeginReceive(buffer, sizeof(buffer), 0,
+                                               event);
+    if (context == NULL)
+      break;
+
+    int length = client->EndReceive(context);
     if (length <= 0)
       break;
 
@@ -30,8 +61,7 @@ DWORD CALLBACK ThreadProc(void* param) {
     if (result != HttpRequest::kPartial)
       break;
   }
-
-  if (result == HttpRequest::kError) {
+  if (result < 0) {
     client->Shutdown(SD_BOTH);
     delete client;
     return __LINE__;
@@ -67,10 +97,22 @@ DWORD CALLBACK ThreadProc(void* param) {
   }
 
   AsyncSocket remote;
+#if 0
   for (auto i = resolver.begin(), l = resolver.end(); i != l; ++i) {
     if (remote.Connect(*i))
       break;
   }
+#else
+  OVERLAPPED* context = remote.BeginConnect(&resolver, event);
+  if (context == NULL) {
+    client->Shutdown(SD_BOTH);
+    delete client;
+    return __LINE__;
+  }
+
+  remote.EndConnect(context);
+#endif
+
   if (!remote.connected()) {
     client->Shutdown(SD_BOTH);
     delete client;
@@ -172,8 +214,15 @@ DWORD CALLBACK ThreadProc(void* param) {
 
 class Listener : public AsyncServerSocket::Listener {
  public:
+  explicit Listener(AsyncServerSocket* server) : server_(server) {
+  }
+
   void OnAccepted(AsyncSocket* client, DWORD error) {
+    ::fprintf(stderr, "line:%u\tfunc:%s\tclient:%p\terror:%lu\n",
+              __LINE__, __FUNCTION__, client, error);
     if (error == 0) {
+      server_->AcceptAsync(this);
+
       HANDLE thread = ::CreateThread(NULL, 0, ThreadProc, client, 0, NULL);
       if (thread != NULL)
         ::CloseHandle(thread);
@@ -183,6 +232,8 @@ class Listener : public AsyncServerSocket::Listener {
       delete client;
     }
   }
+
+  AsyncServerSocket* const server_;
 };
 
 int main(int argc, char* argv[]) {
@@ -223,8 +274,6 @@ int main(int argc, char* argv[]) {
     if (overlapped == NULL)
       return __LINE__;
 
-    ::WaitForSingleObject(event, INFINITE);
-
     AsyncSocket* client = server.EndAccept(overlapped);
     HANDLE thread = ::CreateThread(NULL, 0, ThreadProc, client, 0, NULL);
     if (thread == NULL) {
@@ -237,7 +286,7 @@ int main(int argc, char* argv[]) {
 
   ::CloseHandle(event);
 #else
-  Listener listener;
+  Listener listener(&server);
   if (!server.AcceptAsync(&listener))
     return __LINE__;
 
