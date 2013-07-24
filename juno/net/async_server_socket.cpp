@@ -1,6 +1,9 @@
 // Copyright (c) 2013 dacci.org
 
 #include "net/async_server_socket.h"
+
+#include <assert.h>
+
 #include "net/async_socket.h"
 
 AsyncServerSocket::AsyncServerSocket() : family_(), protocol_() {
@@ -18,15 +21,20 @@ bool AsyncServerSocket::Bind(const addrinfo* end_point) {
   if (!ServerSocket::Bind(end_point))
     return false;
 
+  if (!::BindIoCompletionCallback(*this, OnAccepted, 0)) {
+    Close();
+    return false;
+  }
+
   family_ = end_point->ai_family;
   protocol_ = end_point->ai_protocol;
-
-  ::BindIoCompletionCallback(*this, OnAccepted, 0);
 
   return true;
 }
 
 bool AsyncServerSocket::AcceptAsync(Listener* listener) {
+  if (listener == NULL)
+    return false;
   if (!IsValid() || !bound_)
     return false;
 
@@ -47,6 +55,8 @@ bool AsyncServerSocket::AcceptAsync(Listener* listener) {
 }
 
 OVERLAPPED* AsyncServerSocket::BeginAccept(HANDLE event) {
+  if (event == NULL)
+    return NULL;
   if (!IsValid() || !bound_)
     return NULL;
 
@@ -54,7 +64,8 @@ OVERLAPPED* AsyncServerSocket::BeginAccept(HANDLE event) {
   if (context == NULL)
     return NULL;
 
-  context->hEvent = event;
+  context->event = event;
+  ::ResetEvent(event);
 
   BOOL succeeded = ::QueueUserWorkItem(AcceptWork, context,
                                        WT_EXECUTEINIOTHREAD);
@@ -71,14 +82,17 @@ AsyncSocket* AsyncServerSocket::EndAccept(OVERLAPPED* overlapped) {
   if (context->server != this)
     return NULL;
 
-  AsyncSocket* client = context->client;
+  if (context->event != NULL)
+    ::WaitForSingleObject(context->event, INFINITE);
 
+  AsyncSocket* client = context->client;
   DWORD bytes = 0;
   BOOL succeeded = ::GetOverlappedResult(*client, context, &bytes, TRUE);
   if (succeeded) {
     context->client = NULL;
     client->SetOption(SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, descriptor_);
     client->connected_ = true;
+    client->Init();
   } else {
     client = NULL;
   }
@@ -150,10 +164,14 @@ void CALLBACK AsyncServerSocket::OnAccepted(DWORD error, DWORD bytes,
                                             OVERLAPPED* overlapped) {
   AcceptContext* context = static_cast<AcceptContext*>(overlapped);
 
-  if (context->hEvent == NULL) {
+  if (context->listener != NULL) {
     AsyncServerSocket* server = context->server;
     Listener* listener = context->listener;
     AsyncSocket* client = server->EndAccept(overlapped);
     listener->OnAccepted(client, error);
+  } else if (context->event != NULL) {
+    ::SetEvent(context->event);
+  } else {
+    assert(false);
   }
 }

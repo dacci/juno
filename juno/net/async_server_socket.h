@@ -37,6 +37,7 @@ class AsyncServerSocket : public madoka::net::ServerSocket {
     AsyncSocket* client;
     char* buffer;
     Listener* listener;
+    HANDLE event;
   };
 
   AcceptContext* CreateAcceptContext();
