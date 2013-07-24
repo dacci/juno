@@ -67,7 +67,8 @@ class ServerSocket : public AbstractSocket {
     return Bind(node_name, service);
   }
 
-#ifdef WIN32
+#if defined WIN32 && \
+    ((NTDDI_VERSION >= NTDDI_WINXPSP2) || (_WIN32_WINNT >= 0x0502))
   bool Bind(const ADDRINFOW* end_point) {
     if (bound_)
       return false;
@@ -110,7 +111,8 @@ class ServerSocket : public AbstractSocket {
 
     return Bind(node_name, service);
   }
-#endif  // WIN32
+#endif  // defined WIN32 &&
+        // ((NTDDI_VERSION >= NTDDI_WINXPSP2) || (_WIN32_WINNT >= 0x0502))
 
   bool Listen(int backlog) {
     if (!bound_)

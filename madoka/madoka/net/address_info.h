@@ -98,7 +98,8 @@ class AddressInfo : public AddressInfoT<addrinfo> {
   DISALLOW_COPY_AND_ASSIGN(AddressInfo);
 };
 
-#ifdef WIN32
+#if defined WIN32 && \
+    ((NTDDI_VERSION >= NTDDI_WINXPSP2) || (_WIN32_WINNT >= 0x0502))
 
 class AddressInfoW : public AddressInfoT<ADDRINFOW> {
  public:
@@ -134,7 +135,8 @@ class AddressInfoW : public AddressInfoT<ADDRINFOW> {
   DISALLOW_COPY_AND_ASSIGN(AddressInfoW);
 };
 
-#endif  // WIN32
+#endif  // defined WIN32 &&
+        // ((NTDDI_VERSION >= NTDDI_WINXPSP2) || (_WIN32_WINNT >= 0x0502))
 
 }  // namespace net
 }  // namespace madoka
