@@ -10,10 +10,7 @@ HttpRequest::HttpRequest() {
 HttpRequest::~HttpRequest() {
 }
 
-int HttpRequest::Process(const char* data, size_t length) {
-  size_t last_length = buffer_.size();
-  buffer_.append(data, length);
-
+int HttpRequest::Parse(const char* data, size_t length) {
   const char* method;
   size_t method_length;
   const char* path;
@@ -22,18 +19,15 @@ int HttpRequest::Process(const char* data, size_t length) {
   phr_header headers[kMaxHeaders];
   size_t header_count = kMaxHeaders;
 
-  int result = ::phr_parse_request(buffer_.c_str(), buffer_.size(),
-                                   &method, &method_length,
+  int result = ::phr_parse_request(data, length, &method, &method_length,
                                    &path, &path_length, &minor_version,
-                                   headers, &header_count, last_length);
+                                   headers, &header_count, 0);
   if (result > 0) {
     method_.assign(method, method_length);
     path_.assign(path, path_length);
     minor_version_ = minor_version;
 
     AddHeader(headers, header_count);
-
-    buffer_.erase(0, result);
   }
 
   return result;

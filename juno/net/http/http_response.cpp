@@ -10,10 +10,7 @@ HttpResponse::HttpResponse() {
 HttpResponse::~HttpResponse() {
 }
 
-int HttpResponse::Process(const char* data, size_t length) {
-  size_t last_length = buffer_.size();
-  buffer_.append(data, length);
-
+int HttpResponse::Parse(const char* data, size_t length) {
   int minor_version;
   int status;
   const char* message;
@@ -21,18 +18,15 @@ int HttpResponse::Process(const char* data, size_t length) {
   phr_header headers[kMaxHeaders];
   size_t header_count = kMaxHeaders;
 
-  int result = ::phr_parse_response(buffer_.c_str(), buffer_.size(),
-                                    &minor_version, &status,
+  int result = ::phr_parse_response(data, length, &minor_version, &status,
                                     &message, &message_length,
-                                    headers, &header_count, last_length);
+                                    headers, &header_count, 0);
   if (result > 0) {
     minor_version_ = minor_version;
     status_ = status;
     message_.assign(message, message_length);
 
     AddHeader(headers, header_count);
-
-    buffer_.erase(0, result);
   }
 
   return result;

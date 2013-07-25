@@ -15,7 +15,10 @@ class HttpRequest : public HttpHeaders {
   HttpRequest();
   virtual ~HttpRequest();
 
-  int Process(const char* data, size_t length);
+  int Parse(const char* data, size_t length);
+  int Parse(const std::string& data) {
+    return Parse(data.data(), data.size());
+  }
 
   const std::string& method() const {
     return method_;
@@ -28,8 +31,6 @@ class HttpRequest : public HttpHeaders {
   int minor_version() const {
     return minor_version_;
   }
-
-  std::string buffer_;
 
  private:
   static const size_t kMaxHeaders = 128;

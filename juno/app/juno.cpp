@@ -9,230 +9,318 @@
 #include <madoka/net/winsock.h>
 
 #include <string>
+#include <vector>
 
 #include "net/async_socket.h"
 #include "net/async_server_socket.h"
 #include "net/http/http_request.h"
 #include "net/http/http_response.h"
 
-class Event {
+class HttpProxySession : public AsyncSocket::Listener {
  public:
-  Event() : handle_(::CreateEvent(NULL, TRUE, FALSE, NULL)) {
+  explicit HttpProxySession(AsyncSocket* client)
+      : client_(client),
+        remote_(),
+        buffer_(new char[kBufferSize]),
+        phase_(Request),
+        content_length_() {
   }
 
-  ~Event() {
-    if (handle_)
-      ::CloseHandle(handle_);
+  virtual ~HttpProxySession() {
+    if (client_ != NULL) {
+      client_->Shutdown(SD_BOTH);
+      delete client_;
+    }
+
+    if (remote_ != NULL) {
+      remote_->Shutdown(SD_BOTH);
+      delete remote_;
+    }
+
+    delete[] buffer_;
   }
 
-  bool Wait() {
-    return ::WaitForSingleObject(handle_, INFINITE) == WAIT_OBJECT_0;
+  bool Start() {
+    return client_->ReceiveAsync(buffer_, kBufferSize, 0, this);
   }
 
-  operator HANDLE() const {
-    return handle_;
+  void OnConnected(AsyncSocket* socket, DWORD error) {
+    if (error != 0) {
+      delete this;
+      return;
+    }
+
+    std::string request_string;
+    request_string += request_.method();
+    request_string += ' ';
+    request_string += url_.GetUrlPath();
+    request_string += " HTTP/1.";
+    request_string += '0' + request_.minor_version();
+    request_string += "\x0D\x0A";
+    request_.SerializeHeaders(&request_string);
+    request_string += "\x0D\x0A";
+    if (request_string.size() > kBufferSize) {
+      delete this;
+      return;
+    }
+
+    ::memmove(buffer_, request_string.data(), request_string.size());
+
+    if (!remote_->SendAsync(buffer_, request_string.size(), 0, this)) {
+      delete this;
+      return;
+    }
+  }
+
+  void OnReceived(AsyncSocket* socket, DWORD error, int length) {
+    if (error != 0) {
+      delete this;
+      return;
+    }
+
+    if (phase_ == Request) {
+      client_buffer_.append(buffer_, length);
+      int result = request_.Parse(client_buffer_);
+      if (result == HttpRequest::kPartial) {
+        if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+          delete this;
+        return;
+      } else if (result <= 0) {
+        delete this;
+        return;
+      } else {
+        client_buffer_.erase(0, result);
+      }
+
+      if (request_.HeaderExists("Content-Length")) {
+        const std::string& value = request_.GetHeader("Content-Length");
+        content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
+      } else if (request_.HeaderExists("Transfer-Encoding")) {
+        delete this;
+        return;
+      }
+
+      if (!url_.CrackUrl(request_.path().c_str())) {
+        delete this;
+        return;
+      }
+
+      char service[8];
+      ::sprintf_s(service, "%d", url_.GetPortNumber());
+
+      if (!resolver_.Resolve(url_.GetHostName(), service)) {
+        delete this;
+        return;
+      }
+
+      remote_ = new AsyncSocket();
+      if (!remote_->ConnectAsync(*resolver_, this)) {
+        delete this;
+        return;
+      }
+    } else if (phase_ == RequestBody) {
+      if (!remote_->SendAsync(buffer_, length, 0, this))
+        delete this;
+      return;
+    } else if (phase_ == Response) {
+      remote_buffer_.append(buffer_, length);
+      int result = response_.Parse(remote_buffer_);
+      if (result == HttpResponse::kPartial) {
+        if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+          delete this;
+        return;
+      } else if (result <= 0) {
+        delete this;
+        return;
+      } else {
+        remote_buffer_.erase(0, result);
+      }
+
+      if (response_.HeaderExists("Content-Length")) {
+        const std::string& value = response_.GetHeader("Content-Length");
+        content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
+      } else if (response_.HeaderExists("Transfer-Encoding")) {
+        delete this;
+        return;
+      }
+
+      std::string response_string;
+      response_string += "HTTP/1.";
+      response_string += '0' + response_.minor_version();
+      response_string += ' ';
+      ::sprintf_s(buffer_, kBufferSize, "%d ", response_.status());
+      response_string += buffer_;
+      response_string += response_.message();
+      response_string += "\x0D\x0A";
+      response_.SerializeHeaders(&response_string);
+      response_string += "\x0D\x0A";
+      if (response_string.size() > kBufferSize) {
+        delete this;
+        return;
+      }
+
+      ::memmove(buffer_, response_string.data(), response_string.size());
+
+      if (!client_->SendAsync(buffer_, response_string.size(), 0, this)) {
+        delete this;
+        return;
+      }
+    } else if (phase_ == ResponseBody) {
+      if (!client_->SendAsync(buffer_, length, 0, this)) {
+        delete this;
+        return;
+      }
+    }
+  }
+
+  void OnSent(AsyncSocket* socket, DWORD error, int length) {
+    if (error != 0) {
+      delete this;
+      return;
+    }
+
+    if (phase_ == Request) {
+      if (content_length_ > 0) {
+        phase_ = RequestBody;
+
+        size_t length = min(client_buffer_.size(), content_length_);
+        if (length > 0) {
+          ::memmove(buffer_, client_buffer_.data(), length);
+          client_buffer_.erase(0, length);
+
+          if (!remote_->SendAsync(buffer_, length, 0, this)) {
+            delete this;
+            return;
+          }
+        } else {
+          if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+            delete this;
+            return;
+          }
+        }
+      } else {
+        phase_ = Response;
+        if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+          delete this;
+          return;
+        }
+      }
+    } else if (phase_ == RequestBody) {
+      content_length_ -= length;
+      if (content_length_ > 0) {
+        if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+          delete this;
+          return;
+        }
+      } else {
+        phase_ = Response;
+        if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+          delete this;
+          return;
+        }
+      }
+    } else if (phase_ == Response) {
+      phase_ = ResponseBody;
+
+      if (content_length_ > 0) {
+        if (remote_buffer_.empty()) {
+          if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+            delete this;
+            return;
+          }
+        } else {
+          content_length_ -= remote_buffer_.size();
+          if (!client_->SendAsync(remote_buffer_.data(), remote_buffer_.size(),
+                                  0, this)) {
+            delete this;
+            return;
+          }
+        }
+      } else {
+        delete this;
+        return;
+      }
+    } else if (phase_ == ResponseBody) {
+      if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+        delete this;
+        return;
+      }
+    }
   }
 
  private:
-  HANDLE const handle_;
+  enum Phase {
+    Request, RequestBody, Response, ResponseBody,
+  };
 
-  Event(const Event&);
-  Event& operator=(const Event&);
+  static const size_t kBufferSize = 4096;
+
+  AsyncSocket* client_;
+  std::string client_buffer_;
+  HttpRequest request_;
+  CUrl url_;
+  madoka::net::AddressInfo resolver_;
+
+  AsyncSocket* remote_;
+  std::string remote_buffer_;
+  HttpResponse response_;
+
+  char* buffer_;
+  Phase phase_;
+  int64_t content_length_;
 };
 
-DWORD CALLBACK ThreadProc(void* param) {
-  AsyncSocket* client = static_cast<AsyncSocket*>(param);
-  HttpRequest request;
-  char buffer[4096];
-  Event event;
-
-  int result = HttpRequest::kError;
-
-  while (true) {
-    OVERLAPPED* context = client->BeginReceive(buffer, sizeof(buffer), 0,
-                                               event);
-    if (context == NULL)
-      break;
-
-    int length = client->EndReceive(context);
-    if (length <= 0)
-      break;
-
-    result = request.Process(buffer, length);
-    if (result != HttpRequest::kPartial)
-      break;
-  }
-  if (result < 0) {
-    client->Shutdown(SD_BOTH);
-    delete client;
-    return __LINE__;
-  }
-
-  int64_t content_length = 0;
-  bool chunked = false;
-  if (request.HeaderExists("Content-Length")) {
-    const std::string& value = request.GetHeader("Content-Length");
-    content_length = ::_strtoi64(value.c_str(), NULL, 10);
-  } else if (request.HeaderExists("Transfer-Encoding")) {
-    chunked = true;
-  }
-
-  // temporary
-  if (chunked) {
-    client->Shutdown(SD_BOTH);
-    delete client;
-    return __LINE__;
-  }
-
-  CUrl url;
-  url.CrackUrl(request.path().c_str());
-  char service[8];
-  ::sprintf_s(service, "%d", url.GetPortNumber());
-
-  madoka::net::AddressInfo resolver;
-  resolver.ai_socktype = SOCK_STREAM;
-  if (!resolver.Resolve(url.GetHostName(), service)) {
-    client->Shutdown(SD_BOTH);
-    delete client;
-    return __LINE__;
-  }
-
-  AsyncSocket remote;
-#if 0
-  for (auto i = resolver.begin(), l = resolver.end(); i != l; ++i) {
-    if (remote.Connect(*i))
-      break;
-  }
-#else
-  OVERLAPPED* context = remote.BeginConnect(*resolver, event);
-  if (context == NULL) {
-    client->Shutdown(SD_BOTH);
-    delete client;
-    return __LINE__;
-  }
-
-  remote.EndConnect(context);
-#endif
-
-  if (!remote.connected()) {
-    client->Shutdown(SD_BOTH);
-    delete client;
-    return __LINE__;
-  }
-
-  std::string remote_request;
-  remote_request += request.method();
-  remote_request += ' ';
-  remote_request += url.GetUrlPath();
-  remote_request += " HTTP/1.";
-  remote_request += request.minor_version() + '0';
-  remote_request += "\x0D\x0A";
-  request.SerializeHeaders(&remote_request);
-  remote_request += "\x0D\x0A";
-
-  remote.Send(remote_request.c_str(), remote_request.size(), 0);
-  ::printf("%s\n", remote_request.c_str());
-
-  if (!request.buffer_.empty()) {
-    remote.Send(request.buffer_.c_str(), request.buffer_.size(), 0);
-    content_length -= request.buffer_.size();
-  }
-
-  while (content_length > 0) {
-    int length = client->Receive(buffer, sizeof(buffer), 0);
-    if (length <= 0)
-      break;
-
-    remote.Send(buffer, length, 0);
-    content_length -= length;
-  }
-
-  HttpResponse response;
-
-  while (true) {
-    int length = remote.Receive(buffer, sizeof(buffer), 0);
-    if (length <= 0)
-      break;
-
-    result = response.Process(buffer, length);
-    if (result != HttpResponse::kPartial)
-      break;
-  }
-
-  content_length = 0;
-  chunked = false;
-  if (response.HeaderExists("Content-Length")) {
-    const std::string& value = response.GetHeader("Content-Length");
-    content_length = ::_strtoi64(value.c_str(), NULL, 10);
-  } else if (response.HeaderExists("Transfer-Encoding")) {
-    chunked = true;
-  }
-
-  // temporary
-  if (chunked) {
-    client->Shutdown(SD_BOTH);
-    delete client;
-    return __LINE__;
-  }
-
-  std::string remote_response;
-  remote_response += "HTTP/1.";
-  remote_response += response.minor_version() + '0';
-  remote_response += ' ';
-  ::sprintf_s(buffer, "%d", response.status());
-  remote_response += buffer;
-  remote_response += ' ';
-  remote_response += response.message();
-  remote_response += "\x0D\x0A";
-  response.SerializeHeaders(&remote_response);
-  remote_response += "\x0D\x0A";
-
-  client->Send(remote_response.c_str(), remote_response.size(), 0);
-  ::printf("%s\n", remote_response.c_str());
-
-  if (!response.buffer_.empty()) {
-    client->Send(response.buffer_.c_str(), response.buffer_.size(), 0);
-    content_length -= response.buffer_.size();
-  }
-
-  while (content_length > 0) {
-    int length = remote.Receive(buffer, sizeof(buffer), 0);
-    if (length <= 0)
-      break;
-
-    client->Send(buffer, length, 0);
-    content_length -= length;
-  }
-
-  remote.Shutdown(SD_BOTH);
-  client->Shutdown(SD_BOTH);
-
-  remote.Close();
-  delete client;
-
-  return 0;
-}
-
-class Listener : public AsyncServerSocket::Listener {
+class HttpProxy : public AsyncServerSocket::Listener {
  public:
-  explicit Listener(AsyncServerSocket* server) : server_(server) {
+  HttpProxy(const char* address, const char* port)
+      : address_(address), port_(port) {
   }
 
-  void OnAccepted(AsyncSocket* client, DWORD error) {
-    if (error == 0) {
-      server_->AcceptAsync(this);
+  bool Start() {
+    resolver_.ai_flags = AI_PASSIVE;
+    resolver_.ai_socktype = SOCK_STREAM;
+    if (!resolver_.Resolve(address_.c_str(), port_.c_str()))
+      return false;
 
-      HANDLE thread = ::CreateThread(NULL, 0, ThreadProc, client, 0, NULL);
-      if (thread != NULL)
-        ::CloseHandle(thread);
-      else
-        delete client;
+    bool started = false;
+
+    for (auto i = resolver_.begin(), l = resolver_.end(); i != l; ++i) {
+      AsyncServerSocket* server = new AsyncServerSocket();
+      if (server->Bind(*i) && server->Listen(SOMAXCONN) &&
+          server->AcceptAsync(this)) {
+        started = true;
+        servers_.push_back(server);
+      }
+    }
+
+    return started;
+  }
+
+  void Stop() {
+    for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
+      (*i)->Close();
+      delete *i;
+    }
+    servers_.clear();
+  }
+
+  void OnAccepted(AsyncServerSocket* server, AsyncSocket* client, DWORD error) {
+    if (error == 0) {
+      server->AcceptAsync(this);
+
+      HttpProxySession* session = new HttpProxySession(client);
+      if (!session->Start())
+        delete session;
     } else {
       delete client;
     }
   }
 
-  AsyncServerSocket* const server_;
+ private:
+  std::string address_;
+  std::string port_;
+  madoka::net::AddressInfo resolver_;
+  std::vector<AsyncServerSocket*> servers_;
 };
 
 int main(int argc, char* argv[]) {
@@ -256,51 +344,13 @@ int main(int argc, char* argv[]) {
   if (!winsock.Initialized())
     return winsock.error();
 
-  madoka::net::AddressInfo address_info;
-  address_info.ai_flags = AI_PASSIVE;
-  address_info.ai_socktype = SOCK_STREAM;
-  if (!address_info.Resolve(address, port))
-    return __LINE__;
-
-  AsyncServerSocket server;
-  for (auto i = address_info.begin(), l = address_info.end(); i != l; ++i) {
-    if (server.Bind(*i))
-      break;
-  }
-  if (!server.bound())
-    return __LINE__;
-
-  if (!server.Listen(SOMAXCONN))
-    return __LINE__;
-
-#if 0
-  HANDLE event = ::CreateEvent(NULL, TRUE, FALSE, NULL);
-
-  while (true) {
-    OVERLAPPED* overlapped = server.BeginAccept(event);
-    if (overlapped == NULL)
-      return __LINE__;
-
-    AsyncSocket* client = server.EndAccept(overlapped);
-    HANDLE thread = ::CreateThread(NULL, 0, ThreadProc, client, 0, NULL);
-    if (thread == NULL) {
-      delete client;
-      return __LINE__;
-    } else {
-      ::CloseHandle(thread);
-    }
-  }
-
-  ::CloseHandle(event);
-#else
-  Listener listener(&server);
-  if (!server.AcceptAsync(&listener))
+  HttpProxy proxy(address, port);
+  if (!proxy.Start())
     return __LINE__;
 
   ::getchar();
 
-  server.Close();
-#endif
+  proxy.Stop();
 
   return 0;
 }
