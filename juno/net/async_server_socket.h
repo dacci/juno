@@ -13,7 +13,8 @@ class AsyncServerSocket : public madoka::net::ServerSocket {
    public:
     virtual ~Listener() {}
 
-    virtual void OnAccepted(AsyncSocket* client, DWORD error) = 0;
+    virtual void OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
+                            DWORD error) = 0;
   };
 
   AsyncServerSocket();

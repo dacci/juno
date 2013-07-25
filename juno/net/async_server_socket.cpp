@@ -168,7 +168,7 @@ void CALLBACK AsyncServerSocket::OnAccepted(DWORD error, DWORD bytes,
     AsyncServerSocket* server = context->server;
     Listener* listener = context->listener;
     AsyncSocket* client = server->EndAccept(overlapped);
-    listener->OnAccepted(client, error);
+    listener->OnAccepted(server, client, error);
   } else if (context->event != NULL) {
     ::SetEvent(context->event);
   } else {
