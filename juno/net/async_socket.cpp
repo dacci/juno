@@ -265,7 +265,7 @@ void AsyncSocket::DestroyAsyncContext(AsyncContext* context) {
   delete context;
 }
 
-int AsyncSocket::DoAsyncContext(AsyncContext* context) {
+int AsyncSocket::DoAsyncConnect(AsyncContext* context) {
   const addrinfo* end_point = context->end_point;
 
   if (!Create(end_point))
@@ -300,7 +300,7 @@ DWORD CALLBACK AsyncSocket::AsyncWork(void* param) {
   int error = ERROR_SUCCESS;
 
   if (context->action == Connecting) {
-    result = context->socket->DoAsyncContext(context);
+    result = context->socket->DoAsyncConnect(context);
     error = ::WSAGetLastError();
   } else if (context->action == Receiving) {
     result = ::WSARecv(*context->socket, context, 1, NULL, &context->flags,

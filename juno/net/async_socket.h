@@ -56,7 +56,7 @@ class AsyncSocket : public madoka::net::Socket {
   AsyncContext* CreateAsyncContext();
   void DestroyAsyncContext(AsyncContext* context);
 
-  int DoAsyncContext(AsyncContext* context);
+  int DoAsyncConnect(AsyncContext* context);
 
   static DWORD CALLBACK AsyncWork(void* param);
   static void CALLBACK OnTransferred(DWORD error, DWORD bytes,
