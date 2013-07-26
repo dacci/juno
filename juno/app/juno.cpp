@@ -22,8 +22,7 @@ class HttpProxySession : public AsyncSocket::Listener {
       : client_(client),
         remote_(),
         buffer_(new char[kBufferSize]),
-        phase_(Request),
-        content_length_() {
+        phase_(Request) {
   }
 
   virtual ~HttpProxySession() {
@@ -92,10 +91,14 @@ class HttpProxySession : public AsyncSocket::Listener {
         client_buffer_.erase(0, result);
       }
 
+      content_length_ = 0;
+      chunked_ = false;
       if (request_.HeaderExists("Content-Length")) {
         const std::string& value = request_.GetHeader("Content-Length");
         content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
       } else if (request_.HeaderExists("Transfer-Encoding")) {
+        chunked_ = true;
+        // TODO(dacci): implement chunked encoding.
         delete this;
         return;
       }
@@ -136,10 +139,14 @@ class HttpProxySession : public AsyncSocket::Listener {
         remote_buffer_.erase(0, result);
       }
 
+      content_length_ = 0;
+      chunked_ = false;
       if (response_.HeaderExists("Content-Length")) {
         const std::string& value = response_.GetHeader("Content-Length");
         content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
       } else if (response_.HeaderExists("Transfer-Encoding")) {
+        chunked_ = true;
+        // TODO(dacci): implement chunked encoding.
         delete this;
         return;
       }
@@ -275,6 +282,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   char* buffer_;
   Phase phase_;
   int64_t content_length_;
+  bool chunked_;
 };
 
 class HttpProxy : public AsyncServerSocket::Listener {
