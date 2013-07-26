@@ -166,6 +166,8 @@ class HttpProxySession : public AsyncSocket::Listener {
         return;
       }
     } else if (phase_ == ResponseBody) {
+      content_length_ -= length;
+
       if (!client_->SendAsync(buffer_, length, 0, this)) {
         delete this;
         return;
@@ -241,7 +243,12 @@ class HttpProxySession : public AsyncSocket::Listener {
         return;
       }
     } else if (phase_ == ResponseBody) {
-      if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+      if (content_length_ > 0) {
+        if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+          delete this;
+          return;
+        }
+      } else {
         delete this;
         return;
       }
