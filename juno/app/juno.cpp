@@ -146,9 +146,6 @@ class HttpProxySession : public AsyncSocket::Listener {
         content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
       } else if (response_.HeaderExists("Transfer-Encoding")) {
         chunked_ = true;
-        // TODO(dacci): implement chunked encoding.
-        delete this;
-        return;
       }
 
       std::string response_string;
@@ -173,11 +170,40 @@ class HttpProxySession : public AsyncSocket::Listener {
         return;
       }
     } else if (phase_ == ResponseBody) {
-      content_length_ -= length;
+      if (chunked_) {
+        if (content_length_ == -2) {
+          remote_buffer_.append(buffer_, length);
 
-      if (!client_->SendAsync(buffer_, length, 0, this)) {
-        delete this;
-        return;
+          content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
+          if (content_length_ == -2) {
+            if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+              delete this;
+              return;
+            }
+          } else {
+            if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0,
+                                    this)) {
+              delete this;
+              return;
+            }
+          }
+        } else if (content_length_ <= 0) {
+          delete this;
+          return;
+        } else {
+          if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0,
+                                  this)) {
+              delete this;
+              return;
+          }
+        }
+      } else {
+        content_length_ -= length;
+
+        if (!client_->SendAsync(buffer_, length, 0, this)) {
+          delete this;
+          return;
+        }
       }
     }
   }
@@ -231,7 +257,23 @@ class HttpProxySession : public AsyncSocket::Listener {
     } else if (phase_ == Response) {
       phase_ = ResponseBody;
 
-      if (content_length_ > 0) {
+      if (chunked_) {
+        content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
+
+        if (content_length_ == -2) {
+          if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+            delete this;
+          return;
+        } else if (content_length_ < 0) {
+          delete this;
+          return;
+        }
+
+        if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0,
+                                this))
+          delete this;
+        return;
+      } else if (content_length_ > 0) {
         if (remote_buffer_.empty()) {
           if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
             delete this;
@@ -250,7 +292,31 @@ class HttpProxySession : public AsyncSocket::Listener {
         return;
       }
     } else if (phase_ == ResponseBody) {
-      if (content_length_ > 0) {
+      if (chunked_) {
+        if (chunk_size_ == 0) {
+          delete this;
+          return;
+        }
+
+        remote_buffer_.erase(0, length);
+
+        content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
+        if (content_length_ == -2) {
+          if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+            delete this;
+            return;
+          }
+        } else if (content_length_ <= 0) {
+          delete this;
+          return;
+        } else {
+          if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0,
+                                  this)) {
+            delete this;
+            return;
+          }
+        }
+      } else if (content_length_ > 0) {
         if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
           delete this;
           return;
@@ -269,6 +335,50 @@ class HttpProxySession : public AsyncSocket::Listener {
 
   static const size_t kBufferSize = 4096;
 
+  static int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size) {
+    char* start = const_cast<char*>(buffer.c_str());
+    char* end = start;
+    *chunk_size = ::_strtoi64(buffer.c_str(), &end, 16);
+
+    while (*end) {
+      if (*end != '\x0D' && *end != '\x0A')
+        return -1;
+      
+      if (*end == '\x0A')
+        break;
+
+      ++end;
+    }
+
+    if (*end == '\0')
+      return -2;
+
+    ++end;
+
+    int64_t length = *chunk_size + (end - start);
+    if (buffer.size() < length)
+      return -2;
+
+    end = start + length;
+
+    while (*end) {
+      if (*end != '\x0D' && *end != '\x0A')
+        return -1;
+      
+      if (*end == '\x0A')
+        break;
+
+      ++end;
+    }
+
+    if (*end == '\0')
+      return -2;
+
+    ++end;
+
+    return end - start;
+  }
+
   AsyncSocket* client_;
   std::string client_buffer_;
   HttpRequest request_;
@@ -283,6 +393,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   Phase phase_;
   int64_t content_length_;
   bool chunked_;
+  int64_t chunk_size_;
 };
 
 class HttpProxy : public AsyncServerSocket::Listener {
