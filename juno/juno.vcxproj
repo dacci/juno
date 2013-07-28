@@ -146,6 +146,8 @@
     <ClCompile Include="net\async_server_socket.cpp" />
     <ClCompile Include="net\async_socket.cpp" />
     <ClCompile Include="net\http\http_headers.cpp" />
+    <ClCompile Include="net\http\http_proxy.cpp" />
+    <ClCompile Include="net\http\http_proxy_session.cpp" />
     <ClCompile Include="net\http\http_request.cpp" />
     <ClCompile Include="net\http\http_response.cpp" />
   </ItemGroup>
@@ -153,6 +155,8 @@
     <ClInclude Include="net\async_server_socket.h" />
     <ClInclude Include="net\async_socket.h" />
     <ClInclude Include="net\http\http_headers.h" />
+    <ClInclude Include="net\http\http_proxy.h" />
+    <ClInclude Include="net\http\http_proxy_session.h" />
     <ClInclude Include="net\http\http_request.h" />
     <ClInclude Include="net\http\http_response.h" />
   </ItemGroup>
