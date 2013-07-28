@@ -32,6 +32,18 @@ class HttpProxySession : public AsyncSocket::Listener {
 
   static int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size);
 
+  void OnRequestReceived(AsyncSocket* socket, DWORD error, int length);
+  void OnRequestSent(AsyncSocket* socket, DWORD error, int length);
+
+  void OnRequestBodyReceived(AsyncSocket* socket, DWORD error, int length);
+  void OnRequestBodySent(AsyncSocket* socket, DWORD error, int length);
+
+  void OnResponseReceived(AsyncSocket* socket, DWORD error, int length);
+  void OnResponseSent(AsyncSocket* socket, DWORD error, int length);
+
+  void OnResponseBodyReceived(AsyncSocket* socket, DWORD error, int length);
+  void OnResponseBodySent(AsyncSocket* socket, DWORD error, int length);
+
   AsyncSocket* client_;
   std::string client_buffer_;
   HttpRequest request_;

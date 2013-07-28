@@ -2,6 +2,8 @@
 
 #include "net/http/http_proxy_session.h"
 
+#include <assert.h>
+
 HttpProxySession::HttpProxySession(AsyncSocket* client)
     : client_(client),
       remote_(),
@@ -62,151 +64,25 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
     return;
   }
 
-  if (phase_ == Request) {
-    client_buffer_.append(buffer_, length);
-    int result = request_.Parse(client_buffer_);
-    if (result == HttpRequest::kPartial) {
-      if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this))
-        delete this;
-      return;
-    } else if (result <= 0) {
-      delete this;
-      return;
-    } else {
-      client_buffer_.erase(0, result);
-    }
+  switch (phase_) {
+  case Request:
+    OnRequestReceived(socket, error, length);
+    return;
 
-    content_length_ = 0;
-    chunked_ = false;
-    if (request_.HeaderExists("Content-Length")) {
-      const std::string& value = request_.GetHeader("Content-Length");
-      content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
-    } else if (request_.HeaderExists("Transfer-Encoding")) {
-      chunked_ = true;
-    }
+  case RequestBody:
+    OnRequestBodyReceived(socket, error, length);
+    return;
 
-    if (!url_.CrackUrl(request_.path().c_str())) {
-      delete this;
-      return;
-    }
+  case Response:
+    OnResponseReceived(socket, error, length);
+    return;
 
-    char service[8];
-    ::sprintf_s(service, "%d", url_.GetPortNumber());
-
-    if (!resolver_.Resolve(url_.GetHostName(), service)) {
-      delete this;
-      return;
-    }
-
-    remote_ = new AsyncSocket();
-    if (!remote_->ConnectAsync(*resolver_, this)) {
-      delete this;
-      return;
-    }
-  } else if (phase_ == RequestBody) {
-    if (chunked_) {
-      client_buffer_.append(buffer_, length);
-
-      content_length_ = ParseChunk(client_buffer_, &chunk_size_);
-      if (content_length_ == -2) {
-        if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this))
-          delete this;
-        return;
-      } else if (content_length_ <= 0) {
-        delete this;
-        return;
-      } else {
-        if (!remote_->SendAsync(client_buffer_.data(), content_length_, 0,
-                                this))
-          delete this;
-        return;
-      }
-    } else {
-      if (!remote_->SendAsync(buffer_, length, 0, this))
-        delete this;
-      return;
-    }
-  } else if (phase_ == Response) {
-    remote_buffer_.append(buffer_, length);
-    int result = response_.Parse(remote_buffer_);
-    if (result == HttpResponse::kPartial) {
-      if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
-        delete this;
-      return;
-    } else if (result <= 0) {
-      delete this;
-      return;
-    } else {
-      remote_buffer_.erase(0, result);
-    }
-
-    content_length_ = 0;
-    chunked_ = false;
-    if (response_.HeaderExists("Content-Length")) {
-      const std::string& value = response_.GetHeader("Content-Length");
-      content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
-    } else if (response_.HeaderExists("Transfer-Encoding")) {
-      chunked_ = true;
-    }
-
-    std::string response_string;
-    response_string += "HTTP/1.";
-    response_string += '0' + response_.minor_version();
-    response_string += ' ';
-    ::sprintf_s(buffer_, kBufferSize, "%d ", response_.status());
-    response_string += buffer_;
-    response_string += response_.message();
-    response_string += "\x0D\x0A";
-    response_.SerializeHeaders(&response_string);
-    response_string += "\x0D\x0A";
-    if (response_string.size() > kBufferSize) {
-      delete this;
-      return;
-    }
-
-    ::memmove(buffer_, response_string.data(), response_string.size());
-
-    if (!client_->SendAsync(buffer_, response_string.size(), 0, this)) {
-      delete this;
-      return;
-    }
-  } else if (phase_ == ResponseBody) {
-    if (chunked_) {
-      if (content_length_ == -2) {
-        remote_buffer_.append(buffer_, length);
-
-        content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
-        if (content_length_ == -2) {
-          if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
-            delete this;
-            return;
-          }
-        } else {
-          if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0,
-                                  this)) {
-            delete this;
-            return;
-          }
-        }
-      } else if (content_length_ <= 0) {
-        delete this;
-        return;
-      } else {
-        if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0,
-                                this)) {
-            delete this;
-            return;
-        }
-      }
-    } else {
-      content_length_ -= length;
-
-      if (!client_->SendAsync(buffer_, length, 0, this)) {
-        delete this;
-        return;
-      }
-    }
+  case ResponseBody:
+    OnResponseBodyReceived(socket, error, length);
+    return;
   }
+
+  assert(false);
 }
 
 void HttpProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
@@ -215,161 +91,25 @@ void HttpProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
     return;
   }
 
-  if (phase_ == Request) {
-    phase_ = RequestBody;
+  switch (phase_) {
+  case Request:
+    OnRequestSent(socket, error, length);
+    return;
 
-    if (chunked_) {
-      content_length_ = ParseChunk(client_buffer_, &chunk_size_);
-      if (content_length_ == -2) {
-        if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this))
-          delete this;
-        return;
-      } else if (content_length_ <= 0) {
-        delete this;
-        return;
-      } else {
-        if (!remote_->SendAsync(client_buffer_.data(), content_length_, 0,
-                                this))
-          delete this;
-        return;
-      }
-    } else if (content_length_ > 0) {
-      size_t length = min(client_buffer_.size(), content_length_);
-      if (length > 0) {
-        ::memmove(buffer_, client_buffer_.data(), length);
-        client_buffer_.erase(0, length);
+  case RequestBody:
+    OnRequestBodySent(socket, error, length);
+    return;
 
-        if (!remote_->SendAsync(buffer_, length, 0, this)) {
-          delete this;
-          return;
-        }
-      } else {
-        if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
-          delete this;
-          return;
-        }
-      }
-    } else {
-      phase_ = Response;
-      if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
-        delete this;
-        return;
-      }
-    }
-  } else if (phase_ == RequestBody) {
-    if (chunked_) {
-      // XXX(dacci): what if length < content_length_
-      client_buffer_.erase(0, content_length_);
+  case Response:
+    OnResponseSent(socket, error, length);
+    return;
 
-      if (chunk_size_ == 0) {
-        phase_ = Response;
-        if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
-          delete this;
-        return;
-      }
-
-      content_length_ = ParseChunk(client_buffer_, &chunk_size_);
-      if (content_length_ == -2) {
-        if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this))
-          delete this;
-        return;
-      } else if (content_length_ <= 0) {
-        delete this;
-        return;
-      } else {
-        if (!remote_->SendAsync(client_buffer_.data(), content_length_, 0,
-                                this))
-          delete this;
-        return;
-      }
-    } else {
-      content_length_ -= length;
-      if (content_length_ > 0) {
-        if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
-          delete this;
-          return;
-        }
-      } else {
-        phase_ = Response;
-        if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
-          delete this;
-          return;
-        }
-      }
-    }
-  } else if (phase_ == Response) {
-    phase_ = ResponseBody;
-
-    if (chunked_) {
-      content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
-
-      if (content_length_ == -2) {
-        if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
-          delete this;
-        return;
-      } else if (content_length_ < 0) {
-        delete this;
-        return;
-      }
-
-      if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0,
-                              this))
-        delete this;
-      return;
-    } else if (content_length_ > 0) {
-      if (remote_buffer_.empty()) {
-        if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
-          delete this;
-          return;
-        }
-      } else {
-        content_length_ -= remote_buffer_.size();
-        if (!client_->SendAsync(remote_buffer_.data(), remote_buffer_.size(),
-                                0, this)) {
-          delete this;
-          return;
-        }
-      }
-    } else {
-      delete this;
-      return;
-    }
-  } else if (phase_ == ResponseBody) {
-    if (chunked_) {
-      // XXX(dacci): what if length < content_length_
-      remote_buffer_.erase(0, content_length_);
-
-      if (chunk_size_ == 0) {
-        delete this;
-        return;
-      }
-
-      content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
-      if (content_length_ == -2) {
-        if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
-          delete this;
-          return;
-        }
-      } else if (content_length_ <= 0) {
-        delete this;
-        return;
-      } else {
-        if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0,
-                                this)) {
-          delete this;
-          return;
-        }
-      }
-    } else if (content_length_ > 0) {
-      if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
-        delete this;
-        return;
-      }
-    } else {
-      delete this;
-      return;
-    }
+  case ResponseBody:
+    OnResponseBodySent(socket, error, length);
+    return;
   }
+
+  assert(false);
 }
 
 int64_t HttpProxySession::ParseChunk(const std::string& buffer,
@@ -415,4 +155,322 @@ int64_t HttpProxySession::ParseChunk(const std::string& buffer,
   ++end;
 
   return end - start;
+}
+
+void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
+                                         int length) {
+  client_buffer_.append(buffer_, length);
+  int result = request_.Parse(client_buffer_);
+  if (result == HttpRequest::kPartial) {
+    if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+      delete this;
+    return;
+  } else if (result <= 0) {
+    delete this;
+    return;
+  } else {
+    client_buffer_.erase(0, result);
+  }
+
+  content_length_ = 0;
+  chunked_ = false;
+  if (request_.HeaderExists("Content-Length")) {
+    const std::string& value = request_.GetHeader("Content-Length");
+    content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
+  } else if (request_.HeaderExists("Transfer-Encoding")) {
+    chunked_ = true;
+  }
+
+  if (!url_.CrackUrl(request_.path().c_str())) {
+    delete this;
+    return;
+  }
+
+  char service[8];
+  ::sprintf_s(service, "%d", url_.GetPortNumber());
+
+  if (!resolver_.Resolve(url_.GetHostName(), service)) {
+    delete this;
+    return;
+  }
+
+  remote_ = new AsyncSocket();
+  if (!remote_->ConnectAsync(*resolver_, this)) {
+    delete this;
+    return;
+  }
+}
+
+void HttpProxySession::OnRequestSent(AsyncSocket* socket, DWORD error,
+                                     int length) {
+  phase_ = RequestBody;
+
+  if (chunked_) {
+    content_length_ = ParseChunk(client_buffer_, &chunk_size_);
+    if (content_length_ == -2) {
+      if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+        delete this;
+      return;
+    } else if (content_length_ <= 0) {
+      delete this;
+      return;
+    } else {
+      if (!remote_->SendAsync(client_buffer_.data(), content_length_, 0, this))
+        delete this;
+      return;
+    }
+  } else if (content_length_ > 0) {
+    size_t length = min(client_buffer_.size(), content_length_);
+    if (length > 0) {
+      ::memmove(buffer_, client_buffer_.data(), length);
+      client_buffer_.erase(0, length);
+
+      if (!remote_->SendAsync(buffer_, length, 0, this)) {
+        delete this;
+        return;
+      }
+    } else {
+      if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+        delete this;
+        return;
+      }
+    }
+  } else {
+    phase_ = Response;
+    if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+      delete this;
+      return;
+    }
+  }
+}
+
+void HttpProxySession::OnRequestBodyReceived(AsyncSocket* socket, DWORD error,
+                                             int length) {
+  if (chunked_) {
+    client_buffer_.append(buffer_, length);
+
+    content_length_ = ParseChunk(client_buffer_, &chunk_size_);
+    if (content_length_ == -2) {
+      if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+        delete this;
+      return;
+    } else if (content_length_ <= 0) {
+      delete this;
+      return;
+    } else {
+      if (!remote_->SendAsync(client_buffer_.data(), content_length_, 0, this))
+        delete this;
+      return;
+    }
+  } else {
+    if (!remote_->SendAsync(buffer_, length, 0, this))
+      delete this;
+    return;
+  }
+}
+
+void HttpProxySession::OnRequestBodySent(AsyncSocket* socket, DWORD error,
+                                         int length) {
+  if (chunked_) {
+    // XXX(dacci): what if length < content_length_
+    client_buffer_.erase(0, content_length_);
+
+    if (chunk_size_ == 0) {
+      phase_ = Response;
+      if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+        delete this;
+      return;
+    }
+
+    content_length_ = ParseChunk(client_buffer_, &chunk_size_);
+    if (content_length_ == -2) {
+      if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+        delete this;
+      return;
+    } else if (content_length_ <= 0) {
+      delete this;
+      return;
+    } else {
+      if (!remote_->SendAsync(client_buffer_.data(), content_length_, 0, this))
+        delete this;
+      return;
+    }
+  } else {
+    content_length_ -= length;
+    if (content_length_ > 0) {
+      if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+        delete this;
+        return;
+      }
+    } else {
+      phase_ = Response;
+      if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+        delete this;
+        return;
+      }
+    }
+  }
+}
+
+void HttpProxySession::OnResponseReceived(AsyncSocket* socket, DWORD error,
+                                          int length) {
+  remote_buffer_.append(buffer_, length);
+  int result = response_.Parse(remote_buffer_);
+  if (result == HttpResponse::kPartial) {
+    if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+      delete this;
+    return;
+  } else if (result <= 0) {
+    delete this;
+    return;
+  } else {
+    remote_buffer_.erase(0, result);
+  }
+
+  content_length_ = 0;
+  chunked_ = false;
+  if (response_.HeaderExists("Content-Length")) {
+    const std::string& value = response_.GetHeader("Content-Length");
+    content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
+  } else if (response_.HeaderExists("Transfer-Encoding")) {
+    chunked_ = true;
+  }
+
+  std::string response_string;
+  response_string += "HTTP/1.";
+  response_string += '0' + response_.minor_version();
+  response_string += ' ';
+  ::sprintf_s(buffer_, kBufferSize, "%d ", response_.status());
+  response_string += buffer_;
+  response_string += response_.message();
+  response_string += "\x0D\x0A";
+  response_.SerializeHeaders(&response_string);
+  response_string += "\x0D\x0A";
+  if (response_string.size() > kBufferSize) {
+    delete this;
+    return;
+  }
+
+  ::memmove(buffer_, response_string.data(), response_string.size());
+
+  if (!client_->SendAsync(buffer_, response_string.size(), 0, this)) {
+    delete this;
+    return;
+  }
+}
+
+void HttpProxySession::OnResponseSent(AsyncSocket* socket, DWORD error,
+                                      int length) {
+  phase_ = ResponseBody;
+
+  if (chunked_) {
+    content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
+
+    if (content_length_ == -2) {
+      if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+        delete this;
+      return;
+    } else if (content_length_ < 0) {
+      delete this;
+      return;
+    }
+
+    if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0, this))
+      delete this;
+    return;
+  } else if (content_length_ > 0) {
+    if (remote_buffer_.empty()) {
+      if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+        delete this;
+        return;
+      }
+    } else {
+      content_length_ -= remote_buffer_.size();
+      if (!client_->SendAsync(remote_buffer_.data(), remote_buffer_.size(), 0,
+                              this)) {
+        delete this;
+        return;
+      }
+    }
+  } else {
+    delete this;
+    return;
+  }
+}
+
+void HttpProxySession::OnResponseBodyReceived(AsyncSocket* socket, DWORD error,
+                                              int length) {
+  if (chunked_) {
+    if (content_length_ == -2) {
+      remote_buffer_.append(buffer_, length);
+
+      content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
+      if (content_length_ == -2) {
+        if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+          delete this;
+          return;
+        }
+      } else {
+        if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0,
+                                this)) {
+          delete this;
+          return;
+        }
+      }
+    } else if (content_length_ <= 0) {
+      delete this;
+      return;
+    } else {
+      if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0,
+          this)) {
+        delete this;
+        return;
+      }
+    }
+  } else {
+    content_length_ -= length;
+
+    if (!client_->SendAsync(buffer_, length, 0, this)) {
+      delete this;
+      return;
+    }
+  }
+}
+
+void HttpProxySession::OnResponseBodySent(AsyncSocket* socket, DWORD error,
+                                          int length) {
+  if (chunked_) {
+    // XXX(dacci): what if length < content_length_
+    remote_buffer_.erase(0, content_length_);
+
+    if (chunk_size_ == 0) {
+      delete this;
+      return;
+    }
+
+    content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
+    if (content_length_ == -2) {
+      if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+        delete this;
+        return;
+      }
+    } else if (content_length_ <= 0) {
+      delete this;
+      return;
+    } else {
+      if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0,
+                              this)) {
+        delete this;
+        return;
+      }
+    }
+  } else if (content_length_ > 0) {
+    if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
+      delete this;
+      return;
+    }
+  } else {
+    delete this;
+    return;
+  }
 }
