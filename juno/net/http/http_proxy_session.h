@@ -47,6 +47,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   AsyncSocket* client_;
   std::string client_buffer_;
   HttpRequest request_;
+  bool tunnel_;
   CUrl url_;
   madoka::net::AddressInfo resolver_;
 

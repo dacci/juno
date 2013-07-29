@@ -162,6 +162,7 @@
     <ClCompile Include="net\http\http_proxy_session.cpp" />
     <ClCompile Include="net\http\http_request.cpp" />
     <ClCompile Include="net\http\http_response.cpp" />
+    <ClCompile Include="net\tunneling_service.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="net\async_server_socket.h" />
@@ -171,6 +172,7 @@
     <ClInclude Include="net\http\http_proxy_session.h" />
     <ClInclude Include="net\http\http_request.h" />
     <ClInclude Include="net\http\http_response.h" />
+    <ClInclude Include="net\tunneling_service.h" />
     <ClInclude Include="res\resource.h" />
   </ItemGroup>
   <ItemGroup>

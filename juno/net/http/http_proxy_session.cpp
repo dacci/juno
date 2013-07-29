@@ -4,6 +4,8 @@
 
 #include <assert.h>
 
+#include "net/tunneling_service.h"
+
 HttpProxySession::HttpProxySession(AsyncSocket* client)
     : client_(client),
       remote_(),
@@ -36,24 +38,42 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
   }
 
   std::string request_string;
-  request_string += request_.method();
-  request_string += ' ';
-  request_string += url_.GetUrlPath();
-  request_string += " HTTP/1.";
-  request_string += '0' + request_.minor_version();
-  request_string += "\x0D\x0A";
-  request_.SerializeHeaders(&request_string);
-  request_string += "\x0D\x0A";
-  if (request_string.size() > kBufferSize) {
-    delete this;
-    return;
-  }
 
-  ::memmove(buffer_, request_string.data(), request_string.size());
+  if (tunnel_) {
+    if (!TunnelingService::Bind(client_, remote_)) {
+      delete this;
+      return;
+    }
 
-  if (!remote_->SendAsync(buffer_, request_string.size(), 0, this)) {
-    delete this;
-    return;
+    request_string += "HTTP/1.1 200 Connection Established";
+    request_string += "\x0D\x0A";
+    request_string += "\x0D\x0A";
+    ::memmove(buffer_, request_string.data(), request_string.size());
+
+    if (!client_->SendAsync(buffer_, request_string.size(), 0, this)) {
+      delete this;
+      return;
+    }
+  } else {
+    request_string += request_.method();
+    request_string += ' ';
+    request_string += url_.GetUrlPath();
+    request_string += " HTTP/1.";
+    request_string += '0' + request_.minor_version();
+    request_string += "\x0D\x0A";
+    request_.SerializeHeaders(&request_string);
+    request_string += "\x0D\x0A";
+    if (request_string.size() > kBufferSize) {
+      delete this;
+      return;
+    }
+
+    ::memmove(buffer_, request_string.data(), request_string.size());
+
+    if (!remote_->SendAsync(buffer_, request_string.size(), 0, this)) {
+      delete this;
+      return;
+    }
   }
 }
 
@@ -172,6 +192,8 @@ void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
     client_buffer_.erase(0, result);
   }
 
+  tunnel_ = request_.method().compare("CONNECT") == 0;
+
   content_length_ = 0;
   chunked_ = false;
   if (request_.HeaderExists("Content-Length")) {
@@ -186,10 +208,15 @@ void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
     return;
   }
 
-  char service[8];
-  ::sprintf_s(service, "%d", url_.GetPortNumber());
-
-  if (!resolver_.Resolve(url_.GetHostName(), service)) {
+  bool resolved = false;
+  if (tunnel_) {
+    resolved = resolver_.Resolve(url_.GetSchemeName(), url_.GetHostName());
+  } else {
+    char service[8];
+    ::sprintf_s(service, "%d", url_.GetPortNumber());
+    resolved = resolver_.Resolve(url_.GetHostName(), service);
+  }
+  if (!resolved) {
     delete this;
     return;
   }
@@ -205,7 +232,12 @@ void HttpProxySession::OnRequestSent(AsyncSocket* socket, DWORD error,
                                      int length) {
   phase_ = RequestBody;
 
-  if (chunked_) {
+  if (tunnel_) {
+    client_ = NULL;
+    remote_ = NULL;
+    delete this;
+    return;
+  } else if (chunked_) {
     content_length_ = ParseChunk(client_buffer_, &chunk_size_);
     if (content_length_ == -2) {
       if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this))
