@@ -45,8 +45,8 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
       return;
     }
 
-    request_string += "HTTP/1.1 200 Connection Established";
-    request_string += "\x0D\x0A";
+    request_string += "HTTP/1.1 200 Connection Established\x0D\x0A";
+    request_string += "Content-Length: 0\x0D\x0A";
     request_string += "\x0D\x0A";
     ::memmove(buffer_, request_string.data(), request_string.size());
 
@@ -58,6 +58,7 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     request_string += request_.method();
     request_string += ' ';
     request_string += url_.GetUrlPath();
+    request_string += url_.GetExtraInfo();
     request_string += " HTTP/1.";
     request_string += '0' + request_.minor_version();
     request_string += "\x0D\x0A";
