@@ -4,6 +4,7 @@
 
 #include <assert.h>
 
+#include "misc/string_util.h"
 #include "net/tunneling_service.h"
 
 HttpProxySession::HttpProxySession(AsyncSocket* client)
@@ -195,13 +196,15 @@ void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
 
   tunnel_ = request_.method().compare("CONNECT") == 0;
 
+  // RFC 2616 - 4.4 Message Length
   content_length_ = 0;
   chunked_ = false;
-  if (request_.HeaderExists("Content-Length")) {
+  if (request_.HeaderExists("Transfer-Encoding") &&
+      ::_stricmp(request_.GetHeader("Transfer-Encoding"), "identity") != 0) {
+    chunked_ = true;
+  } else if (request_.HeaderExists("Content-Length")) {
     const std::string& value = request_.GetHeader("Content-Length");
     content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
-  } else if (request_.HeaderExists("Transfer-Encoding")) {
-    chunked_ = true;
   }
 
   if (!url_.CrackUrl(request_.path().c_str())) {
@@ -360,13 +363,15 @@ void HttpProxySession::OnResponseReceived(AsyncSocket* socket, DWORD error,
     remote_buffer_.erase(0, result);
   }
 
-  content_length_ = 0;
+  // RFC 2616 - 4.4 Message Length
+  content_length_ = -2;
   chunked_ = false;
-  if (response_.HeaderExists("Content-Length")) {
+  if (response_.HeaderExists("Transfer-Encoding") &&
+      ::_stricmp(response_.GetHeader("Transfer-Encoding"), "identity") != 0) {
+    chunked_ = true;
+  } else if (response_.HeaderExists("Content-Length")) {
     const std::string& value = response_.GetHeader("Content-Length");
     content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
-  } else if (response_.HeaderExists("Transfer-Encoding")) {
-    chunked_ = true;
   }
 
   std::string response_string;
@@ -411,7 +416,13 @@ void HttpProxySession::OnResponseSent(AsyncSocket* socket, DWORD error,
     if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0, this))
       delete this;
     return;
-  } else if (content_length_ > 0) {
+  } else {
+    if (content_length_ == 0) {
+      // more content, session end
+      delete this;
+      return;
+    }
+
     if (remote_buffer_.empty()) {
       if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
         delete this;
@@ -425,9 +436,6 @@ void HttpProxySession::OnResponseSent(AsyncSocket* socket, DWORD error,
         return;
       }
     }
-  } else {
-    delete this;
-    return;
   }
 }
 
@@ -461,8 +469,6 @@ void HttpProxySession::OnResponseBodyReceived(AsyncSocket* socket, DWORD error,
       }
     }
   } else {
-    content_length_ -= length;
-
     if (!client_->SendAsync(buffer_, length, 0, this)) {
       delete this;
       return;
@@ -497,13 +503,19 @@ void HttpProxySession::OnResponseBodySent(AsyncSocket* socket, DWORD error,
         return;
       }
     }
-  } else if (content_length_ > 0) {
+  } else {
+    if (content_length_ > 0)
+      content_length_ -= length;
+
+    if (content_length_ == 0) {
+      // no more content, session end
+      delete this;
+      return;
+    }
+
     if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
       delete this;
       return;
     }
-  } else {
-    delete this;
-    return;
   }
 }
