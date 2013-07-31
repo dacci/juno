@@ -418,7 +418,7 @@ void HttpProxySession::OnResponseSent(AsyncSocket* socket, DWORD error,
     return;
   } else {
     if (content_length_ == 0) {
-      // more content, session end
+      // no content, session end
       delete this;
       return;
     }
@@ -429,7 +429,6 @@ void HttpProxySession::OnResponseSent(AsyncSocket* socket, DWORD error,
         return;
       }
     } else {
-      content_length_ -= remote_buffer_.size();
       if (!client_->SendAsync(remote_buffer_.data(), remote_buffer_.size(), 0,
                               this)) {
         delete this;
@@ -463,7 +462,7 @@ void HttpProxySession::OnResponseBodyReceived(AsyncSocket* socket, DWORD error,
       return;
     } else {
       if (!client_->SendAsync(remote_buffer_.data(), content_length_, 0,
-          this)) {
+                              this)) {
         delete this;
         return;
       }
@@ -504,13 +503,14 @@ void HttpProxySession::OnResponseBodySent(AsyncSocket* socket, DWORD error,
       }
     }
   } else {
-    if (content_length_ > 0)
-      content_length_ -= length;
+    if (content_length_ > 0) {
+      if (content_length_ <= length) {
+        // no more content, session end
+        delete this;
+        return;
+      }
 
-    if (content_length_ == 0) {
-      // no more content, session end
-      delete this;
-      return;
+      content_length_ -= length;
     }
 
     if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this)) {
