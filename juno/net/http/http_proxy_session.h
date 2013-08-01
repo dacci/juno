@@ -29,8 +29,21 @@ class HttpProxySession : public AsyncSocket::Listener {
   };
 
   static const size_t kBufferSize = 4096;
+  static const std::string kConnection;
+  static const std::string kContentEncoding;
+  static const std::string kContentLength;
+  static const std::string kKeepAlive;
+  static const std::string kProxyAuthenticate;
+  static const std::string kProxyAuthorization;
+  static const std::string kProxyConnection;
+  static const std::string kTransferEncoding;
 
   static int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size);
+
+  void ProcessRequestHeader();
+  void ProcessResponseHeader();
+  void ProcessMessageLength(HttpHeaders* headers);
+  void ProcessHopByHopHeaders(HttpHeaders* headers);
 
   void OnRequestReceived(AsyncSocket* socket, DWORD error, int length);
   void OnRequestSent(AsyncSocket* socket, DWORD error, int length);
@@ -60,6 +73,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   int64_t content_length_;
   bool chunked_;
   int64_t chunk_size_;
+  bool close_client_;
 };
 
 #endif  // JUNO_NET_HTTP_HTTP_PROXY_SESSION_H_

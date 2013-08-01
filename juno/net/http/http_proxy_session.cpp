@@ -7,11 +7,21 @@
 #include "misc/string_util.h"
 #include "net/tunneling_service.h"
 
+const std::string HttpProxySession::kConnection("Connection");
+const std::string HttpProxySession::kContentEncoding("Content-Encoding");
+const std::string HttpProxySession::kContentLength("Content-Length");
+const std::string HttpProxySession::kKeepAlive("Keep-Alive");
+const std::string HttpProxySession::kProxyAuthenticate("Proxy-Authenticate");
+const std::string HttpProxySession::kProxyAuthorization("Proxy-Authorization");
+const std::string HttpProxySession::kProxyConnection("Proxy-Connection");
+const std::string HttpProxySession::kTransferEncoding("Transfer-Encoding");
+
 HttpProxySession::HttpProxySession(AsyncSocket* client)
     : client_(client),
       remote_(),
       buffer_(new char[kBufferSize]),
-      phase_(Request) {
+      phase_(Request),
+      close_client_() {
 }
 
 HttpProxySession::~HttpProxySession() {
@@ -179,6 +189,69 @@ int64_t HttpProxySession::ParseChunk(const std::string& buffer,
   return end - start;
 }
 
+void HttpProxySession::ProcessRequestHeader() {
+  content_length_ = 0;
+  chunked_ = false;
+  ProcessMessageLength(&request_);
+
+  ProcessHopByHopHeaders(&request_);
+
+  // TODO(dacci): process user defined header modification
+}
+
+void HttpProxySession::ProcessResponseHeader() {
+  content_length_ = -2;
+  chunked_ = false;
+  ProcessMessageLength(&response_);
+
+  ProcessHopByHopHeaders(&response_);
+
+  // TODO(dacci): process user defined header modification
+}
+
+void HttpProxySession::ProcessMessageLength(HttpHeaders* headers) {
+  // RFC 2616 - 4.4 Message Length
+  if (headers->HeaderExists(kTransferEncoding) &&
+      ::_stricmp(headers->GetHeader(kTransferEncoding), "identity") != 0) {
+    chunked_ = true;
+  } else if (headers->HeaderExists(kContentLength)) {
+    content_length_ = std::stoll(headers->GetHeader(kContentLength));
+  }
+}
+
+void HttpProxySession::ProcessHopByHopHeaders(HttpHeaders* headers) {
+  if (headers->HeaderExists(kConnection)) {
+    const std::string& connection = headers->GetHeader(kConnection);
+    size_t start = 0;
+
+    while (true) {
+      size_t end = connection.find_first_of(',', start);
+      size_t length = std::string::npos;
+      if (end != std::string::npos)
+        length = end - start;
+
+      std::string token = connection.substr(start, length);
+      if (::_stricmp(token.c_str(), "close") == 0)
+        close_client_ = true;
+      else
+        headers->RemoveHeader(token);
+
+      if (end == std::string::npos)
+        break;
+
+      start = connection.find_first_not_of(" \t", end + 1);
+    }
+
+    headers->RemoveHeader(kConnection);
+  }
+
+  // remove other hop-by-hop headers
+  headers->RemoveHeader(kKeepAlive);
+  headers->RemoveHeader(kProxyAuthenticate);
+  headers->RemoveHeader(kProxyAuthorization);
+  headers->RemoveHeader(kProxyConnection);
+}
+
 void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
                                          int length) {
   client_buffer_.append(buffer_, length);
@@ -196,21 +269,12 @@ void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
 
   tunnel_ = request_.method().compare("CONNECT") == 0;
 
-  // RFC 2616 - 4.4 Message Length
-  content_length_ = 0;
-  chunked_ = false;
-  if (request_.HeaderExists("Transfer-Encoding") &&
-      ::_stricmp(request_.GetHeader("Transfer-Encoding"), "identity") != 0) {
-    chunked_ = true;
-  } else if (request_.HeaderExists("Content-Length")) {
-    const std::string& value = request_.GetHeader("Content-Length");
-    content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
-  }
-
   if (!url_.CrackUrl(request_.path().c_str())) {
     delete this;
     return;
   }
+
+  ProcessRequestHeader();
 
   bool resolved = false;
   if (tunnel_) {
@@ -363,16 +427,7 @@ void HttpProxySession::OnResponseReceived(AsyncSocket* socket, DWORD error,
     remote_buffer_.erase(0, result);
   }
 
-  // RFC 2616 - 4.4 Message Length
-  content_length_ = -2;
-  chunked_ = false;
-  if (response_.HeaderExists("Transfer-Encoding") &&
-      ::_stricmp(response_.GetHeader("Transfer-Encoding"), "identity") != 0) {
-    chunked_ = true;
-  } else if (response_.HeaderExists("Content-Length")) {
-    const std::string& value = response_.GetHeader("Content-Length");
-    content_length_ = ::_strtoi64(value.c_str(), NULL, 10);
-  }
+  ProcessResponseHeader();
 
   std::string response_string;
   response_string += "HTTP/1.";
