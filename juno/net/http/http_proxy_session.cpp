@@ -193,6 +193,8 @@ void HttpProxySession::ProcessRequestHeader() {
   content_length_ = 0;
   chunked_ = false;
   ProcessMessageLength(&request_);
+  if (request_.minor_version() < 1)
+    close_client_ = true;
 
   ProcessHopByHopHeaders(&request_);
 
@@ -203,8 +205,13 @@ void HttpProxySession::ProcessResponseHeader() {
   content_length_ = -2;
   chunked_ = false;
   ProcessMessageLength(&response_);
+  if (!chunked_ && content_length_ < 0)
+    close_client_ = true;
 
   ProcessHopByHopHeaders(&response_);
+
+  if (close_client_)
+    response_.AddHeader(kConnection, "close");
 
   // TODO(dacci): process user defined header modification
 }
@@ -252,6 +259,83 @@ void HttpProxySession::ProcessHopByHopHeaders(HttpHeaders* headers) {
   headers->RemoveHeader(kProxyConnection);
 }
 
+void HttpProxySession::EndSession() {
+  if (close_client_) {
+    delete this;
+    return;
+  }
+
+  if (remote_ != NULL) {
+    remote_->Shutdown(SD_BOTH);
+    delete remote_;
+    remote_ = NULL;
+  }
+
+  request_.Clear();
+  url_.Clear();
+  resolver_.Free();
+
+  remote_buffer_.clear();
+  response_.Clear();
+
+  phase_ = Request;
+  close_client_ = false;
+
+  if (client_buffer_.empty()) {
+    Start();
+  } else {
+    int length = client_buffer_.size();
+    ::memmove(buffer_, client_buffer_.data(), length);
+    client_buffer_.clear();
+
+    FireReceived(client_, 0, length);
+  }
+}
+
+bool HttpProxySession::FireReceived(AsyncSocket* socket, DWORD error,
+                                    int length) {
+  EventArgs* args = new EventArgs;
+  if (args == NULL)
+    return false;
+
+  ::memset(args, 0, sizeof(*args));
+
+  args->event = Received;
+  args->session = this;
+  args->socket = socket;
+  args->error = error;
+  args->length = length;
+
+  if (!::QueueUserWorkItem(FireEvent, args, 0)) {
+    delete args;
+    return false;
+  }
+
+  return true;
+}
+
+DWORD CALLBACK HttpProxySession::FireEvent(void* param) {
+  EventArgs* args = static_cast<EventArgs*>(param);
+
+  switch (args->event) {
+  case Connected:
+    args->session->OnConnected(args->socket, args->error);
+    break;
+
+  case Received:
+    args->session->OnReceived(args->socket, args->error, args->length);
+    break;
+
+  case Sent:
+    args->session->OnSent(args->socket, args->error, args->length);
+    break;
+  }
+
+  delete args;
+
+  return 0;
+}
+
 void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
                                          int length) {
   client_buffer_.append(buffer_, length);
@@ -270,6 +354,10 @@ void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
   tunnel_ = request_.method().compare("CONNECT") == 0;
 
   if (!url_.CrackUrl(request_.path().c_str())) {
+    delete this;
+    return;
+  }
+  if (!tunnel_ && url_.GetScheme() != ATL_URL_SCHEME_HTTP) {
     delete this;
     return;
   }
@@ -474,7 +562,7 @@ void HttpProxySession::OnResponseSent(AsyncSocket* socket, DWORD error,
   } else {
     if (content_length_ == 0) {
       // no content, session end
-      delete this;
+      EndSession();
       return;
     }
 
@@ -537,7 +625,8 @@ void HttpProxySession::OnResponseBodySent(AsyncSocket* socket, DWORD error,
     remote_buffer_.erase(0, content_length_);
 
     if (chunk_size_ == 0) {
-      delete this;
+      // final chunk have sent, session end
+      EndSession();
       return;
     }
 
@@ -561,7 +650,7 @@ void HttpProxySession::OnResponseBodySent(AsyncSocket* socket, DWORD error,
     if (content_length_ > 0) {
       if (content_length_ <= length) {
         // no more content, session end
-        delete this;
+        EndSession();
         return;
       }
 

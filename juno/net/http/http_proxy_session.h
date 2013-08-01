@@ -28,6 +28,18 @@ class HttpProxySession : public AsyncSocket::Listener {
     Request, RequestBody, Response, ResponseBody,
   };
 
+  enum Event {
+    Connected, Received, Sent,
+  };
+
+  struct EventArgs {
+    Event event;
+    HttpProxySession* session;
+    AsyncSocket* socket;
+    DWORD error;
+    int length;
+  };
+
   static const size_t kBufferSize = 4096;
   static const std::string kConnection;
   static const std::string kContentEncoding;
@@ -44,6 +56,11 @@ class HttpProxySession : public AsyncSocket::Listener {
   void ProcessResponseHeader();
   void ProcessMessageLength(HttpHeaders* headers);
   void ProcessHopByHopHeaders(HttpHeaders* headers);
+
+  void EndSession();
+
+  bool FireReceived(AsyncSocket* socket, DWORD error, int length);
+  static DWORD CALLBACK FireEvent(void* param);
 
   void OnRequestReceived(AsyncSocket* socket, DWORD error, int length);
   void OnRequestSent(AsyncSocket* socket, DWORD error, int length);
