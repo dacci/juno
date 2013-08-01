@@ -23,6 +23,8 @@ int HttpRequest::Parse(const char* data, size_t length) {
                                    &path, &path_length, &minor_version,
                                    headers, &header_count, 0);
   if (result > 0) {
+    Clear();
+
     method_.assign(method, method_length);
     path_.assign(path, path_length);
     minor_version_ = minor_version;
@@ -31,4 +33,11 @@ int HttpRequest::Parse(const char* data, size_t length) {
   }
 
   return result;
+}
+
+void HttpRequest::Clear() {
+  method_.clear();
+  path_.clear();
+  minor_version_ = -1;
+  ClearHeaders();
 }

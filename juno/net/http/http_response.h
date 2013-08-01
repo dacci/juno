@@ -20,6 +20,8 @@ class HttpResponse : public HttpHeaders {
     return Parse(data.data(), data.size());
   }
 
+  void Clear();
+
   int minor_version() const {
     return minor_version_;
   }

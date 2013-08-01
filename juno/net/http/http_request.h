@@ -20,6 +20,8 @@ class HttpRequest : public HttpHeaders {
     return Parse(data.data(), data.size());
   }
 
+  void Clear();
+
   const std::string& method() const {
     return method_;
   }

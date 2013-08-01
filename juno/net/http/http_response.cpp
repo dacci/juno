@@ -22,6 +22,8 @@ int HttpResponse::Parse(const char* data, size_t length) {
                                     &message, &message_length,
                                     headers, &header_count, 0);
   if (result > 0) {
+    Clear();
+
     minor_version_ = minor_version;
     status_ = status;
     message_.assign(message, message_length);
@@ -30,4 +32,11 @@ int HttpResponse::Parse(const char* data, size_t length) {
   }
 
   return result;
+}
+
+void HttpResponse::Clear() {
+  minor_version_ = -1;
+  status_ = -1;
+  message_.clear();
+  ClearHeaders();
 }
