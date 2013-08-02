@@ -3,9 +3,9 @@
 #ifndef JUNO_NET_TUNNELING_SERVICE_H_
 #define JUNO_NET_TUNNELING_SERVICE_H_
 
-#include "net/async_socket.h"
-
 #include <map>
+
+#include "net/async_socket.h"
 
 class TunnelingService : AsyncSocket::Listener {
  public:
