@@ -44,7 +44,7 @@ bool HttpProxySession::Start() {
 
 void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
   if (error != 0) {
-    delete this;
+    SendError(HTTP::BAD_GATEWAY);
     return;
   }
 
@@ -52,7 +52,7 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 
   if (tunnel_) {
     if (!TunnelingService::Bind(client_, remote_)) {
-      delete this;
+      SendError(HTTP::INTERNAL_SERVER_ERROR);
       return;
     }
 
@@ -76,14 +76,14 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     request_.SerializeHeaders(&request_string);
     request_string += "\x0D\x0A";
     if (request_string.size() > kBufferSize) {
-      delete this;
+      SendError(HTTP::REQUEST_ENTITY_TOO_LARGE);
       return;
     }
 
     ::memmove(buffer_, request_string.data(), request_string.size());
 
     if (!remote_->SendAsync(buffer_, request_string.size(), 0, this)) {
-      delete this;
+      SendError(HTTP::INTERNAL_SERVER_ERROR);
       return;
     }
   }
@@ -91,11 +91,6 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 
 void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
                                   int length) {
-  if (error != 0 || length == 0) {
-    delete this;
-    return;
-  }
-
   switch (phase_) {
   case Request:
     OnRequestReceived(socket, error, length);
@@ -118,11 +113,6 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
 }
 
 void HttpProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
-  if (error != 0 || length == 0) {
-    delete this;
-    return;
-  }
-
   switch (phase_) {
   case Request:
     OnRequestSent(socket, error, length);
@@ -138,6 +128,10 @@ void HttpProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
 
   case ResponseBody:
     OnResponseBodySent(socket, error, length);
+    return;
+
+  case Error:
+    delete this;
     return;
   }
 
@@ -259,6 +253,23 @@ void HttpProxySession::ProcessHopByHopHeaders(HttpHeaders* headers) {
   headers->RemoveHeader(kProxyConnection);
 }
 
+void HttpProxySession::SendError(HTTP::StatusCode status) {
+  phase_ = Error;
+  close_client_ = true;
+
+  const char* message = HTTP::GetStatusMessage(status);
+  if (message == NULL)
+    message = HTTP::GetStatusMessage(HTTP::INTERNAL_SERVER_ERROR);
+
+  int length = ::sprintf_s(buffer_, kBufferSize,
+                           "HTTP/1.1 %d %s\x0D\x0A"
+                           "Content-Length: 0\x0D\x0A"
+                           "Connection: close\x0D\x0A"
+                           "\x0D\x0A", status, message);
+  if (length <= 0 || !client_->SendAsync(buffer_, length, 0, this))
+    delete this;
+}
+
 void HttpProxySession::EndSession() {
   if (close_client_) {
     delete this;
@@ -338,31 +349,41 @@ DWORD CALLBACK HttpProxySession::FireEvent(void* param) {
 
 void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
                                          int length) {
+  if (error != 0 || length == 0) {
+    delete this;
+    return;
+  }
+
   client_buffer_.append(buffer_, length);
+  if (client_buffer_.size() > kBufferSize) {
+    SendError(HTTP::REQUEST_ENTITY_TOO_LARGE);
+    return;
+  }
+
   int result = request_.Parse(client_buffer_);
   if (result == HttpRequest::kPartial) {
     if (!client_->ReceiveAsync(buffer_, kBufferSize, 0, this))
       delete this;
     return;
   } else if (result <= 0) {
-    delete this;
+    SendError(HTTP::BAD_REQUEST);
     return;
   } else {
     client_buffer_.erase(0, result);
   }
 
+  ProcessRequestHeader();
+
   tunnel_ = request_.method().compare("CONNECT") == 0;
 
   if (!url_.CrackUrl(request_.path().c_str())) {
-    delete this;
+    SendError(HTTP::BAD_REQUEST);
     return;
   }
   if (!tunnel_ && url_.GetScheme() != ATL_URL_SCHEME_HTTP) {
-    delete this;
+    SendError(HTTP::NOT_IMPLEMENTED);
     return;
   }
-
-  ProcessRequestHeader();
 
   bool resolved = false;
   if (tunnel_) {
@@ -373,19 +394,24 @@ void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
     resolved = resolver_.Resolve(url_.GetHostName(), service);
   }
   if (!resolved) {
-    delete this;
+    SendError(HTTP::BAD_GATEWAY);
     return;
   }
 
   remote_ = new AsyncSocket();
   if (!remote_->ConnectAsync(*resolver_, this)) {
-    delete this;
+    SendError(HTTP::INTERNAL_SERVER_ERROR);
     return;
   }
 }
 
 void HttpProxySession::OnRequestSent(AsyncSocket* socket, DWORD error,
                                      int length) {
+  if (error != 0 || length == 0) {
+    SendError(HTTP::SERVICE_UNAVAILABLE);
+    return;
+  }
+
   phase_ = RequestBody;
 
   if (tunnel_) {
@@ -420,11 +446,16 @@ void HttpProxySession::OnRequestSent(AsyncSocket* socket, DWORD error,
       return;
   }
 
-  delete this;
+  SendError(HTTP::INTERNAL_SERVER_ERROR);
 }
 
 void HttpProxySession::OnRequestBodyReceived(AsyncSocket* socket, DWORD error,
                                              int length) {
+  if (error != 0 || length == 0) {
+    delete this;
+    return;
+  }
+
   if (chunked_) {
     client_buffer_.append(buffer_, length);
 
@@ -441,11 +472,16 @@ void HttpProxySession::OnRequestBodyReceived(AsyncSocket* socket, DWORD error,
       return;
   }
 
-  delete this;
+  SendError(HTTP::INTERNAL_SERVER_ERROR);
 }
 
 void HttpProxySession::OnRequestBodySent(AsyncSocket* socket, DWORD error,
                                          int length) {
+  if (error != 0 || length == 0) {
+    SendError(HTTP::SERVICE_UNAVAILABLE);
+    return;
+  }
+
   if (chunked_) {
     // XXX(dacci): what if length < content_length_
     client_buffer_.erase(0, content_length_);
@@ -476,19 +512,24 @@ void HttpProxySession::OnRequestBodySent(AsyncSocket* socket, DWORD error,
     }
   }
 
-  delete this;
+  SendError(HTTP::INTERNAL_SERVER_ERROR);
 }
 
 void HttpProxySession::OnResponseReceived(AsyncSocket* socket, DWORD error,
                                           int length) {
+  if (error != 0 || length == 0) {
+    SendError(HTTP::SERVICE_UNAVAILABLE);
+    return;
+  }
+
   remote_buffer_.append(buffer_, length);
   int result = response_.Parse(remote_buffer_);
   if (result == HttpResponse::kPartial) {
     if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
-      delete this;
+      SendError(HTTP::INTERNAL_SERVER_ERROR);
     return;
   } else if (result <= 0) {
-    delete this;
+    SendError(HTTP::BAD_GATEWAY);
     return;
   } else {
     remote_buffer_.erase(0, result);
@@ -507,7 +548,7 @@ void HttpProxySession::OnResponseReceived(AsyncSocket* socket, DWORD error,
   response_.SerializeHeaders(&response_string);
   response_string += "\x0D\x0A";
   if (response_string.size() > kBufferSize) {
-    delete this;
+    SendError(HTTP::BAD_GATEWAY);
     return;
   }
 
@@ -521,6 +562,11 @@ void HttpProxySession::OnResponseReceived(AsyncSocket* socket, DWORD error,
 
 void HttpProxySession::OnResponseSent(AsyncSocket* socket, DWORD error,
                                       int length) {
+  if (error != 0 || length == 0) {
+    delete this;
+    return;
+  }
+
   phase_ = ResponseBody;
 
   if (chunked_) {
@@ -555,6 +601,11 @@ void HttpProxySession::OnResponseSent(AsyncSocket* socket, DWORD error,
 
 void HttpProxySession::OnResponseBodyReceived(AsyncSocket* socket, DWORD error,
                                               int length) {
+  if (error != 0 || length == 0) {
+    delete this;
+    return;
+  }
+
   if (chunked_) {
     remote_buffer_.append(buffer_, length);
 
@@ -576,6 +627,11 @@ void HttpProxySession::OnResponseBodyReceived(AsyncSocket* socket, DWORD error,
 
 void HttpProxySession::OnResponseBodySent(AsyncSocket* socket, DWORD error,
                                           int length) {
+  if (error != 0 || length == 0) {
+    delete this;
+    return;
+  }
+
   if (chunked_) {
     // XXX(dacci): what if length < content_length_
     remote_buffer_.erase(0, content_length_);

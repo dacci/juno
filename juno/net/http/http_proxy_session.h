@@ -11,6 +11,7 @@
 #include "net/async_socket.h"
 #include "net/http/http_request.h"
 #include "net/http/http_response.h"
+#include "net/http/http_status.h"
 
 class HttpProxySession : public AsyncSocket::Listener {
  public:
@@ -25,7 +26,7 @@ class HttpProxySession : public AsyncSocket::Listener {
 
  private:
   enum Phase {
-    Request, RequestBody, Response, ResponseBody,
+    Request, RequestBody, Response, ResponseBody, Error,
   };
 
   enum Event {
@@ -57,6 +58,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   void ProcessMessageLength(HttpHeaders* headers);
   void ProcessHopByHopHeaders(HttpHeaders* headers);
 
+  void SendError(HTTP::StatusCode status);
   void EndSession();
 
   bool FireReceived(AsyncSocket* socket, DWORD error, int length);
