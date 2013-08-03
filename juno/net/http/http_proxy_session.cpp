@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include "misc/string_util.h"
+#include "net/http/http_proxy.h"
 #include "net/tunneling_service.h"
 
 const std::string HttpProxySession::kConnection("Connection");
@@ -17,8 +18,9 @@ const std::string HttpProxySession::kProxyAuthorization("Proxy-Authorization");
 const std::string HttpProxySession::kProxyConnection("Proxy-Connection");
 const std::string HttpProxySession::kTransferEncoding("Transfer-Encoding");
 
-HttpProxySession::HttpProxySession(AsyncSocket* client)
-    : client_(client),
+HttpProxySession::HttpProxySession(HttpProxy* proxy, AsyncSocket* client)
+    : proxy_(proxy),
+      client_(client),
       remote_(),
       buffer_(new char[kBufferSize]),
       phase_(Request),
@@ -27,6 +29,8 @@ HttpProxySession::HttpProxySession(AsyncSocket* client)
 }
 
 HttpProxySession::~HttpProxySession() {
+  proxy_->EndSession(this);
+
   if (timer_ != NULL) {
     ::DeleteTimerQueueTimer(NULL, timer_, INVALID_HANDLE_VALUE);
     timer_ = NULL;
@@ -52,6 +56,14 @@ HttpProxySession::~HttpProxySession() {
 
 bool HttpProxySession::Start() {
   return ReceiveAsync(client_, 0);
+}
+
+void HttpProxySession::Stop() {
+  if (client_ != NULL)
+    client_->Shutdown(SD_BOTH);
+
+  if (remote_ != NULL)
+    remote_->Shutdown(SD_BOTH);
 }
 
 void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {

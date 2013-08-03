@@ -13,12 +13,15 @@
 #include "net/http/http_response.h"
 #include "net/http/http_status.h"
 
+class HttpProxy;
+
 class HttpProxySession : public AsyncSocket::Listener {
  public:
-  explicit HttpProxySession(AsyncSocket* client);
+  HttpProxySession(HttpProxy* proxy, AsyncSocket* client);
   virtual ~HttpProxySession();
 
   bool Start();
+  void Stop();
 
   void OnConnected(AsyncSocket* socket, DWORD error);
   void OnReceived(AsyncSocket* socket, DWORD error, int length);
@@ -83,6 +86,7 @@ class HttpProxySession : public AsyncSocket::Listener {
 
   static void CALLBACK OnTimeout(void* param, BOOLEAN fired);
 
+  HttpProxy* const proxy_;
   AsyncSocket* client_;
   std::string client_buffer_;
   HttpRequest request_;
