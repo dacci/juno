@@ -2,8 +2,10 @@
 
 #include "net/http/http_proxy.h"
 
-HttpProxy::HttpProxy(const char* address, const char* port)
-    : address_(address), port_(port) {
+#include "net/async_server_socket.h"
+#include "net/http/http_proxy_session.h"
+
+HttpProxy::HttpProxy() {
   empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
   ::InitializeCriticalSection(&critical_section_);
 }
@@ -14,33 +16,11 @@ HttpProxy::~HttpProxy() {
   ::CloseHandle(empty_event_);
 }
 
-bool HttpProxy::Start() {
-  resolver_.ai_flags = AI_PASSIVE;
-  resolver_.ai_socktype = SOCK_STREAM;
-  if (!resolver_.Resolve(address_.c_str(), port_.c_str()))
-    return false;
-
-  bool started = false;
-
-  for (auto i = resolver_.begin(), l = resolver_.end(); i != l; ++i) {
-    AsyncServerSocket* server = new AsyncServerSocket();
-    if (server->Bind(*i) && server->Listen(SOMAXCONN) &&
-        server->AcceptAsync(this)) {
-      started = true;
-      servers_.push_back(server);
-    }
-  }
-
-  return started;
+bool HttpProxy::Setup(HKEY key) {
+  return true;
 }
 
 void HttpProxy::Stop() {
-  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
-    (*i)->Close();
-    delete *i;
-  }
-  servers_.clear();
-
   ::EnterCriticalSection(&critical_section_);
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
     (*i)->Stop();

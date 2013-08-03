@@ -4,29 +4,23 @@
 #define JUNO_NET_HTTP_HTTP_PROXY_H_
 
 #include <list>
-#include <string>
-#include <vector>
 
-#include "net/async_server_socket.h"
-#include "net/http/http_proxy_session.h"
+#include "net/service_provider.h"
 
-class HttpProxy : public AsyncServerSocket::Listener {
+class HttpProxySession;
+
+class HttpProxy : public ServiceProvider {
  public:
-  HttpProxy(const char* address, const char* port);
+  HttpProxy();
   ~HttpProxy();
 
-  bool Start();
+  bool Setup(HKEY key);
   void Stop();
   void EndSession(HttpProxySession* session);
 
   void OnAccepted(AsyncServerSocket* server, AsyncSocket* client, DWORD error);
 
  private:
-  std::string address_;
-  std::string port_;
-  madoka::net::AddressInfo resolver_;
-  std::vector<AsyncServerSocket*> servers_;
-
   HANDLE empty_event_;
   CRITICAL_SECTION critical_section_;
   std::list<HttpProxySession*> sessions_;

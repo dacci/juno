@@ -167,9 +167,11 @@
     <ClCompile Include="net\http\http_request.cpp" />
     <ClCompile Include="net\http\http_response.cpp" />
     <ClCompile Include="net\http\http_status.cpp" />
+    <ClCompile Include="net\tcp_server.cpp" />
     <ClCompile Include="net\tunneling_service.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="net\service_provider.h" />
     <ClInclude Include="misc\string_util.h" />
     <ClInclude Include="net\async_server_socket.h" />
     <ClInclude Include="net\async_socket.h" />
@@ -179,6 +181,7 @@
     <ClInclude Include="net\http\http_request.h" />
     <ClInclude Include="net\http\http_response.h" />
     <ClInclude Include="net\http\http_status.h" />
+    <ClInclude Include="net\tcp_server.h" />
     <ClInclude Include="net\tunneling_service.h" />
     <ClInclude Include="res\resource.h" />
   </ItemGroup>
