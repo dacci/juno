@@ -49,6 +49,7 @@ class AsyncSocket : public madoka::net::Socket {
     AsyncSocket* socket;
     Listener* listener;
     HANDLE event;
+    DWORD error;
   };
 
   bool Init();

@@ -85,7 +85,7 @@ void AsyncSocket::EndConnect(OVERLAPPED* overlapped) {
 
   DWORD bytes = 0;
   BOOL succeeded = ::GetOverlappedResult(*context->socket, context, &bytes,
-                                         TRUE);
+                                         FALSE);
   if (succeeded) {
     SetOption(SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, NULL, 0);
     connected_ = true;
@@ -159,7 +159,7 @@ int AsyncSocket::EndReceive(OVERLAPPED* overlapped) {
 
   DWORD bytes = 0;
   BOOL succeeded = ::GetOverlappedResult(*context->socket, context, &bytes,
-                                         TRUE);
+                                         FALSE);
   DestroyAsyncContext(context);
 
   if (succeeded)
@@ -233,7 +233,7 @@ int AsyncSocket::EndSend(OVERLAPPED* overlapped) {
 
   DWORD bytes = 0;
   BOOL succeeded = ::GetOverlappedResult(*context->socket, context, &bytes,
-                                         TRUE);
+                                         FALSE);
   DestroyAsyncContext(context);
 
   if (succeeded)
@@ -314,8 +314,10 @@ DWORD CALLBACK AsyncSocket::AsyncWork(void* param) {
     assert(false);
   }
 
-  if (result != 0 && error != WSA_IO_PENDING)
+  if (result != 0 && error != WSA_IO_PENDING) {
+    context->error = error;
     OnTransferred(error, 0, context);
+  }
 
   return 0;
 }
@@ -325,6 +327,9 @@ void CALLBACK AsyncSocket::OnTransferred(DWORD error, DWORD bytes,
   AsyncContext* context = static_cast<AsyncContext*>(overlapped);
   AsyncSocket* socket = context->socket;
   Listener* listener = context->listener;
+
+  if (context->error != 0)
+    error = context->error;
 
   if (context->action == Connecting && error != 0) {
     if (context->end_point->ai_next != NULL) {
