@@ -47,6 +47,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   static const std::string kConnection;
   static const std::string kContentEncoding;
   static const std::string kContentLength;
+  static const std::string kExpect;
   static const std::string kKeepAlive;
   static const std::string kProxyAuthenticate;
   static const std::string kProxyAuthorization;
@@ -102,6 +103,7 @@ class HttpProxySession : public AsyncSocket::Listener {
 
   HANDLE timer_;
   AsyncSocket* receiving_;
+  bool continue_;
 };
 
 #endif  // JUNO_NET_HTTP_HTTP_PROXY_SESSION_H_

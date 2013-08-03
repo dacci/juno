@@ -10,6 +10,7 @@
 const std::string HttpProxySession::kConnection("Connection");
 const std::string HttpProxySession::kContentEncoding("Content-Encoding");
 const std::string HttpProxySession::kContentLength("Content-Length");
+const std::string HttpProxySession::kExpect("Expect");
 const std::string HttpProxySession::kKeepAlive("Keep-Alive");
 const std::string HttpProxySession::kProxyAuthenticate("Proxy-Authenticate");
 const std::string HttpProxySession::kProxyAuthorization("Proxy-Authorization");
@@ -411,6 +412,14 @@ void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
     return;
   }
 
+  if (request_.HeaderExists(kExpect)) {
+    continue_ = ::_stricmp(request_.GetHeader(kExpect), "100-continue") == 0;
+    if (!continue_) {
+      SendError(HTTP::EXPECTATION_FAILED);
+      return;
+    }
+  }
+
   bool resolved = false;
   if (tunnel_) {
     resolved = resolver_.Resolve(url_.GetSchemeName(), url_.GetHostName());
@@ -445,6 +454,10 @@ void HttpProxySession::OnRequestSent(AsyncSocket* socket, DWORD error,
     remote_ = NULL;
     delete this;
     return;
+  } else if (continue_) {
+    phase_ = Response;
+    if (ReceiveAsync(remote_, 0))
+      return;
   } else if (chunked_) {
     content_length_ = ParseChunk(client_buffer_, &chunk_size_);
     if (content_length_ == -2) {
@@ -549,6 +562,11 @@ void HttpProxySession::OnResponseReceived(AsyncSocket* socket, DWORD error,
   }
 
   remote_buffer_.append(buffer_, length);
+  if (remote_buffer_.size() > kBufferSize) {
+    SendError(HTTP::BAD_GATEWAY);
+    return;
+  }
+
   int result = response_.Parse(remote_buffer_);
   if (result == HttpResponse::kPartial) {
     if (!ReceiveAsync(remote_, 0))
@@ -561,7 +579,9 @@ void HttpProxySession::OnResponseReceived(AsyncSocket* socket, DWORD error,
     remote_buffer_.erase(0, result);
   }
 
-  ProcessResponseHeader();
+  continue_ = response_.status() == HTTP::CONTINUE;
+  if (!continue_)
+    ProcessResponseHeader();
 
   std::string response_string;
   response_string += "HTTP/1.";
@@ -595,7 +615,22 @@ void HttpProxySession::OnResponseSent(AsyncSocket* socket, DWORD error,
 
   phase_ = ResponseBody;
 
-  if (chunked_) {
+  if (continue_) {
+    phase_ = RequestBody;
+
+    if (client_buffer_.empty()) {
+      if (ReceiveAsync(client_, 0))
+        return;
+    } else {
+      assert(client_buffer_.size() <= kBufferSize);
+      int length = client_buffer_.size();
+      ::memmove(buffer_, client_buffer_.data(), length);
+      client_buffer_.clear();
+
+      if (FireReceived(client_, 0, length))
+        return;
+    }
+  } else if (chunked_) {
     content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
 
     if (content_length_ == -2) {
