@@ -69,17 +69,17 @@ class HttpProxySession : public AsyncSocket::Listener {
   bool FireReceived(AsyncSocket* socket, DWORD error, int length);
   static DWORD CALLBACK FireEvent(void* param);
 
-  void OnRequestReceived(AsyncSocket* socket, DWORD error, int length);
-  void OnRequestSent(AsyncSocket* socket, DWORD error, int length);
+  void OnRequestReceived(DWORD error, int length);
+  void OnRequestSent(DWORD error, int length);
 
-  void OnRequestBodyReceived(AsyncSocket* socket, DWORD error, int length);
-  void OnRequestBodySent(AsyncSocket* socket, DWORD error, int length);
+  void OnRequestBodyReceived(DWORD error, int length);
+  void OnRequestBodySent(DWORD error, int length);
 
-  void OnResponseReceived(AsyncSocket* socket, DWORD error, int length);
-  void OnResponseSent(AsyncSocket* socket, DWORD error, int length);
+  void OnResponseReceived(DWORD error, int length);
+  void OnResponseSent(DWORD error, int length);
 
-  void OnResponseBodyReceived(AsyncSocket* socket, DWORD error, int length);
-  void OnResponseBodySent(AsyncSocket* socket, DWORD error, int length);
+  void OnResponseBodyReceived(DWORD error, int length);
+  void OnResponseBodySent(DWORD error, int length);
 
   static void CALLBACK OnTimeout(void* param, BOOLEAN fired);
 

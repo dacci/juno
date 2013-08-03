@@ -109,19 +109,19 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
 
   switch (phase_) {
   case Request:
-    OnRequestReceived(socket, error, length);
+    OnRequestReceived(error, length);
     return;
 
   case RequestBody:
-    OnRequestBodyReceived(socket, error, length);
+    OnRequestBodyReceived(error, length);
     return;
 
   case Response:
-    OnResponseReceived(socket, error, length);
+    OnResponseReceived(error, length);
     return;
 
   case ResponseBody:
-    OnResponseBodyReceived(socket, error, length);
+    OnResponseBodyReceived(error, length);
     return;
   }
 
@@ -131,19 +131,19 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
 void HttpProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
   switch (phase_) {
   case Request:
-    OnRequestSent(socket, error, length);
+    OnRequestSent(error, length);
     return;
 
   case RequestBody:
-    OnRequestBodySent(socket, error, length);
+    OnRequestBodySent(error, length);
     return;
 
   case Response:
-    OnResponseSent(socket, error, length);
+    OnResponseSent(error, length);
     return;
 
   case ResponseBody:
-    OnResponseBodySent(socket, error, length);
+    OnResponseBodySent(error, length);
     return;
 
   case Error:
@@ -374,8 +374,7 @@ DWORD CALLBACK HttpProxySession::FireEvent(void* param) {
   return 0;
 }
 
-void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
-                                         int length) {
+void HttpProxySession::OnRequestReceived(DWORD error, int length) {
   if (error != 0 || length == 0) {
     delete this;
     return;
@@ -440,8 +439,7 @@ void HttpProxySession::OnRequestReceived(AsyncSocket* socket, DWORD error,
   }
 }
 
-void HttpProxySession::OnRequestSent(AsyncSocket* socket, DWORD error,
-                                     int length) {
+void HttpProxySession::OnRequestSent(DWORD error, int length) {
   if (error != 0 || length == 0) {
     SendError(HTTP::SERVICE_UNAVAILABLE);
     return;
@@ -488,8 +486,7 @@ void HttpProxySession::OnRequestSent(AsyncSocket* socket, DWORD error,
   SendError(HTTP::INTERNAL_SERVER_ERROR);
 }
 
-void HttpProxySession::OnRequestBodyReceived(AsyncSocket* socket, DWORD error,
-                                             int length) {
+void HttpProxySession::OnRequestBodyReceived(DWORD error, int length) {
   if (error != 0 || length == 0) {
     delete this;
     return;
@@ -514,8 +511,7 @@ void HttpProxySession::OnRequestBodyReceived(AsyncSocket* socket, DWORD error,
   SendError(HTTP::INTERNAL_SERVER_ERROR);
 }
 
-void HttpProxySession::OnRequestBodySent(AsyncSocket* socket, DWORD error,
-                                         int length) {
+void HttpProxySession::OnRequestBodySent(DWORD error, int length) {
   if (error != 0 || length == 0) {
     SendError(HTTP::SERVICE_UNAVAILABLE);
     return;
@@ -554,8 +550,7 @@ void HttpProxySession::OnRequestBodySent(AsyncSocket* socket, DWORD error,
   SendError(HTTP::INTERNAL_SERVER_ERROR);
 }
 
-void HttpProxySession::OnResponseReceived(AsyncSocket* socket, DWORD error,
-                                          int length) {
+void HttpProxySession::OnResponseReceived(DWORD error, int length) {
   if (error != 0 || length == 0) {
     SendError(HTTP::SERVICE_UNAVAILABLE);
     return;
@@ -606,8 +601,7 @@ void HttpProxySession::OnResponseReceived(AsyncSocket* socket, DWORD error,
   }
 }
 
-void HttpProxySession::OnResponseSent(AsyncSocket* socket, DWORD error,
-                                      int length) {
+void HttpProxySession::OnResponseSent(DWORD error, int length) {
   if (error != 0 || length == 0) {
     delete this;
     return;
@@ -660,8 +654,7 @@ void HttpProxySession::OnResponseSent(AsyncSocket* socket, DWORD error,
   delete this;
 }
 
-void HttpProxySession::OnResponseBodyReceived(AsyncSocket* socket, DWORD error,
-                                              int length) {
+void HttpProxySession::OnResponseBodyReceived(DWORD error, int length) {
   if (error != 0 || length == 0) {
     delete this;
     return;
@@ -686,8 +679,7 @@ void HttpProxySession::OnResponseBodyReceived(AsyncSocket* socket, DWORD error,
   delete this;
 }
 
-void HttpProxySession::OnResponseBodySent(AsyncSocket* socket, DWORD error,
-                                          int length) {
+void HttpProxySession::OnResponseBodySent(DWORD error, int length) {
   if (error != 0 || length == 0) {
     delete this;
     return;
