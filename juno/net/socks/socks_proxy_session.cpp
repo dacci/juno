@@ -103,7 +103,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 
     SOCKS5::RESPONSE* response =
         reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_);
-    int response_length = 4;
+    int response_length = 10;
 
     switch (request->type) {
     case SOCKS5::IP_V4:
@@ -131,7 +131,6 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
             response->type = SOCKS5::IP_V4;
             response->address.ipv4.ipv4_addr = address4->sin_addr;
             response->address.ipv4.ipv4_port = address4->sin_port;
-            response_length += 4 + 2;
           }
           break;
 
@@ -141,7 +140,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
             response->type = SOCKS5::IP_V6;
             response->address.ipv6.ipv6_addr = address6->sin6_addr;
             response->address.ipv6.ipv6_port = address6->sin6_port;
-            response_length += 16 + 2;
+            response_length += 12;
           }
           break;
         }
@@ -251,7 +250,7 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
           return;
       }
 
-      if (client_->SendAsync(response, 4, 0, this))
+      if (client_->SendAsync(response, 10, 0, this))
         return;
     }
   }
