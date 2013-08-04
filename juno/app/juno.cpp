@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "net/http/http_proxy.h"
+#include "net/socks/socks_proxy.h"
 #include "net/tcp_server.h"
 
 typedef std::map<std::string, ServiceProvider*> ServiceMap;
@@ -35,6 +36,8 @@ ServiceProvider* LoadService(HKEY parent, const char* key_name) {
 
   if (provider_name.Compare("HttpProxy") == 0)
     provider = new HttpProxy();
+  else if (provider_name.Compare("SocksProxy") == 0)
+    provider = new SocksProxy();
 
   if (provider == NULL)
     return NULL;
