@@ -187,7 +187,7 @@ int64_t HttpProxySession::ParseChunk(const std::string& buffer,
                                      int64_t* chunk_size) {
   char* start = const_cast<char*>(buffer.c_str());
   char* end = start;
-  *chunk_size = ::_strtoi64(buffer.c_str(), &end, 16);
+  *chunk_size = ::_strtoi64(start, &end, 16);
 
   while (*end) {
     if (*end != '\x0D' && *end != '\x0A')
@@ -255,10 +255,10 @@ void HttpProxySession::ProcessResponseHeader() {
 
   ProcessHopByHopHeaders(&response_);
 
+  // TODO(dacci): process user defined header modification
+
   if (close_client_)
     response_.AddHeader(kConnection, "close");
-
-  // TODO(dacci): process user defined header modification
 }
 
 void HttpProxySession::ProcessMessageLength(HttpHeaders* headers) {
@@ -629,6 +629,11 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
 void HttpProxySession::OnResponseSent(DWORD error, int length) {
   if (error != 0 || length == 0) {
     delete this;
+    return;
+  }
+
+  if (request_.method().compare("HEAD") == 0) {
+    EndSession();
     return;
   }
 
