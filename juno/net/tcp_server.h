@@ -7,17 +7,20 @@
 
 #include <vector>
 
-class AsyncServerSocket;
+#include "net/async_server_socket.h"
+
 class ServiceProvider;
 
-class TcpServer {
+class TcpServer : public AsyncServerSocket::Listener {
  public:
   TcpServer();
-  ~TcpServer();
+  virtual ~TcpServer();
 
   bool Setup(const char* address, int port);
   bool Start();
   void Stop();
+
+  void OnAccepted(AsyncServerSocket* server, AsyncSocket* client, DWORD error);
 
   void SetService(ServiceProvider* service) {
     service_ = service;
@@ -27,6 +30,10 @@ class TcpServer {
   madoka::net::AddressInfo resolver_;
   std::vector<AsyncServerSocket*> servers_;
   ServiceProvider* service_;
+
+  int count_;
+  HANDLE event_;
+  CRITICAL_SECTION critical_section_;
 };
 
 #endif  // JUNO_NET_TCP_SERVER_H_

@@ -37,21 +37,23 @@ void HttpProxy::EndSession(HttpProxySession* session) {
   ::LeaveCriticalSection(&critical_section_);
 }
 
-void HttpProxy::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
-                           DWORD error) {
-  if (error == 0) {
-    server->AcceptAsync(this);
+bool HttpProxy::OnAccepted(AsyncSocket* client) {
+  HttpProxySession* session = new HttpProxySession(this, client);
+  if (session == NULL)
+    return false;
 
-    HttpProxySession* session = new HttpProxySession(this, client);
+  ::EnterCriticalSection(&critical_section_);
+  sessions_.push_back(session);
+  ::ResetEvent(empty_event_);
+  ::LeaveCriticalSection(&critical_section_);
 
-    ::EnterCriticalSection(&critical_section_);
-    sessions_.push_back(session);
-    ::ResetEvent(empty_event_);
-    ::LeaveCriticalSection(&critical_section_);
-
-    if (!session->Start())
-      delete session;
-  } else {
-    delete client;
+  if (!session->Start()) {
+    delete session;
+    return false;
   }
+
+  return true;
+}
+
+void HttpProxy::OnError(DWORD error) {
 }

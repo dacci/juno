@@ -18,7 +18,8 @@ class HttpProxy : public ServiceProvider {
   void Stop();
   void EndSession(HttpProxySession* session);
 
-  void OnAccepted(AsyncServerSocket* server, AsyncSocket* client, DWORD error);
+  bool OnAccepted(AsyncSocket* client);
+  void OnError(DWORD error);
 
  private:
   HANDLE empty_event_;

@@ -22,18 +22,18 @@ bool SocksProxy::Setup(HKEY key) {
 void SocksProxy::Stop() {
 }
 
-void SocksProxy::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
-                            DWORD error) {
-  if (error == 0) {
-    server->AcceptAsync(this);
+bool SocksProxy::OnAccepted(AsyncSocket* client) {
+  SocksProxySession* session = new SocksProxySession(this, client);
+  if (session == NULL)
+    return false;
 
-    SocksProxySession* session = new SocksProxySession(this, client);
-    if (session == NULL)
-      delete client;
-
-    if (!session->Start())
-      delete session;
-  } else {
-    delete client;
+  if (!session->Start()) {
+    delete session;
+    return false;
   }
+
+  return true;
+}
+
+void SocksProxy::OnError(DWORD error) {
 }

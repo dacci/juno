@@ -2,9 +2,12 @@
 
 #include "net/tcp_server.h"
 #include "net/async_server_socket.h"
+#include "net/async_socket.h"
 #include "net/service_provider.h"
 
-TcpServer::TcpServer() : service_() {
+TcpServer::TcpServer() : service_(), count_() {
+  event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
+  ::InitializeCriticalSection(&critical_section_);
 }
 
 TcpServer::~TcpServer() {
@@ -13,6 +16,9 @@ TcpServer::~TcpServer() {
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
     delete *i;
   servers_.clear();
+
+  ::CloseHandle(event_);
+  ::DeleteCriticalSection(&critical_section_);
 }
 
 bool TcpServer::Setup(const char* address, int port) {
@@ -54,10 +60,17 @@ bool TcpServer::Start() {
 
   bool succeeded = false;
 
+  ::EnterCriticalSection(&critical_section_);
+
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
-    if ((*i)->AcceptAsync(service_))
+    if ((*i)->AcceptAsync(this)) {
       succeeded = true;
+      ++count_;
+      ::ResetEvent(event_);
+    }
   }
+
+  ::LeaveCriticalSection(&critical_section_);
 
   return succeeded;
 }
@@ -65,4 +78,26 @@ bool TcpServer::Start() {
 void TcpServer::Stop() {
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
     (*i)->Close();
+
+  ::WaitForSingleObject(event_, INFINITE);
+}
+
+void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
+                           DWORD error) {
+  if (error == 0) {
+    if (service_->OnAccepted(client)) {
+      server->AcceptAsync(this);
+      return;
+    }
+  } else {
+    service_->OnError(error);
+  }
+
+  delete client;
+  server->Close();
+
+  ::EnterCriticalSection(&critical_section_);
+  if (--count_ == 0)
+    ::SetEvent(event_);
+  ::LeaveCriticalSection(&critical_section_);
 }

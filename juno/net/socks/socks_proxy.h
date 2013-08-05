@@ -7,6 +7,8 @@
 
 #include "net/service_provider.h"
 
+class SocksProxySession;
+
 class SocksProxy : public ServiceProvider {
  public:
   SocksProxy();
@@ -15,7 +17,8 @@ class SocksProxy : public ServiceProvider {
   bool Setup(HKEY key);
   void Stop();
 
-  void OnAccepted(AsyncServerSocket* server, AsyncSocket* client, DWORD error);
+  bool OnAccepted(AsyncSocket* client);
+  void OnError(DWORD error);
 
  private:
   HANDLE empty_event_;
