@@ -42,6 +42,20 @@ bool HttpProxy::Setup(HKEY key) {
       remote_proxy_port_ <= 0 || 65536 <= remote_proxy_port_)
     use_remote_proxy_ = FALSE;
 
+  result = reg_key.QueryDWORDValue("AuthRemoteProxy", auth_remote_proxy_);
+  if (result != ERROR_SUCCESS)
+    auth_remote_proxy_ = 0;
+
+  length = 256;
+  result = reg_key.QueryStringValue("RemoteProxyAuth", string.GetBuffer(length),
+                                    &length);
+  if (result == ERROR_SUCCESS) {
+    string.ReleaseBuffer(length);
+    remote_proxy_auth_ = string.GetString();
+  } else {
+    auth_remote_proxy_ = 0;
+  }
+
   reg_key.Detach();
 
   return true;
