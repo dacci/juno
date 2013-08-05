@@ -28,12 +28,9 @@ bool TcpServer::Setup(const char* address, int port) {
   if (address[0] == '*')
     address = NULL;
 
-  char service[8];
-  ::sprintf_s(service, "%d", port);
-
   resolver_.ai_flags = AI_PASSIVE;
   resolver_.ai_socktype = SOCK_STREAM;
-  if (!resolver_.Resolve(address, service))
+  if (!resolver_.Resolve(address, port))
     return false;
 
   bool succeeded = false;

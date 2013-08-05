@@ -87,6 +87,20 @@ class AddressInfo : public AddressInfoT<addrinfo> {
     return true;
   }
 
+  bool Resolve(const char* node_name, int port) {
+    if (port <= 0 || 65536 <= port)
+      return false;
+
+    char service[8];
+#ifdef _MSC_VER
+    ::sprintf_s(service, "%d", port);
+#else
+    ::snprintf(service, sizeof(service), "%d", port);
+#endif  // _MSC_VER
+
+    return Resolve(node_name, service);
+  }
+
   void Free() {
     if (entries_) {
       ::freeaddrinfo(entries_);
@@ -122,6 +136,20 @@ class AddressInfoW : public AddressInfoT<ADDRINFOW> {
       return false;
 
     return true;
+  }
+
+  bool Resolve(const wchar_t* node_name, int port) {
+    if (port <= 0 || 65536 <= port)
+      return false;
+
+    wchar_t service[8];
+#ifdef _MSC_VER
+    ::swprintf_s(service, L"%d", port);
+#else
+    ::swprintf(service, _countof(service), L"%d", port);
+#endif  // _MSC_VER
+
+    return Resolve(node_name, service);
   }
 
   void Free() {

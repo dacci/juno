@@ -328,9 +328,6 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
       address.domain.domain_name +
       address.domain.domain_len);
 
-  char service[8];
-  ::sprintf_s(service, "%d", ::htons(port));
-
   madoka::net::AddressInfo* resolver = NULL;
 
   do {
@@ -342,7 +339,7 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
     if (remote_ == NULL)
       break;
 
-    if (!resolver->Resolve(domain_name.c_str(), service))
+    if (!resolver->Resolve(domain_name.c_str(), ::htons(port)))
       break;
 
     end_point_ = resolver;

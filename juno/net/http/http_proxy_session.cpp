@@ -435,9 +435,7 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
   if (tunnel_) {
     resolved = resolver_.Resolve(url_.GetSchemeName(), url_.GetHostName());
   } else {
-    char service[8];
-    ::sprintf_s(service, "%d", url_.GetPortNumber());
-    resolved = resolver_.Resolve(url_.GetHostName(), service);
+    resolved = resolver_.Resolve(url_.GetHostName(), url_.GetPortNumber());
   }
   if (!resolved) {
     SendError(HTTP::BAD_GATEWAY);
