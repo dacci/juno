@@ -45,6 +45,7 @@ struct SocketAddress6 : addrinfo, sockaddr_in6 {
 SocksProxySession::SocksProxySession(SocksProxy* proxy, AsyncSocket* client)
     : proxy_(proxy),
       client_(client),
+      remote_(),
       request_buffer_(new char[kBufferSize]),
       response_buffer_(new char[kBufferSize]),
       phase_(),
