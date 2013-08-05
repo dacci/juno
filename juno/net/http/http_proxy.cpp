@@ -2,10 +2,13 @@
 
 #include "net/http/http_proxy.h"
 
+#include <atlbase.h>
+#include <atlstr.h>
+
 #include "net/async_server_socket.h"
 #include "net/http/http_proxy_session.h"
 
-HttpProxy::HttpProxy() {
+HttpProxy::HttpProxy() : use_remote_proxy_(), remote_proxy_port_() {
   empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
   ::InitializeCriticalSection(&critical_section_);
 }
@@ -17,6 +20,30 @@ HttpProxy::~HttpProxy() {
 }
 
 bool HttpProxy::Setup(HKEY key) {
+  CRegKey reg_key(key);
+
+  LONG result = reg_key.QueryDWORDValue("UseRemoteProxy", use_remote_proxy_);
+  if (result != ERROR_SUCCESS)
+    use_remote_proxy_ = FALSE;
+
+  CString string;
+  ULONG length = 256;
+  result = reg_key.QueryStringValue("RemoteProxyHost", string.GetBuffer(length),
+                                    &length);
+  if (result == ERROR_SUCCESS) {
+    string.ReleaseBuffer(length);
+    remote_proxy_host_ = string.GetString();
+  } else {
+    use_remote_proxy_ = FALSE;
+  }
+
+  result = reg_key.QueryDWORDValue("RemoteProxyPort", remote_proxy_port_);
+  if (result != ERROR_SUCCESS ||
+      remote_proxy_port_ <= 0 || 65536 <= remote_proxy_port_)
+    use_remote_proxy_ = FALSE;
+
+  reg_key.Detach();
+
   return true;
 }
 

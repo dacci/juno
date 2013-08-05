@@ -92,8 +92,14 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
   } else {
     request_string += request_.method();
     request_string += ' ';
-    request_string += url_.GetUrlPath();
-    request_string += url_.GetExtraInfo();
+
+    if (proxy_->use_remote_proxy()) {
+      request_string += request_.path();
+    } else {
+      request_string += url_.GetUrlPath();
+      request_string += url_.GetExtraInfo();
+    }
+
     request_string += " HTTP/1.";
     request_string += '0' + request_.minor_version();
     request_string += "\x0D\x0A";
@@ -432,11 +438,14 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
   }
 
   bool resolved = false;
-  if (tunnel_) {
+  if (proxy_->use_remote_proxy())
+    resolved = resolver_.Resolve(proxy_->remote_proxy_host(),
+                                 proxy_->remote_proxy_port());
+  else if (tunnel_)
     resolved = resolver_.Resolve(url_.GetSchemeName(), url_.GetHostName());
-  } else {
+  else
     resolved = resolver_.Resolve(url_.GetHostName(), url_.GetPortNumber());
-  }
+
   if (!resolved) {
     SendError(HTTP::BAD_GATEWAY);
     return;
