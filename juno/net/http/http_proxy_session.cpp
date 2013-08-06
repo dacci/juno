@@ -74,7 +74,9 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 
   std::string request_string;
 
-  if (tunnel_) {
+  if (tunnel_ && !proxy_->use_remote_proxy()) {
+    phase_ = Response;
+
     if (!TunnelingService::Bind(client_, remote_)) {
       SendError(HTTP::INTERNAL_SERVER_ERROR);
       return;
@@ -84,6 +86,8 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     request_string += "Content-Length: 0\x0D\x0A";
     request_string += "\x0D\x0A";
     ::memmove(buffer_, request_string.data(), request_string.size());
+
+    response_.Parse(request_string);
 
     if (!client_->SendAsync(buffer_, request_string.size(), 0, this)) {
       delete this;
@@ -472,12 +476,7 @@ void HttpProxySession::OnRequestSent(DWORD error, int length) {
 
   phase_ = RequestBody;
 
-  if (tunnel_) {
-    client_ = NULL;
-    remote_ = NULL;
-    delete this;
-    return;
-  } else if (continue_) {
+  if (continue_) {
     phase_ = Response;
     if (ReceiveAsync(remote_, 0))
       return;
@@ -604,6 +603,24 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
     ProcessResponseHeader();
 
   std::string response_string;
+
+  // XXX(dacci): isn't there any better way?
+  if (tunnel_ && response_.status() == 200) {
+    if (TunnelingService::Bind(client_, remote_)) {
+      response_string += "HTTP/1.1 200 Connection Established\x0D\x0A";
+      response_string += "Content-Length: 0\x0D\x0A";
+      response_string += "\x0D\x0A";
+      ::memmove(buffer_, response_string.data(), response_string.size());
+
+      if (!client_->SendAsync(buffer_, response_string.size(), 0, this))
+        delete this;
+    } else {
+      response_.Parse("HTTP/1.1 500 Internal Server Error\x0D\x0A\x0D\x0A");
+      SendError(HTTP::INTERNAL_SERVER_ERROR);
+    }
+    return;
+  }
+
   response_string += "HTTP/1.";
   response_string += '0' + response_.minor_version();
   response_string += ' ';
@@ -628,6 +645,16 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
 
 void HttpProxySession::OnResponseSent(DWORD error, int length) {
   if (error != 0 || length == 0) {
+    delete this;
+    return;
+  }
+
+  if (tunnel_) {
+    if (response_.status() == 200) {
+      client_ = NULL;
+      remote_ = NULL;
+    }
+
     delete this;
     return;
   }
