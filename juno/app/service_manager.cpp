@@ -8,6 +8,8 @@
 #include "net/socks/socks_proxy.h"
 #include "net/tcp_server.h"
 
+ServiceManager* service_manager = NULL;
+
 ServiceManager::ServiceManager() {
 }
 

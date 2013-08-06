@@ -1,0 +1,52 @@
+// Copyright (c) 2013 dacci.org
+
+#ifndef JUNO_UI_MAIN_FRAME_H_
+#define JUNO_UI_MAIN_FRAME_H_
+
+#include <atlbase.h>
+
+#include <atlapp.h>
+#include <atlcrack.h>
+#include <atlframe.h>
+
+#include "res/resource.h"
+
+class MainFrame : public CFrameWindowImpl<MainFrame> {
+ public:
+  DECLARE_FRAME_WND_CLASS(NULL, IDR_MAIN_FRAME)
+
+  MainFrame();
+  ~MainFrame();
+
+  BEGIN_MSG_MAP(MainFrame)
+    MSG_WM_CREATE(OnCreate)
+    MSG_WM_DESTROY(OnDestroy)
+    MSG_WM_ENDSESSION(OnEndSession)
+    MESSAGE_HANDLER_EX(WM_TRAYNOTIFY, OnTrayNotify)
+    MESSAGE_HANDLER_EX(WM_TASKBARCREATED, OnTaskbarCreated)
+
+    COMMAND_ID_HANDLER_EX(ID_APP_EXIT, OnAppExit)
+
+    CHAIN_MSG_MAP(CFrameWindowImpl)
+  END_MSG_MAP()
+
+ private:
+  static const UINT WM_TRAYNOTIFY = WM_USER + 1;
+  static const UINT WM_TASKBARCREATED;
+
+  void TrackTrayMenu(int x, int y);
+
+  int OnCreate(CREATESTRUCT* create_struct);
+  void OnDestroy();
+  void OnEndSession(BOOL ending, UINT log_off);
+  LRESULT OnTrayNotify(UINT message, WPARAM wParam, LPARAM lParam);
+  LRESULT OnOldTrayNotify(UINT message, WPARAM wParam, LPARAM lParam);
+  LRESULT OnTaskbarCreated(UINT message, WPARAM wParam, LPARAM lParam);
+
+  void OnAppExit(UINT notify_code, int id, CWindow control);
+
+  bool old_windows_;
+  NOTIFYICONDATA notify_icon_;
+};
+
+#endif  // JUNO_UI_MAIN_FRAME_H_

@@ -36,4 +36,6 @@ class ServiceManager {
   std::vector<TcpServer*> servers_;
 };
 
+extern ServiceManager* service_manager;
+
 #endif  // JUNO_APP_SERVICE_MANAGER_H_
