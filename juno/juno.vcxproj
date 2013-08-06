@@ -159,6 +159,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app\juno.cpp" />
+    <ClCompile Include="app\service_manager.cpp" />
     <ClCompile Include="net\async_server_socket.cpp" />
     <ClCompile Include="net\async_socket.cpp" />
     <ClCompile Include="net\http\http_headers.cpp" />
@@ -173,7 +174,7 @@
     <ClCompile Include="net\tunneling_service.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="net\service_provider.h" />
+    <ClInclude Include="app\service_manager.h" />
     <ClInclude Include="misc\string_util.h" />
     <ClInclude Include="net\async_server_socket.h" />
     <ClInclude Include="net\async_socket.h" />
@@ -183,6 +184,7 @@
     <ClInclude Include="net\http\http_request.h" />
     <ClInclude Include="net\http\http_response.h" />
     <ClInclude Include="net\http\http_status.h" />
+    <ClInclude Include="net\service_provider.h" />
     <ClInclude Include="net\socks\socks4.h" />
     <ClInclude Include="net\socks\socks5.h" />
     <ClInclude Include="net\socks\socks_proxy.h" />
