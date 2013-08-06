@@ -26,6 +26,15 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE, char*, int) {
   }
 #endif  // _DEBUG
 
+  HANDLE mutex = ::CreateMutex(NULL, TRUE, "org.dacci.juno");
+  DWORD error = ::GetLastError();
+  if (mutex == NULL)
+    return __LINE__;
+  if (error != ERROR_SUCCESS) {
+    ::CloseHandle(mutex);
+    return __LINE__;
+  }
+
   HRESULT result = S_OK;
 
   result = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
@@ -67,6 +76,7 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE, char*, int) {
   _Module.Term();
   delete service_manager;
   ::CoUninitialize();
+  ::CloseHandle(mutex);
 
   return 0;
 }
