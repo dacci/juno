@@ -25,6 +25,7 @@ class MainFrame : public CFrameWindowImpl<MainFrame> {
     MESSAGE_HANDLER_EX(WM_TRAYNOTIFY, OnTrayNotify)
     MESSAGE_HANDLER_EX(WM_TASKBARCREATED, OnTaskbarCreated)
 
+    COMMAND_ID_HANDLER_EX(ID_FILE_NEW, OnFileNew)
     COMMAND_ID_HANDLER_EX(ID_APP_EXIT, OnAppExit)
 
     CHAIN_MSG_MAP(CFrameWindowImpl)
@@ -33,7 +34,10 @@ class MainFrame : public CFrameWindowImpl<MainFrame> {
  private:
   static const UINT WM_TRAYNOTIFY = WM_USER + 1;
   static const UINT WM_TASKBARCREATED;
+  static const UINT kDefaultTrayCommand = ID_FILE_NEW;
 
+  bool LoadAndStart();
+  void StopAndUnload();
   void TrackTrayMenu(int x, int y);
 
   int OnCreate(CREATESTRUCT* create_struct);
@@ -43,10 +47,12 @@ class MainFrame : public CFrameWindowImpl<MainFrame> {
   LRESULT OnOldTrayNotify(UINT message, WPARAM wParam, LPARAM lParam);
   LRESULT OnTaskbarCreated(UINT message, WPARAM wParam, LPARAM lParam);
 
+  void OnFileNew(UINT notify_code, int id, CWindow control);
   void OnAppExit(UINT notify_code, int id, CWindow control);
 
   bool old_windows_;
   NOTIFYICONDATA notify_icon_;
+  bool configuring_;
 };
 
 #endif  // JUNO_UI_MAIN_FRAME_H_

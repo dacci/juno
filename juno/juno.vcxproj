@@ -177,6 +177,8 @@
     <ClCompile Include="net\tcp_server.cpp" />
     <ClCompile Include="net\tunneling_service.cpp" />
     <ClCompile Include="ui\main_frame.cpp" />
+    <ClCompile Include="ui\servers_page.cpp" />
+    <ClCompile Include="ui\services_page.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app\juno.h" />
@@ -199,6 +201,8 @@
     <ClInclude Include="net\tunneling_service.h" />
     <ClInclude Include="res\resource.h" />
     <ClInclude Include="ui\main_frame.h" />
+    <ClInclude Include="ui\servers_page.h" />
+    <ClInclude Include="ui\services_page.h" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="res\compatibility.manifest" />

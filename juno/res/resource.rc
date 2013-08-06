@@ -92,6 +92,98 @@ BEGIN
     END
 END
 
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_TRAY_MENU MENU
+BEGIN
+    POPUP "メニュー"
+    BEGIN
+        MENUITEM "設定(&P)",                      ID_FILE_NEW
+        MENUITEM SEPARATOR
+        MENUITEM "終了(&X)",                      ID_APP_EXIT
+    END
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Dialog
+//
+
+IDD_SERVICES_PAGE DIALOGEX 0, 0, 212, 134
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "サービス"
+FONT 9, "MS Shell Dlg", 400, 0, 0x0
+BEGIN
+    CONTROL         "",IDC_SERVICE_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,198,99
+    PUSHBUTTON      "追加(&A)",IDC_ADD_BUTTON,40,113,50,14
+    PUSHBUTTON      "編集(&E)",IDC_EDIT_BUTTON,97,113,50,14
+    PUSHBUTTON      "削除(&D)",IDC_DELETE_BUTTON,154,113,50,14
+END
+
+IDD_SERVERS_PAGE DIALOGEX 0, 0, 212, 134
+STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
+CAPTION "サーバー"
+FONT 9, "MS Shell Dlg", 400, 0, 0x0
+BEGIN
+    CONTROL         "",IDC_SERVER_LIST,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,198,99
+    PUSHBUTTON      "追加(&A)",IDC_ADD_BUTTON,40,113,50,14
+    PUSHBUTTON      "編集(&E)",IDC_EDIT_BUTTON,97,113,50,14
+    PUSHBUTTON      "削除(&D)",IDC_DELETE_BUTTON,154,113,50,14
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// DESIGNINFO
+//
+
+#ifdef APSTUDIO_INVOKED
+GUIDELINES DESIGNINFO
+BEGIN
+    IDD_SERVICES_PAGE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 205
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 127
+        HORZGUIDE, 106
+        HORZGUIDE, 113
+    END
+
+    IDD_SERVERS_PAGE, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 205
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 127
+        HORZGUIDE, 106
+        HORZGUIDE, 113
+    END
+END
+#endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// String Table
+//
+
+STRINGTABLE
+BEGIN
+    IDS_ERR_START_FAILED    "一部のサーバーを開始できませんでした。"
+    IDS_CONFIRM_APPLY       "設定を適用するには現在の通信を切断する必要があります。\n続行しますか?"
+END
+
+STRINGTABLE
+BEGIN
+    ID_FILE_NEW             "Juno の設定"
+END
+
 #endif    // 日本語 (日本) resources
 /////////////////////////////////////////////////////////////////////////////
 

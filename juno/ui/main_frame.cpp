@@ -4,11 +4,13 @@
 
 #include "app/juno.h"
 #include "app/service_manager.h"
+#include "ui/servers_page.h"
+#include "ui/services_page.h"
 
 const UINT MainFrame::WM_TASKBARCREATED =
     ::RegisterWindowMessage("TaskbarCreated");
 
-MainFrame::MainFrame() : notify_icon_() {
+MainFrame::MainFrame() : notify_icon_(), configuring_() {
   OSVERSIONINFOEX version_info = { sizeof(version_info) };
   version_info.dwMajorVersion = 6;
   version_info.dwMinorVersion = 1;
@@ -25,13 +27,36 @@ MainFrame::MainFrame() : notify_icon_() {
 MainFrame::~MainFrame() {
 }
 
+bool MainFrame::LoadAndStart() {
+  if (!service_manager->LoadServices())
+    return false;
+
+  if (!service_manager->LoadServers())
+    return false;
+
+  if (!service_manager->StartServers()) {
+    CString message;
+    message.LoadString(IDS_ERR_START_FAILED);
+    MessageBox(message, NULL, MB_ICONEXCLAMATION);
+  }
+
+  return true;
+}
+
+void MainFrame::StopAndUnload() {
+  service_manager->StopServers();
+  service_manager->UnloadServers();
+  service_manager->UnloadServices();
+}
+
 void MainFrame::TrackTrayMenu(int x, int y) {
   CMenu menu;
-  menu.CreatePopupMenu();
-  menu.AppendMenu(MF_STRING, ID_APP_EXIT, "E&xit");
+  menu.LoadMenu(IDR_TRAY_MENU);
+  CMenuHandle popup_menu = menu.GetSubMenu(0);
+  popup_menu.SetMenuDefaultItem(kDefaultTrayCommand);
 
   ::SetForegroundWindow(m_hWnd);
-  menu.TrackPopupMenu(TPM_RIGHTBUTTON, x, y, m_hWnd);
+  popup_menu.TrackPopupMenu(TPM_RIGHTBUTTON, x, y, m_hWnd);
   PostMessage(WM_NULL);
 }
 
@@ -49,13 +74,8 @@ int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
       !::Shell_NotifyIcon(NIM_SETVERSION, &notify_icon_))
     return -1;
 
-  if (!service_manager->LoadServices())
+  if (!LoadAndStart())
     return -1;
-  if (!service_manager->LoadServers())
-    return -1;
-  if (!service_manager->StartServers())
-    MessageBox("Some of the servers could not be started.", NULL,
-               MB_ICONEXCLAMATION);
 
   return 0;
 }
@@ -63,10 +83,7 @@ int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
 void MainFrame::OnDestroy() {
   SetMsgHandled(FALSE);
 
-  service_manager->StopServers();
-  service_manager->UnloadServers();
-  service_manager->UnloadServices();
-
+  StopAndUnload();
   ::Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
 }
 
@@ -80,6 +97,10 @@ LRESULT MainFrame::OnTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
     return OnOldTrayNotify(message, wParam, lParam);
 
   switch (LOWORD(lParam)) {
+  case WM_LBUTTONDBLCLK:
+    SendMessage(WM_COMMAND, MAKEWPARAM(kDefaultTrayCommand, 0));
+    break;
+
   case WM_CONTEXTMENU:
     TrackTrayMenu(GET_X_LPARAM(wParam), GET_Y_LPARAM(wParam));
     break;
@@ -90,6 +111,10 @@ LRESULT MainFrame::OnTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
 
 LRESULT MainFrame::OnOldTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
   switch (lParam) {
+  case WM_LBUTTONDBLCLK:
+    SendMessage(WM_COMMAND, MAKEWPARAM(kDefaultTrayCommand, 0));
+    break;
+
   case WM_RBUTTONUP:
     {
       POINT point;
@@ -108,6 +133,32 @@ LRESULT MainFrame::OnTaskbarCreated(UINT message, WPARAM wParam,
   ::Shell_NotifyIcon(NIM_SETVERSION, &notify_icon_);
 
   return 0;
+}
+
+void MainFrame::OnFileNew(UINT notify_code, int id, CWindow control) {
+  if (configuring_)
+    return;
+
+  CString caption;
+  caption.LoadString(ID_FILE_NEW);
+
+  CPropertySheet property_sheet(caption.GetString());
+  property_sheet.AddPage(*new ServicesPage());
+  property_sheet.AddPage(*new ServersPage());
+
+  configuring_ = true;
+  int result = property_sheet.DoModal(m_hWnd);
+  configuring_ = false;
+
+  if (result != IDOK)
+    return;
+
+  caption.LoadString(IDS_CONFIRM_APPLY);
+  if (MessageBox(caption, NULL, MB_ICONQUESTION | MB_YESNO) != IDYES)
+    return;
+
+  StopAndUnload();
+  LoadAndStart();
 }
 
 void MainFrame::OnAppExit(UINT notify_code, int id, CWindow control) {
