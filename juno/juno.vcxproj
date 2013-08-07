@@ -176,9 +176,13 @@
     <ClCompile Include="net\socks\socks_proxy_session.cpp" />
     <ClCompile Include="net\tcp_server.cpp" />
     <ClCompile Include="net\tunneling_service.cpp" />
+    <ClCompile Include="ui\http_proxy_dialog.cpp" />
     <ClCompile Include="ui\main_frame.cpp" />
+    <ClCompile Include="ui\provider_dialog.cpp" />
     <ClCompile Include="ui\servers_page.cpp" />
+    <ClCompile Include="ui\server_dialog.cpp" />
     <ClCompile Include="ui\services_page.cpp" />
+    <ClCompile Include="ui\socks_proxy_dialog.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app\juno.h" />
@@ -200,9 +204,13 @@
     <ClInclude Include="net\tcp_server.h" />
     <ClInclude Include="net\tunneling_service.h" />
     <ClInclude Include="res\resource.h" />
+    <ClInclude Include="ui\http_proxy_dialog.h" />
     <ClInclude Include="ui\main_frame.h" />
+    <ClInclude Include="ui\provider_dialog.h" />
     <ClInclude Include="ui\servers_page.h" />
+    <ClInclude Include="ui\server_dialog.h" />
     <ClInclude Include="ui\services_page.h" />
+    <ClInclude Include="ui\socks_proxy_dialog.h" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="res\compatibility.manifest" />
