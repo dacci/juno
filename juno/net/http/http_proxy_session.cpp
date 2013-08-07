@@ -25,16 +25,12 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy, AsyncSocket* client)
       buffer_(new char[kBufferSize]),
       phase_(Request),
       close_client_(),
-      timer_() {
+      timer_(),
+      continue_() {
 }
 
 HttpProxySession::~HttpProxySession() {
   proxy_->EndSession(this);
-
-  if (timer_ != NULL) {
-    ::DeleteTimerQueueTimer(NULL, timer_, INVALID_HANDLE_VALUE);
-    timer_ = NULL;
-  }
 
   if (client_ != NULL) {
     client_->Shutdown(SD_BOTH);
@@ -51,6 +47,11 @@ HttpProxySession::~HttpProxySession() {
   if (buffer_ != NULL) {
     delete[] buffer_;
     buffer_ = NULL;
+  }
+
+  if (timer_ != NULL) {
+    ::DeleteTimerQueueTimer(NULL, timer_, INVALID_HANDLE_VALUE);
+    timer_ = NULL;
   }
 }
 
@@ -346,6 +347,7 @@ void HttpProxySession::EndSession() {
 
   phase_ = Request;
   close_client_ = false;
+  continue_ = false;
 
   if (client_buffer_.empty()) {
     Start();
