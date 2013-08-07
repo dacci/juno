@@ -50,6 +50,9 @@ void MainFrame::StopAndUnload() {
 }
 
 void MainFrame::TrackTrayMenu(int x, int y) {
+  if (configuring_)
+    return;
+
   CMenu menu;
   menu.LoadMenu(IDR_TRAY_MENU);
   CMenuHandle popup_menu = menu.GetSubMenu(0);
