@@ -36,6 +36,10 @@ class ServicesPage
   BEGIN_MSG_MAP(ServicesPage)
     MSG_WM_INITDIALOG(OnInitDialog)
 
+    COMMAND_ID_HANDLER_EX(IDC_ADD_BUTTON, OnAddServer)
+    COMMAND_ID_HANDLER_EX(IDC_EDIT_BUTTON, OnEditServer)
+    COMMAND_ID_HANDLER_EX(IDC_DELETE_BUTTON, OnDeleteServer)
+
     NOTIFY_HANDLER_EX(IDC_SERVICE_LIST, NM_CLICK, OnServiceListClicked)
 
     CHAIN_MSG_MAP(CPropertyPageImpl)
@@ -48,6 +52,10 @@ class ServicesPage
   };
 
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
+
+  void OnAddServer(UINT notify_code, int id, CWindow control);
+  void OnEditServer(UINT notify_code, int id, CWindow control);
+  void OnDeleteServer(UINT notify_code, int id, CWindow control);
 
   LRESULT OnServiceListClicked(LPNMHDR header);
 

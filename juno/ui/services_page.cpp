@@ -65,6 +65,15 @@ BOOL ServicesPage::OnInitDialog(CWindow focus, LPARAM init_param) {
   return TRUE;
 }
 
+void ServicesPage::OnAddServer(UINT notify_code, int id, CWindow control) {
+}
+
+void ServicesPage::OnEditServer(UINT notify_code, int id, CWindow control) {
+}
+
+void ServicesPage::OnDeleteServer(UINT notify_code, int id, CWindow control) {
+}
+
 LRESULT ServicesPage::OnServiceListClicked(LPNMHDR header) {
   UINT count = service_list_.GetSelectedCount();
 

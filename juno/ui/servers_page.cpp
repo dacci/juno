@@ -87,9 +87,18 @@ BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
   return TRUE;
 }
 
+void ServersPage::OnAddServer(UINT notify_code, int id, CWindow control) {
+}
+
+void ServersPage::OnEditServer(UINT notify_code, int id, CWindow control) {
+}
+
+void ServersPage::OnDeleteServer(UINT notify_code, int id, CWindow control) {
+}
+
 LRESULT ServersPage::OnServerListClicked(LPNMHDR header) {
   UINT count = server_list_.GetSelectedCount();
-  
+
   edit_button_.EnableWindow(count > 0);
   delete_button_.EnableWindow(count > 0);
 
