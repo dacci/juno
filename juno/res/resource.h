@@ -8,6 +8,11 @@
 #define IDD_SERVERS_PAGE                103
 #define IDS_ERR_START_FAILED            201
 #define IDS_CONFIRM_APPLY               202
+#define IDS_COLUMN_NAME                 301
+#define IDS_COLUMN_PROVIDER             302
+#define IDS_COLUMN_BIND                 303
+#define IDS_COLUMN_LISTEN               304
+#define IDS_COLUMN_SERVICE              305
 #define IDC_SERVICE_LIST                1001
 #define IDC_ADD_BUTTON                  1002
 #define IDC_EDIT_BUTTON                 1003
