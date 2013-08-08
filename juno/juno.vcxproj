@@ -93,6 +93,9 @@
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>4018;4244;4267</DisableSpecificWarnings>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>build/precompile.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>build/precompile.h</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -109,6 +112,9 @@
       <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>4018;4244;4267</DisableSpecificWarnings>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <PrecompiledHeaderFile>build/precompile.h</PrecompiledHeaderFile>
+      <ForcedIncludeFiles>build/precompile.h</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -164,6 +170,10 @@
   <ItemGroup>
     <ClCompile Include="app\juno.cpp" />
     <ClCompile Include="app\service_manager.cpp" />
+    <ClCompile Include="build\precompile.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="net\async_server_socket.cpp" />
     <ClCompile Include="net\async_socket.cpp" />
     <ClCompile Include="net\http\http_headers.cpp" />
@@ -187,6 +197,7 @@
   <ItemGroup>
     <ClInclude Include="app\juno.h" />
     <ClInclude Include="app\service_manager.h" />
+    <ClInclude Include="build\precompile.h" />
     <ClInclude Include="misc\string_util.h" />
     <ClInclude Include="net\async_server_socket.h" />
     <ClInclude Include="net\async_socket.h" />
