@@ -10,6 +10,9 @@ HttpProxyDialog::~HttpProxyDialog() {
 
 BOOL HttpProxyDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   DoDataExchange();
+
+  port_spin_.SetRange32(1, 65535);
+
   return TRUE;
 }
 

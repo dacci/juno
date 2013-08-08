@@ -23,6 +23,7 @@ class ProviderDialog
   ~ProviderDialog();
 
   BEGIN_DDX_MAP(ProviderDialog)
+    DDX_CONTROL_HANDLE(IDC_PROVIDER, provider_combo_)
   END_DDX_MAP()
 
   BEGIN_MSG_MAP(ProviderDialog)
@@ -37,6 +38,8 @@ class ProviderDialog
 
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
+
+  CComboBox provider_combo_;
 };
 
 #endif  // JUNO_UI_PROVIDER_DIALOG_H_
