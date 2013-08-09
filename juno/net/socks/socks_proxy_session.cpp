@@ -28,8 +28,8 @@ struct SocketAddress4 : addrinfo, sockaddr_in {
 
 struct SocketAddress6 : addrinfo, sockaddr_in6 {
   SocketAddress6() : addrinfo(), sockaddr_in6() {
-    ai_family = AF_INET;
-    ai_addrlen = sizeof(sockaddr_in);
+    ai_family = AF_INET6;
+    ai_addrlen = sizeof(sockaddr_in6);
     ai_addr = reinterpret_cast<sockaddr*>(static_cast<sockaddr_in6*>(this));
 
     sin6_family = ai_family;
@@ -87,14 +87,8 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     SOCKS4::RESPONSE* response =
         reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_);
 
-    if (error == 0) {
-      do {
-        if (!TunnelingService::Bind(client_, remote_))
-          break;
-
+    if (error == 0 && TunnelingService::Bind(client_, remote_))
         response->code = SOCKS4::GRANTED;
-      } while (false);
-    }
 
     if (client_->SendAsync(response, sizeof(*response), 0, this))
       return;
@@ -122,7 +116,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 
     if (error == 0) {
       int length = 32;
-      sockaddr* address = static_cast<sockaddr*>(::malloc(32));
+      sockaddr* address = static_cast<sockaddr*>(::malloc(length));
 
       if (remote_->GetLocalEndPoint(address, &length)) {
         switch (address->sa_family) {
