@@ -23,6 +23,7 @@ class SocksProxy : public ServiceProvider {
  private:
   HANDLE empty_event_;
   CRITICAL_SECTION critical_section_;
+  bool stopped_;
 };
 
 #endif  // JUNO_NET_SOCKS_SOCKS_PROXY_H_

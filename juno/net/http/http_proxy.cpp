@@ -8,7 +8,7 @@
 #include "net/async_server_socket.h"
 #include "net/http/http_proxy_session.h"
 
-HttpProxy::HttpProxy() : use_remote_proxy_(), remote_proxy_port_() {
+HttpProxy::HttpProxy() : stopped_(), use_remote_proxy_(), remote_proxy_port_() {
   empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
   ::InitializeCriticalSection(&critical_section_);
 }
@@ -62,6 +62,8 @@ bool HttpProxy::Setup(HKEY key) {
 }
 
 void HttpProxy::Stop() {
+  stopped_ = true;
+
   ::EnterCriticalSection(&critical_section_);
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
     (*i)->Stop();
@@ -79,6 +81,9 @@ void HttpProxy::EndSession(HttpProxySession* session) {
 }
 
 bool HttpProxy::OnAccepted(AsyncSocket* client) {
+  if (stopped_)
+    return false;
+
   HttpProxySession* session = new HttpProxySession(this, client);
   if (session == NULL)
     return false;
@@ -86,14 +91,16 @@ bool HttpProxy::OnAccepted(AsyncSocket* client) {
   ::EnterCriticalSection(&critical_section_);
   sessions_.push_back(session);
   ::ResetEvent(empty_event_);
-  ::LeaveCriticalSection(&critical_section_);
 
-  if (!session->Start()) {
+  bool started = session->Start();
+  if (!started) {
+    EndSession(session);
     delete session;
-    return false;
   }
 
-  return true;
+  ::LeaveCriticalSection(&critical_section_);
+
+  return started;
 }
 
 void HttpProxy::OnError(DWORD error) {

@@ -45,6 +45,7 @@ class HttpProxy : public ServiceProvider {
  private:
   HANDLE empty_event_;
   CRITICAL_SECTION critical_section_;
+  bool stopped_;
   std::list<HttpProxySession*> sessions_;
 
   DWORD use_remote_proxy_;
