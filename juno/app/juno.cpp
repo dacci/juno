@@ -8,6 +8,7 @@
 #include <madoka/net/winsock.h>
 
 #include "app/service_manager.h"
+#include "net/tunneling_service.h"
 #include "ui/main_frame.h"
 
 // {303373E4-6763-4780-B199-5325DFAFEFDD}
@@ -52,6 +53,11 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE, char*, int) {
   if (!winsock.Initialized())
     return __LINE__;
 
+  if (!TunnelingService::Init()) {
+    ATLASSERT(false);
+    return __LINE__;
+  }
+
   service_manager = new ServiceManager();
   ATLASSERT(service_manager != NULL);
   if (service_manager == NULL)
@@ -75,6 +81,7 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE, char*, int) {
 
   _Module.Term();
   delete service_manager;
+  TunnelingService::Term();
   ::CoUninitialize();
   ::CloseHandle(mutex);
 

@@ -7,45 +7,46 @@
 
 #include "net/async_socket.h"
 
-class TunnelingService : AsyncSocket::Listener {
+class TunnelingService {
  public:
+  static bool Init();
+  static void Term();
   static bool Bind(AsyncSocket* a, AsyncSocket* b);
 
-  void OnConnected(AsyncSocket* socket, DWORD error);
-  void OnReceived(AsyncSocket* socket, DWORD error, int length);
-  void OnSent(AsyncSocket* socket, DWORD error, int length);
-
  private:
-  static const size_t kBufferSize = 8192;
+  class Session : AsyncSocket::Listener {
+   public:
+    static const size_t kBufferSize = 8192;
 
-  struct BindInfo {
-    AsyncSocket* a;
-    AsyncSocket* b;
-    LONG ref_count;
+    Session(TunnelingService* service, AsyncSocket* from, AsyncSocket* to);
+    ~Session();
+
+    bool Start();
+
+    void OnConnected(AsyncSocket* socket, DWORD error);
+    void OnReceived(AsyncSocket* socket, DWORD error, int length);
+    void OnSent(AsyncSocket* socket, DWORD error, int length);
+
+    TunnelingService* service_;
+    AsyncSocket* from_;
+    AsyncSocket* to_;
+    char* buffer_;
   };
-
-  struct SocketInfo {
-    AsyncSocket* self;
-    AsyncSocket* other;
-    char* buffer;
-  };
-
-  typedef std::map<AsyncSocket*, BindInfo*> BindMap;
-  typedef BindMap::value_type BindEntry;
-
-  typedef std::map<AsyncSocket*, SocketInfo*> SocketMap;
-  typedef SocketMap::value_type SocketEntry;
 
   TunnelingService();
   ~TunnelingService();
 
-  bool BindImpl(AsyncSocket* a, AsyncSocket* b);
+  bool BindSocket(AsyncSocket* from, AsyncSocket* to);
+  void EndSession(AsyncSocket* from, AsyncSocket* to);
 
-  static TunnelingService instance_;
+  static TunnelingService* instance_;
 
+  HANDLE empty_event_;
   CRITICAL_SECTION critical_section_;
-  BindMap bind_map_;
-  SocketMap socket_map_;
+  bool stopped_;
+
+  std::map<AsyncSocket*, Session*> session_map_;
+  std::map<AsyncSocket*, int> count_map_;
 };
 
 #endif  // JUNO_NET_TUNNELING_SERVICE_H_
