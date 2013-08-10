@@ -12,6 +12,7 @@
 #include <atldlgs.h>
 
 #include "res/resource.h"
+#include "ui/preference_dialog.h"
 
 class ServerDialog
     : public CDialogImpl<ServerDialog>,
@@ -19,7 +20,8 @@ class ServerDialog
  public:
   static const UINT IDD = IDD_SERVER;
 
-  ServerDialog();
+  explicit ServerDialog(PreferenceDialog* parent,
+                        PreferenceDialog::ServerEntry* entry);
   ~ServerDialog();
 
   BEGIN_DDX_MAP(ServerDialog)
@@ -39,10 +41,16 @@ class ServerDialog
   END_MSG_MAP()
 
  private:
+  void FillBindCombo();
+  void FillServiceCombo();
+
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
+
+  PreferenceDialog* parent_;
+  PreferenceDialog::ServerEntry* entry_;
 
   CString name_;
   CComboBox bind_combo_;

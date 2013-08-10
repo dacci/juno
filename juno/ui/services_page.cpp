@@ -4,30 +4,12 @@
 
 #include <utility>
 
-ServicesPage::ServicesPage() {
-  CRegKey services_key;
-  services_key.Open(HKEY_CURRENT_USER, "Software\\dacci.org\\Juno\\Services");
+#include "ui/http_proxy_dialog.h"
+#include "ui/provider_dialog.h"
+#include "ui/socks_proxy_dialog.h"
 
-  for (DWORD i = 0; ; ++i) {
-    ServiceEntry entry;
-
-    ULONG length = 64;
-    LONG result = services_key.EnumKey(i, entry.name.GetBuffer(length),
-                                       &length);
-    if (result != ERROR_SUCCESS)
-      break;
-    entry.name.ReleaseBuffer(length);
-
-    CRegKey service_key;
-    service_key.Open(services_key, entry.name);
-
-    length = 64;
-    service_key.QueryStringValue("Provider", entry.provider.GetBuffer(length),
-                                 &length);
-    entry.provider.ReleaseBuffer(length);
-
-    services_.push_back(std::move(entry));
-  }
+ServicesPage::ServicesPage(PreferenceDialog* parent)
+    : parent_(parent), initialized_() {
 }
 
 ServicesPage::~ServicesPage() {
@@ -35,6 +17,15 @@ ServicesPage::~ServicesPage() {
 
 void ServicesPage::OnPageRelease() {
   delete this;
+}
+
+void ServicesPage::AddServiceItem(const PreferenceDialog::ServiceEntry& entry,
+                                  int index) {
+  if (index == -1)
+    index = service_list_.GetItemCount();
+
+  service_list_.InsertItem(index, entry.name);
+  service_list_.AddItem(index, 1, entry.provider);
 }
 
 BOOL ServicesPage::OnInitDialog(CWindow focus, LPARAM init_param) {
@@ -50,35 +41,100 @@ BOOL ServicesPage::OnInitDialog(CWindow focus, LPARAM init_param) {
   caption.LoadString(IDS_COLUMN_PROVIDER);
   service_list_.AddColumn(caption, 1);
 
-  for (auto i = services_.begin(), l = services_.end(); i != l; ++i) {
-    int index = service_list_.GetItemCount();
-    index = service_list_.InsertItem(index, i->name);
-    service_list_.AddItem(index, 1, i->provider);
-  }
+  for (auto i = parent_->services_.begin(), l = parent_->services_.end();
+       i != l; ++i)
+    AddServiceItem(*i, -1);
 
-  service_list_.SetColumnWidth(0, LVSCW_AUTOSIZE);
-  service_list_.SetColumnWidth(1, LVSCW_AUTOSIZE);
+  if (!parent_->services_.empty()) {
+    service_list_.SetColumnWidth(0, LVSCW_AUTOSIZE);
+    service_list_.SetColumnWidth(1, LVSCW_AUTOSIZE);
+  }
 
   edit_button_.EnableWindow(FALSE);
   delete_button_.EnableWindow(FALSE);
 
+  initialized_ = true;
+
   return TRUE;
 }
 
-void ServicesPage::OnAddServer(UINT notify_code, int id, CWindow control) {
+void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
+  PreferenceDialog::ServiceEntry entry;
+
+  ProviderDialog provider_dialog(parent_, &entry);
+  INT_PTR provider = provider_dialog.DoModal(m_hWnd);
+  if (provider < 0)
+    return;
+
+  INT_PTR dialog_result = IDCANCEL;
+
+  switch (provider) {
+    case 0: {  // HttpProxy
+      entry.extra = new PreferenceDialog::HttpProxyEntry();
+
+      HttpProxyDialog dialog(&entry);
+      dialog_result = dialog.DoModal(m_hWnd);
+      break;
+    }
+    case 1: {  // SocksProxy
+      // no configuration
+      dialog_result = IDOK;
+      break;
+    }
+  }
+
+  if (dialog_result != IDOK)
+    return;
+
+  AddServiceItem(entry, -1);
+  parent_->services_.push_back(std::move(entry));
 }
 
-void ServicesPage::OnEditServer(UINT notify_code, int id, CWindow control) {
+void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
+  int index = service_list_.GetSelectedIndex();
+  PreferenceDialog::ServiceEntry& entry = parent_->services_[index];
+
+  INT_PTR dialog_result = IDCANCEL;
+
+  if (entry.provider.Compare("HttpProxy") == 0) {
+    HttpProxyDialog dialog(&entry);
+    dialog_result = dialog.DoModal(m_hWnd);
+  } else if (entry.provider.Compare("SocksProxy") == 0) {
+    // no configuration
+    dialog_result = IDOK;
+  }
+
+  if (dialog_result != IDOK)
+    return;
+
+  service_list_.DeleteItem(index);
+  AddServiceItem(entry, index);
 }
 
-void ServicesPage::OnDeleteServer(UINT notify_code, int id, CWindow control) {
+void ServicesPage::OnDeleteService(UINT notify_code, int id, CWindow control) {
+  int index = service_list_.GetSelectedIndex();
+  service_list_.DeleteItem(index);
+  parent_->services_.erase(parent_->services_.begin() + index);
 }
 
-LRESULT ServicesPage::OnServiceListClicked(LPNMHDR header) {
+LRESULT ServicesPage::OnServiceListChanged(LPNMHDR header) {
+  if (!initialized_)
+    return 0;
+
   UINT count = service_list_.GetSelectedCount();
-
   edit_button_.EnableWindow(count > 0);
   delete_button_.EnableWindow(count > 0);
+
+  return 0;
+}
+
+LRESULT ServicesPage::OnServiceListDoubleClicked(LPNMHDR header) {
+  NMITEMACTIVATE* notify = reinterpret_cast<NMITEMACTIVATE*>(header);
+
+  if (notify->iItem < 0)
+    return 0;
+
+  SendMessage(WM_COMMAND, MAKEWPARAM(IDC_EDIT_BUTTON, 0));
 
   return 0;
 }

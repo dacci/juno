@@ -4,8 +4,7 @@
 
 #include "app/juno.h"
 #include "app/service_manager.h"
-#include "ui/servers_page.h"
-#include "ui/services_page.h"
+#include "ui/preference_dialog.h"
 
 const UINT MainFrame::WM_TASKBARCREATED =
     ::RegisterWindowMessage("TaskbarCreated");
@@ -142,22 +141,21 @@ void MainFrame::OnFileNew(UINT notify_code, int id, CWindow control) {
   if (configuring_)
     return;
 
-  CString caption;
-  caption.LoadString(ID_FILE_NEW);
-
-  CPropertySheet property_sheet(caption.GetString());
-  property_sheet.AddPage(*new ServicesPage());
-  property_sheet.AddPage(*new ServersPage());
+  PreferenceDialog dialog;
 
   configuring_ = true;
-  int result = property_sheet.DoModal(m_hWnd);
+  int result = dialog.DoModal(NULL);
   configuring_ = false;
 
   if (result != IDOK)
     return;
 
-  caption.LoadString(IDS_CONFIRM_APPLY);
-  if (MessageBox(caption, NULL, MB_ICONQUESTION | MB_YESNO) != IDYES)
+  dialog.SaveServices();
+  dialog.SaveServers();
+
+  CString message;
+  message.LoadString(IDS_CONFIRM_APPLY);
+  if (MessageBox(message, NULL, MB_ICONQUESTION | MB_YESNO) != IDYES)
     return;
 
   StopAndUnload();

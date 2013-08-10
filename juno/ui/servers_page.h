@@ -11,9 +11,8 @@
 #include <atlddx.h>
 #include <atldlgs.h>
 
-#include <vector>
-
 #include "res/resource.h"
+#include "ui/preference_dialog.h"
 
 class ServersPage
     : public CPropertyPageImpl<ServersPage>,
@@ -21,7 +20,7 @@ class ServersPage
  public:
   static const UINT IDD = IDD_SERVERS_PAGE;
 
-  ServersPage();
+  explicit ServersPage(PreferenceDialog* parent);
   ~ServersPage();
 
   void OnPageRelease();
@@ -40,19 +39,14 @@ class ServersPage
     COMMAND_ID_HANDLER_EX(IDC_EDIT_BUTTON, OnEditServer)
     COMMAND_ID_HANDLER_EX(IDC_DELETE_BUTTON, OnDeleteServer)
 
-    NOTIFY_HANDLER_EX(IDC_SERVER_LIST, NM_CLICK, OnServerListClicked)
+    NOTIFY_HANDLER_EX(IDC_SERVER_LIST, LVN_ITEMCHANGED, OnServerListChanged)
+    NOTIFY_HANDLER_EX(IDC_SERVER_LIST, NM_DBLCLK, OnServerListDoubleClicked)
 
     CHAIN_MSG_MAP(CPropertyPageImpl)
   END_MSG_MAP()
 
  private:
-  struct ServerEntry {
-    CString name;
-    DWORD enabled;
-    CString bind;
-    DWORD listen;
-    CString service;
-  };
+  void AddServerItem(const PreferenceDialog::ServerEntry& entry, int index);
 
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
@@ -60,9 +54,12 @@ class ServersPage
   void OnEditServer(UINT notify_code, int id, CWindow control);
   void OnDeleteServer(UINT notify_code, int id, CWindow control);
 
-  LRESULT OnServerListClicked(LPNMHDR header);
+  LRESULT OnServerListChanged(LPNMHDR header);
+  LRESULT OnServerListDoubleClicked(LPNMHDR header);
 
-  std::vector<ServerEntry> servers_;
+  PreferenceDialog* parent_;
+  bool initialized_;
+
   CListViewCtrl server_list_;
   CButton add_button_;
   CButton edit_button_;

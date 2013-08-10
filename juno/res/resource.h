@@ -12,6 +12,8 @@
 #define IDD_SERVER                      107
 #define IDS_ERR_START_FAILED            201
 #define IDS_CONFIRM_APPLY               202
+#define IDS_NAME_NOT_SPECIFIED          203
+#define IDS_DUPLICATE_NAME              204
 #define IDS_COLUMN_NAME                 301
 #define IDS_COLUMN_PROVIDER             302
 #define IDS_COLUMN_BIND                 303

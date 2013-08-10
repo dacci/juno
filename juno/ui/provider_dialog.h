@@ -12,6 +12,7 @@
 #include <atldlgs.h>
 
 #include "res/resource.h"
+#include "ui/preference_dialog.h"
 
 class ProviderDialog
     : public CDialogImpl<ProviderDialog>,
@@ -19,10 +20,12 @@ class ProviderDialog
  public:
   static const UINT IDD = IDD_PROVIDER;
 
-  ProviderDialog();
+  ProviderDialog(PreferenceDialog* parent,
+                 PreferenceDialog::ServiceEntry* entry);
   ~ProviderDialog();
 
   BEGIN_DDX_MAP(ProviderDialog)
+    DDX_CONTROL_HANDLE(IDC_NAME, name_edit_)
     DDX_CONTROL_HANDLE(IDC_PROVIDER, provider_combo_)
   END_DDX_MAP()
 
@@ -39,6 +42,10 @@ class ProviderDialog
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
 
+  PreferenceDialog* parent_;
+  PreferenceDialog::ServiceEntry* entry_;
+
+  CEdit name_edit_;
   CComboBox provider_combo_;
 };
 

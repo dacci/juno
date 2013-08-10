@@ -2,22 +2,86 @@
 
 #include "ui/server_dialog.h"
 
-ServerDialog::ServerDialog() : listen_() {
+#include <iphlpapi.h>
+
+ServerDialog::ServerDialog(PreferenceDialog* parent,
+                           PreferenceDialog::ServerEntry* entry)
+    : entry_(entry), parent_(parent) {
 }
 
 ServerDialog::~ServerDialog() {
 }
 
+void ServerDialog::FillBindCombo() {
+  bind_combo_.Clear();
+  bind_combo_.AddString("*");
+  bind_combo_.AddString("localhost");
+
+  ULONG size = 0;
+  ::GetAdaptersAddresses(AF_UNSPEC, 0, NULL, NULL, &size);
+
+  IP_ADAPTER_ADDRESSES* addresses =
+      static_cast<IP_ADAPTER_ADDRESSES*>(::malloc(size));
+  ULONG error = ::GetAdaptersAddresses(AF_UNSPEC, 0, NULL, addresses, &size);
+  ATLASSERT(error == ERROR_SUCCESS);
+  if (error != ERROR_SUCCESS)
+    return;
+
+  for (auto pointer = addresses; pointer; pointer = pointer->Next) {
+    for (auto address = pointer->FirstUnicastAddress; address;
+         address = address->Next) {
+      CString text;
+      DWORD length = 48;
+      error = ::WSAAddressToString(address->Address.lpSockaddr,
+                                   address->Address.iSockaddrLength,
+                                   NULL,
+                                   text.GetBuffer(length),
+                                   &length);
+      ATLASSERT(error == 0);
+      if (error != 0)
+        continue;
+
+      text.ReleaseBuffer(length);
+      bind_combo_.AddString(text);
+    }
+  }
+
+  ::free(addresses);
+}
+
+void ServerDialog::FillServiceCombo() {
+  service_combo_.Clear();
+
+  for (auto i = parent_->services_.begin(), l = parent_->services_.end();
+       i != l; ++i)
+    service_combo_.AddString(i->name);
+}
+
 BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
+  name_ = entry_->name;
+  listen_ = entry_->listen;
+
   DoDataExchange();
 
+  FillBindCombo();
+  FillServiceCombo();
+
+  bind_combo_.SetWindowText(entry_->bind);
   listen_spin_.SetRange32(1, 65535);
+  service_combo_.SelectString(0, entry_->service);
+  enable_check_.SetCheck(entry_->enabled);
 
   return TRUE;
 }
 
 void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
   DoDataExchange(DDX_SAVE);
+
+  entry_->name = name_;
+  bind_combo_.GetWindowText(entry_->bind);
+  entry_->listen = listen_;
+  service_combo_.GetWindowText(entry_->service);
+  entry_->enabled = enable_check_.GetCheck();
 
   EndDialog(IDOK);
 }

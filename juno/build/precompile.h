@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include <atlbase.h>
+#include <atlenc.h>
 #include <atlstr.h>
 #include <atlutil.h>
 
@@ -21,6 +22,7 @@
 #include <atldlgs.h>
 #include <atlframe.h>
 
+#include <iphlpapi.h>
 #include <ws2tcpip.h>
 
 #include <list>

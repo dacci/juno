@@ -12,6 +12,7 @@
 #include <atldlgs.h>
 
 #include "res/resource.h"
+#include "ui/preference_dialog.h"
 
 class SocksProxyDialog
     : public CDialogImpl<SocksProxyDialog>,
@@ -19,7 +20,7 @@ class SocksProxyDialog
  public:
   static const UINT IDD = IDD_SOCKS_PROXY;
 
-  SocksProxyDialog();
+  explicit SocksProxyDialog(PreferenceDialog::ServiceEntry* entry);
   ~SocksProxyDialog();
 
   BEGIN_DDX_MAP(SocksProxyDialog)
@@ -37,6 +38,8 @@ class SocksProxyDialog
 
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
+
+  PreferenceDialog::ServiceEntry* entry_;
 };
 
 #endif  // JUNO_UI_SOCKS_PROXY_DIALOG_H_

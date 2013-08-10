@@ -11,9 +11,8 @@
 #include <atlddx.h>
 #include <atldlgs.h>
 
-#include <vector>
-
 #include "res/resource.h"
+#include "ui/preference_dialog.h"
 
 class ServicesPage
     : public CPropertyPageImpl<ServicesPage>,
@@ -21,7 +20,7 @@ class ServicesPage
  public:
   static const UINT IDD = IDD_SERVICES_PAGE;
 
-  ServicesPage();
+  explicit ServicesPage(PreferenceDialog* parent);
   ~ServicesPage();
 
   void OnPageRelease();
@@ -36,30 +35,31 @@ class ServicesPage
   BEGIN_MSG_MAP(ServicesPage)
     MSG_WM_INITDIALOG(OnInitDialog)
 
-    COMMAND_ID_HANDLER_EX(IDC_ADD_BUTTON, OnAddServer)
-    COMMAND_ID_HANDLER_EX(IDC_EDIT_BUTTON, OnEditServer)
-    COMMAND_ID_HANDLER_EX(IDC_DELETE_BUTTON, OnDeleteServer)
+    COMMAND_ID_HANDLER_EX(IDC_ADD_BUTTON, OnAddService)
+    COMMAND_ID_HANDLER_EX(IDC_EDIT_BUTTON, OnEditService)
+    COMMAND_ID_HANDLER_EX(IDC_DELETE_BUTTON, OnDeleteService)
 
-    NOTIFY_HANDLER_EX(IDC_SERVICE_LIST, NM_CLICK, OnServiceListClicked)
+    NOTIFY_HANDLER_EX(IDC_SERVICE_LIST, LVN_ITEMCHANGED, OnServiceListChanged)
+    NOTIFY_HANDLER_EX(IDC_SERVICE_LIST, NM_DBLCLK, OnServiceListDoubleClicked)
 
     CHAIN_MSG_MAP(CPropertyPageImpl)
   END_MSG_MAP()
 
  private:
-  struct ServiceEntry {
-    CString name;
-    CString provider;
-  };
+  void AddServiceItem(const PreferenceDialog::ServiceEntry& entry, int index);
 
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
-  void OnAddServer(UINT notify_code, int id, CWindow control);
-  void OnEditServer(UINT notify_code, int id, CWindow control);
-  void OnDeleteServer(UINT notify_code, int id, CWindow control);
+  void OnAddService(UINT notify_code, int id, CWindow control);
+  void OnEditService(UINT notify_code, int id, CWindow control);
+  void OnDeleteService(UINT notify_code, int id, CWindow control);
 
-  LRESULT OnServiceListClicked(LPNMHDR header);
+  LRESULT OnServiceListChanged(LPNMHDR header);
+  LRESULT OnServiceListDoubleClicked(LPNMHDR header);
 
-  std::vector<ServiceEntry> services_;
+  PreferenceDialog* parent_;
+  bool initialized_;
+
   CListViewCtrl service_list_;
   CButton add_button_;
   CButton edit_button_;

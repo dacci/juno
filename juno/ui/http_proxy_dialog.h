@@ -12,6 +12,7 @@
 #include <atldlgs.h>
 
 #include "res/resource.h"
+#include "ui/preference_dialog.h"
 
 class HttpProxyDialog
     : public CDialogImpl<HttpProxyDialog>,
@@ -19,7 +20,7 @@ class HttpProxyDialog
  public:
   static const UINT IDD = IDD_HTTP_PROXY;
 
-  HttpProxyDialog();
+  explicit HttpProxyDialog(PreferenceDialog::ServiceEntry* entry);
   ~HttpProxyDialog();
 
   BEGIN_DDX_MAP(HttpProxyDialog)
@@ -44,6 +45,8 @@ class HttpProxyDialog
 
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
+
+  PreferenceDialog::ServiceEntry* entry_;
 
   CButton use_remote_proxy_check_;
   CEdit address_edit_;

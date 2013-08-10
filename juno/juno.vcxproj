@@ -95,11 +95,12 @@
       <DisableSpecificWarnings>4018;4244;4267</DisableSpecificWarnings>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>build/precompile.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>build/precompile.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>build/precompile.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>signtool sign "$(TargetPath)"</Command>
@@ -114,11 +115,12 @@
       <DisableSpecificWarnings>4018;4244;4267</DisableSpecificWarnings>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>build/precompile.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>build/precompile.h</ForcedIncludeFiles>
+      <ForcedIncludeFiles>build/precompile.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>signtool sign "$(TargetPath)"</Command>
@@ -138,6 +140,7 @@
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>signtool sign "$(TargetPath)"</Command>
@@ -157,6 +160,7 @@
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>iphlpapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>signtool sign "$(TargetPath)"</Command>
@@ -188,6 +192,7 @@
     <ClCompile Include="net\tunneling_service.cpp" />
     <ClCompile Include="ui\http_proxy_dialog.cpp" />
     <ClCompile Include="ui\main_frame.cpp" />
+    <ClCompile Include="ui\preference_dialog.cpp" />
     <ClCompile Include="ui\provider_dialog.cpp" />
     <ClCompile Include="ui\servers_page.cpp" />
     <ClCompile Include="ui\server_dialog.cpp" />
@@ -217,6 +222,7 @@
     <ClInclude Include="res\resource.h" />
     <ClInclude Include="ui\http_proxy_dialog.h" />
     <ClInclude Include="ui\main_frame.h" />
+    <ClInclude Include="ui\preference_dialog.h" />
     <ClInclude Include="ui\provider_dialog.h" />
     <ClInclude Include="ui\servers_page.h" />
     <ClInclude Include="ui\server_dialog.h" />
