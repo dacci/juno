@@ -14,7 +14,7 @@ bool TunnelingService::Init() {
 }
 
 void TunnelingService::Term() {
-  if (instance_ == NULL) {
+  if (instance_ != NULL) {
     delete instance_;
     instance_ = NULL;
   }
@@ -37,7 +37,7 @@ TunnelingService::~TunnelingService() {
 
   ::EnterCriticalSection(&critical_section_);
   for (auto i = session_map_.begin(), l = session_map_.end(); i != l; ++i)
-    i->first->Shutdown(SD_RECEIVE);
+    i->first->Shutdown(SD_BOTH);
   ::LeaveCriticalSection(&critical_section_);
 
   ::WaitForSingleObject(empty_event_, INFINITE);
