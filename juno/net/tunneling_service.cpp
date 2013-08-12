@@ -37,7 +37,7 @@ TunnelingService::~TunnelingService() {
 
   ::EnterCriticalSection(&critical_section_);
   for (auto i = session_map_.begin(), l = session_map_.end(); i != l; ++i)
-    i->first->Shutdown(SD_BOTH);
+    i->first->Close();
   ::LeaveCriticalSection(&critical_section_);
 
   ::WaitForSingleObject(empty_event_, INFINITE);

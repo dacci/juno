@@ -61,10 +61,10 @@ bool HttpProxySession::Start() {
 
 void HttpProxySession::Stop() {
   if (client_ != NULL)
-    client_->Shutdown(SD_BOTH);
+    client_->Close();
 
   if (remote_ != NULL)
-    remote_->Shutdown(SD_BOTH);
+    remote_->Close();
 }
 
 void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
@@ -322,8 +322,14 @@ void HttpProxySession::SendError(HTTP::StatusCode status) {
                            "Content-Length: 0\x0D\x0A"
                            "Connection: close\x0D\x0A"
                            "\x0D\x0A", status, message);
-  if (length <= 0 || !client_->SendAsync(buffer_, length, 0, this))
-    delete this;
+  if (length > 0) {
+    response_.Parse(buffer_, length);
+
+    if (client_->SendAsync(buffer_, length, 0, this))
+      return;
+  }
+  
+  delete this;
 }
 
 void HttpProxySession::EndSession() {
@@ -617,7 +623,6 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
       if (!client_->SendAsync(buffer_, response_string.size(), 0, this))
         delete this;
     } else {
-      response_.Parse("HTTP/1.1 500 Internal Server Error\x0D\x0A\x0D\x0A");
       SendError(HTTP::INTERNAL_SERVER_ERROR);
     }
     return;
