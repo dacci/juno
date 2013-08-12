@@ -75,8 +75,8 @@ bool TunnelingService::BindSocket(AsyncSocket* from, AsyncSocket* to) {
 void TunnelingService::EndSession(AsyncSocket* from, AsyncSocket* to) {
   ::EnterCriticalSection(&critical_section_);
 
-  from->Shutdown(SD_RECEIVE);
-  to->Shutdown(SD_SEND);
+  from->Shutdown(SD_BOTH);
+  to->Shutdown(SD_BOTH);
 
   if (--count_map_[from] == 0) {
     count_map_.erase(from);
@@ -114,7 +114,7 @@ void TunnelingService::Session::OnConnected(AsyncSocket*, DWORD) {
 }
 
 void TunnelingService::Session::OnReceived(AsyncSocket* socket, DWORD error,
-                                              int length) {
+                                           int length) {
   if (error != 0 || length == 0) {
     service_->EndSession(from_, to_);
     return;
@@ -124,7 +124,7 @@ void TunnelingService::Session::OnReceived(AsyncSocket* socket, DWORD error,
 }
 
 void TunnelingService::Session::OnSent(AsyncSocket* socket, DWORD error,
-                                          int length) {
+                                       int length) {
   if (error != 0 || length == 0) {
     service_->EndSession(from_, to_);
     return;
