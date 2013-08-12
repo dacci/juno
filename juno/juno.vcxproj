@@ -180,6 +180,7 @@
     </ClCompile>
     <ClCompile Include="net\async_server_socket.cpp" />
     <ClCompile Include="net\async_socket.cpp" />
+    <ClCompile Include="net\connection_manager.cpp" />
     <ClCompile Include="net\http\http_headers.cpp" />
     <ClCompile Include="net\http\http_proxy.cpp" />
     <ClCompile Include="net\http\http_proxy_session.cpp" />
@@ -206,6 +207,7 @@
     <ClInclude Include="misc\string_util.h" />
     <ClInclude Include="net\async_server_socket.h" />
     <ClInclude Include="net\async_socket.h" />
+    <ClInclude Include="net\connection_manager.h" />
     <ClInclude Include="net\http\http_headers.h" />
     <ClInclude Include="net\http\http_proxy.h" />
     <ClInclude Include="net\http\http_proxy_session.h" />
