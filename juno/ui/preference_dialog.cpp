@@ -10,7 +10,10 @@
 #include "ui/servers_page.h"
 #include "ui/services_page.h"
 
-PreferenceDialog::PreferenceDialog() : CPropertySheetImpl(ID_FILE_NEW) {
+PreferenceDialog::PreferenceDialog()
+    : CPropertySheetImpl(ID_FILE_NEW), centered_() {
+  m_psh.dwFlags |= PSH_NOAPPLYNOW | PSH_NOCONTEXTHELP;
+
   LoadServices();
   LoadServers();
 
@@ -197,4 +200,13 @@ void PreferenceDialog::LoadSocksProxy(CRegKey* key, ServiceEntry* entry) {
 
 void PreferenceDialog::SaveSocksProxy(CRegKey* key, ServiceEntry* entry) {
   // currently, no extra config
+}
+
+void PreferenceDialog::OnShowWindow(BOOL show, UINT status) {
+  SetMsgHandled(FALSE);
+
+  if (show && !centered_) {
+    centered_ = true;
+    CenterWindow();
+  }
 }

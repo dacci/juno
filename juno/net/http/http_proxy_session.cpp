@@ -328,7 +328,7 @@ void HttpProxySession::SendError(HTTP::StatusCode status) {
     if (client_->SendAsync(buffer_, length, 0, this))
       return;
   }
-  
+
   delete this;
 }
 

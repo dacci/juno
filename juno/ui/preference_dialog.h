@@ -78,6 +78,12 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
   PreferenceDialog();
   ~PreferenceDialog();
 
+  BEGIN_MSG_MAP(PreferenceDialog)
+    MSG_WM_SHOWWINDOW(OnShowWindow)
+
+    CHAIN_MSG_MAP(CPropertySheetImpl)
+  END_MSG_MAP()
+
   void SaveServices();
   void LoadServices();
 
@@ -93,6 +99,10 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
 
   void LoadSocksProxy(CRegKey* key, ServiceEntry* entry);
   void SaveSocksProxy(CRegKey* key, ServiceEntry* entry);
+
+  void OnShowWindow(BOOL show, UINT status);
+
+  bool centered_;
 };
 
 #endif  // JUNO_UI_PREFERENCE_DIALOG_H_
