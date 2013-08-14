@@ -8,6 +8,7 @@
 
 #include "net/service_provider.h"
 
+class HttpHeaders;
 class HttpProxySession;
 
 class HttpProxy : public ServiceProvider {
@@ -17,6 +18,8 @@ class HttpProxy : public ServiceProvider {
 
   bool Setup(HKEY key);
   void Stop();
+
+  void FilterHeaders(HttpHeaders* headers, bool request);
   void EndSession(HttpProxySession* session);
 
   bool OnAccepted(AsyncSocket* client);
@@ -43,6 +46,26 @@ class HttpProxy : public ServiceProvider {
   }
 
  private:
+  enum FilterAction {
+    Add,
+    Set,
+    Append,
+    Unset,
+    Merge,
+    Echo,
+    Replace,
+    ReplaceAll,
+  };
+
+  struct HeaderFilter {
+    bool request;
+    bool response;
+    FilterAction action;
+    std::string name;
+    std::string value;
+    std::string replace;
+  };
+
   HANDLE empty_event_;
   CRITICAL_SECTION critical_section_;
   bool stopped_;
@@ -53,6 +76,7 @@ class HttpProxy : public ServiceProvider {
   DWORD remote_proxy_port_;
   DWORD auth_remote_proxy_;
   std::string remote_proxy_auth_;
+  std::vector<HeaderFilter> header_filters_;
 };
 
 #endif  // JUNO_NET_HTTP_HTTP_PROXY_H_

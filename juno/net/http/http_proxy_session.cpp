@@ -242,7 +242,7 @@ void HttpProxySession::ProcessRequestHeader() {
 
   ProcessHopByHopHeaders(&request_);
 
-  // TODO(dacci): process user defined header modification
+  proxy_->FilterHeaders(&request_, true);
 
   if (proxy_->use_remote_proxy() && proxy_->auth_remote_proxy()) {
     std::string authorization("Basic ");
@@ -260,7 +260,7 @@ void HttpProxySession::ProcessResponseHeader() {
 
   ProcessHopByHopHeaders(&response_);
 
-  // TODO(dacci): process user defined header modification
+  proxy_->FilterHeaders(&response_, false);
 
   if (close_client_)
     response_.AddHeader(kConnection, "close");

@@ -5,6 +5,8 @@
 #include <atlbase.h>
 #include <atlstr.h>
 
+#include <utility>
+
 #include "net/async_server_socket.h"
 #include "net/http/http_proxy_session.h"
 
@@ -56,6 +58,57 @@ bool HttpProxy::Setup(HKEY key) {
     auth_remote_proxy_ = 0;
   }
 
+  CRegKey filters_key;
+  if (filters_key.Open(reg_key, "HeaderFilters") == ERROR_SUCCESS) {
+    for (DWORD i = 0; ; ++i) {
+      CString name;
+      DWORD length = 16;
+      int result = filters_key.EnumKey(i, name.GetBuffer(length), &length);
+      if (result != ERROR_SUCCESS)
+        break;
+
+      name.ReleaseBuffer(length);
+
+      CRegKey filter_key;
+      filter_key.Open(filters_key, name);
+
+      HeaderFilter filter;
+      DWORD dword_value;
+      CString string_value;
+
+      filter_key.QueryDWORDValue("Request", dword_value);
+      filter.request = dword_value != 0;
+
+      filter_key.QueryDWORDValue("Response", dword_value);
+      filter.response = dword_value != 0;
+
+      filter_key.QueryDWORDValue("Action", dword_value);
+      filter.action = static_cast<FilterAction>(dword_value);
+
+      length = 64;
+      filter_key.QueryStringValue("Name", string_value.GetBuffer(length),
+                                  &length);
+      string_value.ReleaseBuffer(length);
+      filter.name = string_value;
+
+      length = 64;
+      filter_key.QueryStringValue("Value", string_value.GetBuffer(length),
+                                  &length);
+      string_value.ReleaseBuffer(length);
+      filter.value = string_value;
+
+      length = 64;
+      filter_key.QueryStringValue("Replace", string_value.GetBuffer(length),
+                                  &length);
+      string_value.ReleaseBuffer(length);
+      filter.replace = string_value;
+
+      header_filters_.push_back(std::move(filter));
+    }
+
+    filters_key.Close();
+  }
+
   reg_key.Detach();
 
   return true;
@@ -70,6 +123,39 @@ void HttpProxy::Stop() {
   ::LeaveCriticalSection(&critical_section_);
 
   ::WaitForSingleObject(empty_event_, INFINITE);
+}
+
+void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
+  for (auto i = header_filters_.begin(), l = header_filters_.end();
+       i != l; ++i) {
+    HeaderFilter& filter = *i;
+
+    if (request && filter.request || !request && filter.response) {
+      switch (filter.action) {
+      case Add:
+        headers->AddHeader(filter.name, filter.value);
+        break;
+
+      case Set:
+        headers->SetHeader(filter.name, filter.value);
+        break;
+
+      case Append:
+        headers->AppendHeader(filter.name, filter.value);
+        break;
+
+      case Unset:
+        headers->RemoveHeader(filter.name);
+        break;
+
+      case Merge:
+      case Echo:
+      case Replace:
+      case ReplaceAll:
+        break;
+      }
+    }
+  }
 }
 
 void HttpProxy::EndSession(HttpProxySession* session) {
