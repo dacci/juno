@@ -28,7 +28,7 @@ int HttpResponse::Parse(const char* data, size_t length) {
     status_ = status;
     message_.assign(message, message_length);
 
-    AddHeader(headers, header_count);
+    AddHeaders(headers, header_count);
   }
 
   return result;

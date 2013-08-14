@@ -7,7 +7,6 @@
 
 #include <list>
 #include <string>
-#include <utility>
 
 struct phr_header;
 
@@ -27,19 +26,8 @@ class HttpHeaders {
     list_.push_back(std::make_pair(name, value));
   }
 
-  void AddHeader(const std::string& name, std::string&& value) {
-    list_.push_back(std::make_pair(name, std::move(value)));
-  }
-
-  void AddHeader(std::string&& name, const std::string& value) {
-    list_.push_back(std::make_pair(std::move(name), value));
-  }
-
-  void AddHeader(std::string&& name, std::string&& value) {
-    list_.push_back(std::make_pair(std::move(name), std::move(value)));
-  }
-
-  void AddHeader(const phr_header* headers, size_t count);
+  void AppendHeader(const std::string& name, const std::string& value);
+  void SetHeader(const std::string& name, const std::string& value);
 
   void RemoveHeader(const std::string& name, const std::string& value,
                     bool exact);
@@ -71,6 +59,9 @@ class HttpHeaders {
   Iterator end() const {
     return list_.end();
   }
+
+ protected:
+  void AddHeaders(const phr_header* headers, size_t count);
 
  private:
   List list_;

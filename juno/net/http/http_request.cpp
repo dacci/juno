@@ -29,7 +29,7 @@ int HttpRequest::Parse(const char* data, size_t length) {
     path_.assign(path, path_length);
     minor_version_ = minor_version;
 
-    AddHeader(headers, header_count);
+    AddHeaders(headers, header_count);
   }
 
   return result;

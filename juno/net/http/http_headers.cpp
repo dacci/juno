@@ -6,6 +6,8 @@
 
 #include <picohttpparser/picohttpparser.h>
 
+#include <utility>
+
 const std::string HttpHeaders::kNotFound;
 
 HttpHeaders::HttpHeaders() {
@@ -14,31 +16,38 @@ HttpHeaders::HttpHeaders() {
 HttpHeaders::~HttpHeaders() {
 }
 
-void HttpHeaders::AddHeader(const phr_header* headers, size_t count) {
-  for (size_t i = 0; i < count; ++i) {
-    const phr_header& current = headers[i];
-    std::string name(current.name, current.name_len);
-    std::string value(current.value, current.value_len);
-
-    for (size_t j = i + 1; j < count; ++j) {
-      const phr_header& next = headers[j];
-      if (next.name_len != 0)
-        break;
-
-      const char* start = next.value;
-      const char* end = start + next.value_len;
-      for (; start < end; ++start) {
-        if (*start != '\t' && *start != ' ')
-          break;
-      }
-
-      value.append(start, end);
-
-      i = j;
+void HttpHeaders::AppendHeader(const std::string& name,
+                               const std::string& value) {
+  for (auto i = list_.begin(), l = list_.end(); i != l; ++i) {
+    if (::_stricmp(i->first.c_str(), name.c_str()) == 0) {
+      i->second.append(", ");
+      i->second.append(value);
+      return;
     }
-
-    AddHeader(std::move(name), std::move(value));
   }
+
+  AddHeader(name, value);
+}
+
+void HttpHeaders::SetHeader(const std::string& name, const std::string& value) {
+  bool first = true;
+  bool found = false;
+
+  for (auto i = list_.begin(), l = list_.end(); i != l; ++i) {
+    found = true;
+
+    if (::_stricmp(i->first.c_str(), name.c_str()) == 0) {
+      if (first) {
+        first = false;
+        i->second = value;
+      } else {
+        list_.erase(i--);
+      }
+    }
+  }
+
+  if (!found)
+    AddHeader(name, value);
 }
 
 void HttpHeaders::RemoveHeader(const std::string& name,
@@ -64,8 +73,7 @@ void HttpHeaders::RemoveHeader(const std::string& name) {
         i = list_.begin();
         continue;
       } else {
-        List::iterator erase = i--;
-        list_.erase(erase);
+        list_.erase(i--);
       }
     }
 
@@ -114,5 +122,32 @@ void HttpHeaders::SerializeHeaders(std::string* buffer) {
     buffer->append(": ");
     buffer->append(i->second);
     buffer->append("\x0D\x0A");
+  }
+}
+
+void HttpHeaders::AddHeaders(const phr_header* headers, size_t count) {
+  for (size_t i = 0; i < count; ++i) {
+    const phr_header& current = headers[i];
+    std::string value(current.value, current.value_len);
+
+    for (size_t j = i + 1; j < count; ++j) {
+      const phr_header& next = headers[j];
+      if (next.name_len != 0)
+        break;
+
+      const char* start = next.value;
+      const char* end = start + next.value_len;
+      for (; start < end; ++start) {
+        if (*start != '\t' && *start != ' ')
+          break;
+      }
+
+      value.append(start, end);
+
+      i = j;
+    }
+
+    list_.push_back(std::make_pair(std::string(current.name, current.name_len),
+                                   std::move(value)));
   }
 }
