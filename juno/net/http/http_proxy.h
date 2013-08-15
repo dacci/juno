@@ -5,6 +5,7 @@
 
 #include <list>
 #include <string>
+#include <vector>
 
 #include "net/service_provider.h"
 
