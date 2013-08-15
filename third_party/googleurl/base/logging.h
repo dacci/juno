@@ -1,0 +1,20 @@
+// Copyright (c) 2013 dacci.org
+
+#ifndef BASE_LOGGING_H_
+#define BASE_LOGGING_H_
+
+namespace logging {
+
+class LogMessage {
+ public:
+  void operator<<(const char*) {
+  }
+};
+
+}  // namespace logging
+
+#define DCHECK(cond) true ? (void)0 : logging::LogMessage()
+
+#define NOTREACHED()
+
+#endif  // BASE_LOGGING_H_
