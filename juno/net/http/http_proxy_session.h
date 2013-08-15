@@ -5,8 +5,7 @@
 
 #include <stdint.h>
 
-#include <atlbase.h>
-#include <atlutil.h>
+#include <url/gurl.h>
 
 #include "net/async_socket.h"
 #include "net/http/http_request.h"
@@ -91,7 +90,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   std::string client_buffer_;
   HttpRequest request_;
   bool tunnel_;
-  CUrl url_;
+  GURL url_;
   madoka::net::AddressInfo resolver_;
 
   AsyncSocket* remote_;

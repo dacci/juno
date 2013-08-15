@@ -98,12 +98,10 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     request_string += request_.method();
     request_string += ' ';
 
-    if (proxy_->use_remote_proxy()) {
+    if (proxy_->use_remote_proxy())
       request_string += request_.path();
-    } else {
-      request_string += url_.GetUrlPath();
-      request_string += url_.GetExtraInfo();
-    }
+    else
+      request_string += url_.PathForRequest();
 
     request_string += " HTTP/1.";
     request_string += '0' + request_.minor_version();
@@ -245,9 +243,8 @@ void HttpProxySession::ProcessRequestHeader() {
   proxy_->FilterHeaders(&request_, true);
 
   if (proxy_->use_remote_proxy() && proxy_->auth_remote_proxy()) {
-    std::string authorization("Basic ");
-    authorization += proxy_->remote_proxy_auth();
-    request_.AddHeader(kProxyAuthorization, authorization);
+    request_.AddHeader(kProxyAuthorization,
+                       "Basic " + proxy_->remote_proxy_auth());
   }
 }
 
@@ -345,7 +342,7 @@ void HttpProxySession::EndSession() {
   }
 
   request_.Clear();
-  url_.Clear();
+  url_ = GURL::EmptyGURL();
   resolver_.Free();
 
   remote_buffer_.clear();
@@ -438,20 +435,29 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
 
   tunnel_ = request_.method().compare("CONNECT") == 0;
 
-  if (!url_.CrackUrl(request_.path().c_str())) {
-    SendError(HTTP::BAD_REQUEST);
-    return;
-  }
-  if (!tunnel_ && url_.GetScheme() != ATL_URL_SCHEME_HTTP) {
-    SendError(HTTP::NOT_IMPLEMENTED);
-    return;
-  }
-
-  if (request_.HeaderExists(kExpect)) {
-    continue_ = ::_stricmp(request_.GetHeader(kExpect), "100-continue") == 0;
-    if (!continue_) {
-      SendError(HTTP::EXPECTATION_FAILED);
+  if (tunnel_) {
+    url_ = GURL("http://" + request_.path());
+    if (!url_.has_port()) {
+      SendError(HTTP::BAD_REQUEST);
       return;
+    }
+  } else {
+    url_ = GURL(request_.path());
+    if (!url_.is_valid()) {
+      SendError(HTTP::BAD_REQUEST);
+      return;
+    }
+    if (!url_.SchemeIs("http")) {
+      SendError(HTTP::NOT_IMPLEMENTED);
+      return;
+    }
+
+    if (request_.HeaderExists(kExpect)) {
+      continue_ = ::_stricmp(request_.GetHeader(kExpect), "100-continue") == 0;
+      if (!continue_) {
+        SendError(HTTP::EXPECTATION_FAILED);
+        return;
+      }
     }
   }
 
@@ -459,10 +465,8 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
   if (proxy_->use_remote_proxy())
     resolved = resolver_.Resolve(proxy_->remote_proxy_host(),
                                  proxy_->remote_proxy_port());
-  else if (tunnel_)
-    resolved = resolver_.Resolve(url_.GetSchemeName(), url_.GetHostName());
   else
-    resolved = resolver_.Resolve(url_.GetHostName(), url_.GetPortNumber());
+    resolved = resolver_.Resolve(url_.host().c_str(), url_.EffectiveIntPort());
 
   if (!resolved) {
     SendError(HTTP::BAD_GATEWAY);

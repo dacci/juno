@@ -13,7 +13,6 @@
 #include <atlbase.h>
 #include <atlenc.h>
 #include <atlstr.h>
-#include <atlutil.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
