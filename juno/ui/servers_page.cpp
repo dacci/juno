@@ -78,8 +78,8 @@ void ServersPage::OnAddServer(UINT notify_code, int id, CWindow control) {
   if (dialog.DoModal(m_hWnd) != IDOK)
     return;
 
-  AddServerItem(entry, -1);
   parent_->servers_.push_back(std::move(entry));
+  AddServerItem(parent_->servers_.back(), -1);
 }
 
 void ServersPage::OnEditServer(UINT notify_code, int id, CWindow control) {

@@ -86,8 +86,8 @@ void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
   if (dialog_result != IDOK)
     return;
 
-  AddServiceItem(entry, -1);
   parent_->services_.push_back(std::move(entry));
+  AddServiceItem(parent_->services_.back(), -1);
 }
 
 void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
