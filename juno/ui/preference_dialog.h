@@ -48,6 +48,16 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
     ServiceExtra* extra;
   };
 
+  struct HttpHeaderFilter {
+    bool remove;
+    DWORD request;
+    DWORD response;
+    DWORD action;
+    CString name;
+    CString value;
+    CString replace;
+  };
+
   struct HttpProxyEntry : ServiceExtra {
     HttpProxyEntry()
         : use_remote_proxy(0), remote_proxy_port(0), auth_remote_proxy(0) {
@@ -62,6 +72,7 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
     DWORD auth_remote_proxy;
     CString remote_proxy_user;
     CString remote_proxy_password;
+    std::vector<HttpHeaderFilter> header_filters;
   };
 
   struct ServerEntry {

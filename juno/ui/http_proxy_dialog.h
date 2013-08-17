@@ -31,22 +31,45 @@ class HttpProxyDialog
     DDX_CONTROL_HANDLE(IDC_AUTH_REMOTE, auth_remote_check_)
     DDX_CONTROL_HANDLE(IDC_REMOTE_USER, remote_user_edit_)
     DDX_TEXT(IDC_REMOTE_PASSWORD, remote_password_)
+    DDX_CONTROL_HANDLE(IDC_FILTER_LIST, filter_list_)
+    DDX_CONTROL_HANDLE(IDC_ADD_BUTTON, add_button_)
+    DDX_CONTROL_HANDLE(IDC_EDIT_BUTTON, edit_button_)
+    DDX_CONTROL_HANDLE(IDC_DELETE_BUTTON, delete_button_)
+    DDX_CONTROL_HANDLE(ID_SCROLL_UP, up_button_)
+    DDX_CONTROL_HANDLE(ID_SCROLL_DOWN, down_button_)
   END_DDX_MAP()
 
   BEGIN_MSG_MAP(HttpProxyDialog)
     MSG_WM_INITDIALOG(OnInitDialog)
 
+    COMMAND_ID_HANDLER_EX(IDC_ADD_BUTTON, OnAddFilter)
+    COMMAND_ID_HANDLER_EX(IDC_EDIT_BUTTON, OnEditFilter)
+    COMMAND_ID_HANDLER_EX(IDC_DELETE_BUTTON, OnDeleteFilter)
+    COMMAND_ID_HANDLER_EX(ID_SCROLL_UP, OnScrollUp)
+    COMMAND_ID_HANDLER_EX(ID_SCROLL_DOWN, OnScrollDown)
     COMMAND_ID_HANDLER_EX(IDOK, OnOk)
     COMMAND_ID_HANDLER_EX(IDCANCEL, OnCancel)
+
+    NOTIFY_HANDLER_EX(IDC_FILTER_LIST, NM_DBLCLK, OnFilterListDoubleClicked)
   END_MSG_MAP()
 
  private:
+  void AddFilterItem(const PreferenceDialog::HttpHeaderFilter& filter,
+                     int filter_index, int index);
+
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
+  void OnAddFilter(UINT notify_code, int id, CWindow control);
+  void OnEditFilter(UINT notify_code, int id, CWindow control);
+  void OnDeleteFilter(UINT notify_code, int id, CWindow control);
+  void OnScrollUp(UINT notify_code, int id, CWindow control);
+  void OnScrollDown(UINT notify_code, int id, CWindow control);
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
 
-  PreferenceDialog::ServiceEntry* entry_;
+  LRESULT OnFilterListDoubleClicked(LPNMHDR header);
+
+  PreferenceDialog::HttpProxyEntry* config_;
 
   CButton use_remote_proxy_check_;
   CEdit address_edit_;
@@ -55,6 +78,13 @@ class HttpProxyDialog
   CButton auth_remote_check_;
   CEdit remote_user_edit_;
   CString remote_password_;
+  CListViewCtrl filter_list_;
+  CImageList image_list_;
+  CButton add_button_;
+  CButton edit_button_;
+  CButton delete_button_;
+  CButton up_button_;
+  CButton down_button_;
 };
 
 #endif  // JUNO_UI_HTTP_PROXY_DIALOG_H_

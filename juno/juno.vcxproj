@@ -194,6 +194,7 @@
     <ClCompile Include="net\socks\socks_proxy_session.cpp" />
     <ClCompile Include="net\tcp_server.cpp" />
     <ClCompile Include="net\tunneling_service.cpp" />
+    <ClCompile Include="ui\http_header_filter_dialog.cpp" />
     <ClCompile Include="ui\http_proxy_dialog.cpp" />
     <ClCompile Include="ui\main_frame.cpp" />
     <ClCompile Include="ui\preference_dialog.cpp" />
@@ -225,6 +226,7 @@
     <ClInclude Include="net\tcp_server.h" />
     <ClInclude Include="net\tunneling_service.h" />
     <ClInclude Include="res\resource.h" />
+    <ClInclude Include="ui\http_header_filter_dialog.h" />
     <ClInclude Include="ui\http_proxy_dialog.h" />
     <ClInclude Include="ui\main_frame.h" />
     <ClInclude Include="ui\preference_dialog.h" />
@@ -241,7 +243,13 @@
     <ResourceCompile Include="res\resource.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\arrow-down.bmp" />
+    <Image Include="res\arrow-up.bmp" />
+    <Image Include="res\document-close.bmp" />
+    <Image Include="res\document-edit.bmp" />
+    <Image Include="res\document-new.bmp" />
     <Image Include="res\juno.ico" />
+    <Image Include="res\updown.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

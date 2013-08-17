@@ -10,15 +10,27 @@
 #define IDD_HTTP_PROXY                  105
 #define IDD_SOCKS_PROXY                 106
 #define IDD_SERVER                      107
+#define IDD_HTTP_HEADER_FILTER          108
+#define IDB_UPDOWN_ARROW                109
+#define IDB_ARROW_DOWN                  110
+#define IDB_ARROW_UP                    111
+#define IDB_DOCUMENT_CLOSE              112
+#define IDB_DOCUMENT_EDIT               113
+#define IDB_DOCUMENT_NEW                114
 #define IDS_ERR_START_FAILED            201
 #define IDS_CONFIRM_APPLY               202
 #define IDS_NAME_NOT_SPECIFIED          203
 #define IDS_DUPLICATE_NAME              204
+#define IDS_NOT_SPECIFIED               205
 #define IDS_COLUMN_NAME                 301
 #define IDS_COLUMN_PROVIDER             302
 #define IDS_COLUMN_BIND                 303
 #define IDS_COLUMN_LISTEN               304
 #define IDS_COLUMN_SERVICE              305
+#define IDS_COLUMN_ACTION               306
+#define IDS_COLUMN_HEADER               307
+#define IDS_COLUMN_VALUE                308
+#define IDS_COLUMN_REPLACE              309
 #define IDC_SERVICE_LIST                1001
 #define IDC_ADD_BUTTON                  1002
 #define IDC_EDIT_BUTTON                 1003
@@ -38,14 +50,20 @@
 #define IDC_AUTH_REMOTE                 1017
 #define IDC_REMOTE_USER                 1018
 #define IDC_REMOTE_PASSWORD             1019
+#define IDC_FILTER_LIST                 1020
+#define IDC_REQUEST                     1021
+#define IDC_RESPONSE                    1022
+#define IDC_ACTION                      1023
+#define IDC_VALUE                       1024
+#define IDC_REPLACE                     1025
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        108
+#define _APS_NEXT_RESOURCE_VALUE        115
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1020
+#define _APS_NEXT_CONTROL_VALUE         1026
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

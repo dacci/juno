@@ -169,6 +169,45 @@ void PreferenceDialog::LoadHttpProxy(CRegKey* key, ServiceEntry* entry) {
     proxy_entry->remote_proxy_user = decoded.Left(index);
     proxy_entry->remote_proxy_password = decoded.Mid(index + 1);
   }
+
+  CRegKey filters_key;
+  if (filters_key.Open(*key, "HeaderFilters") == ERROR_SUCCESS) {
+    for (DWORD i = 0; ; ++i) {
+      length = 8;
+      CString name;
+      int result = filters_key.EnumKey(i, name.GetBuffer(length), &length);
+      if (result != ERROR_SUCCESS)
+        break;
+
+      name.ReleaseBuffer(length);
+
+      CRegKey filter_key;
+      filter_key.Open(filters_key, name);
+
+      proxy_entry->header_filters.push_back(HttpHeaderFilter());
+      HttpHeaderFilter& filter = proxy_entry->header_filters.back();
+      filter.remove = false;
+
+      filter_key.QueryDWORDValue("Request", filter.request);
+      filter_key.QueryDWORDValue("Response", filter.response);
+      filter_key.QueryDWORDValue("Action", filter.action);
+
+      length = 256;
+      filter_key.QueryStringValue("Name", filter.name.GetBuffer(length),
+                                  &length);
+      filter.name.ReleaseBuffer(length);
+
+      length = 256;
+      filter_key.QueryStringValue("Value", filter.value.GetBuffer(length),
+                                  &length);
+      filter.value.ReleaseBuffer(length);
+
+      length = 256;
+      filter_key.QueryStringValue("Replace", filter.replace.GetBuffer(length),
+                                  &length);
+      filter.replace.ReleaseBuffer(length);
+    }
+  }
 }
 
 void PreferenceDialog::SaveHttpProxy(CRegKey* key, ServiceEntry* entry) {
@@ -192,6 +231,28 @@ void PreferenceDialog::SaveHttpProxy(CRegKey* key, ServiceEntry* entry) {
   encoded.ReleaseBuffer(length);
 
   key->SetStringValue("RemoteProxyAuth", encoded);
+
+  CRegKey filters_key;
+  filters_key.Create(*key, "HeaderFilters");
+  int index = 0;
+
+  for (auto i = proxy_entry->header_filters.begin(),
+            l = proxy_entry->header_filters.end(); i != l; ++i) {
+    HttpHeaderFilter& filter = *i;
+
+    CString name;
+    name.Format("%d", index++);
+
+    CRegKey filter_key;
+    filter_key.Create(filters_key, name);
+
+    filter_key.SetDWORDValue("Request", filter.request);
+    filter_key.SetDWORDValue("Response", filter.response);
+    filter_key.SetDWORDValue("Action", filter.action);
+    filter_key.SetStringValue("Name", filter.name);
+    filter_key.SetStringValue("Value", filter.value);
+    filter_key.SetStringValue("Replace", filter.replace);
+  }
 }
 
 void PreferenceDialog::LoadSocksProxy(CRegKey* key, ServiceEntry* entry) {

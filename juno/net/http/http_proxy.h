@@ -48,14 +48,7 @@ class HttpProxy : public ServiceProvider {
 
  private:
   enum FilterAction {
-    Add,
-    Set,
-    Append,
-    Unset,
-    Merge,
-    Echo,
-    Replace,
-    ReplaceAll,
+    Set, Append, Add, Unset, Merge, Edit, EditR,
   };
 
   struct HeaderFilter {

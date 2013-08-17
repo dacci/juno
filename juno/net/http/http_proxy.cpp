@@ -132,10 +132,6 @@ void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
 
     if (request && filter.request || !request && filter.response) {
       switch (filter.action) {
-      case Add:
-        headers->AddHeader(filter.name, filter.value);
-        break;
-
       case Set:
         headers->SetHeader(filter.name, filter.value);
         break;
@@ -144,14 +140,17 @@ void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
         headers->AppendHeader(filter.name, filter.value);
         break;
 
+      case Add:
+        headers->AddHeader(filter.name, filter.value);
+        break;
+
       case Unset:
         headers->RemoveHeader(filter.name);
         break;
 
       case Merge:
-      case Echo:
-      case Replace:
-      case ReplaceAll:
+      case Edit:
+      case EditR:
         break;
       }
     }
