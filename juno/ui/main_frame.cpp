@@ -72,6 +72,8 @@ int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
   ::sprintf_s(notify_icon_.szTip, "Juno");
   notify_icon_.uVersion = NOTIFYICON_VERSION_4;
   notify_icon_.guidItem = GUID_JUNO_APPLICATION;
+
+  ::Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
   if (!::Shell_NotifyIcon(NIM_ADD, &notify_icon_) ||
       !::Shell_NotifyIcon(NIM_SETVERSION, &notify_icon_))
     return -1;

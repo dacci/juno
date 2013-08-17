@@ -78,7 +78,7 @@ void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
     }
     case 1: {  // SocksProxy
       // no configuration
-      dialog_result = IDOK;
+      dialog_result = IDCANCEL;
       break;
     }
   }
@@ -88,6 +88,7 @@ void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
 
   parent_->services_.push_back(std::move(entry));
   AddServiceItem(parent_->services_.back(), -1);
+  service_list_.SelectItem(service_list_.GetItemCount());
 }
 
 void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
@@ -101,7 +102,7 @@ void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
     dialog_result = dialog.DoModal(m_hWnd);
   } else if (entry.provider.Compare("SocksProxy") == 0) {
     // no configuration
-    dialog_result = IDOK;
+    dialog_result = IDCANCEL;
   }
 
   if (dialog_result != IDOK)
@@ -109,6 +110,7 @@ void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
 
   service_list_.DeleteItem(index);
   AddServiceItem(entry, index);
+  service_list_.SelectItem(index);
 }
 
 void ServicesPage::OnDeleteService(UINT notify_code, int id, CWindow control) {

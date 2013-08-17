@@ -80,6 +80,7 @@ void ServersPage::OnAddServer(UINT notify_code, int id, CWindow control) {
 
   parent_->servers_.push_back(std::move(entry));
   AddServerItem(parent_->servers_.back(), -1);
+  server_list_.SelectItem(server_list_.GetItemCount());
 }
 
 void ServersPage::OnEditServer(UINT notify_code, int id, CWindow control) {
@@ -91,6 +92,7 @@ void ServersPage::OnEditServer(UINT notify_code, int id, CWindow control) {
 
   server_list_.DeleteItem(index);
   AddServerItem(entry, index);
+  server_list_.SelectItem(index);
 }
 
 void ServersPage::OnDeleteServer(UINT notify_code, int id, CWindow control) {
