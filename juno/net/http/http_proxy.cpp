@@ -149,8 +149,15 @@ void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
         break;
 
       case Merge:
+        headers->MergeHeader(filter.name, filter.value);
+        break;
+
       case Edit:
+        headers->EditHeader(filter.name, filter.value, filter.replace, false);
+        break;
+
       case EditR:
+        headers->EditHeader(filter.name, filter.value, filter.replace, true);
         break;
       }
     }

@@ -4,6 +4,8 @@
 
 #include <string.h>
 
+#include <boost/regex.hpp>
+
 #include <picohttpparser/picohttpparser.h>
 
 #include <utility>
@@ -48,6 +50,35 @@ void HttpHeaders::SetHeader(const std::string& name, const std::string& value) {
 
   if (!found)
     AddHeader(name, value);
+}
+
+void HttpHeaders::MergeHeader(const std::string& name,
+                              const std::string& value) {
+  // TODO(dacci)
+  assert(false);
+}
+
+void HttpHeaders::EditHeader(const std::string& name, const std::string& value,
+                             const std::string& replace, bool all) {
+  boost::regex pattern;
+  try {
+    pattern.assign(value);
+  } catch (...) {  // NOLINT(*)
+    return;
+  }
+
+  boost::regex_constants::match_flag_type flags =
+      boost::regex_constants::match_default;
+  if (!all)
+    flags |= boost::regex_constants::format_first_only;
+
+  for (auto i = list_.begin(), l = list_.end(); i != l; ++i) {
+    if (::_stricmp(i->first.c_str(), name.c_str()) == 0) {
+      i->second = boost::regex_replace(i->second, pattern, replace, flags);
+      if (!all)
+        break;
+    }
+  }
 }
 
 void HttpHeaders::RemoveHeader(const std::string& name,

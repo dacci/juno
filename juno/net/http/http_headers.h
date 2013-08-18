@@ -28,6 +28,9 @@ class HttpHeaders {
 
   void AppendHeader(const std::string& name, const std::string& value);
   void SetHeader(const std::string& name, const std::string& value);
+  void MergeHeader(const std::string& name, const std::string& value);
+  void EditHeader(const std::string& name, const std::string& find,
+                  const std::string& replace, bool all);
 
   void RemoveHeader(const std::string& name, const std::string& value,
                     bool exact);

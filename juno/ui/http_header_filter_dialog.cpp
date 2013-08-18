@@ -2,6 +2,8 @@
 
 #include "ui/http_header_filter_dialog.h"
 
+#include <boost/regex.hpp>
+
 HttpHeaderFilterDialog::HttpHeaderFilterDialog(
     PreferenceDialog::HttpHeaderFilter* filter) : filter_(filter) {
 }
@@ -53,9 +55,20 @@ void HttpHeaderFilterDialog::OnOk(UINT notify_code, int id, CWindow control) {
   }
 
   int action = action_combo_.GetCurSel();
-  if (action >= 5 && replace.IsEmpty()) {
-    replace_edit_.ShowBalloonTip(&balloon);
-    return;
+  if (action >= 5) {
+    try {
+      boost::regex(value.GetString());
+    } catch (const boost::regex_error& e) {  // NOLINT(*)
+      message = e.what();
+      balloon.pszText = message;
+      value_edit_.ShowBalloonTip(&balloon);
+      return;
+    }
+
+    if (replace.IsEmpty()) {
+      replace_edit_.ShowBalloonTip(&balloon);
+      return;
+    }
   }
 
   filter_->request = request_check_.GetCheck();
