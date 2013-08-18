@@ -54,8 +54,47 @@ void HttpHeaders::SetHeader(const std::string& name, const std::string& value) {
 
 void HttpHeaders::MergeHeader(const std::string& name,
                               const std::string& value) {
-  // TODO(dacci)
-  assert(false);
+  for (auto i = list_.begin(), l = list_.end(); i != l; ++i) {
+    if (::_stricmp(i->first.c_str(), name.c_str()) == 0) {
+      const char* start = i->second.c_str();
+      const char* end = start;
+
+      while (true) {
+        while (*end) {
+          if (*end == ',')
+            break;
+
+          ++end;
+        }
+
+        if (::_strnicmp(value.c_str(), start, end - start) == 0)
+          return;
+
+        if (*end == '\0')
+          break;
+
+        start = end + 1;
+
+        while (*start) {
+          if (*start != ' ')
+            break;
+
+          ++start;
+        }
+
+        if (*start == '\0')
+          break;
+
+        end = start;
+      }
+
+      i->second.append(", ");
+      i->second.append(value);
+      return;
+    }
+  }
+
+  AddHeader(name, value);
 }
 
 void HttpHeaders::EditHeader(const std::string& name, const std::string& value,
