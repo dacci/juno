@@ -49,7 +49,8 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
   };
 
   struct HttpHeaderFilter {
-    bool remove;
+    bool added;
+    bool removed;
     DWORD request;
     DWORD response;
     DWORD action;

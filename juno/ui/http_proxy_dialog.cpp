@@ -107,7 +107,7 @@ BOOL HttpProxyDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
 }
 
 void HttpProxyDialog::OnAddFilter(UINT notify_code, int id, CWindow control) {
-  PreferenceDialog::HttpHeaderFilter filter = {};
+  PreferenceDialog::HttpHeaderFilter filter = { true };
   HttpHeaderFilterDialog dialog(&filter);
   if (dialog.DoModal(m_hWnd) != IDOK)
     return;
@@ -143,7 +143,7 @@ void HttpProxyDialog::OnDeleteFilter(UINT notify_code, int id,
   int index = filter_list_.GetSelectedIndex();
   int filter_index = filter_list_.GetItemData(index);
   filter_list_.DeleteItem(index);
-  config_->header_filters[filter_index].remove = true;
+  config_->header_filters[filter_index].removed = true;
 }
 
 void HttpProxyDialog::OnScrollUp(UINT notify_code, int id, CWindow control) {
@@ -175,7 +175,7 @@ void HttpProxyDialog::OnOk(UINT notify_code, int id, CWindow control) {
   auto& filters = config_->header_filters;
   auto i = filters.begin();
   while (i != filters.end()) {
-    if (i->remove) {
+    if (i->removed) {
       if (i == filters.begin()) {
         filters.erase(i);
         i = filters.begin();
@@ -192,9 +192,23 @@ void HttpProxyDialog::OnOk(UINT notify_code, int id, CWindow control) {
 }
 
 void HttpProxyDialog::OnCancel(UINT notify_code, int id, CWindow control) {
-  for (auto i = config_->header_filters.begin(),
-            l = config_->header_filters.end(); i != l; ++i)
-    i->remove = false;
+  auto& filters = config_->header_filters;
+  auto i = filters.begin();
+  while (i != filters.end()) {
+    if (i->added) {
+      if (i == filters.begin()) {
+        filters.erase(i);
+        i = filters.begin();
+        continue;
+      } else {
+        filters.erase(i--);
+      }
+    } else if (i->removed) {
+      i->removed = false;
+    }
+
+    ++i;
+  }
 
   EndDialog(IDCANCEL);
 }

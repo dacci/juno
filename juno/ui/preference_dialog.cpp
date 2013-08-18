@@ -186,7 +186,8 @@ void PreferenceDialog::LoadHttpProxy(CRegKey* key, ServiceEntry* entry) {
 
       proxy_entry->header_filters.push_back(HttpHeaderFilter());
       HttpHeaderFilter& filter = proxy_entry->header_filters.back();
-      filter.remove = false;
+      filter.added = false;
+      filter.removed = false;
 
       filter_key.QueryDWORDValue("Request", filter.request);
       filter_key.QueryDWORDValue("Response", filter.response);
