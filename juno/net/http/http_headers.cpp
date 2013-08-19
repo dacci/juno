@@ -36,9 +36,9 @@ void HttpHeaders::SetHeader(const std::string& name, const std::string& value) {
   bool found = false;
 
   for (auto i = list_.begin(), l = list_.end(); i != l; ++i) {
-    found = true;
-
     if (::_stricmp(i->first.c_str(), name.c_str()) == 0) {
+      found = true;
+
       if (first) {
         first = false;
         i->second = value;
