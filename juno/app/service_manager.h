@@ -29,8 +29,8 @@ class ServiceManager {
  private:
   typedef std::map<std::string, ServiceProvider*> ServiceMap;
 
-  ServiceProvider* LoadService(HKEY parent, const char* key_name);
-  TcpServer* LoadServer(HKEY parent, const char* key_name);
+  ServiceProvider* LoadService(HKEY parent, const std::string& key_name);
+  TcpServer* LoadServer(HKEY parent, const std::string& key_name);
 
   ServiceMap services_;
   std::vector<TcpServer*> servers_;

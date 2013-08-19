@@ -2,8 +2,7 @@
 
 #include "app/service_manager.h"
 
-#include <atlbase.h>
-
+#include "misc/registry_key.h"
 #include "net/http/http_proxy.h"
 #include "net/socks/socks_proxy.h"
 #include "net/tcp_server.h"
@@ -19,29 +18,22 @@ ServiceManager::~ServiceManager() {
 }
 
 bool ServiceManager::LoadServices() {
-  CRegKey app_key;
-  LONG result = app_key.Create(HKEY_CURRENT_USER, "Software\\dacci.org\\Juno");
-  if (result != ERROR_SUCCESS)
+  RegistryKey app_key;
+  if (!app_key.Create(HKEY_CURRENT_USER, "Software\\dacci.org\\Juno"))
     return false;
 
-  CRegKey services_key;
-  result = services_key.Create(app_key, "Services");
-  if (result != ERROR_SUCCESS)
+  RegistryKey services_key;
+  if (!services_key.Create(app_key, "Services"))
     return false;
 
   for (DWORD i = 0; ; ++i) {
-    CString name;
-    DWORD name_length = 64;
-    result = services_key.EnumKey(i, name.GetBuffer(name_length),
-                                  &name_length);
-    if (result != ERROR_SUCCESS)
+    std::string name;
+    if (!services_key.EnumerateKey(i, &name))
       break;
-
-    name.ReleaseBuffer(name_length);
 
     ServiceProvider* service = LoadService(services_key, name);
     if (service != NULL)
-      services_[name.GetString()] = service;
+      services_[name] = service;
   }
 
   return true;
@@ -64,25 +56,18 @@ void ServiceManager::StopServices() {
 }
 
 bool ServiceManager::LoadServers() {
-  CRegKey app_key;
-  LONG result = app_key.Create(HKEY_CURRENT_USER, "Software\\dacci.org\\Juno");
-  if (result != ERROR_SUCCESS)
+  RegistryKey app_key;
+  if (!app_key.Create(HKEY_CURRENT_USER, "Software\\dacci.org\\Juno"))
     return false;
 
-  CRegKey servers_key;
-  result = servers_key.Create(app_key, "Servers");
-  if (result != ERROR_SUCCESS)
+  RegistryKey servers_key;
+  if (!servers_key.Create(app_key, "Servers"))
     return false;
 
   for (DWORD i = 0; ; ++i) {
-    CString name;
-    DWORD name_length = 64;
-    result = servers_key.EnumKey(i, name.GetBuffer(name_length),
-                                 &name_length);
-    if (result != ERROR_SUCCESS)
+    std::string name;
+    if (!servers_key.EnumerateKey(i, &name))
       break;
-
-    name.ReleaseBuffer(name_length);
 
     TcpServer* server = LoadServer(servers_key, name);
     if (server != NULL)
@@ -118,25 +103,20 @@ void ServiceManager::StopServers() {
 }
 
 ServiceProvider* ServiceManager::LoadService(HKEY parent,
-                                             const char* key_name) {
-  CRegKey reg_key;
-  LONG result = reg_key.Open(parent, key_name);
-  if (result != ERROR_SUCCESS)
+                                             const std::string& key_name) {
+  RegistryKey reg_key;
+  if (!reg_key.Open(parent, key_name))
     return NULL;
 
-  CString provider_name;
-  ULONG length = 64;
-  result = reg_key.QueryStringValue("Provider", provider_name.GetBuffer(length),
-                                    &length);
-  if (result != ERROR_SUCCESS)
+  std::string provider_name;
+  if (!reg_key.QueryString("Provider", &provider_name))
     return NULL;
-  provider_name.ReleaseBuffer(length);
 
   ServiceProvider* provider = NULL;
 
-  if (provider_name.Compare("HttpProxy") == 0)
+  if (provider_name.compare("HttpProxy") == 0)
     provider = new HttpProxy();
-  else if (provider_name.Compare("SocksProxy") == 0)
+  else if (provider_name.compare("SocksProxy") == 0)
     provider = new SocksProxy();
 
   if (provider == NULL)
@@ -150,45 +130,37 @@ ServiceProvider* ServiceManager::LoadService(HKEY parent,
   return provider;
 }
 
-TcpServer* ServiceManager::LoadServer(HKEY parent, const char* key_name) {
-  CRegKey reg_key;
-  LONG result = reg_key.Open(parent, key_name);
-  if (result != ERROR_SUCCESS)
+TcpServer* ServiceManager::LoadServer(HKEY parent,
+                                      const std::string& key_name) {
+  RegistryKey reg_key;
+  if (!reg_key.Open(parent, key_name))
     return NULL;
 
-  DWORD enabled;
-  result = reg_key.QueryDWORDValue("Enabled", enabled);
-  if (result == ERROR_SUCCESS && !enabled)
+  int enabled = reg_key.QueryInteger("Enabled");
+  if (!enabled)
     return NULL;
 
-  CString service;
-  ULONG length = 64;
-  result = reg_key.QueryStringValue("Service", service.GetBuffer(length),
-                                    &length);
-  if (result != ERROR_SUCCESS)
+  std::string service;
+  if (!reg_key.QueryString("Service", &service))
     return NULL;
 
-  auto service_entry = services_.find(service.GetString());
+  auto service_entry = services_.find(service);
   if (service_entry == services_.end())
     return NULL;
 
-  DWORD listen;
-  result = reg_key.QueryDWORDValue("Listen", listen);
-  if (result != ERROR_SUCCESS)
+  int listen = reg_key.QueryInteger("Listen");
+  if (listen == 0)
     return NULL;
 
-  CString bind;
-  length = 48;
-  result = reg_key.QueryStringValue("Bind", bind.GetBuffer(length), &length);
-  if (result != ERROR_SUCCESS)
+  std::string bind;
+  if (!reg_key.QueryString("Bind", &bind))
     return NULL;
-  bind.ReleaseBuffer(length);
 
   TcpServer* server = new TcpServer();
   if (server == NULL)
     return NULL;
 
-  if (!server->Setup(bind, listen)) {
+  if (!server->Setup(bind.c_str(), listen)) {
     delete server;
     return NULL;
   }
