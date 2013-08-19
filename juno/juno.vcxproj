@@ -181,6 +181,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="misc\registry_key.cpp" />
     <ClCompile Include="net\async_server_socket.cpp" />
     <ClCompile Include="net\async_socket.cpp" />
     <ClCompile Include="net\connection_manager.cpp" />
@@ -208,6 +209,8 @@
     <ClInclude Include="app\juno.h" />
     <ClInclude Include="app\service_manager.h" />
     <ClInclude Include="build\precompile.h" />
+    <ClInclude Include="misc\registry_key-inl.h" />
+    <ClInclude Include="misc\registry_key.h" />
     <ClInclude Include="misc\string_util.h" />
     <ClInclude Include="net\async_server_socket.h" />
     <ClInclude Include="net\async_socket.h" />
