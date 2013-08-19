@@ -71,26 +71,11 @@ BOOL HttpProxyDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   filter_list_.AddColumn(caption, 4);
   filter_list_.SetColumnWidth(4, 100);
 
-  CBitmap bitmap;
-  bitmap.LoadBitmap(IDB_ARROW_UP);
-  up_button_.SetBitmap(bitmap);
-  bitmap.DeleteObject();
-
-  bitmap.LoadBitmap(IDB_DOCUMENT_NEW);
-  add_button_.SetBitmap(bitmap);
-  bitmap.DeleteObject();
-
-  bitmap.LoadBitmap(IDB_DOCUMENT_EDIT);
-  edit_button_.SetBitmap(bitmap);
-  bitmap.DeleteObject();
-
-  bitmap.LoadBitmap(IDB_DOCUMENT_CLOSE);
-  delete_button_.SetBitmap(bitmap);
-  bitmap.DeleteObject();
-
-  bitmap.LoadBitmap(IDB_ARROW_DOWN);
-  down_button_.SetBitmap(bitmap);
-  bitmap.DeleteObject();
+  up_button_.SetBitmap(::AtlLoadBitmapImage(IDB_ARROW_UP));
+  add_button_.SetBitmap(::AtlLoadBitmapImage(IDB_DOCUMENT_NEW));
+  edit_button_.SetBitmap(::AtlLoadBitmapImage(IDB_DOCUMENT_EDIT));
+  delete_button_.SetBitmap(::AtlLoadBitmapImage(IDB_DOCUMENT_CLOSE));
+  down_button_.SetBitmap(::AtlLoadBitmapImage(IDB_ARROW_DOWN));
 
   use_remote_proxy_check_.SetCheck(config_->use_remote_proxy);
   address_edit_.SetWindowText(config_->remote_proxy_host);
