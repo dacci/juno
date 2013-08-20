@@ -95,8 +95,11 @@ bool RegistryKey::QueryString(const char* name, std::string* value) {
                               reinterpret_cast<BYTE*>(buffer), &size);
   if (result == ERROR_SUCCESS) {
     char* end = buffer + size - 1;
-    while (*end == '\0')
+    while (end > buffer) {
+      if (*end)
+        break;
       --end;
+    }
 
     value->assign(buffer, end + 1);
   }
@@ -120,8 +123,11 @@ bool RegistryKey::QueryString(const wchar_t* name, std::wstring* value) {
                               reinterpret_cast<BYTE*>(buffer), &size);
   if (result == ERROR_SUCCESS) {
     wchar_t* end = buffer + size - 1;
-    while (*end == L'\0')
+    while (end > buffer) {
+      if (*end)
+        break;
       --end;
+    }
 
     value->assign(buffer, end + 1);
   }
