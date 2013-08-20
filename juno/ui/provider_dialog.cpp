@@ -13,8 +13,8 @@ ProviderDialog::~ProviderDialog() {
 BOOL ProviderDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   DoDataExchange();
 
-  provider_combo_.AddString("HttpProxy");
-  provider_combo_.AddString("SocksProxy");
+  provider_combo_.AddString(_T("HttpProxy"));
+  provider_combo_.AddString(_T("SocksProxy"));
 
   return TRUE;
 }

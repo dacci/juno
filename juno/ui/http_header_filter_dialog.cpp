@@ -14,13 +14,13 @@ HttpHeaderFilterDialog::~HttpHeaderFilterDialog() {
 BOOL HttpHeaderFilterDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   DoDataExchange();
 
-  action_combo_.AddString("Set");
-  action_combo_.AddString("Append");
-  action_combo_.AddString("Add");
-  action_combo_.AddString("Unset");
-  action_combo_.AddString("Merge");
-  action_combo_.AddString("Edit");
-  action_combo_.AddString("Edit*");
+  action_combo_.AddString(_T("Set"));
+  action_combo_.AddString(_T("Append"));
+  action_combo_.AddString(_T("Add"));
+  action_combo_.AddString(_T("Unset"));
+  action_combo_.AddString(_T("Merge"));
+  action_combo_.AddString(_T("Edit"));
+  action_combo_.AddString(_T("Edit*"));
 
   request_check_.SetCheck(filter_->request);
   response_check_.SetCheck(filter_->response);
@@ -57,7 +57,11 @@ void HttpHeaderFilterDialog::OnOk(UINT notify_code, int id, CWindow control) {
   int action = action_combo_.GetCurSel();
   if (action >= 5) {
     try {
+#ifdef UNICODE
+      boost::wregex(value.GetString());
+#else   // UNICODE
       boost::regex(value.GetString());
+#endif  // UNICODE
     } catch (const boost::regex_error& e) {  // NOLINT(*)
       message = e.what();
       balloon.pszText = message;

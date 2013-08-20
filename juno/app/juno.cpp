@@ -27,7 +27,7 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE, char*, int) {
   }
 #endif  // _DEBUG
 
-  HANDLE mutex = ::CreateMutex(NULL, TRUE, "org.dacci.juno");
+  HANDLE mutex = ::CreateMutex(NULL, TRUE, _T("org.dacci.juno"));
   DWORD error = ::GetLastError();
   if (mutex == NULL)
     return __LINE__;

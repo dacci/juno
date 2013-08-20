@@ -97,10 +97,10 @@ void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
 
   INT_PTR dialog_result = IDCANCEL;
 
-  if (entry.provider.Compare("HttpProxy") == 0) {
+  if (entry.provider.Compare(_T("HttpProxy")) == 0) {
     HttpProxyDialog dialog(&entry);
     dialog_result = dialog.DoModal(m_hWnd);
-  } else if (entry.provider.Compare("SocksProxy") == 0) {
+  } else if (entry.provider.Compare(_T("SocksProxy")) == 0) {
     // no configuration
     dialog_result = IDCANCEL;
   }

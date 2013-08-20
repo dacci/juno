@@ -7,7 +7,7 @@
 #include "ui/preference_dialog.h"
 
 const UINT MainFrame::WM_TASKBARCREATED =
-    ::RegisterWindowMessage("TaskbarCreated");
+    ::RegisterWindowMessage(_T("TaskbarCreated"));
 
 MainFrame::MainFrame() : notify_icon_(), configuring_() {
   OSVERSIONINFOEX version_info = { sizeof(version_info) };
@@ -69,7 +69,7 @@ int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
                         NIF_SHOWTIP;
   notify_icon_.uCallbackMessage = WM_TRAYNOTIFY;
   notify_icon_.hIcon = ::AtlLoadIconImage(IDR_MAIN_FRAME, 0, 16, 16);
-  ::sprintf_s(notify_icon_.szTip, "Juno");
+  ::_stprintf_s(notify_icon_.szTip, _T("Juno"));
   notify_icon_.uVersion = NOTIFYICON_VERSION_4;
   notify_icon_.guidItem = GUID_JUNO_APPLICATION;
 

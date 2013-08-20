@@ -14,8 +14,8 @@ ServerDialog::~ServerDialog() {
 
 void ServerDialog::FillBindCombo() {
   bind_combo_.Clear();
-  bind_combo_.AddString("*");
-  bind_combo_.AddString("localhost");
+  bind_combo_.AddString(_T("*"));
+  bind_combo_.AddString(_T("localhost"));
 
   ULONG size = 0;
   ::GetAdaptersAddresses(AF_UNSPEC, 0, NULL, NULL, &size);

@@ -23,7 +23,7 @@ void ServersPage::AddServerItem(const PreferenceDialog::ServerEntry& entry,
     index = server_list_.GetItemCount();
 
   CString listen;
-  listen.Format("%u", entry.listen);
+  listen.Format(_T("%u"), entry.listen);
 
   server_list_.InsertItem(index, NULL);
   server_list_.SetCheckState(index, entry.enabled);

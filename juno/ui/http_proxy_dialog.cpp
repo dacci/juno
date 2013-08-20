@@ -4,14 +4,14 @@
 
 #include "ui/http_header_filter_dialog.h"
 
-static const char* kActions[] = {
-  "Set",
-  "Append",
-  "Add",
-  "Unset",
-  "Merge",
-  "Edit",
-  "Edit*",
+static const TCHAR* kActions[] = {
+  _T("Set"),
+  _T("Append"),
+  _T("Add"),
+  _T("Unset"),
+  _T("Merge"),
+  _T("Edit"),
+  _T("Edit*"),
 };
 
 HttpProxyDialog::HttpProxyDialog(PreferenceDialog::ServiceEntry* entry)
@@ -51,7 +51,7 @@ BOOL HttpProxyDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
 
   filter_list_.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT);
   filter_list_.SetImageList(image_list_, LVSIL_SMALL);
-  filter_list_.AddColumn("", 0);
+  filter_list_.AddColumn(NULL, 0);
   filter_list_.SetColumnWidth(0, 24);
 
   CString caption;
