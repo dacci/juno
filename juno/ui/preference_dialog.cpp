@@ -26,15 +26,16 @@ PreferenceDialog::~PreferenceDialog() {
 
 void PreferenceDialog::LoadServices() {
   CRegKey services_key;
-  services_key.Open(HKEY_CURRENT_USER,
-                    _T("Software\\dacci.org\\Juno\\Services"));
+  LONG result = services_key.Open(HKEY_CURRENT_USER,
+                                  _T("Software\\dacci.org\\Juno\\Services"));
+  if (result != ERROR_SUCCESS)
+    return;
 
   for (DWORD i = 0; ; ++i) {
     ServiceEntry entry;
 
     DWORD length = 64;
-    LONG result = services_key.EnumKey(i, entry.name.GetBuffer(length),
-                                       &length);
+    result = services_key.EnumKey(i, entry.name.GetBuffer(length), &length);
     if (result != ERROR_SUCCESS)
       break;
 
@@ -64,7 +65,7 @@ void PreferenceDialog::LoadServices() {
 
 void PreferenceDialog::SaveServices() {
   CRegKey app_key;
-  app_key.Open(HKEY_CURRENT_USER, _T("Software\\dacci.org\\Juno"));
+  app_key.Create(HKEY_CURRENT_USER, _T("Software\\dacci.org\\Juno"));
 
   ::SHDeleteKey(app_key, _T("Services"));
 
@@ -84,13 +85,16 @@ void PreferenceDialog::SaveServices() {
 
 void PreferenceDialog::LoadServers() {
   CRegKey servers_key;
-  servers_key.Open(HKEY_CURRENT_USER, _T("Software\\dacci.org\\Juno\\Servers"));
+  LONG result = servers_key.Open(HKEY_CURRENT_USER,
+                                 _T("Software\\dacci.org\\Juno\\Servers"));
+  if (result != ERROR_SUCCESS)
+    return;
 
   for (DWORD i = 0; ; ++i) {
     ServerEntry entry;
 
     DWORD length = 64;
-    LONG result = servers_key.EnumKey(i, entry.name.GetBuffer(length), &length);
+    result = servers_key.EnumKey(i, entry.name.GetBuffer(length), &length);
     if (result != ERROR_SUCCESS)
       break;
 
@@ -120,7 +124,7 @@ void PreferenceDialog::LoadServers() {
 
 void PreferenceDialog::SaveServers() {
   CRegKey app_key;
-  app_key.Open(HKEY_CURRENT_USER, _T("Software\\dacci.org\\Juno"));
+  app_key.Create(HKEY_CURRENT_USER, _T("Software\\dacci.org\\Juno"));
 
   ::SHDeleteKey(app_key, _T("Servers"));
 
