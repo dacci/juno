@@ -54,6 +54,16 @@ class RegistryKey {
   int QueryInteger(const wchar_t* name);
   int QueryInteger(const std::wstring& name);
 
+  bool QueryBinary(const char* name, void* data, int* length);
+  bool QueryBinary(const std::string& name, void* data, int* length);
+  bool QueryBinary(const wchar_t* name, void* data, int* length);
+  bool QueryBinary(const std::wstring& name, void* data, int* length);
+
+  bool SetBinary(const char* name, const void* data, int length);
+  bool SetBinary(const std::string& name, const void* data, int length);
+  bool SetBinary(const wchar_t* name, const void* data, int length);
+  bool SetBinary(const std::wstring& name, const void* data, int length);
+
   bool EnumerateKey(int index, std::string* name);
   bool EnumerateKey(int index, std::wstring* name);
 

@@ -79,4 +79,24 @@ inline int RegistryKey::QueryInteger(const std::wstring& name) {
   return QueryInteger(name.c_str());
 }
 
+inline bool RegistryKey::QueryBinary(const std::string& name, void* data,
+                                     int* length) {
+  return QueryBinary(name.c_str(), data, length);
+}
+
+inline bool RegistryKey::QueryBinary(const std::wstring& name, void* data,
+                                     int* length) {
+  return QueryBinary(name.c_str(), data, length);
+}
+
+inline bool RegistryKey::SetBinary(const std::string& name, const void* data,
+                                   int length) {
+  return SetBinary(name.c_str(), data, length);
+}
+
+inline bool RegistryKey::SetBinary(const std::wstring& name, const void* data,
+                                   int length) {
+  return SetBinary(name.c_str(), data, length);
+}
+
 #endif  // JUNO_MISC_REGISTRY_KEY_INL_H_

@@ -82,7 +82,7 @@ void RegistryKey::Close() {
 }
 
 bool RegistryKey::QueryString(const char* name, std::string* value) {
-  DWORD type, size;
+  DWORD type, size = 0;
   LSTATUS result = ::RegQueryValueExA(key_, name, NULL, &type, NULL, &size);
   if (result != ERROR_SUCCESS || type != REG_SZ)
     return false;
@@ -107,7 +107,7 @@ bool RegistryKey::QueryString(const char* name, std::string* value) {
 }
 
 bool RegistryKey::QueryString(const wchar_t* name, std::wstring* value) {
-  DWORD type, size;
+  DWORD type, size = 0;
   LSTATUS result = ::RegQueryValueExW(key_, name, NULL, &type, NULL, &size);
   if (result != ERROR_SUCCESS || type != REG_SZ)
     return false;
@@ -167,6 +167,66 @@ bool RegistryKey::QueryInteger(const wchar_t* name, int* value) {
   *value = stored;
 
   return true;
+}
+
+bool RegistryKey::QueryBinary(const char* name, void* data, int* length) {
+  DWORD type, size = 0;
+  LSTATUS status = ::RegQueryValueExA(key_, name, NULL, &type, NULL, &size);
+  if (status != ERROR_SUCCESS || type != REG_BINARY)
+    return false;
+
+  if (data == NULL) {
+    if (length != NULL)
+      *length = size;
+    return true;
+  }
+
+  if (*length < size)
+    return false;
+
+  status = ::RegQueryValueExA(key_, name, NULL, NULL, static_cast<BYTE*>(data),
+                              &size);
+  if (status != ERROR_SUCCESS)
+    return false;
+
+  *length = size;
+  return true;
+}
+
+bool RegistryKey::QueryBinary(const wchar_t* name, void* data, int* length) {
+  DWORD type, size = 0;
+  LSTATUS status = ::RegQueryValueExW(key_, name, NULL, &type, NULL, &size);
+  if (status != ERROR_SUCCESS || type != REG_BINARY)
+    return false;
+
+  if (data == NULL) {
+    if (length != NULL)
+      *length = size;
+    return true;
+  }
+
+  if (*length < size)
+    return false;
+
+  status = ::RegQueryValueExW(key_, name, NULL, NULL, static_cast<BYTE*>(data),
+                              &size);
+  if (status != ERROR_SUCCESS)
+    return false;
+
+  *length = size;
+  return true;
+}
+
+bool RegistryKey::SetBinary(const char* name, const void* data, int length) {
+  return ::RegSetValueExA(key_, name, 0, REG_BINARY,
+                          static_cast<const BYTE*>(data),
+                          length) == ERROR_SUCCESS;
+}
+
+bool RegistryKey::SetBinary(const wchar_t* name, const void* data, int length) {
+  return ::RegSetValueExW(key_, name, 0, REG_BINARY,
+                          static_cast<const BYTE*>(data),
+                          length) == ERROR_SUCCESS;
 }
 
 bool RegistryKey::EnumerateKey(int index, std::string* name) {
