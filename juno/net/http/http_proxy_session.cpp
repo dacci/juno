@@ -242,10 +242,8 @@ void HttpProxySession::ProcessRequestHeader() {
 
   proxy_->FilterHeaders(&request_, true);
 
-  if (proxy_->use_remote_proxy() && proxy_->auth_remote_proxy()) {
-    request_.AddHeader(kProxyAuthorization,
-                       "Basic " + proxy_->remote_proxy_auth());
-  }
+  if (proxy_->use_remote_proxy() && proxy_->auth_remote_proxy())
+    request_.AddHeader(kProxyAuthorization, proxy_->basic_authorization());
 }
 
 void HttpProxySession::ProcessResponseHeader() {

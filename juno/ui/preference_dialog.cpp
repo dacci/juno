@@ -2,7 +2,7 @@
 
 #include "ui/preference_dialog.h"
 
-#include <atlenc.h>
+#include <wincrypt.h>
 
 #include <utility>
 
@@ -153,21 +153,26 @@ void PreferenceDialog::LoadHttpProxy(CRegKey* key, ServiceEntry* entry) {
   key->QueryDWORDValue("AuthRemoteProxy", proxy_entry->auth_remote_proxy);
 
   length = 256;
-  CString auth;
-  key->QueryStringValue("RemoteProxyAuth", auth.GetBuffer(length), &length);
-  auth.ReleaseBuffer(length);
+  key->QueryStringValue("RemoteProxyUser",
+                        proxy_entry->remote_proxy_user.GetBuffer(length),
+                        &length);
+  proxy_entry->remote_proxy_user.ReleaseBuffer(length);
 
-  if (length > 0) {
-    int decoded_length = ::Base64DecodeGetRequiredLength(length);
-    CString decoded;
-    ::Base64Decode(auth, auth.GetLength(),
-                   reinterpret_cast<BYTE*>(decoded.GetBuffer(decoded_length)),
-                   &decoded_length);
-    decoded.ReleaseBuffer(decoded_length);
+  length = 0;
+  LONG result = key->QueryBinaryValue("RemoteProxyPassword", NULL, &length);
+  if (result == ERROR_SUCCESS) {
+    DATA_BLOB encrypted = { length, new BYTE[length] }, decrypted = {};
+    key->QueryBinaryValue("RemoteProxyPassword", encrypted.pbData, &length);
 
-    int index = decoded.Find(':', 0);
-    proxy_entry->remote_proxy_user = decoded.Left(index);
-    proxy_entry->remote_proxy_password = decoded.Mid(index + 1);
+    result = ::CryptUnprotectData(&encrypted, NULL, NULL, NULL, NULL, 0,
+                                  &decrypted);
+    if (result != FALSE) {
+      proxy_entry->remote_proxy_password.SetString(
+          reinterpret_cast<const char*>(decrypted.pbData), decrypted.cbData);
+      ::LocalFree(decrypted.pbData);
+    }
+
+    delete[] encrypted.pbData;
   }
 
   CRegKey filters_key;
@@ -218,20 +223,22 @@ void PreferenceDialog::SaveHttpProxy(CRegKey* key, ServiceEntry* entry) {
   key->SetStringValue("RemoteProxyHost", proxy_entry->remote_proxy_host);
   key->SetDWORDValue("RemoteProxyPort", proxy_entry->remote_proxy_port);
   key->SetDWORDValue("AuthRemoteProxy", proxy_entry->auth_remote_proxy);
+  key->SetStringValue("RemoteProxyUser", proxy_entry->remote_proxy_user);
 
-  CString auth;
-  auth.Format("%s:%s", proxy_entry->remote_proxy_user,
-              proxy_entry->remote_proxy_password);
+  if (!proxy_entry->remote_proxy_password.IsEmpty()) {
+    DATA_BLOB decrypted = {
+      proxy_entry->remote_proxy_password.GetLength(),
+      const_cast<BYTE*>(reinterpret_cast<const BYTE*>(
+          proxy_entry->remote_proxy_password.GetString()))
+    };
+    DATA_BLOB encrypted = {};
 
-  DWORD flags = ATL_BASE64_FLAG_NOCRLF;
-  int length = ::Base64EncodeGetRequiredLength(auth.GetLength(), flags);
-
-  CString encoded;
-  ::Base64Encode(reinterpret_cast<const BYTE*>(auth.GetString()),
-                 auth.GetLength(), encoded.GetBuffer(length), &length, flags);
-  encoded.ReleaseBuffer(length);
-
-  key->SetStringValue("RemoteProxyAuth", encoded);
+    if (::CryptProtectData(&decrypted, NULL, NULL, NULL, NULL, 0, &encrypted)) {
+      key->SetBinaryValue("RemoteProxyPassword", encrypted.pbData,
+                          encrypted.cbData);
+      ::LocalFree(encrypted.pbData);
+    }
+  }
 
   CRegKey filters_key;
   filters_key.Create(*key, "HeaderFilters");

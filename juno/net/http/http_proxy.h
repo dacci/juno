@@ -42,8 +42,8 @@ class HttpProxy : public ServiceProvider {
     return auth_remote_proxy_;
   }
 
-  const std::string& remote_proxy_auth() const {
-    return remote_proxy_auth_;
+  const std::string& basic_authorization() const {
+    return basic_authorization_;
   }
 
  private:
@@ -69,8 +69,11 @@ class HttpProxy : public ServiceProvider {
   std::string remote_proxy_host_;
   DWORD remote_proxy_port_;
   DWORD auth_remote_proxy_;
-  std::string remote_proxy_auth_;
+  std::string remote_proxy_user_;
+  std::string remote_proxy_password_;
   std::vector<HeaderFilter> header_filters_;
+
+  std::string basic_authorization_;
 };
 
 #endif  // JUNO_NET_HTTP_HTTP_PROXY_H_

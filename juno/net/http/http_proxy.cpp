@@ -2,6 +2,8 @@
 
 #include "net/http/http_proxy.h"
 
+#include <wincrypt.h>
+
 #include <utility>
 
 #include "misc/registry_key-inl.h"
@@ -33,8 +35,43 @@ bool HttpProxy::Setup(HKEY key) {
 
   auth_remote_proxy_ = reg_key.QueryInteger("AuthRemoteProxy");
 
-  if (!reg_key.QueryString("RemoteProxyAuth", &remote_proxy_auth_))
+  if (!reg_key.QueryString("RemoteProxyUser", &remote_proxy_user_))
     auth_remote_proxy_ = 0;
+
+  int length = 0;
+  if (reg_key.QueryBinary("RemoteProxyPassword", NULL, &length)) {
+    BYTE* buffer = new BYTE[length];
+    reg_key.QueryBinary("RemoteProxyPassword", buffer, &length);
+
+    DATA_BLOB encrypted = { length, buffer }, decrypted = {};
+    if (::CryptUnprotectData(&encrypted, NULL, NULL, NULL, NULL, 0,
+                             &decrypted)) {
+      remote_proxy_password_.assign(reinterpret_cast<char*>(decrypted.pbData),
+                                    decrypted.cbData);
+      ::LocalFree(decrypted.pbData);
+    }
+
+    delete[] buffer;
+  }
+
+  std::string auth = remote_proxy_user_ + ':' + remote_proxy_password_;
+  DWORD buffer_size = (((auth.size() - 1) / 3) + 2) * 4;
+  char* buffer = new char[buffer_size];
+
+  ::CryptBinaryToStringA(reinterpret_cast<const BYTE*>(auth.c_str()),
+                         auth.size(), CRYPT_STRING_BASE64, buffer,
+                         &buffer_size);
+  char* end = buffer + buffer_size - 1;
+  while (end > buffer) {
+    if (!::isspace(*end))
+      break;
+    --end;
+  }
+
+  basic_authorization_ = "Basic ";
+  basic_authorization_.append(buffer, end + 1);
+
+  delete[] buffer;
 
   RegistryKey filters_key;
   if (filters_key.Open(reg_key, "HeaderFilters")) {
