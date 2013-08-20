@@ -37,18 +37,15 @@ BOOL ServicesPage::OnInitDialog(CWindow focus, LPARAM init_param) {
 
   caption.LoadString(IDS_COLUMN_NAME);
   service_list_.AddColumn(caption, 0);
+  service_list_.SetColumnWidth(0, 150);
 
   caption.LoadString(IDS_COLUMN_PROVIDER);
   service_list_.AddColumn(caption, 1);
+  service_list_.SetColumnWidth(1, 150);
 
   for (auto i = parent_->services_.begin(), l = parent_->services_.end();
        i != l; ++i)
     AddServiceItem(*i, -1);
-
-  if (!parent_->services_.empty()) {
-    service_list_.SetColumnWidth(0, LVSCW_AUTOSIZE);
-    service_list_.SetColumnWidth(1, LVSCW_AUTOSIZE);
-  }
 
   edit_button_.EnableWindow(FALSE);
   delete_button_.EnableWindow(FALSE);

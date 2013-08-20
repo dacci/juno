@@ -25,12 +25,11 @@ void ServersPage::AddServerItem(const PreferenceDialog::ServerEntry& entry,
   CString listen;
   listen.Format(_T("%u"), entry.listen);
 
-  server_list_.InsertItem(index, NULL);
+  server_list_.InsertItem(index, entry.name);
+  server_list_.AddItem(index, 1, entry.bind);
+  server_list_.AddItem(index, 2, listen);
+  server_list_.AddItem(index, 3, entry.service);
   server_list_.SetCheckState(index, entry.enabled);
-  server_list_.AddItem(index, 1, entry.name);
-  server_list_.AddItem(index, 2, entry.bind);
-  server_list_.AddItem(index, 3, listen);
-  server_list_.AddItem(index, 4, entry.service);
 }
 
 BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
@@ -40,29 +39,26 @@ BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
 
   server_list_.SetExtendedListViewStyle(LVS_EX_CHECKBOXES |
                                         LVS_EX_FULLROWSELECT);
-  server_list_.AddColumn(caption, 0);
 
   caption.LoadString(IDS_COLUMN_NAME);
-  server_list_.AddColumn(caption, 1);
+  server_list_.AddColumn(caption, 0);
+  server_list_.SetColumnWidth(0, 100);
 
   caption.LoadString(IDS_COLUMN_BIND);
-  server_list_.AddColumn(caption, 2);
+  server_list_.AddColumn(caption, 1);
+  server_list_.SetColumnWidth(1, 80);
 
   caption.LoadString(IDS_COLUMN_LISTEN);
-  server_list_.AddColumn(caption, 3);
+  server_list_.AddColumn(caption, 2);
+  server_list_.SetColumnWidth(2, 50);
 
   caption.LoadString(IDS_COLUMN_SERVICE);
-  server_list_.AddColumn(caption, 4);
+  server_list_.AddColumn(caption, 3);
+  server_list_.SetColumnWidth(3, 100);
 
   for (auto i = parent_->servers_.begin(), l = parent_->servers_.end();
        i != l; ++i)
     AddServerItem(*i, -1);
-
-  if (!parent_->servers_.empty()) {
-    server_list_.SetColumnWidth(0, LVSCW_AUTOSIZE);
-    server_list_.SetColumnWidth(1, LVSCW_AUTOSIZE);
-    server_list_.SetColumnWidth(4, LVSCW_AUTOSIZE);
-  }
 
   edit_button_.EnableWindow(FALSE);
   delete_button_.EnableWindow(FALSE);
