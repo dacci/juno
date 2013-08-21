@@ -6,6 +6,7 @@
 #include <stdio.h>
 
 #include <madoka/net/abstract_socket.h>
+#include <madoka/net/address_info.h>
 
 namespace madoka {
 namespace net {
@@ -13,6 +14,10 @@ namespace net {
 class DatagramSocket : public AbstractSocket {
  public:
   DatagramSocket() : bound_(), connected_() {
+  }
+
+  DatagramSocket(int family, int protocol) : bound_(), connected_() {
+    Create(family, SOCK_DGRAM, protocol);
   }
 
   virtual ~DatagramSocket() {
@@ -36,6 +41,9 @@ class DatagramSocket : public AbstractSocket {
   }
 
   bool Bind(const addrinfo* end_point) {
+    if (!Create(end_point))
+      return false;
+
     return Bind(end_point->ai_addr, end_point->ai_addrlen);
   }
 
@@ -50,7 +58,7 @@ class DatagramSocket : public AbstractSocket {
       return false;
 
     for (AddressInfo::iterator i = info.begin(), l = info.end(); i != l; ++i) {
-      if (Create(*i) && Bind(*i))
+      if (Bind(*i))
         break;
 
       Close();
@@ -84,6 +92,9 @@ class DatagramSocket : public AbstractSocket {
   }
 
   bool Connect(const addrinfo* end_point) {
+    if (!Create(end_point))
+      return false;
+
     return Connect(end_point->ai_addr, end_point->ai_addrlen);
   }
 
@@ -97,7 +108,7 @@ class DatagramSocket : public AbstractSocket {
       return false;
 
     for (AddressInfo::iterator i = info.begin(), l = info.end(); i != l; ++i) {
-      if (Create(*i) && Connect(*i))
+      if (Connect(*i))
         break;
 
       Close();
@@ -122,6 +133,9 @@ class DatagramSocket : public AbstractSocket {
 
 #ifdef WIN32
   bool Bind(const ADDRINFOW* end_point) {
+    if (!Create(end_point))
+      return false;
+
     return Bind(end_point->ai_addr, end_point->ai_addrlen);
   }
 
@@ -136,7 +150,7 @@ class DatagramSocket : public AbstractSocket {
       return false;
 
     for (AddressInfoW::iterator i = info.begin(), l = info.end(); i != l; ++i) {
-      if (Create(*i) && Bind(*i))
+      if (Bind(*i))
         break;
 
       Close();
@@ -160,6 +174,9 @@ class DatagramSocket : public AbstractSocket {
   }
 
   bool Connect(const ADDRINFOW* end_point) {
+    if (!Create(end_point))
+      return false;
+
     return Connect(end_point->ai_addr, end_point->ai_addrlen);
   }
 
@@ -173,7 +190,7 @@ class DatagramSocket : public AbstractSocket {
       return false;
 
     for (AddressInfoW::iterator i = info.begin(), l = info.end(); i != l; ++i) {
-      if (Create(*i) && Connect(*i))
+      if (Connect(*i))
         break;
 
       Close();
@@ -234,10 +251,19 @@ class DatagramSocket : public AbstractSocket {
                     flags, to, tolen);
   }
 
- private:
+  bool bound() const {
+    return bound_;
+  }
+
+  bool connected() const {
+    return connected_;
+  }
+
+ protected:
   bool bound_;
   bool connected_;
 
+ private:
   DISALLOW_COPY_AND_ASSIGN(DatagramSocket);
 };
 
