@@ -75,7 +75,7 @@ void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
     }
     case 1: {  // SocksProxy
       // no configuration
-      dialog_result = IDCANCEL;
+      dialog_result = IDOK;
       break;
     }
   }
@@ -99,7 +99,7 @@ void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
     dialog_result = dialog.DoModal(m_hWnd);
   } else if (entry.provider.Compare(_T("SocksProxy")) == 0) {
     // no configuration
-    dialog_result = IDCANCEL;
+    dialog_result = IDOK;
   }
 
   if (dialog_result != IDOK)
