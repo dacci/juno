@@ -182,6 +182,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="misc\registry_key.cpp" />
+    <ClCompile Include="net\async_datagram_socket.cpp" />
     <ClCompile Include="net\async_server_socket.cpp" />
     <ClCompile Include="net\async_socket.cpp" />
     <ClCompile Include="net\connection_manager.cpp" />
@@ -212,6 +213,7 @@
     <ClInclude Include="misc\registry_key-inl.h" />
     <ClInclude Include="misc\registry_key.h" />
     <ClInclude Include="misc\string_util.h" />
+    <ClInclude Include="net\async_datagram_socket.h" />
     <ClInclude Include="net\async_server_socket.h" />
     <ClInclude Include="net\async_socket.h" />
     <ClInclude Include="net\connection_manager.h" />
