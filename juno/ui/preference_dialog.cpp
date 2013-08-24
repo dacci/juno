@@ -80,6 +80,8 @@ void PreferenceDialog::SaveServices() {
 
     if (i->provider.Compare(_T("HttpProxy")) == 0)
       SaveHttpProxy(&service_key, &*i);
+    else if (i->provider.Compare(_T("SocksProxy")) == 0)
+      SaveSocksProxy(&service_key, &*i);
   }
 }
 
