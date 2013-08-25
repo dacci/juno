@@ -15,6 +15,7 @@ BOOL ProviderDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
 
   provider_combo_.AddString(_T("HttpProxy"));
   provider_combo_.AddString(_T("SocksProxy"));
+  provider_combo_.AddString(_T("Scissors"));
 
   return TRUE;
 }

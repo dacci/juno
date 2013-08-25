@@ -58,6 +58,8 @@ void PreferenceDialog::LoadServices() {
       LoadHttpProxy(&service_key, &entry);
     else if (entry.provider.Compare(_T("SocksProxy")) == 0)
       LoadSocksProxy(&service_key, &entry);
+    else if (entry.provider.Compare(_T("Scissors")) == 0)
+      LoadScissors(&service_key, &entry);
 
     services_.push_back(std::move(entry));
   }
@@ -82,6 +84,8 @@ void PreferenceDialog::SaveServices() {
       SaveHttpProxy(&service_key, &*i);
     else if (i->provider.Compare(_T("SocksProxy")) == 0)
       SaveSocksProxy(&service_key, &*i);
+    else if (i->provider.Compare(_T("Scissors")) == 0)
+      SaveScissors(&service_key, &*i);
   }
 }
 
@@ -277,6 +281,28 @@ void PreferenceDialog::LoadSocksProxy(CRegKey* key, ServiceEntry* entry) {
 
 void PreferenceDialog::SaveSocksProxy(CRegKey* key, ServiceEntry* entry) {
   // currently, no extra config
+}
+
+void PreferenceDialog::LoadScissors(CRegKey* key, ServiceEntry* entry) {
+  ScissorsEntry* scissors_entry = new ScissorsEntry();
+  entry->extra = scissors_entry;
+
+  ULONG length = 256;
+  key->QueryStringValue(_T("RemoteAddress"),
+                        scissors_entry->remote_address_.GetBuffer(length),
+                        &length);
+  scissors_entry->remote_address_.ReleaseBuffer(length);
+
+  key->QueryDWORDValue(_T("RemotePort"), scissors_entry->remote_port_);
+  key->QueryDWORDValue(_T("RemoteSSL"), scissors_entry->remote_ssl_);
+}
+
+void PreferenceDialog::SaveScissors(CRegKey* key, ServiceEntry* entry) {
+  ScissorsEntry* scissors_entry = static_cast<ScissorsEntry*>(entry->extra);
+
+  key->SetStringValue(_T("RemoteAddress"), scissors_entry->remote_address_);
+  key->SetDWORDValue(_T("RemotePort"), scissors_entry->remote_port_);
+  key->SetDWORDValue(_T("RemoteSSL"), scissors_entry->remote_ssl_);
 }
 
 void PreferenceDialog::OnShowWindow(BOOL show, UINT status) {

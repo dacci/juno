@@ -76,6 +76,18 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
     std::vector<HttpHeaderFilter> header_filters;
   };
 
+  struct ScissorsEntry : ServiceExtra {
+    ScissorsEntry() : remote_port_(), remote_ssl_() {
+    }
+
+    virtual ~ScissorsEntry() {
+    }
+
+    CString remote_address_;
+    DWORD remote_port_;
+    DWORD remote_ssl_;
+  };
+
   struct ServerEntry {
     ServerEntry() : enabled(TRUE), listen(0) {
     }
@@ -111,6 +123,9 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
 
   void LoadSocksProxy(CRegKey* key, ServiceEntry* entry);
   void SaveSocksProxy(CRegKey* key, ServiceEntry* entry);
+
+  void LoadScissors(CRegKey* key, ServiceEntry* entry);
+  void SaveScissors(CRegKey* key, ServiceEntry* entry);
 
   void OnShowWindow(BOOL show, UINT status);
 

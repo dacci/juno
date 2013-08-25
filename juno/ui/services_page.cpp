@@ -78,6 +78,11 @@ void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
       dialog_result = IDOK;
       break;
     }
+    case 2: {  // Scissors
+      // no configuration
+      dialog_result = IDOK;
+      break;
+    }
   }
 
   if (dialog_result != IDOK)
@@ -98,6 +103,9 @@ void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
     HttpProxyDialog dialog(&entry);
     dialog_result = dialog.DoModal(m_hWnd);
   } else if (entry.provider.Compare(_T("SocksProxy")) == 0) {
+    // no configuration
+    dialog_result = IDOK;
+  } else if (entry.provider.Compare(_T("Scissors")) == 0) {
     // no configuration
     dialog_result = IDOK;
   }

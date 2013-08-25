@@ -25,4 +25,8 @@ inline __int64 _strtoi64(const std::string& string, char** end_pointer,
   return _strtoi64(string.c_str(), end_pointer, radix);
 }
 
+inline std::wstring to_wstring(const std::string& string) {
+  return std::wstring(string.begin(), string.end());
+}
+
 #endif  // JUNO_MISC_STRING_UTIL_H_

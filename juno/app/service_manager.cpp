@@ -4,6 +4,7 @@
 
 #include "misc/registry_key.h"
 #include "net/http/http_proxy.h"
+#include "net/scissors/scissors.h"
 #include "net/socks/socks_proxy.h"
 #include "net/tcp_server.h"
 
@@ -118,6 +119,8 @@ ServiceProvider* ServiceManager::LoadService(HKEY parent,
     provider = new HttpProxy();
   else if (provider_name.compare("SocksProxy") == 0)
     provider = new SocksProxy();
+  else if (provider_name.compare("Scissors") == 0)
+    provider = new Scissors();
 
   if (provider == NULL)
     return NULL;
