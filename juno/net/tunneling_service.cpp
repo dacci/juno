@@ -115,20 +115,14 @@ void TunnelingService::Session::OnConnected(AsyncSocket*, DWORD) {
 
 void TunnelingService::Session::OnReceived(AsyncSocket* socket, DWORD error,
                                            int length) {
-  if (error != 0 || length == 0) {
+  if (error != 0 || length == 0 ||
+      !to_->SendAsync(buffer_, length, 0, this))
     service_->EndSession(from_, to_);
-    return;
-  }
-
-  to_->SendAsync(buffer_, length, 0, this);
 }
 
 void TunnelingService::Session::OnSent(AsyncSocket* socket, DWORD error,
                                        int length) {
-  if (error != 0 || length == 0) {
+  if (error != 0 || length == 0 ||
+      !from_->ReceiveAsync(buffer_, kBufferSize, 0, this))
     service_->EndSession(from_, to_);
-    return;
-  }
-
-  from_->ReceiveAsync(buffer_, kBufferSize, 0, this);
 }
