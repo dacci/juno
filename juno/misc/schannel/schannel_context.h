@@ -62,6 +62,13 @@ class SchannelContext {
                                    &expiry_);
   }
 
+  SECURITY_STATUS ApplyControlToken(ULONG token) {
+    SecurityBufferBundle buffers;
+    buffers.AddBuffer(SECBUFFER_TOKEN, sizeof(token), &token);
+
+    return ::ApplyControlToken(&handle_, &buffers);
+  }
+
   SECURITY_STATUS QueryAttributes(ULONG attribute, void* buffer) {
     return ::QueryContextAttributes(&handle_, attribute, buffer);
   }

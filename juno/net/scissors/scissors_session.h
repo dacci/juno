@@ -26,6 +26,11 @@ class ScissorsSession : public AsyncSocket::Listener {
   static const size_t kBufferSize = 8192;
 
   bool SendAsync(AsyncSocket* socket, const SecBuffer& buffer);
+  bool DoNegotiation();
+  bool CompleteNegotiation();
+  bool DoEncryption();
+  bool DoDecryption();
+  void EndSession();
 
   void OnClientReceived(DWORD error, int length);
   void OnRemoteReceived(DWORD error, int length);
@@ -36,6 +41,23 @@ class ScissorsSession : public AsyncSocket::Listener {
   AsyncSocket* client_;
   AsyncSocket* remote_;
   SchannelContext* context_;
+  bool established_;
+  LONG ref_count_;
+
+  SecPkgContext_StreamSizes stream_sizes_;
+  int negotiating_;
+  bool shutdown_;
+
+  std::vector<char> client_data_;
+  char* client_buffer_;
+
+  std::vector<char> remote_data_;
+  char* remote_buffer_;
+
+  SecurityBufferBundle token_input_;
+  SecurityBufferBundle token_output_;
+  SecurityBufferBundle encrypted_;
+  SecurityBufferBundle decrypted_;
 };
 
 #endif  // JUNO_NET_SCISSORS_SCISSORS_SESSION_H_
