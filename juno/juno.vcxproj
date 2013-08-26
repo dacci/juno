@@ -203,6 +203,7 @@
     <ClCompile Include="ui\main_frame.cpp" />
     <ClCompile Include="ui\preference_dialog.cpp" />
     <ClCompile Include="ui\provider_dialog.cpp" />
+    <ClCompile Include="ui\scissors_dialog.cpp" />
     <ClCompile Include="ui\servers_page.cpp" />
     <ClCompile Include="ui\server_dialog.cpp" />
     <ClCompile Include="ui\services_page.cpp" />
@@ -243,6 +244,7 @@
     <ClInclude Include="ui\main_frame.h" />
     <ClInclude Include="ui\preference_dialog.h" />
     <ClInclude Include="ui\provider_dialog.h" />
+    <ClInclude Include="ui\scissors_dialog.h" />
     <ClInclude Include="ui\servers_page.h" />
     <ClInclude Include="ui\server_dialog.h" />
     <ClInclude Include="ui\services_page.h" />

@@ -17,6 +17,7 @@
 #define IDB_DOCUMENT_CLOSE              112
 #define IDB_DOCUMENT_EDIT               113
 #define IDB_DOCUMENT_NEW                114
+#define IDD_SCISSORS                    115
 #define IDS_ERR_START_FAILED            201
 #define IDS_CONFIRM_APPLY               202
 #define IDS_NAME_NOT_SPECIFIED          203
@@ -56,14 +57,15 @@
 #define IDC_ACTION                      1023
 #define IDC_VALUE                       1024
 #define IDC_REPLACE                     1025
+#define IDC_USE_SSL                     1026
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        115
+#define _APS_NEXT_RESOURCE_VALUE        116
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1026
+#define _APS_NEXT_CONTROL_VALUE         1027
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

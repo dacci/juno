@@ -6,6 +6,7 @@
 
 #include "ui/http_proxy_dialog.h"
 #include "ui/provider_dialog.h"
+#include "ui/scissors_dialog.h"
 #include "ui/socks_proxy_dialog.h"
 
 ServicesPage::ServicesPage(PreferenceDialog* parent)
@@ -79,8 +80,10 @@ void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
       break;
     }
     case 2: {  // Scissors
-      // no configuration
-      dialog_result = IDOK;
+      entry.extra = new PreferenceDialog::ScissorsEntry();
+
+      ScissorsDialog dialog(&entry);
+      dialog_result = dialog.DoModal(m_hWnd);
       break;
     }
   }
@@ -106,8 +109,8 @@ void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
     // no configuration
     dialog_result = IDOK;
   } else if (entry.provider.Compare(_T("Scissors")) == 0) {
-    // no configuration
-    dialog_result = IDOK;
+    ScissorsDialog dialog(&entry);
+    dialog_result = dialog.DoModal(m_hWnd);
   }
 
   if (dialog_result != IDOK)
