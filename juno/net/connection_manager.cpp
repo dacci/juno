@@ -4,19 +4,19 @@
 
 #include <assert.h>
 
+#include <madoka/concurrent/lock_guard.h>
+
 ConnectionManager::ConnectionManager() {
-  ::InitializeCriticalSection(&critical_section_);
 }
 
 ConnectionManager::~ConnectionManager() {
-  ::DeleteCriticalSection(&critical_section_);
 }
 
 bool ConnectionManager::ConnectAsync(const char* host, int port,
                                      AsyncSocket::Listener* listener) {
-  ::EnterCriticalSection(&critical_section_);
-
   do {
+    madoka::concurrent::LockGuard lock(&critical_section_);
+
     auto i = cache_.find(host);
     if (i == cache_.end())
       break;
@@ -32,18 +32,14 @@ bool ConnectionManager::ConnectAsync(const char* host, int port,
       if (succeeded)
         cache.sockets.pop_front();
 
-      ::LeaveCriticalSection(&critical_section_);
       return succeeded;
     }
 
     if (cache.allocated >= kMaxCache) {
       cache.waiting.push_back(listener);
-      ::LeaveCriticalSection(&critical_section_);
       return true;
     }
   } while (false);
-
-  ::LeaveCriticalSection(&critical_section_);
 
   PendingRequest* pending = NULL;
   AsyncSocket* socket = NULL;
@@ -64,9 +60,9 @@ bool ConnectionManager::ConnectAsync(const char* host, int port,
     if (socket == NULL)
       break;
 
-    ::EnterCriticalSection(&critical_section_);
+    critical_section_.Lock();
     pending_.insert(PendingEntry(socket, pending));
-    ::LeaveCriticalSection(&critical_section_);
+    critical_section_.Unlock();
 
     if (!socket->ConnectAsync(*pending->resolver, this))
       break;
@@ -75,9 +71,9 @@ bool ConnectionManager::ConnectAsync(const char* host, int port,
   } while (false);
 
   if (socket != NULL) {
-    ::EnterCriticalSection(&critical_section_);
+    critical_section_.Lock();
     pending_.erase(socket);
-    ::LeaveCriticalSection(&critical_section_);
+    critical_section_.Unlock();
 
     delete socket;
   }
@@ -89,7 +85,7 @@ bool ConnectionManager::ConnectAsync(const char* host, int port,
 }
 
 void ConnectionManager::Release(AsyncSocket* socket) {
-  ::EnterCriticalSection(&critical_section_);
+  critical_section_.Lock();
 
   EndPoint& end_point = sockets_[socket];
   CacheEntry& cache = cache_[end_point.host][end_point.port];
@@ -104,7 +100,7 @@ void ConnectionManager::Release(AsyncSocket* socket) {
     cache.waiting.pop_front();
   }
 
-  ::LeaveCriticalSection(&critical_section_);
+  critical_section_.Unlock();
 
   if (waiting != NULL)
     if (!FireConnected(waiting, socket, 0))
@@ -112,7 +108,7 @@ void ConnectionManager::Release(AsyncSocket* socket) {
 }
 
 void ConnectionManager::OnConnected(AsyncSocket* socket, DWORD error) {
-  ::EnterCriticalSection(&critical_section_);
+  critical_section_.Lock();
 
   PendingRequest* pending = pending_[socket];
   pending_.erase(socket);
@@ -126,7 +122,7 @@ void ConnectionManager::OnConnected(AsyncSocket* socket, DWORD error) {
     sockets_.insert(SocketEntry(socket, pending->end_point));
   }
 
-  ::LeaveCriticalSection(&critical_section_);
+  critical_section_.Unlock();
 
   FireConnected(pending->listener, socket, error);
   delete pending;

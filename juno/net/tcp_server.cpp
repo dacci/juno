@@ -7,7 +7,6 @@
 
 TcpServer::TcpServer() : service_(), count_() {
   event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
-  ::InitializeCriticalSection(&critical_section_);
 }
 
 TcpServer::~TcpServer() {
@@ -18,7 +17,6 @@ TcpServer::~TcpServer() {
   servers_.clear();
 
   ::CloseHandle(event_);
-  ::DeleteCriticalSection(&critical_section_);
 }
 
 bool TcpServer::Setup(const char* address, int port) {
@@ -57,7 +55,7 @@ bool TcpServer::Start() {
 
   bool succeeded = false;
 
-  ::EnterCriticalSection(&critical_section_);
+  critical_section_.Lock();
 
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
     if ((*i)->AcceptAsync(this)) {
@@ -67,7 +65,7 @@ bool TcpServer::Start() {
     }
   }
 
-  ::LeaveCriticalSection(&critical_section_);
+  critical_section_.Unlock();
 
   return succeeded;
 }
@@ -93,8 +91,8 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
   delete client;
   server->Close();
 
-  ::EnterCriticalSection(&critical_section_);
+  critical_section_.Lock();
   if (--count_ == 0)
     ::SetEvent(event_);
-  ::LeaveCriticalSection(&critical_section_);
+  critical_section_.Unlock();
 }

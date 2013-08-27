@@ -3,6 +3,8 @@
 #ifndef JUNO_NET_TUNNELING_SERVICE_H_
 #define JUNO_NET_TUNNELING_SERVICE_H_
 
+#include <madoka/concurrent/critical_section.h>
+
 #include <map>
 
 #include "net/async_socket.h"
@@ -42,7 +44,7 @@ class TunnelingService {
   static TunnelingService* instance_;
 
   HANDLE empty_event_;
-  CRITICAL_SECTION critical_section_;
+  madoka::concurrent::CriticalSection critical_section_;
   bool stopped_;
 
   std::map<AsyncSocket*, Session*> session_map_;

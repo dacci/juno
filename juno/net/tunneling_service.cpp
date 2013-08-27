@@ -29,21 +29,19 @@ bool TunnelingService::Bind(AsyncSocket* a, AsyncSocket* b) {
 
 TunnelingService::TunnelingService() : stopped_() {
   empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
-  ::InitializeCriticalSection(&critical_section_);
 }
 
 TunnelingService::~TunnelingService() {
   stopped_ = true;
 
-  ::EnterCriticalSection(&critical_section_);
+  critical_section_.Lock();
   for (auto i = session_map_.begin(), l = session_map_.end(); i != l; ++i)
     i->first->Close();
-  ::LeaveCriticalSection(&critical_section_);
+  critical_section_.Unlock();
 
   ::WaitForSingleObject(empty_event_, INFINITE);
 
   ::CloseHandle(empty_event_);
-  ::DeleteCriticalSection(&critical_section_);
 }
 
 bool TunnelingService::BindSocket(AsyncSocket* from, AsyncSocket* to) {
@@ -54,7 +52,7 @@ bool TunnelingService::BindSocket(AsyncSocket* from, AsyncSocket* to) {
   if (pair == NULL)
     return false;
 
-  ::EnterCriticalSection(&critical_section_);
+  critical_section_.Lock();
 
   bool started = pair->Start();
   if (started) {
@@ -67,13 +65,13 @@ bool TunnelingService::BindSocket(AsyncSocket* from, AsyncSocket* to) {
     delete pair;
   }
 
-  ::LeaveCriticalSection(&critical_section_);
+  critical_section_.Unlock();
 
   return started;
 }
 
 void TunnelingService::EndSession(AsyncSocket* from, AsyncSocket* to) {
-  ::EnterCriticalSection(&critical_section_);
+  critical_section_.Lock();
 
   from->Shutdown(SD_BOTH);
   to->Shutdown(SD_BOTH);
@@ -93,7 +91,7 @@ void TunnelingService::EndSession(AsyncSocket* from, AsyncSocket* to) {
   if (session_map_.empty())
     ::SetEvent(empty_event_);
 
-  ::LeaveCriticalSection(&critical_section_);
+  critical_section_.Unlock();
 }
 
 TunnelingService::Session::Session(TunnelingService* service, AsyncSocket* from,

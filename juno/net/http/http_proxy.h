@@ -3,6 +3,8 @@
 #ifndef JUNO_NET_HTTP_HTTP_PROXY_H_
 #define JUNO_NET_HTTP_HTTP_PROXY_H_
 
+#include <madoka/concurrent/critical_section.h>
+
 #include <list>
 #include <string>
 #include <vector>
@@ -61,7 +63,7 @@ class HttpProxy : public ServiceProvider {
   };
 
   HANDLE empty_event_;
-  CRITICAL_SECTION critical_section_;
+  madoka::concurrent::CriticalSection critical_section_;
   bool stopped_;
   std::list<HttpProxySession*> sessions_;
 

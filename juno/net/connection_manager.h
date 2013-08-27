@@ -3,6 +3,7 @@
 #ifndef JUNO_NET_CONNECTION_MANAGER_H_
 #define JUNO_NET_CONNECTION_MANAGER_H_
 
+#include <madoka/concurrent/critical_section.h>
 #include <madoka/net/address_info.h>
 
 #include <list>
@@ -66,7 +67,7 @@ class ConnectionManager : public AsyncSocket::Listener {
                      AsyncSocket* socket, DWORD error);
   static DWORD CALLBACK FireConnected(void* param);
 
-  CRITICAL_SECTION critical_section_;
+  madoka::concurrent::CriticalSection critical_section_;
   HostMap cache_;
   SocketMap sockets_;
   std::map<AsyncSocket*, PendingRequest*> pending_;

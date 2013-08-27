@@ -12,12 +12,10 @@
 
 HttpProxy::HttpProxy() : stopped_(), use_remote_proxy_(), remote_proxy_port_() {
   empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
-  ::InitializeCriticalSection(&critical_section_);
 }
 
 HttpProxy::~HttpProxy() {
   Stop();
-  ::DeleteCriticalSection(&critical_section_);
   ::CloseHandle(empty_event_);
 }
 
@@ -106,10 +104,10 @@ bool HttpProxy::Setup(HKEY key) {
 void HttpProxy::Stop() {
   stopped_ = true;
 
-  ::EnterCriticalSection(&critical_section_);
+  critical_section_.Lock();
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
     (*i)->Stop();
-  ::LeaveCriticalSection(&critical_section_);
+  critical_section_.Unlock();
 
   ::WaitForSingleObject(empty_event_, INFINITE);
 }
@@ -154,11 +152,11 @@ void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
 }
 
 void HttpProxy::EndSession(HttpProxySession* session) {
-  ::EnterCriticalSection(&critical_section_);
+  critical_section_.Lock();
   sessions_.remove(session);
   if (sessions_.empty())
     ::SetEvent(empty_event_);
-  ::LeaveCriticalSection(&critical_section_);
+  critical_section_.Unlock();
 }
 
 bool HttpProxy::OnAccepted(AsyncSocket* client) {
@@ -169,7 +167,7 @@ bool HttpProxy::OnAccepted(AsyncSocket* client) {
   if (session == NULL)
     return false;
 
-  ::EnterCriticalSection(&critical_section_);
+  critical_section_.Lock();
   sessions_.push_back(session);
   ::ResetEvent(empty_event_);
 
@@ -179,7 +177,7 @@ bool HttpProxy::OnAccepted(AsyncSocket* client) {
     delete session;
   }
 
-  ::LeaveCriticalSection(&critical_section_);
+  critical_section_.Unlock();
 
   return started;
 }
