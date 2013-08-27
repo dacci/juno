@@ -19,14 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="madoka\common.h" />
-    <ClInclude Include="madoka\net\abstract_socket.h" />
-    <ClInclude Include="madoka\net\address_info.h" />
-    <ClInclude Include="madoka\net\common.h" />
-    <ClInclude Include="madoka\net\datagram_socket.h" />
-    <ClInclude Include="madoka\net\server_socket.h" />
-    <ClInclude Include="madoka\net\socket.h" />
-    <ClInclude Include="madoka\net\winsock.h" />
+    <ClInclude Include="include\madoka\common.h" />
+    <ClInclude Include="include\madoka\net\abstract_socket.h" />
+    <ClInclude Include="include\madoka\net\address_info.h" />
+    <ClInclude Include="include\madoka\net\common.h" />
+    <ClInclude Include="include\madoka\net\datagram_socket.h" />
+    <ClInclude Include="include\madoka\net\server_socket.h" />
+    <ClInclude Include="include\madoka\net\socket.h" />
+    <ClInclude Include="include\madoka\net\winsock.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{849CC6CC-460E-45DE-8EA5-4DDA0F25837D}</ProjectGuid>
@@ -77,16 +77,16 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)src;$(ProjectDir)include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)src;$(ProjectDir)include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)src;$(ProjectDir)include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)src;$(ProjectDir)include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
