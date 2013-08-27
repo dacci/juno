@@ -72,19 +72,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(SolutionDir)madoka;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\chromium\src;$(SolutionDir)third_party\googleurl;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)madoka\include;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\chromium\src;$(SolutionDir)third_party\googleurl;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(SolutionDir)madoka;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\chromium\src;$(SolutionDir)third_party\googleurl;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)madoka\include;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\chromium\src;$(SolutionDir)third_party\googleurl;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(SolutionDir)madoka;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\chromium\src;$(SolutionDir)third_party\googleurl;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)madoka\include;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\chromium\src;$(SolutionDir)third_party\googleurl;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(SolutionDir)madoka;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\chromium\src;$(SolutionDir)third_party\googleurl;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)madoka\include;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\chromium\src;$(SolutionDir)third_party\googleurl;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -167,6 +167,9 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ProjectReference Include="..\madoka\madoka.vcxproj">
+      <Project>{849cc6cc-460e-45de-8ea5-4dda0f25837d}</Project>
+    </ProjectReference>
     <ProjectReference Include="..\third_party\googleurl\googleurl.vcxproj">
       <Project>{91887f13-baca-45fe-be93-6098b768685b}</Project>
     </ProjectReference>
