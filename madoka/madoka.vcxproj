@@ -20,6 +20,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\madoka\common.h" />
+    <ClInclude Include="include\madoka\concurrent\critical_section.h" />
+    <ClInclude Include="include\madoka\concurrent\lockable.h" />
+    <ClInclude Include="include\madoka\concurrent\lock_guard.h" />
     <ClInclude Include="include\madoka\net\abstract_socket.h" />
     <ClInclude Include="include\madoka\net\address_info.h" />
     <ClInclude Include="include\madoka\net\common.h" />
@@ -27,6 +30,9 @@
     <ClInclude Include="include\madoka\net\server_socket.h" />
     <ClInclude Include="include\madoka\net\socket.h" />
     <ClInclude Include="include\madoka\net\winsock.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\concurrent\critical_section_win.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{849CC6CC-460E-45DE-8EA5-4DDA0F25837D}</ProjectGuid>
