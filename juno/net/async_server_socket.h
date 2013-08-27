@@ -22,8 +22,6 @@ class AsyncServerSocket : public madoka::net::ServerSocket {
 
   virtual void Close();
 
-  bool Bind(const addrinfo* end_point);
-
   bool AcceptAsync(Listener* listener);
   OVERLAPPED* BeginAccept(HANDLE event);
   AsyncSocket* EndAccept(OVERLAPPED* overlapped);
@@ -48,6 +46,7 @@ class AsyncServerSocket : public madoka::net::ServerSocket {
   static void CALLBACK OnAccepted(DWORD error, DWORD bytes,
                                   OVERLAPPED* overlapped);
 
+  bool initialized_;
   int family_;
   int protocol_;
 };

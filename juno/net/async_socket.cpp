@@ -6,23 +6,23 @@
 
 LPFN_CONNECTEX AsyncSocket::ConnectEx = NULL;
 
-AsyncSocket::AsyncSocket() {
+AsyncSocket::AsyncSocket() : initialized_() {
 }
 
 AsyncSocket::~AsyncSocket() {
   Close();
 }
 
-bool AsyncSocket::Connect(const addrinfo* end_point) {
-  if (!Socket::Connect(end_point))
+bool AsyncSocket::UpdateAcceptContext(SOCKET descriptor) {
+  if (connected_)
     return false;
 
-  if (!Init()) {
-    Close();
-    return false;
+  if (SetOption(SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, descriptor)) {
+    connected_ = true;
+    return Init();
   }
 
-  return true;
+  return false;
 }
 
 bool AsyncSocket::ConnectAsync(const addrinfo* end_points, Listener* listener) {
@@ -243,13 +243,21 @@ int AsyncSocket::EndSend(OVERLAPPED* overlapped) {
 }
 
 bool AsyncSocket::Init() {
+  if (initialized_)
+    return true;
+
   if (!::BindIoCompletionCallback(*this, OnTransferred, 0))
     return false;
+
+  initialized_ = true;
 
   return true;
 }
 
 AsyncSocket::AsyncContext* AsyncSocket::CreateAsyncContext() {
+  if (IsValid() && !Init())
+    return NULL;
+
   AsyncContext* context = new AsyncContext();
   if (context == NULL)
     return NULL;

@@ -6,7 +6,8 @@
 
 #include "net/async_socket.h"
 
-AsyncServerSocket::AsyncServerSocket() : family_(), protocol_() {
+AsyncServerSocket::AsyncServerSocket()
+    : initialized_(), family_(AF_UNSPEC), protocol_() {
 }
 
 AsyncServerSocket::~AsyncServerSocket() {
@@ -14,22 +15,11 @@ AsyncServerSocket::~AsyncServerSocket() {
 }
 
 void AsyncServerSocket::Close() {
+  initialized_ = false;
+  family_ = AF_UNSPEC;
+  protocol_ = 0;
+
   ServerSocket::Close();
-}
-
-bool AsyncServerSocket::Bind(const addrinfo* end_point) {
-  if (!ServerSocket::Bind(end_point))
-    return false;
-
-  if (!::BindIoCompletionCallback(*this, OnAccepted, 0)) {
-    Close();
-    return false;
-  }
-
-  family_ = end_point->ai_family;
-  protocol_ = end_point->ai_protocol;
-
-  return true;
 }
 
 bool AsyncServerSocket::AcceptAsync(Listener* listener) {
@@ -85,16 +75,13 @@ AsyncSocket* AsyncServerSocket::EndAccept(OVERLAPPED* overlapped) {
   if (context->event != NULL)
     ::WaitForSingleObject(context->event, INFINITE);
 
-  AsyncSocket* client = context->client;
   DWORD bytes = 0;
-  BOOL succeeded = ::GetOverlappedResult(*client, context, &bytes, TRUE);
-  if (succeeded) {
+  BOOL succeeded = ::GetOverlappedResult(*context->client, context, &bytes,
+                                         TRUE);
+  AsyncSocket* client = NULL;
+  if (succeeded && context->client->UpdateAcceptContext(descriptor_)) {
+    client = context->client;
     context->client = NULL;
-    client->SetOption(SOL_SOCKET, SO_UPDATE_ACCEPT_CONTEXT, descriptor_);
-    client->connected_ = true;
-    client->Init();
-  } else {
-    client = NULL;
   }
 
   DestroyAcceptContext(context);
@@ -103,6 +90,20 @@ AsyncSocket* AsyncServerSocket::EndAccept(OVERLAPPED* overlapped) {
 }
 
 AsyncServerSocket::AcceptContext* AsyncServerSocket::CreateAcceptContext() {
+  if (!initialized_) {
+    WSAPROTOCOL_INFO protocol_info;
+    if (!GetOption(SOL_SOCKET, SO_PROTOCOL_INFO, &protocol_info))
+      return NULL;
+
+    family_ = protocol_info.iAddressFamily;
+    protocol_ = protocol_info.iProtocol;
+
+    if (!::BindIoCompletionCallback(*this, OnAccepted, 0))
+      return NULL;
+
+    initialized_ = true;
+  }
+
   AcceptContext* context = new AcceptContext();
   if (context == NULL)
     return NULL;

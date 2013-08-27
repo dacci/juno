@@ -31,6 +31,12 @@ class AbstractSocket {
                         length) == 0;
   }
 
+  template<typename T>
+  bool GetOption(int level, int name, T* value) {
+    int length = sizeof(*value);
+    return GetOption(level, name, value, &length);
+  }
+
   bool SetOption(int level, int name, const void* value, int length) {
     if (!IsValid())
       return false;

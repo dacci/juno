@@ -19,7 +19,7 @@ class AsyncSocket : public madoka::net::Socket {
   AsyncSocket();
   virtual ~AsyncSocket();
 
-  bool Connect(const addrinfo* end_point);
+  bool UpdateAcceptContext(SOCKET descriptor);
 
   bool ConnectAsync(const addrinfo* end_points, Listener* listener);
   OVERLAPPED* BeginConnect(const addrinfo* end_points, HANDLE event);
@@ -66,6 +66,8 @@ class AsyncSocket : public madoka::net::Socket {
   friend class AsyncServerSocket;
 
   static LPFN_CONNECTEX ConnectEx;
+
+  bool initialized_;
 };
 
 #endif  // JUNO_NET_ASYNC_SOCKET_H_
