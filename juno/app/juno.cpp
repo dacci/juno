@@ -7,6 +7,8 @@
 
 #include <madoka/net/winsock.h>
 
+#include <url/url_util.h>
+
 #include "app/service_manager.h"
 #include "net/tunneling_service.h"
 #include "ui/main_frame.h"
@@ -18,7 +20,7 @@ const GUID GUID_JUNO_APPLICATION = {
 
 CAppModule _Module;
 
-int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE, char*, int) {
+int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
 #ifdef _DEBUG
   {
     int flags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
@@ -26,6 +28,12 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE, char*, int) {
     _CrtSetDbgFlag(flags);
   }
 #endif  // _DEBUG
+
+  ::SetDllDirectory(_T(""));
+  ::SetSearchPathMode(BASE_SEARCH_PATH_ENABLE_SAFE_SEARCHMODE |
+                      BASE_SEARCH_PATH_PERMANENT);
+
+  ::HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
 
   HANDLE mutex = ::CreateMutex(NULL, TRUE, _T("org.dacci.juno"));
   DWORD error = ::GetLastError();
@@ -52,6 +60,8 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE, char*, int) {
   ATLASSERT(winsock.Initialized());
   if (!winsock.Initialized())
     return __LINE__;
+
+  url_util::Initialize();
 
   if (!TunnelingService::Init()) {
     ATLASSERT(false);
@@ -82,6 +92,7 @@ int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE, char*, int) {
   _Module.Term();
   delete service_manager;
   TunnelingService::Term();
+  url_util::Shutdown();
   ::CoUninitialize();
   ::CloseHandle(mutex);
 
