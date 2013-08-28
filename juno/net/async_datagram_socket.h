@@ -22,8 +22,10 @@ class AsyncDatagramSocket : public madoka::net::DatagramSocket {
                           int length, sockaddr* to, int to_length) = 0;
   };
 
-  bool Bind(const addrinfo* end_point);
-  bool Connect(const addrinfo* end_point);
+  AsyncDatagramSocket();
+  virtual ~AsyncDatagramSocket();
+
+  virtual void Close();
 
   bool ReceiveAsync(void* buffer, int size, int flags, Listener* listener);
   OVERLAPPED* BeginReceive(void* buffer, int size, int flags, HANDLE event);
@@ -64,14 +66,14 @@ class AsyncDatagramSocket : public madoka::net::DatagramSocket {
     DWORD error;
   };
 
-  bool Init();
-
   AsyncContext* CreateAsyncContext();
   void DestroyAsyncContext(AsyncContext* context);
 
   static DWORD CALLBACK AsyncWork(void* param);
   static void CALLBACK OnTransferred(DWORD error, DWORD bytes,
                                      OVERLAPPED* overlapped);
+
+  bool initialized_;
 };
 
 #endif  // JUNO_NET_ASYNC_DATAGRAM_SOCKET_H_

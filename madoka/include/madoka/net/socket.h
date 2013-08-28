@@ -127,8 +127,7 @@ class Socket : public AbstractSocket {
     if (length == 0)
       return 0;
 
-    int result = ::recv(descriptor_, static_cast<char*>(buffer), length,
-                        flags);
+    int result = ::recv(descriptor_, static_cast<char*>(buffer), length, flags);
     if (result == 0)
       connected_ = false;
 
@@ -141,8 +140,7 @@ class Socket : public AbstractSocket {
     if (length == 0)
       return 0;
 
-    return ::send(descriptor_, static_cast<const char*>(buffer), length,
-                  flags);
+    return ::send(descriptor_, static_cast<const char*>(buffer), length, flags);
   }
 
   bool GetRemoteEndPoint(sockaddr* end_point, int* length) {

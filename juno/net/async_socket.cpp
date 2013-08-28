@@ -13,6 +13,12 @@ AsyncSocket::~AsyncSocket() {
   Close();
 }
 
+void AsyncSocket::Close() {
+  initialized_ = false;
+
+  Socket::Close();
+}
+
 bool AsyncSocket::UpdateAcceptContext(SOCKET descriptor) {
   if (connected_)
     return false;

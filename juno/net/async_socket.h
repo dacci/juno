@@ -19,6 +19,8 @@ class AsyncSocket : public madoka::net::Socket {
   AsyncSocket();
   virtual ~AsyncSocket();
 
+  virtual void Close();
+
   bool UpdateAcceptContext(SOCKET descriptor);
 
   bool ConnectAsync(const addrinfo* end_points, Listener* listener);

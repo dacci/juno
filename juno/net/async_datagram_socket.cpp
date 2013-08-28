@@ -4,28 +4,17 @@
 
 #include <assert.h>
 
-bool AsyncDatagramSocket::Bind(const addrinfo* end_point) {
-  if (!DatagramSocket::Bind(end_point))
-    return false;
-
-  if (!Init()) {
-    Close();
-    return false;
-  }
-
-  return true;
+AsyncDatagramSocket::AsyncDatagramSocket() : initialized_() {
 }
 
-bool AsyncDatagramSocket::Connect(const addrinfo* end_point) {
-  if (!DatagramSocket::Connect(end_point))
-    return false;
+AsyncDatagramSocket::~AsyncDatagramSocket() {
+  Close();
+}
 
-  if (!Init()) {
-    Close();
-    return false;
-  }
+void AsyncDatagramSocket::Close() {
+  initialized_ = false;
 
-  return true;
+  DatagramSocket::Close();
 }
 
 bool AsyncDatagramSocket::ReceiveAsync(void* buffer, int size, int flags,
@@ -345,14 +334,14 @@ int AsyncDatagramSocket::EndSendTo(OVERLAPPED* overlapped) {
     return SOCKET_ERROR;
 }
 
-bool AsyncDatagramSocket::Init() {
-  if (!::BindIoCompletionCallback(*this, OnTransferred, 0))
-    return false;
-
-  return true;
-}
-
 AsyncDatagramSocket::AsyncContext* AsyncDatagramSocket::CreateAsyncContext() {
+  if (!initialized_) {
+    if (!::BindIoCompletionCallback(*this, OnTransferred, 0))
+      return NULL;
+
+    initialized_ = true;
+  }
+
   AsyncContext* context = new AsyncContext();
   if (context == NULL)
     return NULL;
