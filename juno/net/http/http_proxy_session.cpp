@@ -453,7 +453,7 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
       SendError(HTTP::BAD_REQUEST);
       return;
     }
-    if (!url_.SchemeIs("http")) {
+    if (!proxy_->use_remote_proxy() && !url_.SchemeIs("http")) {
       SendError(HTTP::NOT_IMPLEMENTED);
       return;
     }
