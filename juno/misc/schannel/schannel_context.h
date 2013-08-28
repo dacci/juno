@@ -3,6 +3,7 @@
 #ifndef JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_
 #define JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_
 
+#include <atlbase.h>
 #include <atlstr.h>
 
 #include "misc/schannel/schannel_credential.h"
