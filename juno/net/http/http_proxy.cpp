@@ -163,7 +163,7 @@ bool HttpProxy::OnAccepted(AsyncSocket* client) {
   if (stopped_)
     return false;
 
-  HttpProxySession* session = new HttpProxySession(this, client);
+  HttpProxySession* session = new HttpProxySession(this);
   if (session == NULL)
     return false;
 
@@ -171,7 +171,7 @@ bool HttpProxy::OnAccepted(AsyncSocket* client) {
   sessions_.push_back(session);
   ::ResetEvent(empty_event_);
 
-  bool started = session->Start();
+  bool started = session->Start(client);
   if (!started) {
     EndSession(session);
     delete session;

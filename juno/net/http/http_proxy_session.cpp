@@ -18,9 +18,9 @@ const std::string HttpProxySession::kProxyAuthorization("Proxy-Authorization");
 const std::string HttpProxySession::kProxyConnection("Proxy-Connection");
 const std::string HttpProxySession::kTransferEncoding("Transfer-Encoding");
 
-HttpProxySession::HttpProxySession(HttpProxy* proxy, AsyncSocket* client)
+HttpProxySession::HttpProxySession(HttpProxy* proxy)
     : proxy_(proxy),
-      client_(client),
+      client_(),
       remote_(),
       buffer_(new char[kBufferSize]),
       phase_(Request),
@@ -55,8 +55,15 @@ HttpProxySession::~HttpProxySession() {
   }
 }
 
-bool HttpProxySession::Start() {
-  return ReceiveAsync(client_, 0);
+bool HttpProxySession::Start(AsyncSocket* client) {
+  client_ = client;
+
+  if (!ReceiveAsync(client_, 0)) {
+    client_ = NULL;
+    return false;
+  }
+
+  return true;
 }
 
 void HttpProxySession::Stop() {
@@ -351,7 +358,8 @@ void HttpProxySession::EndSession() {
   continue_ = false;
 
   if (client_buffer_.empty()) {
-    Start();
+    if (!ReceiveAsync(client_, 0))
+      delete this;
   } else {
     int length = client_buffer_.size();
     ::memmove(buffer_, client_buffer_.data(), length);

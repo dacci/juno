@@ -11,10 +11,10 @@ class SocksProxy;
 
 class SocksProxySession : public AsyncSocket::Listener {
  public:
-  SocksProxySession(SocksProxy* proxy, AsyncSocket* client);
+  explicit SocksProxySession(SocksProxy* proxy);
   virtual ~SocksProxySession();
 
-  bool Start();
+  bool Start(AsyncSocket* client);
 
   void OnConnected(AsyncSocket* socket, DWORD error);
   void OnReceived(AsyncSocket* socket, DWORD error, int length);

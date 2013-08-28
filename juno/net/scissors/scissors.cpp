@@ -47,11 +47,11 @@ void Scissors::Stop() {
 }
 
 bool Scissors::OnAccepted(AsyncSocket* client) {
-  ScissorsSession* session = new ScissorsSession(this, client);
+  ScissorsSession* session = new ScissorsSession(this);
   if (session == NULL)
     return false;
 
-  if (!session->Start()) {
+  if (!session->Start(client)) {
     delete session;
     return false;
   }

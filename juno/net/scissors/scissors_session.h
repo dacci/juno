@@ -13,10 +13,10 @@ class Scissors;
 
 class ScissorsSession : public AsyncSocket::Listener {
  public:
-  ScissorsSession(Scissors* service, AsyncSocket* client);
+  explicit ScissorsSession(Scissors* service);
   virtual ~ScissorsSession();
 
-  bool Start();
+  bool Start(AsyncSocket* client);
 
   void OnConnected(AsyncSocket* socket, DWORD error);
   void OnReceived(AsyncSocket* socket, DWORD error, int length);

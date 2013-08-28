@@ -27,11 +27,11 @@ bool SocksProxy::OnAccepted(AsyncSocket* client) {
   if (stopped_)
     return false;
 
-  SocksProxySession* session = new SocksProxySession(this, client);
+  SocksProxySession* session = new SocksProxySession(this);
   if (session == NULL)
     return false;
 
-  if (!session->Start()) {
+  if (!session->Start(client)) {
     delete session;
     return false;
   }

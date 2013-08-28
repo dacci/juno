@@ -9,9 +9,9 @@
 #include "net/scissors/scissors.h"
 #include "net/tunneling_service.h"
 
-ScissorsSession::ScissorsSession(Scissors* service, AsyncSocket* client)
+ScissorsSession::ScissorsSession(Scissors* service)
     : service_(service),
-      client_(client),
+      client_(),
       remote_(),
       context_(),
       established_(),
@@ -46,7 +46,7 @@ ScissorsSession::~ScissorsSession() {
   }
 }
 
-bool ScissorsSession::Start() {
+bool ScissorsSession::Start(AsyncSocket* client) {
   remote_ = new AsyncSocket();
   if (remote_ == NULL)
     return false;
@@ -66,8 +66,12 @@ bool ScissorsSession::Start() {
       return false;
   }
 
-  if (!remote_->ConnectAsync(*service_->resolver_, this))
+  client_ = client;
+
+  if (!remote_->ConnectAsync(*service_->resolver_, this)) {
+    client_ = NULL;
     return false;
+  }
 
   return true;
 }

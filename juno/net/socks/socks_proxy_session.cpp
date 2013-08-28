@@ -42,9 +42,9 @@ struct SocketAddress6 : addrinfo, sockaddr_in6 {
 
 }  // namespace
 
-SocksProxySession::SocksProxySession(SocksProxy* proxy, AsyncSocket* client)
+SocksProxySession::SocksProxySession(SocksProxy* proxy)
     : proxy_(proxy),
-      client_(client),
+      client_(),
       remote_(),
       request_buffer_(new char[kBufferSize]),
       response_buffer_(new char[kBufferSize]),
@@ -76,8 +76,15 @@ SocksProxySession::~SocksProxySession() {
   }
 }
 
-bool SocksProxySession::Start() {
-  return client_->ReceiveAsync(request_buffer_, kBufferSize, 0, this);
+bool SocksProxySession::Start(AsyncSocket* client) {
+  client_ = client;
+
+  if (!client_->ReceiveAsync(request_buffer_, kBufferSize, 0, this)) {
+    client_ = NULL;
+    return false;
+  }
+
+  return true;
 }
 
 void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
@@ -120,24 +127,22 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 
       if (remote_->GetLocalEndPoint(address, &length)) {
         switch (address->sa_family) {
-        case AF_INET:
-          {
+          case AF_INET: {
             sockaddr_in* address4 = reinterpret_cast<sockaddr_in*>(address);
             response->type = SOCKS5::IP_V4;
             response->address.ipv4.ipv4_addr = address4->sin_addr;
             response->address.ipv4.ipv4_port = address4->sin_port;
+            break;
           }
-          break;
 
-        case AF_INET6:
-          {
+          case AF_INET6: {
             sockaddr_in6* address6 = reinterpret_cast<sockaddr_in6*>(address);
             response->type = SOCKS5::IP_V6;
             response->address.ipv6.ipv6_addr = address6->sin6_addr;
             response->address.ipv6.ipv6_port = address6->sin6_port;
             response_length += 12;
+            break;
           }
-          break;
         }
       }
 

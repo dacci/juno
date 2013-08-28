@@ -16,10 +16,10 @@ class HttpProxy;
 
 class HttpProxySession : public AsyncSocket::Listener {
  public:
-  HttpProxySession(HttpProxy* proxy, AsyncSocket* client);
+  explicit HttpProxySession(HttpProxy* proxy);
   virtual ~HttpProxySession();
 
-  bool Start();
+  bool Start(AsyncSocket* client);
   void Stop();
 
   void OnConnected(AsyncSocket* socket, DWORD error);
