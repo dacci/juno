@@ -2,6 +2,8 @@
 
 #include <madoka/concurrent/critical_section.h>
 
+#include <assert.h>
+
 #include <windows.h>
 
 namespace madoka {
@@ -15,6 +17,7 @@ CriticalSection::CriticalSection() : mutex_(new MutexImpl) {
 }
 
 CriticalSection::~CriticalSection() {
+  assert(mutex_->LockCount == -1);
   ::DeleteCriticalSection(mutex_);
   delete mutex_;
 }
