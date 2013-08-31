@@ -9,6 +9,14 @@
 #include "net/scissors/scissors.h"
 #include "net/tunneling_service.h"
 
+#ifdef LEGACY_PLATFORM
+  #define DELETE_THIS() \
+    delete this
+#else   // LEGACY_PLATFORM
+  #define DELETE_THIS() \
+    ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
+#endif  // LEGACY_PLATFORM
+
 ScissorsSession::ScissorsSession(Scissors* service)
     : service_(service),
       client_(),
@@ -95,7 +103,7 @@ void ScissorsSession::OnConnected(AsyncSocket* socket, DWORD error) {
       remote_ = NULL;
     }
 
-    delete this;
+    DELETE_THIS();
     return;
   }
 
@@ -263,7 +271,7 @@ void ScissorsSession::EndSession() {
     remote_->Shutdown(SD_BOTH);
 
   if (::InterlockedDecrement(&ref_count_) == 0)
-    delete this;
+    DELETE_THIS();
 }
 
 void ScissorsSession::OnClientReceived(DWORD error, int length) {
@@ -351,4 +359,9 @@ void ScissorsSession::OnRemoteSent(DWORD error, int length) {
     if (!client_->ReceiveAsync(client_buffer_, kBufferSize, 0, this))
       EndSession();
   }
+}
+
+void CALLBACK ScissorsSession::DeleteThis(PTP_CALLBACK_INSTANCE instance,
+                                           void* param) {
+  delete static_cast<ScissorsSession*>(param);
 }

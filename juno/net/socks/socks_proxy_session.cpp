@@ -43,6 +43,14 @@ struct SocketAddress6 : addrinfo, sockaddr_in6 {
 
 }  // namespace
 
+#ifdef LEGACY_PLATFORM
+  #define DELETE_THIS() \
+    delete this
+#else   // LEGACY_PLATFORM
+  #define DELETE_THIS() \
+    ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
+#endif  // LEGACY_PLATFORM
+
 SocksProxySession::SocksProxySession(SocksProxy* proxy)
     : proxy_(proxy),
       client_(),
@@ -169,13 +177,13 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     assert(false);
   }
 
-  delete this;
+  DELETE_THIS();
 }
 
 void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
                                    int length) {
   if (error != 0 || length == 0) {
-    delete this;
+    DELETE_THIS();
     return;
   }
 
@@ -266,12 +274,12 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
     }
   }
 
-  delete this;
+  DELETE_THIS();
 }
 
 void SocksProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
   if (error != 0 || length == 0) {
-    delete this;
+    DELETE_THIS();
     return;
   }
 
@@ -299,7 +307,7 @@ void SocksProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
     assert(false);
   }
 
-  delete this;
+  DELETE_THIS();
 }
 
 bool SocksProxySession::ConnectIPv4(const SOCKS5::ADDRESS& address) {
@@ -392,4 +400,9 @@ bool SocksProxySession::ConnectIPv6(const SOCKS5::ADDRESS& address) {
   delete end_point;
 
   return false;
+}
+
+void CALLBACK SocksProxySession::DeleteThis(PTP_CALLBACK_INSTANCE instance,
+                                            void* param) {
+  delete static_cast<SocksProxySession*>(param);
 }

@@ -3,7 +3,6 @@
 #ifndef JUNO_NET_TCP_SERVER_H_
 #define JUNO_NET_TCP_SERVER_H_
 
-#include <madoka/concurrent/critical_section.h>
 #include <madoka/net/address_info.h>
 
 #include <vector>
@@ -32,10 +31,8 @@ class TcpServer : public AsyncServerSocket::Listener {
   std::vector<AsyncServerSocket*> servers_;
   ServiceProvider* service_;
 
-  int count_;
-  // TODO(dacci): replace with condition variable
+  LONG count_;
   HANDLE event_;
-  madoka::concurrent::CriticalSection critical_section_;
 };
 
 #endif  // JUNO_NET_TCP_SERVER_H_

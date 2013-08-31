@@ -28,6 +28,8 @@ class SocksProxySession : public AsyncSocket::Listener {
   bool ConnectDomain(const SOCKS5::ADDRESS& address);
   bool ConnectIPv6(const SOCKS5::ADDRESS& address);
 
+  static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
+
   SocksProxy* const proxy_;
   AsyncSocket* client_;
   AsyncSocket* remote_;

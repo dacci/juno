@@ -8,6 +8,14 @@
 #include "net/http/http_proxy.h"
 #include "net/tunneling_service.h"
 
+#ifdef LEGACY_PLATFORM
+  #define DELETE_THIS() \
+    delete this
+#else   // LEGACY_PLATFORM
+  #define DELETE_THIS() \
+    ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
+#endif  // LEGACY_PLATFORM
+
 const std::string HttpProxySession::kConnection("Connection");
 const std::string HttpProxySession::kContentEncoding("Content-Encoding");
 const std::string HttpProxySession::kContentLength("Content-Length");
@@ -98,7 +106,7 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     response_.Parse(request_string);
 
     if (!client_->SendAsync(buffer_, request_string.size(), 0, this)) {
-      delete this;
+      DELETE_THIS();
       return;
     }
   } else {
@@ -175,7 +183,7 @@ void HttpProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
       return;
 
     case Error:
-      delete this;
+      DELETE_THIS();
       return;
   }
 
@@ -332,13 +340,13 @@ void HttpProxySession::SendError(HTTP::StatusCode status) {
       return;
   }
 
-  delete this;
+  DELETE_THIS();
 }
 
 // Resets internal stats and starts new session.
 void HttpProxySession::EndSession() {
   if (close_client_) {
-    delete this;
+    DELETE_THIS();
     return;
   }
 
@@ -361,7 +369,7 @@ void HttpProxySession::EndSession() {
 
   if (client_buffer_.empty()) {
     if (!ReceiveAsync(client_, 0))
-      delete this;
+      DELETE_THIS();
   } else {
     int length = client_buffer_.size();
     ::memmove(buffer_, client_buffer_.data(), length);
@@ -417,7 +425,7 @@ DWORD CALLBACK HttpProxySession::FireEvent(void* param) {
 
 void HttpProxySession::OnRequestReceived(DWORD error, int length) {
   if (error != 0 || length == 0) {
-    delete this;
+    DELETE_THIS();
     return;
   }
 
@@ -430,7 +438,7 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
   int result = request_.Parse(client_buffer_);
   if (result == HttpRequest::kPartial) {
     if (!ReceiveAsync(client_, 0))
-      delete this;
+      DELETE_THIS();
     return;
   } else if (result <= 0) {
     SendError(HTTP::BAD_REQUEST);
@@ -532,7 +540,7 @@ void HttpProxySession::OnRequestSent(DWORD error, int length) {
 
 void HttpProxySession::OnRequestBodyReceived(DWORD error, int length) {
   if (error != 0 || length == 0) {
-    delete this;
+    DELETE_THIS();
     return;
   }
 
@@ -633,7 +641,7 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
       ::memmove(buffer_, response_string.data(), response_string.size());
 
       if (!client_->SendAsync(buffer_, response_string.size(), 0, this))
-        delete this;
+        DELETE_THIS();
     } else {
       SendError(HTTP::INTERNAL_SERVER_ERROR);
     }
@@ -657,14 +665,14 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
   ::memmove(buffer_, response_string.data(), response_string.size());
 
   if (!client_->SendAsync(buffer_, response_string.size(), 0, this)) {
-    delete this;
+    DELETE_THIS();
     return;
   }
 }
 
 void HttpProxySession::OnResponseSent(DWORD error, int length) {
   if (error != 0 || length == 0) {
-    delete this;
+    DELETE_THIS();
     return;
   }
 
@@ -674,7 +682,7 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
       remote_ = NULL;
     }
 
-    delete this;
+    DELETE_THIS();
     return;
   }
 
@@ -727,12 +735,12 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
     }
   }
 
-  delete this;
+  DELETE_THIS();
 }
 
 void HttpProxySession::OnResponseBodyReceived(DWORD error, int length) {
   if (error != 0 || length == 0) {
-    delete this;
+    DELETE_THIS();
     return;
   }
 
@@ -752,12 +760,12 @@ void HttpProxySession::OnResponseBodyReceived(DWORD error, int length) {
       return;
   }
 
-  delete this;
+  DELETE_THIS();
 }
 
 void HttpProxySession::OnResponseBodySent(DWORD error, int length) {
   if (error != 0 || length == 0) {
-    delete this;
+    DELETE_THIS();
     return;
   }
 
@@ -794,10 +802,15 @@ void HttpProxySession::OnResponseBodySent(DWORD error, int length) {
       return;
   }
 
-  delete this;
+  DELETE_THIS();
 }
 
 void CALLBACK HttpProxySession::OnTimeout(void* param, BOOLEAN fired) {
   HttpProxySession* session = static_cast<HttpProxySession*>(param);
   session->receiving_->Shutdown(SD_BOTH);
+}
+
+void CALLBACK HttpProxySession::DeleteThis(PTP_CALLBACK_INSTANCE instance,
+                                           void* param) {
+  delete static_cast<HttpProxySession*>(param);
 }

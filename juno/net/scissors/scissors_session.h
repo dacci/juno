@@ -38,6 +38,8 @@ class ScissorsSession : public AsyncSocket::Listener {
   void OnClientSent(DWORD error, int length);
   void OnRemoteSent(DWORD error, int length);
 
+  static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
+
   Scissors* const service_;
   AsyncSocket* client_;
   AsyncSocket* remote_;

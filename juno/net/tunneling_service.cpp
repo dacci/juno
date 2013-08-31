@@ -120,12 +120,26 @@ void TunnelingService::Session::OnReceived(AsyncSocket* socket, DWORD error,
                                            int length) {
   if (error != 0 || length == 0 ||
       !to_->SendAsync(buffer_, length, 0, this))
+#ifdef LEGACY_PLATFORM
     service_->EndSession(from_, to_);
+#else   // LEGACY_PLATFORM
+    ::TrySubmitThreadpoolCallback(EndSession, this, NULL);
+#endif  // LEGACY_PLATFORM
 }
 
 void TunnelingService::Session::OnSent(AsyncSocket* socket, DWORD error,
                                        int length) {
   if (error != 0 || length == 0 ||
       !from_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+#ifdef LEGACY_PLATFORM
     service_->EndSession(from_, to_);
+#else   // LEGACY_PLATFORM
+    ::TrySubmitThreadpoolCallback(EndSession, this, NULL);
+#endif  // LEGACY_PLATFORM
+}
+
+void CALLBACK TunnelingService::Session::EndSession(
+    PTP_CALLBACK_INSTANCE instance, void* param) {
+  Session* session = static_cast<Session*>(param);
+  session->service_->EndSession(session->from_, session->to_);
 }

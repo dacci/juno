@@ -1,9 +1,6 @@
 // Copyright (c) 2013 dacci.org
 
 #include "net/tcp_server.h"
-
-#include <madoka/concurrent/lock_guard.h>
-
 #include "net/async_server_socket.h"
 #include "net/async_socket.h"
 #include "net/service_provider.h"
@@ -58,8 +55,6 @@ bool TcpServer::Start() {
 
   bool succeeded = false;
 
-  madoka::concurrent::LockGuard lock(&critical_section_);
-
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
     if ((*i)->AcceptAsync(this)) {
       succeeded = true;
@@ -74,25 +69,14 @@ bool TcpServer::Start() {
 }
 
 void TcpServer::Stop() {
-  madoka::concurrent::LockGuard lock(&critical_section_);
-
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
     (*i)->Close();
 
-  while (true) {
-    critical_section_.Unlock();
-    ::WaitForSingleObject(event_, INFINITE);
-    critical_section_.Lock();
-
-    if (count_ == 0)
-      break;
-  }
+  ::WaitForSingleObject(event_, INFINITE);
 }
 
 void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
                            DWORD error) {
-  madoka::concurrent::LockGuard lock(&critical_section_);
-
   if (error == 0) {
     if (service_->OnAccepted(client))
       client = NULL;
@@ -106,8 +90,6 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
   if (client != NULL)
     delete client;
 
-  server->Close();
-
-  if (--count_ == 0)
+  if (::InterlockedDecrement(&count_) == 0)
     ::SetEvent(event_);
 }

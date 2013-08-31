@@ -29,6 +29,9 @@ class TunnelingService {
     void OnReceived(AsyncSocket* socket, DWORD error, int length);
     void OnSent(AsyncSocket* socket, DWORD error, int length);
 
+    static void CALLBACK EndSession(PTP_CALLBACK_INSTANCE instance,
+                                    void* param);
+
     TunnelingService* service_;
     AsyncSocket* from_;
     AsyncSocket* to_;

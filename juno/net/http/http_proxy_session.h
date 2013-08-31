@@ -85,6 +85,8 @@ class HttpProxySession : public AsyncSocket::Listener {
 
   static void CALLBACK OnTimeout(void* param, BOOLEAN fired);
 
+  static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
+
   HttpProxy* const proxy_;
   AsyncSocket* client_;
   std::string client_buffer_;

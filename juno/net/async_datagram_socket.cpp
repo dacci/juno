@@ -4,7 +4,7 @@
 
 #include <assert.h>
 
-AsyncDatagramSocket::AsyncDatagramSocket() : initialized_() {
+AsyncDatagramSocket::AsyncDatagramSocket() : initialized_(), io_() {
 }
 
 AsyncDatagramSocket::~AsyncDatagramSocket() {
@@ -15,6 +15,14 @@ void AsyncDatagramSocket::Close() {
   initialized_ = false;
 
   DatagramSocket::Close();
+
+#ifndef LEGACY_PLATFORM
+  if (io_ != NULL) {
+    ::WaitForThreadpoolIoCallbacks(io_, FALSE);
+    ::CloseThreadpoolIo(io_);
+    io_ = NULL;
+  }
+#endif  // LEGACY_PLATFORM
 }
 
 bool AsyncDatagramSocket::ReceiveAsync(void* buffer, int size, int flags,
@@ -34,8 +42,12 @@ bool AsyncDatagramSocket::ReceiveAsync(void* buffer, int size, int flags,
   context->flags = flags;
   context->listener = listener;
 
+#ifdef LEGACY_PLATFORM
   BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
                                        WT_EXECUTEINIOTHREAD);
+#else   // LEGACY_PLATFORM
+  BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
+#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return false;
@@ -62,8 +74,12 @@ OVERLAPPED* AsyncDatagramSocket::BeginReceive(void* buffer, int size, int flags,
   context->event = event;
   ::ResetEvent(event);
 
+#ifdef LEGACY_PLATFORM
   BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
                                        WT_EXECUTEINIOTHREAD);
+#else   // LEGACY_PLATFORM
+  BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
+#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return NULL;
@@ -108,8 +124,12 @@ bool AsyncDatagramSocket::SendAsync(const void* buffer, int size, int flags,
   context->flags = flags;
   context->listener = listener;
 
+#ifdef LEGACY_PLATFORM
   BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
                                        WT_EXECUTEINIOTHREAD);
+#else   // LEGACY_PLATFORM
+  BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
+#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return false;
@@ -136,8 +156,12 @@ OVERLAPPED* AsyncDatagramSocket::BeginSend(const void* buffer, int size,
   context->event = event;
   ::ResetEvent(event);
 
+#ifdef LEGACY_PLATFORM
   BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
                                        WT_EXECUTEINIOTHREAD);
+#else   // LEGACY_PLATFORM
+  BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
+#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return NULL;
@@ -184,8 +208,12 @@ bool AsyncDatagramSocket::ReceiveFromAsync(void* buffer, int size, int flags,
   context->address = static_cast<sockaddr*>(::malloc(context->address_length));
   context->listener = listener;
 
+#ifdef LEGACY_PLATFORM
   BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
                                        WT_EXECUTEINIOTHREAD);
+#else   // LEGACY_PLATFORM
+  BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
+#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return false;
@@ -214,8 +242,12 @@ OVERLAPPED* AsyncDatagramSocket::BeginReceiveFrom(void* buffer, int size,
   context->event = event;
   ::ResetEvent(event);
 
+#ifdef LEGACY_PLATFORM
   BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
                                        WT_EXECUTEINIOTHREAD);
+#else   // LEGACY_PLATFORM
+  BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
+#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return NULL;
@@ -271,8 +303,12 @@ bool AsyncDatagramSocket::SendToAsync(const void* buffer, int size, int flags,
   ::memmove(context->address, end_point->ai_addr, context->address_length);
   context->listener = listener;
 
+#ifdef LEGACY_PLATFORM
   BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
                                        WT_EXECUTEINIOTHREAD);
+#else   // LEGACY_PLATFORM
+  BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
+#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return false;
@@ -305,8 +341,12 @@ OVERLAPPED* AsyncDatagramSocket::BeginSendTo(const void* buffer,
   context->event = event;
   ::ResetEvent(event);
 
+#ifdef LEGACY_PLATFORM
   BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
                                        WT_EXECUTEINIOTHREAD);
+#else   // LEGACY_PLATFORM
+  BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
+#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return NULL;
@@ -336,7 +376,12 @@ int AsyncDatagramSocket::EndSendTo(OVERLAPPED* overlapped) {
 
 AsyncDatagramSocket::AsyncContext* AsyncDatagramSocket::CreateAsyncContext() {
   if (!initialized_) {
+#ifdef LEGACY_PLATFORM
     if (!::BindIoCompletionCallback(*this, OnTransferred, 0))
+#else   // LEGACY_PLATFORM
+    io_ = ::CreateThreadpoolIo(*this, OnTransferred, this, NULL);
+    if (io_ == NULL)
+#endif  // LEGACY_PLATFORM
       return NULL;
 
     initialized_ = true;
@@ -362,11 +407,20 @@ void AsyncDatagramSocket::DestroyAsyncContext(AsyncContext* context) {
   delete context;
 }
 
+#ifdef LEGACY_PLATFORM
 DWORD CALLBACK AsyncDatagramSocket::AsyncWork(void* param) {
+#else   // LEGACY_PLATFORM
+void CALLBACK AsyncDatagramSocket::AsyncWork(PTP_CALLBACK_INSTANCE instance,
+                                             void* param) {
+#endif  // LEGACY_PLATFORM
   AsyncContext* context = static_cast<AsyncContext*>(param);
 
   int result = 0;
   int error = ERROR_SUCCESS;
+
+#ifndef LEGACY_PLATFORM
+  ::StartThreadpoolIo(context->socket->io_);
+#endif  // LEGACY_PLATFORM
 
   if (context->action == Receiving) {
     result = ::WSARecv(*context->socket, context, 1, NULL, &context->flags,
@@ -392,15 +446,34 @@ DWORD CALLBACK AsyncDatagramSocket::AsyncWork(void* param) {
 
   if (result != 0 && error != WSA_IO_PENDING) {
     context->error = error;
+#ifdef LEGACY_PLATFORM
     OnTransferred(error, 0, context);
+#else   // LEGACY_PLATFORM
+    ::CancelThreadpoolIo(context->socket->io_);
+    OnTransferred(instance, context->socket, static_cast<OVERLAPPED*>(context),
+                  error, 0, context->socket->io_);
+#endif  // LEGACY_PLATFORM
   }
 
+#ifdef LEGACY_PLATFORM
   return 0;
+#endif  // LEGACY_PLATFORM
 }
 
+#ifdef LEGACY_PLATFORM
 void CALLBACK AsyncDatagramSocket::OnTransferred(DWORD error, DWORD bytes,
                                                  OVERLAPPED* overlapped) {
   AsyncContext* context = static_cast<AsyncContext*>(overlapped);
+#else   // LEGACY_PLATFORM
+void CALLBACK AsyncDatagramSocket::OnTransferred(PTP_CALLBACK_INSTANCE instance,
+                                                 void* self,
+                                                 void* overlapped,
+                                                 ULONG error,
+                                                 ULONG_PTR bytes,
+                                                 PTP_IO io) {
+  AsyncContext* context =
+      static_cast<AsyncContext*>(static_cast<OVERLAPPED*>(overlapped));
+#endif  // LEGACY_PLATFORM
   AsyncDatagramSocket* socket = context->socket;
   Listener* listener = context->listener;
 
@@ -409,16 +482,16 @@ void CALLBACK AsyncDatagramSocket::OnTransferred(DWORD error, DWORD bytes,
 
   if (listener != NULL) {
     if (context->action == Receiving) {
-      socket->EndReceive(overlapped);
+      socket->EndReceive(context);
       listener->OnReceived(socket, error, bytes);
     } else if (context->action == Sending) {
-      socket->EndSend(overlapped);
+      socket->EndSend(context);
       listener->OnSent(socket, error, bytes);
     } else if (context->action == ReceivingFrom) {
       int from_length = context->address_length;
       sockaddr* from = context->address;
       context->address = NULL;
-      socket->EndReceiveFrom(overlapped, NULL, NULL);
+      socket->EndReceiveFrom(context, NULL, NULL);
 
       listener->OnReceivedFrom(socket, error, bytes, from, from_length);
       ::free(from);
@@ -426,7 +499,7 @@ void CALLBACK AsyncDatagramSocket::OnTransferred(DWORD error, DWORD bytes,
       int to_length = context->address_length;
       sockaddr* to = context->address;
       context->address = NULL;
-      socket->EndSendTo(overlapped);
+      socket->EndSendTo(context);
 
       listener->OnSentTo(socket, error, bytes, to, to_length);
       ::free(to);
