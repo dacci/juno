@@ -119,17 +119,17 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     int response_length = 10;
 
     switch (request->type) {
-    case SOCKS5::IP_V4:
-      delete static_cast<SocketAddress4*>(end_point_);
-      break;
+      case SOCKS5::IP_V4:
+        delete static_cast<SocketAddress4*>(end_point_);
+        break;
 
-    case SOCKS5::DOMAINNAME:
-      delete static_cast<madoka::net::AddressInfo*>(end_point_);
-      break;
+      case SOCKS5::DOMAINNAME:
+        delete static_cast<madoka::net::AddressInfo*>(end_point_);
+        break;
 
-    case SOCKS5::IP_V6:
-      delete static_cast<SocketAddress6*>(end_point_);
-      break;
+      case SOCKS5::IP_V6:
+        delete static_cast<SocketAddress6*>(end_point_);
+        break;
     }
 
     if (error == 0) {
@@ -244,17 +244,17 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
         bool connected = false;
 
         switch (request->type) {
-        case SOCKS5::IP_V4:
-          connected = ConnectIPv4(request->address);
-          break;
+          case SOCKS5::IP_V4:
+            connected = ConnectIPv4(request->address);
+            break;
 
-        case SOCKS5::DOMAINNAME:
-          connected = ConnectDomain(request->address);
-          break;
+          case SOCKS5::DOMAINNAME:
+            connected = ConnectDomain(request->address);
+            break;
 
-        case SOCKS5::IP_V6:
-          connected = ConnectIPv6(request->address);
-          break;
+          case SOCKS5::IP_V6:
+            connected = ConnectIPv6(request->address);
+            break;
         }
 
         if (connected)

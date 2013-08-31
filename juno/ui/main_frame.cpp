@@ -101,13 +101,13 @@ LRESULT MainFrame::OnTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
     return OnOldTrayNotify(message, wParam, lParam);
 
   switch (LOWORD(lParam)) {
-  case WM_LBUTTONDBLCLK:
-    SendMessage(WM_COMMAND, MAKEWPARAM(kDefaultTrayCommand, 0));
-    break;
+    case WM_LBUTTONDBLCLK:
+      SendMessage(WM_COMMAND, MAKEWPARAM(kDefaultTrayCommand, 0));
+      break;
 
-  case WM_CONTEXTMENU:
-    TrackTrayMenu(GET_X_LPARAM(wParam), GET_Y_LPARAM(wParam));
-    break;
+    case WM_CONTEXTMENU:
+      TrackTrayMenu(GET_X_LPARAM(wParam), GET_Y_LPARAM(wParam));
+      break;
   }
 
   return 0;
@@ -115,17 +115,16 @@ LRESULT MainFrame::OnTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
 
 LRESULT MainFrame::OnOldTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
   switch (lParam) {
-  case WM_LBUTTONDBLCLK:
-    SendMessage(WM_COMMAND, MAKEWPARAM(kDefaultTrayCommand, 0));
-    break;
+    case WM_LBUTTONDBLCLK:
+      SendMessage(WM_COMMAND, MAKEWPARAM(kDefaultTrayCommand, 0));
+      break;
 
-  case WM_RBUTTONUP:
-    {
+    case WM_RBUTTONUP: {
       POINT point;
       ::GetCursorPos(&point);
       TrackTrayMenu(point.x, point.y);
+      break;
     }
-    break;
   }
 
   return 0;

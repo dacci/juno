@@ -136,21 +136,21 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
   timer_ = NULL;
 
   switch (phase_) {
-  case Request:
-    OnRequestReceived(error, length);
-    return;
+    case Request:
+      OnRequestReceived(error, length);
+      return;
 
-  case RequestBody:
-    OnRequestBodyReceived(error, length);
-    return;
+    case RequestBody:
+      OnRequestBodyReceived(error, length);
+      return;
 
-  case Response:
-    OnResponseReceived(error, length);
-    return;
+    case Response:
+      OnResponseReceived(error, length);
+      return;
 
-  case ResponseBody:
-    OnResponseBodyReceived(error, length);
-    return;
+    case ResponseBody:
+      OnResponseBodyReceived(error, length);
+      return;
   }
 
   assert(false);
@@ -158,25 +158,25 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
 
 void HttpProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
   switch (phase_) {
-  case Request:
-    OnRequestSent(error, length);
-    return;
+    case Request:
+      OnRequestSent(error, length);
+      return;
 
-  case RequestBody:
-    OnRequestBodySent(error, length);
-    return;
+    case RequestBody:
+      OnRequestBodySent(error, length);
+      return;
 
-  case Response:
-    OnResponseSent(error, length);
-    return;
+    case Response:
+      OnResponseSent(error, length);
+      return;
 
-  case ResponseBody:
-    OnResponseBodySent(error, length);
-    return;
+    case ResponseBody:
+      OnResponseBodySent(error, length);
+      return;
 
-  case Error:
-    delete this;
-    return;
+    case Error:
+      delete this;
+      return;
   }
 
   assert(false);
@@ -397,17 +397,17 @@ DWORD CALLBACK HttpProxySession::FireEvent(void* param) {
   EventArgs* args = static_cast<EventArgs*>(param);
 
   switch (args->event) {
-  case Connected:
-    args->session->OnConnected(args->socket, args->error);
-    break;
+    case Connected:
+      args->session->OnConnected(args->socket, args->error);
+      break;
 
-  case Received:
-    args->session->OnReceived(args->socket, args->error, args->length);
-    break;
+    case Received:
+      args->session->OnReceived(args->socket, args->error, args->length);
+      break;
 
-  case Sent:
-    args->session->OnSent(args->socket, args->error, args->length);
-    break;
+    case Sent:
+      args->session->OnSent(args->socket, args->error, args->length);
+      break;
   }
 
   delete args;

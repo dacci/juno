@@ -151,27 +151,27 @@ bool ScissorsSession::DoNegotiation() {
   remote_data_.clear();
 
   switch (status) {
-  case SEC_I_CONTINUE_NEEDED:
-    if (token_output_[0].cbBuffer > 0)
-      return SendAsync(remote_, token_output_[0]);
-    else
-      return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
+    case SEC_I_CONTINUE_NEEDED:
+      if (token_output_[0].cbBuffer > 0)
+        return SendAsync(remote_, token_output_[0]);
+      else
+        return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
 
-  case SEC_E_OK:
-    status = context_->QueryAttributes(SECPKG_ATTR_STREAM_SIZES,
-                                       &stream_sizes_);
-    if (FAILED(status))
+    case SEC_E_OK:
+      status = context_->QueryAttributes(SECPKG_ATTR_STREAM_SIZES,
+                                         &stream_sizes_);
+      if (FAILED(status))
+        return false;
+
+      if (token_output_[0].cbBuffer > 0) {
+        negotiating_ = 2;
+        return SendAsync(remote_, token_output_[0]);
+      }
+
+      return CompleteNegotiation();
+
+    default:
       return false;
-
-    if (token_output_[0].cbBuffer > 0) {
-      negotiating_ = 2;
-      return SendAsync(remote_, token_output_[0]);
-    }
-
-    return CompleteNegotiation();
-
-  default:
-    return false;
   }
 }
 
@@ -241,17 +241,17 @@ bool ScissorsSession::DoDecryption() {
   SECURITY_STATUS status = context_->DecryptMessage(&decrypted_);
 
   switch (status) {
-  case SEC_E_INCOMPLETE_MESSAGE:
-    return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
+    case SEC_E_INCOMPLETE_MESSAGE:
+      return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
 
-  case SEC_I_RENEGOTIATE:
-    return DoNegotiation();
+    case SEC_I_RENEGOTIATE:
+      return DoNegotiation();
 
-  case SEC_E_OK:
-    return SendAsync(client_, decrypted_[1]);
+    case SEC_E_OK:
+      return SendAsync(client_, decrypted_[1]);
 
-  default:
-    return false;
+    default:
+      return false;
   }
 }
 
