@@ -43,7 +43,7 @@ class HttpProxySession : public AsyncSocket::Listener {
     int length;
   };
 
-  static const size_t kBufferSize = 4096;
+  static const size_t kBufferSize = 8192;
   static const DWORD kTimeout = 15000;
 
   static const std::string kConnection;
