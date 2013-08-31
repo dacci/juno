@@ -4,6 +4,8 @@
 
 #include <assert.h>
 
+#include <madoka/concurrent/lock_guard.h>
+
 TunnelingService* TunnelingService::instance_ = NULL;
 
 bool TunnelingService::Init() {
@@ -32,27 +34,34 @@ TunnelingService::TunnelingService() : stopped_() {
 }
 
 TunnelingService::~TunnelingService() {
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
   stopped_ = true;
 
-  critical_section_.Lock();
   for (auto i = session_map_.begin(), l = session_map_.end(); i != l; ++i)
-    i->first->Close();
-  critical_section_.Unlock();
+    i->first->Shutdown(SD_BOTH);
 
-  ::WaitForSingleObject(empty_event_, INFINITE);
+  while (true) {
+    critical_section_.Unlock();
+    ::WaitForSingleObject(empty_event_, INFINITE);
+    critical_section_.Lock();
+
+    if (session_map_.empty())
+      break;
+  }
 
   ::CloseHandle(empty_event_);
 }
 
 bool TunnelingService::BindSocket(AsyncSocket* from, AsyncSocket* to) {
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
   if (stopped_)
     return false;
 
   Session* pair = new Session(this, from, to);
   if (pair == NULL)
     return false;
-
-  critical_section_.Lock();
 
   bool started = pair->Start();
   if (started) {
@@ -65,13 +74,11 @@ bool TunnelingService::BindSocket(AsyncSocket* from, AsyncSocket* to) {
     delete pair;
   }
 
-  critical_section_.Unlock();
-
   return started;
 }
 
 void TunnelingService::EndSession(AsyncSocket* from, AsyncSocket* to) {
-  critical_section_.Lock();
+  madoka::concurrent::LockGuard lock(&critical_section_);
 
   from->Shutdown(SD_BOTH);
   to->Shutdown(SD_BOTH);
@@ -90,8 +97,6 @@ void TunnelingService::EndSession(AsyncSocket* from, AsyncSocket* to) {
   session_map_.erase(from);
   if (session_map_.empty())
     ::SetEvent(empty_event_);
-
-  critical_section_.Unlock();
 }
 
 TunnelingService::Session::Session(TunnelingService* service, AsyncSocket* from,
