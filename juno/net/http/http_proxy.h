@@ -62,6 +62,7 @@ class HttpProxy : public ServiceProvider {
     std::string replace;
   };
 
+  // TODO(dacci): replace with condition variable
   HANDLE empty_event_;
   madoka::concurrent::CriticalSection critical_section_;
   bool stopped_;

@@ -3,6 +3,8 @@
 #ifndef JUNO_NET_SOCKS_SOCKS_PROXY_H_
 #define JUNO_NET_SOCKS_SOCKS_PROXY_H_
 
+#include <madoka/concurrent/critical_section.h>
+
 #include <list>
 
 #include "net/service_provider.h"
@@ -16,13 +18,16 @@ class SocksProxy : public ServiceProvider {
 
   bool Setup(HKEY key);
   void Stop();
+  void EndSession(SocksProxySession* session);
 
   bool OnAccepted(AsyncSocket* client);
   void OnError(DWORD error);
 
  private:
+  // TODO(dacci): replace with condition variable.
   HANDLE empty_event_;
-  CRITICAL_SECTION critical_section_;
+  madoka::concurrent::CriticalSection critical_section_;
+  std::list<SocksProxySession*> sessions_;
   bool stopped_;
 };
 

@@ -3,13 +3,16 @@
 #ifndef JUNO_NET_SCISSORS_SCISSORS_H_
 #define JUNO_NET_SCISSORS_SCISSORS_H_
 
+#include <madoka/concurrent/critical_section.h>
 #include <madoka/net/address_info.h>
 
+#include <list>
 #include <string>
 
 #include "net/service_provider.h"
 
 class SchannelCredential;
+class ScissorsSession;
 
 class Scissors : public ServiceProvider {
  public:
@@ -18,12 +21,20 @@ class Scissors : public ServiceProvider {
 
   bool Setup(HKEY key);
   void Stop();
+  void EndSession(ScissorsSession* session);
 
   bool OnAccepted(AsyncSocket* client);
   void OnError(DWORD error);
 
  private:
   friend class ScissorsSession;
+
+  // TODO(dacci): replace with condition variable.
+  HANDLE empty_event_;
+  madoka::concurrent::CriticalSection critical_section_;
+  std::list<ScissorsSession*> sessions_;
+
+  bool stopped_;
 
   std::string remote_address_;
   int remote_port_;

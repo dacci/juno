@@ -4,6 +4,8 @@
 
 #include <wincrypt.h>
 
+#include <madoka/concurrent/lock_guard.h>
+
 #include <utility>
 
 #include "misc/registry_key-inl.h"
@@ -102,14 +104,21 @@ bool HttpProxy::Setup(HKEY key) {
 }
 
 void HttpProxy::Stop() {
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
   stopped_ = true;
 
-  critical_section_.Lock();
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
     (*i)->Stop();
-  critical_section_.Unlock();
 
-  ::WaitForSingleObject(empty_event_, INFINITE);
+  while (true) {
+    critical_section_.Unlock();
+    ::WaitForSingleObject(empty_event_, INFINITE);
+    critical_section_.Lock();
+
+    if (sessions_.empty())
+      break;
+  }
 }
 
 void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
@@ -152,14 +161,16 @@ void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
 }
 
 void HttpProxy::EndSession(HttpProxySession* session) {
-  critical_section_.Lock();
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
   sessions_.remove(session);
   if (sessions_.empty())
     ::SetEvent(empty_event_);
-  critical_section_.Unlock();
 }
 
 bool HttpProxy::OnAccepted(AsyncSocket* client) {
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
   if (stopped_)
     return false;
 
@@ -167,19 +178,15 @@ bool HttpProxy::OnAccepted(AsyncSocket* client) {
   if (session == NULL)
     return false;
 
-  critical_section_.Lock();
   sessions_.push_back(session);
   ::ResetEvent(empty_event_);
 
-  bool started = session->Start(client);
-  if (!started) {
-    EndSession(session);
+  if (!session->Start(client)) {
     delete session;
+    return false;
   }
 
-  critical_section_.Unlock();
-
-  return started;
+  return true;
 }
 
 void HttpProxy::OnError(DWORD error) {

@@ -30,8 +30,6 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy)
 }
 
 HttpProxySession::~HttpProxySession() {
-  proxy_->EndSession(this);
-
   if (client_ != NULL) {
     client_->Shutdown(SD_BOTH);
     delete client_;
@@ -53,6 +51,8 @@ HttpProxySession::~HttpProxySession() {
     ::DeleteTimerQueueTimer(NULL, timer_, INVALID_HANDLE_VALUE);
     timer_ = NULL;
   }
+
+  proxy_->EndSession(this);
 }
 
 bool HttpProxySession::Start(AsyncSocket* client) {
@@ -68,10 +68,10 @@ bool HttpProxySession::Start(AsyncSocket* client) {
 
 void HttpProxySession::Stop() {
   if (client_ != NULL)
-    client_->Close();
+    client_->Shutdown(SD_BOTH);
 
   if (remote_ != NULL)
-    remote_->Close();
+    remote_->Shutdown(SD_BOTH);
 }
 
 void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
@@ -306,8 +306,9 @@ void HttpProxySession::ProcessHopByHopHeaders(HttpHeaders* headers) {
 
   // remove other hop-by-hop headers
   headers->RemoveHeader(kKeepAlive);
-  headers->RemoveHeader(kProxyAuthenticate);
-  headers->RemoveHeader(kProxyAuthorization);
+  // Let the client process unsupported proxy auth methods.
+  // headers->RemoveHeader(kProxyAuthenticate);
+  // headers->RemoveHeader(kProxyAuthorization);
   headers->RemoveHeader(kProxyConnection);
 }
 
@@ -334,6 +335,7 @@ void HttpProxySession::SendError(HTTP::StatusCode status) {
   delete this;
 }
 
+// Resets internal stats and starts new session.
 void HttpProxySession::EndSession() {
   if (close_client_) {
     delete this;

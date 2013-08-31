@@ -15,6 +15,7 @@ class SocksProxySession : public AsyncSocket::Listener {
   virtual ~SocksProxySession();
 
   bool Start(AsyncSocket* client);
+  void Stop();
 
   void OnConnected(AsyncSocket* socket, DWORD error);
   void OnReceived(AsyncSocket* socket, DWORD error, int length);

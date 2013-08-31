@@ -2,16 +2,22 @@
 
 #include "net/scissors/scissors.h"
 
+#include <madoka/concurrent/lock_guard.h>
+
 #include "misc/registry_key.h"
 #include "misc/schannel/schannel_credential.h"
 #include "net/scissors/scissors_session.h"
 
-Scissors::Scissors() : remote_port_(), remote_ssl_(), credential_() {
+Scissors::Scissors()
+    : stopped_(), remote_port_(), remote_ssl_(), credential_() {
+  empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
 }
 
 Scissors::~Scissors() {
   if (credential_ != NULL)
     delete credential_;
+
+  ::CloseHandle(empty_event_);
 }
 
 bool Scissors::Setup(HKEY key) {
@@ -44,12 +50,44 @@ bool Scissors::Setup(HKEY key) {
 }
 
 void Scissors::Stop() {
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
+  stopped_ = true;
+
+  for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
+    (*i)->Stop();
+
+  while (true) {
+    critical_section_.Unlock();
+    ::WaitForSingleObject(empty_event_, INFINITE);
+    critical_section_.Lock();
+
+    if (sessions_.empty())
+      break;
+  }
+}
+
+void Scissors::EndSession(ScissorsSession* session) {
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
+  sessions_.remove(session);
+
+  if (sessions_.empty())
+    ::SetEvent(empty_event_);
 }
 
 bool Scissors::OnAccepted(AsyncSocket* client) {
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
+  if (stopped_)
+    return false;
+
   ScissorsSession* session = new ScissorsSession(this);
   if (session == NULL)
     return false;
+
+  sessions_.push_back(session);
+  ::ResetEvent(empty_event_);
 
   if (!session->Start(client)) {
     delete session;

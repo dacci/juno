@@ -44,6 +44,8 @@ ScissorsSession::~ScissorsSession() {
     delete remote_buffer_;
     remote_buffer_ = NULL;
   }
+
+  service_->EndSession(this);
 }
 
 bool ScissorsSession::Start(AsyncSocket* client) {
@@ -74,6 +76,11 @@ bool ScissorsSession::Start(AsyncSocket* client) {
   }
 
   return true;
+}
+
+void ScissorsSession::Stop() {
+  if (client_ != NULL)
+    client_->Shutdown(SD_BOTH);
 }
 
 void ScissorsSession::OnConnected(AsyncSocket* socket, DWORD error) {

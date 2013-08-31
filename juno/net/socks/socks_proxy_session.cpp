@@ -9,6 +9,7 @@
 #include <string>
 
 #include "net/tunneling_service.h"
+#include "net/socks/socks_proxy.h"
 
 namespace {
 
@@ -74,6 +75,8 @@ SocksProxySession::~SocksProxySession() {
     delete[] response_buffer_;
     response_buffer_ = NULL;
   }
+
+  proxy_->EndSession(this);
 }
 
 bool SocksProxySession::Start(AsyncSocket* client) {
@@ -85,6 +88,14 @@ bool SocksProxySession::Start(AsyncSocket* client) {
   }
 
   return true;
+}
+
+void SocksProxySession::Stop() {
+  if (client_ != NULL)
+    client_->Shutdown(SD_BOTH);
+
+  if (remote_ != NULL)
+    remote_->Shutdown(SD_BOTH);
 }
 
 void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
