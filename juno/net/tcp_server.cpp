@@ -1,6 +1,9 @@
 // Copyright (c) 2013 dacci.org
 
 #include "net/tcp_server.h"
+
+#include <madoka/concurrent/lock_guard.h>
+
 #include "net/async_server_socket.h"
 #include "net/async_socket.h"
 #include "net/service_provider.h"
@@ -55,44 +58,56 @@ bool TcpServer::Start() {
 
   bool succeeded = false;
 
-  critical_section_.Lock();
+  madoka::concurrent::LockGuard lock(&critical_section_);
 
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
     if ((*i)->AcceptAsync(this)) {
       succeeded = true;
-      ++count_;
-      ::ResetEvent(event_);
+      if (count_++ == 0)
+        ::ResetEvent(event_);
+    } else {
+      (*i)->Close();
     }
   }
-
-  critical_section_.Unlock();
 
   return succeeded;
 }
 
 void TcpServer::Stop() {
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
     (*i)->Close();
 
-  ::WaitForSingleObject(event_, INFINITE);
+  while (true) {
+    critical_section_.Unlock();
+    ::WaitForSingleObject(event_, INFINITE);
+    critical_section_.Lock();
+
+    if (count_ == 0)
+      break;
+  }
 }
 
 void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
                            DWORD error) {
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
   if (error == 0) {
-    if (service_->OnAccepted(client)) {
-      server->AcceptAsync(this);
+    if (service_->OnAccepted(client))
+      client = NULL;
+
+    if (server->AcceptAsync(this))
       return;
-    }
   } else {
     service_->OnError(error);
   }
 
-  delete client;
+  if (client != NULL)
+    delete client;
+
   server->Close();
 
-  critical_section_.Lock();
   if (--count_ == 0)
     ::SetEvent(event_);
-  critical_section_.Unlock();
 }

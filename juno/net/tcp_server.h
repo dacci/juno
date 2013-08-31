@@ -33,6 +33,7 @@ class TcpServer : public AsyncServerSocket::Listener {
   ServiceProvider* service_;
 
   int count_;
+  // TODO(dacci): replace with condition variable
   HANDLE event_;
   madoka::concurrent::CriticalSection critical_section_;
 };
