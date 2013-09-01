@@ -44,7 +44,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   };
 
   static const size_t kBufferSize = 8192;
-  static const DWORD kTimeout = 15000;
+  static const int kTimeout = 15000;
 
   static const std::string kConnection;
   static const std::string kContentEncoding;
@@ -83,9 +83,16 @@ class HttpProxySession : public AsyncSocket::Listener {
   void OnResponseBodyReceived(DWORD error, int length);
   void OnResponseBodySent(DWORD error, int length);
 
+#ifdef LEGACY_PLATFORM
   static void CALLBACK OnTimeout(void* param, BOOLEAN fired);
+#else   // LEGACY_PLATFORM
+  static void CALLBACK OnTimeout(PTP_CALLBACK_INSTANCE instance, PVOID param,
+                                 PTP_TIMER timer);
+#endif  // LEGACY_PLATFORM
 
   static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
+
+  static FILETIME kTimerDueTime;
 
   HttpProxy* const proxy_;
   AsyncSocket* client_;
@@ -106,7 +113,11 @@ class HttpProxySession : public AsyncSocket::Listener {
   int64_t chunk_size_;
   bool close_client_;
 
+#ifdef LEGACY_PLATFORM
   HANDLE timer_;
+#else   // LEGACY_PLATFORM
+  PTP_TIMER timer_;
+#endif  // LEGACY_PLATFORM
   AsyncSocket* receiving_;
   bool continue_;
 };
