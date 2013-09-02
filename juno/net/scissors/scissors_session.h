@@ -31,12 +31,12 @@ class ScissorsSession : public AsyncSocket::Listener {
   bool CompleteNegotiation();
   bool DoEncryption();
   bool DoDecryption();
-  void EndSession();
+  void EndSession(AsyncSocket* socket);
 
-  void OnClientReceived(DWORD error, int length);
-  void OnRemoteReceived(DWORD error, int length);
-  void OnClientSent(DWORD error, int length);
-  void OnRemoteSent(DWORD error, int length);
+  bool OnClientReceived(int length);
+  bool OnRemoteReceived(int length);
+  bool OnClientSent(int length);
+  bool OnRemoteSent(int length);
 
   static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
 
@@ -49,7 +49,6 @@ class ScissorsSession : public AsyncSocket::Listener {
 
   SecPkgContext_StreamSizes stream_sizes_;
   int negotiating_;
-  bool shutdown_;
 
   std::vector<char> client_data_;
   char* client_buffer_;

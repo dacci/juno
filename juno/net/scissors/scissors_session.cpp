@@ -23,8 +23,7 @@ ScissorsSession::ScissorsSession(Scissors* service)
       remote_(),
       context_(),
       established_(),
-      ref_count_(1),
-      shutdown_() {
+      ref_count_(1) {
 }
 
 ScissorsSession::~ScissorsSession() {
@@ -93,7 +92,7 @@ void ScissorsSession::Stop() {
 
 void ScissorsSession::OnConnected(AsyncSocket* socket, DWORD error) {
   if (error != 0) {
-    EndSession();
+    DELETE_THIS();
     return;
   }
 
@@ -108,27 +107,45 @@ void ScissorsSession::OnConnected(AsyncSocket* socket, DWORD error) {
   }
 
   if (!DoNegotiation()) {
-    EndSession();
+    DELETE_THIS();
     return;
   }
 }
 
 void ScissorsSession::OnReceived(AsyncSocket* socket, DWORD error, int length) {
-  if (socket == client_)
-    OnClientReceived(error, length);
-  else if (socket == remote_)
-    OnRemoteReceived(error, length);
-  else
-    assert(false);
+  if (error == 0 && length > 0) {
+    bool succeeded = false;
+
+    if (socket == client_)
+      succeeded = OnClientReceived(length);
+    else if (socket == remote_)
+      succeeded = OnRemoteReceived(length);
+    else
+      assert(false);
+
+    if (succeeded)
+      return;
+  }
+
+  EndSession(socket);
 }
 
 void ScissorsSession::OnSent(AsyncSocket* socket, DWORD error, int length) {
-  if (socket == client_)
-    OnClientSent(error, length);
-  else if (socket == remote_)
-    OnRemoteSent(error, length);
-  else
-    assert(false);
+  if (error == 0 && length > 0) {
+    bool succeeded = false;
+
+    if (socket == client_)
+      succeeded = OnClientSent(length);
+    else if (socket == remote_)
+      succeeded = OnRemoteSent(length);
+    else
+      assert(false);
+
+    if (succeeded)
+      return;
+  }
+
+  EndSession(socket);
 }
 
 bool ScissorsSession::SendAsync(AsyncSocket* socket, const SecBuffer& buffer) {
@@ -198,11 +215,6 @@ bool ScissorsSession::CompleteNegotiation() {
     ref_count_ = 2;
   }
 
-  if (shutdown_) {
-    remote_->Shutdown(SD_BOTH);
-    return true;
-  }
-
   return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
 }
 
@@ -258,97 +270,78 @@ bool ScissorsSession::DoDecryption() {
     case SEC_E_OK:
       return SendAsync(client_, decrypted_[1]);
 
+    case SEC_I_CONTEXT_EXPIRED:
+      return true;
+
     default:
       return false;
   }
 }
 
-void ScissorsSession::EndSession() {
-  if (client_ != NULL)
-    client_->Shutdown(SD_BOTH);
+void ScissorsSession::EndSession(AsyncSocket* socket) {
+  socket->Shutdown(SD_BOTH);
 
-  if (remote_ != NULL)
-    remote_->Shutdown(SD_BOTH);
+  switch (::InterlockedDecrement(&ref_count_)) {
+    case 1:
+      if (socket == client_) {
+        context_->ApplyControlToken(SCHANNEL_SHUTDOWN);
+        DoNegotiation();
+      } else if (socket == remote_) {
+        client_->Shutdown(SD_BOTH);
+      } else {
+        assert(false);
+      }
+      break;
 
-  if (::InterlockedDecrement(&ref_count_) == 0)
-    DELETE_THIS();
+    case 0:
+      DELETE_THIS();
+      break;
+
+    default:
+      assert(false);
+  }
 }
 
-void ScissorsSession::OnClientReceived(DWORD error, int length) {
-  if (error != 0 || length == 0) {
-    if (ref_count_ == 2) {
-      context_->ApplyControlToken(SCHANNEL_SHUTDOWN);
-      shutdown_ = true;
-      DoNegotiation();
-    }
-
-    EndSession();
-    return;
-  }
-
+bool ScissorsSession::OnClientReceived(int length) {
   client_data_.insert(client_data_.end(), client_buffer_,
                       client_buffer_ + length);
 
-  if (!negotiating_) {
-    if (!DoEncryption())
-      EndSession();
-  }
+  if (negotiating_)
+    return true;
+  else
+    return DoEncryption();
 }
 
-void ScissorsSession::OnRemoteReceived(DWORD error, int length) {
-  if (error != 0 || length == 0) {
-    EndSession();
-    return;
-  }
-
+bool ScissorsSession::OnRemoteReceived(int length) {
   remote_data_.insert(remote_data_.end(), remote_buffer_,
                       remote_buffer_ + length);
 
-  if (negotiating_) {
-    if (!DoNegotiation())
-      EndSession();
-  } else {
-    if (!DoDecryption())
-      EndSession();
-  }
+  if (negotiating_)
+    return DoNegotiation();
+  else
+    return DoDecryption();
 }
 
-void ScissorsSession::OnClientSent(DWORD error, int length) {
-  if (error != 0 || length == 0) {
-    EndSession();
-    return;
-  }
-
+bool ScissorsSession::OnClientSent(int length) {
   ::memmove(remote_data_.data(), decrypted_[3].pvBuffer,
             decrypted_[3].cbBuffer);
   remote_data_.resize(decrypted_[3].cbBuffer);
 
-  if (remote_data_.empty()) {
-    if (!remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this))
-      EndSession();
-  } else {
-    if (!DoDecryption())
-      EndSession();
-  }
+  if (remote_data_.empty())
+    return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
+  else
+    return DoDecryption();
 }
 
-void ScissorsSession::OnRemoteSent(DWORD error, int length) {
-  if (error != 0 || length == 0) {
-    EndSession();
-    return;
-  }
-
+bool ScissorsSession::OnRemoteSent(int length) {
   if (negotiating_) {
     token_output_.FreeBuffers();
     token_output_.ClearBuffers();
 
-    if (negotiating_ == 2) {
-      if (!CompleteNegotiation())
-        EndSession();
-    } else {
-      if (!remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this))
-        EndSession();
-    }
+    if (negotiating_ == 2)
+      return CompleteNegotiation();
+    else
+      return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
   } else {
     if (encrypted_.cBuffers > 0) {
       delete[] encrypted_[0].pvBuffer;
@@ -356,12 +349,11 @@ void ScissorsSession::OnRemoteSent(DWORD error, int length) {
       client_data_.clear();
     }
 
-    if (!client_->ReceiveAsync(client_buffer_, kBufferSize, 0, this))
-      EndSession();
+    return client_->ReceiveAsync(client_buffer_, kBufferSize, 0, this);
   }
 }
 
 void CALLBACK ScissorsSession::DeleteThis(PTP_CALLBACK_INSTANCE instance,
-                                           void* param) {
+                                          void* param) {
   delete static_cast<ScissorsSession*>(param);
 }
