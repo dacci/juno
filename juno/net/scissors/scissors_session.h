@@ -46,6 +46,7 @@ class ScissorsSession : public AsyncSocket::Listener {
   SchannelContext* context_;
   bool established_;
   LONG ref_count_;
+  bool shutdown_;
 
   SecPkgContext_StreamSizes stream_sizes_;
   int negotiating_;

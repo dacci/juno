@@ -23,7 +23,8 @@ ScissorsSession::ScissorsSession(Scissors* service)
       remote_(),
       context_(),
       established_(),
-      ref_count_(1) {
+      ref_count_(1),
+      shutdown_() {
 }
 
 ScissorsSession::~ScissorsSession() {
@@ -215,7 +216,10 @@ bool ScissorsSession::CompleteNegotiation() {
     ref_count_ = 2;
   }
 
-  return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
+  if (shutdown_)
+    return true;
+  else
+    return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
 }
 
 bool ScissorsSession::DoEncryption() {
@@ -271,7 +275,8 @@ bool ScissorsSession::DoDecryption() {
       return SendAsync(client_, decrypted_[1]);
 
     case SEC_I_CONTEXT_EXPIRED:
-      return true;
+      context_->ApplyControlToken(SCHANNEL_SHUTDOWN);
+      return DoNegotiation();
 
     default:
       return false;
@@ -284,6 +289,7 @@ void ScissorsSession::EndSession(AsyncSocket* socket) {
   switch (::InterlockedDecrement(&ref_count_)) {
     case 1:
       if (socket == client_) {
+        shutdown_ = true;
         context_->ApplyControlToken(SCHANNEL_SHUTDOWN);
         DoNegotiation();
       } else if (socket == remote_) {
