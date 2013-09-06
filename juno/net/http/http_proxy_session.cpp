@@ -154,10 +154,12 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
                                   int length) {
 #ifdef LEGACY_PLATFORM
-  assert(timer_ != NULL);
-  ::DeleteTimerQueueTimer(NULL, timer_, INVALID_HANDLE_VALUE);
-  timer_ = NULL;
+  if (timer_ != NULL) {
+    ::DeleteTimerQueueTimer(NULL, timer_, INVALID_HANDLE_VALUE);
+    timer_ = NULL;
+  }
 #else   // LEGACY_PLATFORM
+  assert(timer_ != NULL);
   ::SetThreadpoolTimer(timer_, NULL, 0, 0);
 #endif  // LEGACY_PLATFORM
 
@@ -529,7 +531,7 @@ void HttpProxySession::OnRequestSent(DWORD error, int length) {
 
   if (continue_) {
     phase_ = Response;
-    if (ReceiveAsync(remote_, 0))
+    if (remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
       return;
   } else if (chunked_) {
     content_length_ = ParseChunk(client_buffer_, &chunk_size_);
@@ -554,7 +556,7 @@ void HttpProxySession::OnRequestSent(DWORD error, int length) {
     }
   } else {
     phase_ = Response;
-    if (ReceiveAsync(remote_, 0))
+    if (remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
       return;
   }
 
@@ -598,7 +600,7 @@ void HttpProxySession::OnRequestBodySent(DWORD error, int length) {
 
     if (chunk_size_ == 0) {
       phase_ = Response;
-      if (ReceiveAsync(remote_, 0))
+      if (remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
         return;
     }
 
@@ -617,7 +619,7 @@ void HttpProxySession::OnRequestBodySent(DWORD error, int length) {
         return;
     } else {
       phase_ = Response;
-      if (ReceiveAsync(remote_, 0))
+      if (remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
         return;
     }
   }
@@ -639,7 +641,7 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
 
   int result = response_.Parse(remote_buffer_);
   if (result == HttpResponse::kPartial) {
-    if (!ReceiveAsync(remote_, 0))
+    if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
       SendError(HTTP::INTERNAL_SERVER_ERROR);
     return;
   } else if (result <= 0) {
@@ -735,7 +737,7 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
     content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
 
     if (content_length_ == -2) {
-      if (ReceiveAsync(remote_, 0))
+      if (remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
         return;
     } else if (content_length_ > 0) {
       if (client_->SendAsync(remote_buffer_.data(), content_length_, 0, this))
@@ -749,7 +751,7 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
     }
 
     if (remote_buffer_.empty()) {
-      if (ReceiveAsync(remote_, 0))
+      if (remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
         return;
     } else {
       if (client_->SendAsync(remote_buffer_.data(), remote_buffer_.size(), 0,
@@ -772,7 +774,7 @@ void HttpProxySession::OnResponseBodyReceived(DWORD error, int length) {
 
     content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
     if (content_length_ == -2) {
-      if (ReceiveAsync(remote_, 0))
+      if (remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
         return;
     } else if (content_length_ > 0) {
       if (client_->SendAsync(remote_buffer_.data(), content_length_, 0, this))
@@ -804,7 +806,7 @@ void HttpProxySession::OnResponseBodySent(DWORD error, int length) {
 
     content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
     if (content_length_ == -2) {
-      if (ReceiveAsync(remote_, 0))
+      if (remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
         return;
     } else if (content_length_ > 0) {
       if (client_->SendAsync(remote_buffer_.data(), content_length_, 0, this))
@@ -821,7 +823,7 @@ void HttpProxySession::OnResponseBodySent(DWORD error, int length) {
       content_length_ -= length;
     }
 
-    if (ReceiveAsync(remote_, 0))
+    if (remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
       return;
   }
 
