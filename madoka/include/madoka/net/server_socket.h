@@ -27,6 +27,8 @@ class ServerSocket : public AbstractSocket {
   bool Bind(const addrinfo* end_point) {
     if (bound_)
       return false;
+    if (end_point->ai_socktype != SOCK_STREAM)
+      return false;
     if (!Create(end_point))
       return false;
 
@@ -71,6 +73,8 @@ class ServerSocket : public AbstractSocket {
     ((NTDDI_VERSION >= NTDDI_WINXPSP2) || (_WIN32_WINNT >= 0x0502))
   bool Bind(const ADDRINFOW* end_point) {
     if (bound_)
+      return false;
+    if (end_point->ai_socktype != SOCK_STREAM)
       return false;
     if (!Create(end_point))
       return false;

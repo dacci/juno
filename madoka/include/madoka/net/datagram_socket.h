@@ -41,6 +41,8 @@ class DatagramSocket : public AbstractSocket {
   }
 
   bool Bind(const addrinfo* end_point) {
+    if (end_point->ai_socktype != SOCK_DGRAM)
+      return false;
     if (!Create(end_point))
       return false;
 
@@ -92,6 +94,8 @@ class DatagramSocket : public AbstractSocket {
   }
 
   bool Connect(const addrinfo* end_point) {
+    if (end_point->ai_socktype != SOCK_DGRAM)
+      return false;
     if (!Create(end_point))
       return false;
 
@@ -133,6 +137,8 @@ class DatagramSocket : public AbstractSocket {
 
 #ifdef WIN32
   bool Bind(const ADDRINFOW* end_point) {
+    if (end_point->ai_socktype != SOCK_DGRAM)
+      return false;
     if (!Create(end_point))
       return false;
 
@@ -174,6 +180,8 @@ class DatagramSocket : public AbstractSocket {
   }
 
   bool Connect(const ADDRINFOW* end_point) {
+    if (end_point->ai_socktype != SOCK_DGRAM)
+      return false;
     if (!Create(end_point))
       return false;
 

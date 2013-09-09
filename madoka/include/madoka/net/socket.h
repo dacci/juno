@@ -28,6 +28,8 @@ class Socket : public AbstractSocket {
   bool Connect(const addrinfo* end_point) {
     if (connected_)
       return false;
+    if (end_point->ai_socktype != SOCK_STREAM)
+      return false;
     if (!Create(end_point))
       return false;
 
@@ -71,6 +73,8 @@ class Socket : public AbstractSocket {
     ((NTDDI_VERSION >= NTDDI_WINXPSP2) || (_WIN32_WINNT >= 0x0502))
   bool Connect(const ADDRINFOW* end_point) {
     if (connected_)
+      return false;
+    if (end_point->ai_socktype != SOCK_STREAM)
       return false;
     if (!Create(end_point))
       return false;
