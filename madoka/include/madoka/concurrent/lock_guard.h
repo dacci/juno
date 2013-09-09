@@ -11,7 +11,7 @@ namespace concurrent {
 
 class LockGuard {
  public:
-  LockGuard(Lockable* lock) : lock_(lock) {
+  explicit LockGuard(Lockable* lock) : lock_(lock) {
     lock_->Lock();
   }
 
