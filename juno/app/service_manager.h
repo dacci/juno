@@ -10,7 +10,7 @@
 #include <vector>
 
 class ServiceProvider;
-class TcpServer;
+class Server;
 
 class ServiceManager {
  public:
@@ -30,10 +30,10 @@ class ServiceManager {
   typedef std::map<std::string, ServiceProvider*> ServiceMap;
 
   ServiceProvider* LoadService(HKEY parent, const std::string& key_name);
-  TcpServer* LoadServer(HKEY parent, const std::string& key_name);
+  Server* LoadServer(HKEY parent, const std::string& key_name);
 
   ServiceMap services_;
-  std::vector<TcpServer*> servers_;
+  std::vector<Server*> servers_;
 };
 
 extern ServiceManager* service_manager;

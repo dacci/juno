@@ -201,6 +201,7 @@
     <ClCompile Include="net\socks\socks_proxy_session.cpp" />
     <ClCompile Include="net\tcp_server.cpp" />
     <ClCompile Include="net\tunneling_service.cpp" />
+    <ClCompile Include="net\udp_server.cpp" />
     <ClCompile Include="ui\http_header_filter_dialog.cpp" />
     <ClCompile Include="ui\http_proxy_dialog.cpp" />
     <ClCompile Include="ui\main_frame.cpp" />
@@ -234,6 +235,7 @@
     <ClInclude Include="net\http\http_status.h" />
     <ClInclude Include="net\scissors\scissors.h" />
     <ClInclude Include="net\scissors\scissors_session.h" />
+    <ClInclude Include="net\server.h" />
     <ClInclude Include="net\service_provider.h" />
     <ClInclude Include="net\socks\socks4.h" />
     <ClInclude Include="net\socks\socks5.h" />
@@ -241,6 +243,7 @@
     <ClInclude Include="net\socks\socks_proxy_session.h" />
     <ClInclude Include="net\tcp_server.h" />
     <ClInclude Include="net\tunneling_service.h" />
+    <ClInclude Include="net\udp_server.h" />
     <ClInclude Include="res\resource.h" />
     <ClInclude Include="ui\http_header_filter_dialog.h" />
     <ClInclude Include="ui\http_proxy_dialog.h" />

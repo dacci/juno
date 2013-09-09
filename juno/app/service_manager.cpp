@@ -7,6 +7,7 @@
 #include "net/scissors/scissors.h"
 #include "net/socks/socks_proxy.h"
 #include "net/tcp_server.h"
+#include "net/udp_server.h"
 
 ServiceManager* service_manager = NULL;
 
@@ -70,7 +71,7 @@ bool ServiceManager::LoadServers() {
     if (!servers_key.EnumerateKey(i, &name))
       break;
 
-    TcpServer* server = LoadServer(servers_key, name);
+    Server* server = LoadServer(servers_key, name);
     if (server != NULL)
       servers_.push_back(server);
   }
@@ -133,8 +134,7 @@ ServiceProvider* ServiceManager::LoadService(HKEY parent,
   return provider;
 }
 
-TcpServer* ServiceManager::LoadServer(HKEY parent,
-                                      const std::string& key_name) {
+Server* ServiceManager::LoadServer(HKEY parent, const std::string& key_name) {
   RegistryKey reg_key;
   if (!reg_key.Open(parent, key_name))
     return NULL;
@@ -159,7 +159,23 @@ TcpServer* ServiceManager::LoadServer(HKEY parent,
   if (!reg_key.QueryString("Bind", &bind))
     return NULL;
 
-  TcpServer* server = new TcpServer();
+  int type = SOCK_STREAM;
+  reg_key.QueryInteger("Type", &type);
+
+  Server* server = NULL;
+  switch (type) {
+    case SOCK_STREAM:
+      server = new TcpServer();
+      break;
+
+    case SOCK_DGRAM:
+      server = new UdpServer();
+      break;
+
+    default:
+      return NULL;
+  }
+
   if (server == NULL)
     return NULL;
 

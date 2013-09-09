@@ -8,10 +8,11 @@
 #include <vector>
 
 #include "net/async_server_socket.h"
+#include "net/server.h"
 
 class ServiceProvider;
 
-class TcpServer : public AsyncServerSocket::Listener {
+class TcpServer : public Server, public AsyncServerSocket::Listener {
  public:
   TcpServer();
   virtual ~TcpServer();

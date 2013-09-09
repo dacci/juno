@@ -189,5 +189,9 @@ bool HttpProxy::OnAccepted(AsyncSocket* client) {
   return true;
 }
 
+void HttpProxy::OnReceivedFrom(AsyncDatagramSocket* socket, void* data,
+                               int length, sockaddr* from, int from_length) {
+}
+
 void HttpProxy::OnError(DWORD error) {
 }

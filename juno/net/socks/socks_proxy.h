@@ -21,6 +21,8 @@ class SocksProxy : public ServiceProvider {
   void EndSession(SocksProxySession* session);
 
   bool OnAccepted(AsyncSocket* client);
+  void OnReceivedFrom(AsyncDatagramSocket* socket, void* data, int length,
+                      sockaddr* from, int from_length);
   void OnError(DWORD error);
 
  private:

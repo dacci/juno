@@ -67,5 +67,9 @@ bool SocksProxy::OnAccepted(AsyncSocket* client) {
   return true;
 }
 
+void SocksProxy::OnReceivedFrom(AsyncDatagramSocket* socket, void* data,
+                                int length, sockaddr* from, int from_length) {
+}
+
 void SocksProxy::OnError(DWORD error) {
 }

@@ -3,7 +3,12 @@
 #ifndef JUNO_NET_SERVICE_PROVIDER_H_
 #define JUNO_NET_SERVICE_PROVIDER_H_
 
-#include "net/async_server_socket.h"
+#include <windows.h>
+
+struct sockaddr;
+
+class AsyncSocket;
+class AsyncDatagramSocket;
 
 class ServiceProvider {
  public:
@@ -14,6 +19,8 @@ class ServiceProvider {
   virtual void Stop() = 0;
 
   virtual bool OnAccepted(AsyncSocket* client) = 0;
+  virtual void OnReceivedFrom(AsyncDatagramSocket* socket, void* data,
+                              int length, sockaddr* from, int from_length) = 0;
   virtual void OnError(DWORD error) = 0;
 };
 
