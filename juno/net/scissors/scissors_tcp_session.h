@@ -1,20 +1,21 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_NET_SCISSORS_SCISSORS_SESSION_H_
-#define JUNO_NET_SCISSORS_SCISSORS_SESSION_H_
+#ifndef JUNO_NET_SCISSORS_SCISSORS_TCP_SESSION_H_
+#define JUNO_NET_SCISSORS_SCISSORS_TCP_SESSION_H_
 
 #include <vector>
 
 #include "misc/schannel/security_buffer.h"
 #include "net/async_socket.h"
+#include "net/scissors/scissors.h"
 
 class SchannelContext;
-class Scissors;
 
-class ScissorsSession : public AsyncSocket::Listener {
+class ScissorsTcpSession
+    : public Scissors::Session, public AsyncSocket::Listener {
  public:
-  explicit ScissorsSession(Scissors* service);
-  virtual ~ScissorsSession();
+  explicit ScissorsTcpSession(Scissors* service);
+  virtual ~ScissorsTcpSession();
 
   bool Start(AsyncSocket* client);
   void Stop();
@@ -63,4 +64,4 @@ class ScissorsSession : public AsyncSocket::Listener {
   SecurityBufferBundle decrypted_;
 };
 
-#endif  // JUNO_NET_SCISSORS_SCISSORS_SESSION_H_
+#endif  // JUNO_NET_SCISSORS_SCISSORS_TCP_SESSION_H_

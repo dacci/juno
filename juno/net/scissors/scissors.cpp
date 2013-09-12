@@ -6,7 +6,8 @@
 
 #include "misc/registry_key.h"
 #include "misc/schannel/schannel_credential.h"
-#include "net/scissors/scissors_session.h"
+#include "net/scissors/scissors_tcp_session.h"
+#include "net/scissors/scissors_udp_session.h"
 
 Scissors::Scissors()
     : stopped_(), remote_port_(), remote_ssl_(), credential_() {
@@ -26,10 +27,15 @@ bool Scissors::Setup(HKEY key) {
   reg_key.QueryString("RemoteAddress", &remote_address_);
   reg_key.QueryInteger("RemotePort", &remote_port_);
   reg_key.QueryInteger("RemoteSSL", &remote_ssl_);
+  reg_key.QueryInteger("RemoteUDP", &remote_udp_);
 
   reg_key.Detach();
 
-  resolver_.ai_socktype = SOCK_STREAM;
+  if (remote_udp_)
+    resolver_.ai_socktype = SOCK_DGRAM;
+  else
+    resolver_.ai_socktype = SOCK_STREAM;
+
   if (!resolver_.Resolve(remote_address_.c_str(), remote_port_))
     return false;
 
@@ -67,7 +73,7 @@ void Scissors::Stop() {
   }
 }
 
-void Scissors::EndSession(ScissorsSession* session) {
+void Scissors::EndSession(Session* session) {
   madoka::concurrent::LockGuard lock(&critical_section_);
 
   sessions_.remove(session);
@@ -82,7 +88,7 @@ bool Scissors::OnAccepted(AsyncSocket* client) {
   if (stopped_)
     return false;
 
-  ScissorsSession* session = new ScissorsSession(this);
+  ScissorsTcpSession* session = new ScissorsTcpSession(this);
   if (session == NULL)
     return false;
 
@@ -98,7 +104,24 @@ bool Scissors::OnAccepted(AsyncSocket* client) {
 }
 
 bool Scissors::OnReceivedFrom(Datagram* datagram) {
-  return false;
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
+  if (stopped_)
+    return false;
+
+  ScissorsUdpSession* session = new ScissorsUdpSession(this, datagram);
+  if (session == NULL)
+    return false;
+
+  sessions_.push_back(session);
+  ::ResetEvent(empty_event_);
+
+  if (!session->Start()) {
+    delete session;
+    return false;
+  }
+
+  return true;
 }
 
 void Scissors::OnError(DWORD error) {

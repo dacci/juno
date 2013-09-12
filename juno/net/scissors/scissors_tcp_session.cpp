@@ -1,12 +1,11 @@
 // Copyright (c) 2013 dacci.org
 
-#include "net/scissors/scissors_session.h"
+#include "net/scissors/scissors_tcp_session.h"
 
 #include <assert.h>
 
 #include "misc/string_util.h"
 #include "misc/schannel/schannel_context.h"
-#include "net/scissors/scissors.h"
 #include "net/tunneling_service.h"
 
 #ifdef LEGACY_PLATFORM
@@ -17,7 +16,7 @@
     ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
 #endif  // LEGACY_PLATFORM
 
-ScissorsSession::ScissorsSession(Scissors* service)
+ScissorsTcpSession::ScissorsTcpSession(Scissors* service)
     : service_(service),
       client_(),
       remote_(),
@@ -27,7 +26,7 @@ ScissorsSession::ScissorsSession(Scissors* service)
       shutdown_() {
 }
 
-ScissorsSession::~ScissorsSession() {
+ScissorsTcpSession::~ScissorsTcpSession() {
   if (client_ != NULL) {
     delete client_;
     client_ = NULL;
@@ -56,7 +55,7 @@ ScissorsSession::~ScissorsSession() {
   service_->EndSession(this);
 }
 
-bool ScissorsSession::Start(AsyncSocket* client) {
+bool ScissorsTcpSession::Start(AsyncSocket* client) {
   remote_ = new AsyncSocket();
   if (remote_ == NULL)
     return false;
@@ -86,12 +85,12 @@ bool ScissorsSession::Start(AsyncSocket* client) {
   return true;
 }
 
-void ScissorsSession::Stop() {
+void ScissorsTcpSession::Stop() {
   if (client_ != NULL)
     client_->Shutdown(SD_BOTH);
 }
 
-void ScissorsSession::OnConnected(AsyncSocket* socket, DWORD error) {
+void ScissorsTcpSession::OnConnected(AsyncSocket* socket, DWORD error) {
   if (error != 0) {
     DELETE_THIS();
     return;
@@ -113,7 +112,8 @@ void ScissorsSession::OnConnected(AsyncSocket* socket, DWORD error) {
   }
 }
 
-void ScissorsSession::OnReceived(AsyncSocket* socket, DWORD error, int length) {
+void ScissorsTcpSession::OnReceived(AsyncSocket* socket, DWORD error,
+                                    int length) {
   if (error == 0 && length > 0) {
     bool succeeded = false;
 
@@ -131,7 +131,7 @@ void ScissorsSession::OnReceived(AsyncSocket* socket, DWORD error, int length) {
   EndSession(socket);
 }
 
-void ScissorsSession::OnSent(AsyncSocket* socket, DWORD error, int length) {
+void ScissorsTcpSession::OnSent(AsyncSocket* socket, DWORD error, int length) {
   if (error == 0 && length > 0) {
     bool succeeded = false;
 
@@ -149,11 +149,12 @@ void ScissorsSession::OnSent(AsyncSocket* socket, DWORD error, int length) {
   EndSession(socket);
 }
 
-bool ScissorsSession::SendAsync(AsyncSocket* socket, const SecBuffer& buffer) {
+bool ScissorsTcpSession::SendAsync(AsyncSocket* socket,
+                                   const SecBuffer& buffer) {
   return socket->SendAsync(buffer.pvBuffer, buffer.cbBuffer, 0, this);
 }
 
-bool ScissorsSession::DoNegotiation() {
+bool ScissorsTcpSession::DoNegotiation() {
   negotiating_ = 1;
 
   token_input_.ClearBuffers();
@@ -201,7 +202,7 @@ bool ScissorsSession::DoNegotiation() {
   }
 }
 
-bool ScissorsSession::CompleteNegotiation() {
+bool ScissorsTcpSession::CompleteNegotiation() {
   negotiating_ = 0;
 
   if (established_) {
@@ -222,7 +223,7 @@ bool ScissorsSession::CompleteNegotiation() {
     return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
 }
 
-bool ScissorsSession::DoEncryption() {
+bool ScissorsTcpSession::DoEncryption() {
   char* buffer = new char[stream_sizes_.cbHeader + stream_sizes_.cbTrailer +
                           stream_sizes_.cbMaximumMessage];
   char* pointer = buffer;
@@ -253,7 +254,7 @@ bool ScissorsSession::DoEncryption() {
   return remote_->SendAsync(buffer, total_length, 0, this);
 }
 
-bool ScissorsSession::DoDecryption() {
+bool ScissorsTcpSession::DoDecryption() {
   decrypted_.ClearBuffers();
   decrypted_.AddBuffer(SECBUFFER_DATA, remote_data_.size(),
                        remote_data_.data());
@@ -283,7 +284,7 @@ bool ScissorsSession::DoDecryption() {
   }
 }
 
-void ScissorsSession::EndSession(AsyncSocket* socket) {
+void ScissorsTcpSession::EndSession(AsyncSocket* socket) {
   socket->Shutdown(SD_BOTH);
 
   switch (::InterlockedDecrement(&ref_count_)) {
@@ -308,7 +309,7 @@ void ScissorsSession::EndSession(AsyncSocket* socket) {
   }
 }
 
-bool ScissorsSession::OnClientReceived(int length) {
+bool ScissorsTcpSession::OnClientReceived(int length) {
   client_data_.insert(client_data_.end(), client_buffer_,
                       client_buffer_ + length);
 
@@ -318,7 +319,7 @@ bool ScissorsSession::OnClientReceived(int length) {
     return DoEncryption();
 }
 
-bool ScissorsSession::OnRemoteReceived(int length) {
+bool ScissorsTcpSession::OnRemoteReceived(int length) {
   remote_data_.insert(remote_data_.end(), remote_buffer_,
                       remote_buffer_ + length);
 
@@ -328,7 +329,7 @@ bool ScissorsSession::OnRemoteReceived(int length) {
     return DoDecryption();
 }
 
-bool ScissorsSession::OnClientSent(int length) {
+bool ScissorsTcpSession::OnClientSent(int length) {
   ::memmove(remote_data_.data(), decrypted_[3].pvBuffer,
             decrypted_[3].cbBuffer);
   remote_data_.resize(decrypted_[3].cbBuffer);
@@ -339,7 +340,7 @@ bool ScissorsSession::OnClientSent(int length) {
     return DoDecryption();
 }
 
-bool ScissorsSession::OnRemoteSent(int length) {
+bool ScissorsTcpSession::OnRemoteSent(int length) {
   if (negotiating_) {
     token_output_.FreeBuffers();
     token_output_.ClearBuffers();
@@ -359,7 +360,7 @@ bool ScissorsSession::OnRemoteSent(int length) {
   }
 }
 
-void CALLBACK ScissorsSession::DeleteThis(PTP_CALLBACK_INSTANCE instance,
-                                          void* param) {
-  delete static_cast<ScissorsSession*>(param);
+void CALLBACK ScissorsTcpSession::DeleteThis(PTP_CALLBACK_INSTANCE instance,
+                                             void* param) {
+  delete static_cast<ScissorsTcpSession*>(param);
 }
