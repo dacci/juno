@@ -101,23 +101,25 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
     char* received = NULL;
 
     do {
-      received = new char[sizeof(Datagram) + length + from_length];
+      received = new char[sizeof(ServiceProvider::Datagram) + length +
+                          from_length];
       if (received == NULL)
         break;
 
       char* buffer = buffers_[socket];
 
-      Datagram* datagram = reinterpret_cast<Datagram*>(received);
+      ServiceProvider::Datagram* datagram =
+          reinterpret_cast<ServiceProvider::Datagram*>(received);
       datagram->service = service_;
       datagram->socket = socket;
 
       datagram->data_length = length;
-      datagram->data = received + sizeof(Datagram);
+      datagram->data = received + sizeof(ServiceProvider::Datagram);
       ::memmove(datagram->data, buffer, length);
 
       datagram->from_length = from_length;
-      datagram->from =
-          reinterpret_cast<sockaddr*>(received + sizeof(Datagram) + length);
+      datagram->from = reinterpret_cast<sockaddr*>(
+          received + sizeof(ServiceProvider::Datagram) + length);
       ::memmove(datagram->from, from, from_length);
 
       BOOL succeeded = FALSE;
@@ -162,13 +164,12 @@ DWORD CALLBACK UdpServer::Dispatch(void* context) {
 void CALLBACK UdpServer::Dispatch(PTP_CALLBACK_INSTANCE instance,
                                   void* context) {
 #endif  // LEGACY_PLATFORM
-  Datagram* datagram = static_cast<Datagram*>(context);
+  ServiceProvider::Datagram* datagram =
+      static_cast<ServiceProvider::Datagram*>(context);
 
-  datagram->service->OnReceivedFrom(datagram->socket,
-                                    datagram->data, datagram->data_length,
-                                    datagram->from, datagram->from_length);
-
-  delete[] static_cast<char*>(context);
+  bool succeeded = datagram->service->OnReceivedFrom(datagram);
+  if (!succeeded)
+    delete[] static_cast<char*>(context);
 
 #ifdef LEGACY_PLATFORM
   return 0;

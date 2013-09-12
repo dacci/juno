@@ -12,6 +12,15 @@ class AsyncDatagramSocket;
 
 class ServiceProvider {
  public:
+  struct Datagram {
+    ServiceProvider* service;
+    AsyncDatagramSocket* socket;
+    int data_length;
+    void* data;
+    int from_length;
+    sockaddr* from;
+  };
+
   virtual ~ServiceProvider() {
   }
 
@@ -19,8 +28,7 @@ class ServiceProvider {
   virtual void Stop() = 0;
 
   virtual bool OnAccepted(AsyncSocket* client) = 0;
-  virtual void OnReceivedFrom(AsyncDatagramSocket* socket, void* data,
-                              int length, sockaddr* from, int from_length) = 0;
+  virtual bool OnReceivedFrom(Datagram* datagram) = 0;
   virtual void OnError(DWORD error) = 0;
 };
 

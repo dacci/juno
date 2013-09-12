@@ -26,8 +26,7 @@ class HttpProxy : public ServiceProvider {
   void EndSession(HttpProxySession* session);
 
   bool OnAccepted(AsyncSocket* client);
-  void OnReceivedFrom(AsyncDatagramSocket* socket, void* data, int length,
-                      sockaddr* from, int from_length);
+  bool OnReceivedFrom(Datagram* datagram);
   void OnError(DWORD error);
 
   bool use_remote_proxy() const {

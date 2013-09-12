@@ -97,8 +97,8 @@ bool Scissors::OnAccepted(AsyncSocket* client) {
   return true;
 }
 
-void Scissors::OnReceivedFrom(AsyncDatagramSocket* socket, void* data,
-                              int length, sockaddr* from, int from_length) {
+bool Scissors::OnReceivedFrom(Datagram* datagram) {
+  return false;
 }
 
 void Scissors::OnError(DWORD error) {

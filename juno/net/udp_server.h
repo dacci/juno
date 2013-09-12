@@ -15,15 +15,6 @@ class ServiceProvider;
 
 class UdpServer : public Server, public AsyncDatagramSocket::Listener {
  public:
-  struct Datagram {
-    ServiceProvider* service;
-    AsyncDatagramSocket* socket;
-    int data_length;
-    void* data;
-    int from_length;
-    sockaddr* from;
-  };
-
   UdpServer();
   virtual ~UdpServer();
 
