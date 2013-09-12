@@ -117,6 +117,7 @@ void PreferenceDialog::LoadServers() {
     entry.bind.ReleaseBuffer(length);
 
     server_key.QueryDWORDValue(_T("Listen"), entry.listen);
+    server_key.QueryDWORDValue(_T("Type"), entry.type);
 
     length = 64;
     result = server_key.QueryStringValue(_T("Service"),
@@ -144,6 +145,7 @@ void PreferenceDialog::SaveServers() {
     server_key.SetDWORDValue(_T("Enabled"), i->enabled);
     server_key.SetStringValue(_T("Bind"), i->bind);
     server_key.SetDWORDValue(_T("Listen"), i->listen);
+    server_key.SetDWORDValue(_T("Type"), i->type);
     server_key.SetStringValue(_T("Service"), i->service);
   }
 }
@@ -295,6 +297,7 @@ void PreferenceDialog::LoadScissors(CRegKey* key, ServiceEntry* entry) {
 
   key->QueryDWORDValue(_T("RemotePort"), scissors_entry->remote_port_);
   key->QueryDWORDValue(_T("RemoteSSL"), scissors_entry->remote_ssl_);
+  key->QueryDWORDValue(_T("RemoteUDP"), scissors_entry->remote_udp_);
 }
 
 void PreferenceDialog::SaveScissors(CRegKey* key, ServiceEntry* entry) {
@@ -303,6 +306,7 @@ void PreferenceDialog::SaveScissors(CRegKey* key, ServiceEntry* entry) {
   key->SetStringValue(_T("RemoteAddress"), scissors_entry->remote_address_);
   key->SetDWORDValue(_T("RemotePort"), scissors_entry->remote_port_);
   key->SetDWORDValue(_T("RemoteSSL"), scissors_entry->remote_ssl_);
+  key->SetDWORDValue(_T("RemoteUDP"), scissors_entry->remote_udp_);
 }
 
 void PreferenceDialog::OnShowWindow(BOOL show, UINT status) {

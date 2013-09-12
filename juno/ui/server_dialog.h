@@ -29,6 +29,7 @@ class ServerDialog
     DDX_CONTROL_HANDLE(IDC_BIND, bind_combo_)
     DDX_INT(IDC_LISTEN, listen_)
     DDX_CONTROL_HANDLE(IDC_LISTEN_SPIN, listen_spin_)
+    DDX_CONTROL_HANDLE(IDC_PROTOCOL, type_combo_)
     DDX_CONTROL_HANDLE(IDC_SERVICE, service_combo_)
     DDX_CONTROL_HANDLE(IDC_ENABLE, enable_check_)
   END_DDX_MAP()
@@ -56,6 +57,7 @@ class ServerDialog
   CComboBox bind_combo_;
   int listen_;
   CUpDownCtrl listen_spin_;
+  CComboBox type_combo_;
   CComboBox service_combo_;
   CButton enable_check_;
 };

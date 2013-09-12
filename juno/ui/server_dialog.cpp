@@ -64,10 +64,15 @@ BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   DoDataExchange();
 
   FillBindCombo();
+
+  type_combo_.AddString(L"TCP");
+  type_combo_.AddString(L"UDP");
+
   FillServiceCombo();
 
   bind_combo_.SetWindowText(entry_->bind);
   listen_spin_.SetRange32(1, 65535);
+  type_combo_.SetCurSel(entry_->type - SOCK_STREAM);
   service_combo_.SelectString(0, entry_->service);
   enable_check_.SetCheck(entry_->enabled);
 
@@ -80,6 +85,7 @@ void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
   entry_->name = name_;
   bind_combo_.GetWindowText(entry_->bind);
   entry_->listen = listen_;
+  entry_->type = type_combo_.GetCurSel() + SOCK_STREAM;
   service_combo_.GetWindowText(entry_->service);
   entry_->enabled = enable_check_.GetCheck();
 

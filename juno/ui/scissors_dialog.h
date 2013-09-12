@@ -29,11 +29,14 @@ class ScissorsDialog
     DDX_INT(IDC_PORT, port_)
     DDX_CONTROL_HANDLE(IDC_PORT_SPIN, port_spin_)
     DDX_CONTROL_HANDLE(IDC_USE_SSL, use_ssl_check_)
+    DDX_CONTROL_HANDLE(IDC_USE_UDP, use_udp_check_)
   END_DDX_MAP()
 
   BEGIN_MSG_MAP_EX(ScissorsDialog)
     MSG_WM_INITDIALOG(OnInitDialog)
 
+    COMMAND_ID_HANDLER_EX(IDC_USE_SSL, OnUseSsl)
+    COMMAND_ID_HANDLER_EX(IDC_USE_UDP, OnUseUdp)
     COMMAND_ID_HANDLER_EX(IDOK, OnOk)
     COMMAND_ID_HANDLER_EX(IDCANCEL, OnCancel)
   END_MSG_MAP()
@@ -41,6 +44,8 @@ class ScissorsDialog
  private:
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
+  void OnUseSsl(UINT notify_code, int id, CWindow control);
+  void OnUseUdp(UINT notify_code, int id, CWindow control);
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
 
@@ -51,6 +56,7 @@ class ScissorsDialog
   int port_;
   CUpDownCtrl port_spin_;
   CButton use_ssl_check_;
+  CButton use_udp_check_;
 };
 
 #endif  // JUNO_UI_SCISSORS_DIALOG_H_

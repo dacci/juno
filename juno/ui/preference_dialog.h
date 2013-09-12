@@ -77,7 +77,7 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
   };
 
   struct ScissorsEntry : ServiceExtra {
-    ScissorsEntry() : remote_port_(), remote_ssl_() {
+    ScissorsEntry() : remote_port_(), remote_ssl_(), remote_udp_() {
     }
 
     virtual ~ScissorsEntry() {
@@ -86,16 +86,18 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
     CString remote_address_;
     DWORD remote_port_;
     DWORD remote_ssl_;
+    DWORD remote_udp_;
   };
 
   struct ServerEntry {
-    ServerEntry() : enabled(TRUE), listen(0) {
+    ServerEntry() : enabled(TRUE), listen(0), type(SOCK_STREAM) {
     }
 
     CString name;
     DWORD enabled;
     CString bind;
     DWORD listen;
+    DWORD type;
     CString service;
   };
 
