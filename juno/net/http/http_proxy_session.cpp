@@ -27,7 +27,7 @@ const std::string HttpProxySession::kProxyConnection("Proxy-Connection");
 const std::string HttpProxySession::kTransferEncoding("Transfer-Encoding");
 
 FILETIME HttpProxySession::kTimerDueTime = {
-  -HttpProxySession::kTimeout * 1000 * 10,   // in 100-nanoseconds
+  -kTimeout * 1000 * 10,   // in 100-nanoseconds
   -1
 };
 
