@@ -68,11 +68,6 @@ void HttpHeaderFilterDialog::OnOk(UINT notify_code, int id, CWindow control) {
       value_edit_.ShowBalloonTip(&balloon);
       return;
     }
-
-    if (replace.IsEmpty()) {
-      replace_edit_.ShowBalloonTip(&balloon);
-      return;
-    }
   }
 
   filter_->request = request_check_.GetCheck();
