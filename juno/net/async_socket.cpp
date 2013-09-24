@@ -356,6 +356,7 @@ void CALLBACK AsyncSocket::AsyncWork(PTP_CALLBACK_INSTANCE instance,
 #endif  // LEGACY_PLATFORM
   AsyncContext* context = static_cast<AsyncContext*>(param);
 
+  DWORD bytes = 0;
   int result = 0;
   int error = ERROR_SUCCESS;
 
@@ -366,14 +367,14 @@ void CALLBACK AsyncSocket::AsyncWork(PTP_CALLBACK_INSTANCE instance,
 #ifndef LEGACY_PLATFORM
   ::StartThreadpoolIo(context->socket->io_);
 #endif  // LEGACY_PLATFORM
-    result = ::WSARecv(*context->socket, context, 1, NULL, &context->flags,
+    result = ::WSARecv(*context->socket, context, 1, &bytes, &context->flags,
                        context, NULL);
     error = ::WSAGetLastError();
   } else if (context->action == Sending) {
 #ifndef LEGACY_PLATFORM
   ::StartThreadpoolIo(context->socket->io_);
 #endif  // LEGACY_PLATFORM
-    result = ::WSASend(*context->socket, context, 1, NULL, context->flags,
+    result = ::WSASend(*context->socket, context, 1, &bytes, context->flags,
                        context, NULL);
     error = ::WSAGetLastError();
   } else {

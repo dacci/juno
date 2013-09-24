@@ -415,6 +415,7 @@ void CALLBACK AsyncDatagramSocket::AsyncWork(PTP_CALLBACK_INSTANCE instance,
 #endif  // LEGACY_PLATFORM
   AsyncContext* context = static_cast<AsyncContext*>(param);
 
+  DWORD bytes = 0;
   int result = 0;
   int error = ERROR_SUCCESS;
 
@@ -423,20 +424,20 @@ void CALLBACK AsyncDatagramSocket::AsyncWork(PTP_CALLBACK_INSTANCE instance,
 #endif  // LEGACY_PLATFORM
 
   if (context->action == Receiving) {
-    result = ::WSARecv(*context->socket, context, 1, NULL, &context->flags,
+    result = ::WSARecv(*context->socket, context, 1, &bytes, &context->flags,
                        context, NULL);
     error = ::WSAGetLastError();
   } else if (context->action == Sending) {
-    result = ::WSASend(*context->socket, context, 1, NULL, context->flags,
+    result = ::WSASend(*context->socket, context, 1, &bytes, context->flags,
                        context, NULL);
     error = ::WSAGetLastError();
   } else if (context->action == ReceivingFrom) {
-    result = ::WSARecvFrom(*context->socket, context, 1, NULL, &context->flags,
-                           context->address, &context->address_length, context,
-                           NULL);
+    result = ::WSARecvFrom(*context->socket, context, 1, &bytes,
+                           &context->flags, context->address,
+                           &context->address_length, context, NULL);
     error = ::WSAGetLastError();
   } else if (context->action == SendingTo) {
-    result = ::WSASendTo(*context->socket, context, 1, NULL, context->flags,
+    result = ::WSASendTo(*context->socket, context, 1, &bytes, context->flags,
                          context->address, context->address_length, context,
                          NULL);
     error = ::WSAGetLastError();
