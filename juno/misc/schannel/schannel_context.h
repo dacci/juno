@@ -3,16 +3,21 @@
 #ifndef JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_
 #define JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_
 
-#include <atlbase.h>
-#include <atlstr.h>
+#include <string.h>
+#include <tchar.h>
+
+#include <vector>
 
 #include "misc/schannel/schannel_credential.h"
 
 class SchannelContext {
  public:
   SchannelContext(SchannelCredential* credential, const TCHAR* target_name)
-      : credential_(credential), target_name_(target_name), expiry_() {
+      : credential_(credential), attributes_(), expiry_() {
     SecInvalidateHandle(&handle_);
+
+    size_t length = ::_tcslen(target_name);
+    target_name_.assign(target_name, target_name + length);
   }
 
   virtual ~SchannelContext() {
@@ -32,7 +37,7 @@ class SchannelContext {
 
     return ::InitializeSecurityContext(&credential_->handle_,
                                        in_handle,
-                                       target_name_.GetBuffer(),
+                                       target_name_.data(),
                                        request,
                                        0,     // reserved
                                        0,     // unused
@@ -64,8 +69,8 @@ class SchannelContext {
   }
 
   SECURITY_STATUS ApplyControlToken(ULONG token) {
-    SecurityBufferBundle buffers;
-    buffers.AddBuffer(SECBUFFER_TOKEN, sizeof(token), &token);
+    SecBuffer buffer = { sizeof(token), SECBUFFER_TOKEN, &token };
+    SecBufferDesc buffers = { SECBUFFER_VERSION, 1, &buffer };
 
     return ::ApplyControlToken(&handle_, &buffers);
   }
@@ -98,10 +103,10 @@ class SchannelContext {
 
  private:
   SchannelCredential* const credential_;
+  std::vector<TCHAR> target_name_;
   CtxtHandle handle_;
   ULONG attributes_;
   TimeStamp expiry_;
-  CString target_name_;
 
   SchannelContext(const SchannelContext&);
   SchannelContext& operator=(const SchannelContext&);

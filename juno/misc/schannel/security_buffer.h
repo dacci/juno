@@ -20,8 +20,10 @@ struct SecurityBuffer : SecBuffer {
 
   SECURITY_STATUS Free() {
     SECURITY_STATUS status = ::FreeContextBuffer(pvBuffer);
-    if (SUCCEEDED(status))
+    if (SUCCEEDED(status)) {
       cbBuffer = 0;
+      pvBuffer = NULL;
+    }
 
     return status;
   }
