@@ -49,12 +49,12 @@ void HttpHeaderFilterDialog::OnOk(UINT notify_code, int id, CWindow control) {
     return;
   }
 
-  if (value.IsEmpty()) {
+  int action = action_combo_.GetCurSel();
+  if (action != 3 && value.IsEmpty()) {
     value_edit_.ShowBalloonTip(&balloon);
     return;
   }
 
-  int action = action_combo_.GetCurSel();
   if (action >= 5) {
     try {
 #ifdef UNICODE
