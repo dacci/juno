@@ -27,7 +27,7 @@ class ScissorsTcpSession
  private:
   static const size_t kBufferSize = 8192;
 
-  bool SendAsync(AsyncSocket* socket, const SecBuffer& buffer);
+  bool SendAsync(const AsyncSocketPtr& socket, const SecBuffer& buffer);
   bool DoNegotiation();
   bool CompleteNegotiation();
   bool DoEncryption();
@@ -42,8 +42,8 @@ class ScissorsTcpSession
   static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
 
   Scissors* const service_;
-  AsyncSocket* client_;
-  AsyncSocket* remote_;
+  AsyncSocketPtr client_;
+  AsyncSocketPtr remote_;
   SchannelContext* context_;
   bool established_;
   LONG ref_count_;

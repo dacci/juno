@@ -46,17 +46,11 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy)
 }
 
 HttpProxySession::~HttpProxySession() {
-  if (client_ != NULL) {
+  if (client_ != NULL)
     client_->Shutdown(SD_BOTH);
-    delete client_;
-    client_ = NULL;
-  }
 
-  if (remote_ != NULL) {
+  if (remote_ != NULL)
     remote_->Shutdown(SD_BOTH);
-    delete remote_;
-    remote_ = NULL;
-  }
 
   if (buffer_ != NULL) {
     delete[] buffer_;
@@ -78,7 +72,7 @@ HttpProxySession::~HttpProxySession() {
 }
 
 bool HttpProxySession::Start(AsyncSocket* client) {
-  client_ = client;
+  client_.reset(client);
 
   if (!ReceiveAsync(client_, 0)) {
     client_ = NULL;
@@ -210,7 +204,7 @@ void HttpProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
   assert(false);
 }
 
-bool HttpProxySession::ReceiveAsync(AsyncSocket* socket, int flags) {
+bool HttpProxySession::ReceiveAsync(const AsyncSocketPtr& socket, int flags) {
 #ifdef LEGACY_PLATFORM
   assert(timer_ == NULL);
   if (!::CreateTimerQueueTimer(&timer_, NULL, OnTimeout, this, kTimeout, 0,
@@ -221,7 +215,7 @@ bool HttpProxySession::ReceiveAsync(AsyncSocket* socket, int flags) {
   ::SetThreadpoolTimer(timer_, &kTimerDueTime, 0, 0);
 #endif  // LEGACY_PLATFORM
 
-  receiving_ = socket;
+  receiving_ = socket.get();
 
   return socket->ReceiveAsync(buffer_, kBufferSize, flags, this);
 }
@@ -375,11 +369,8 @@ void HttpProxySession::EndSession() {
     return;
   }
 
-  if (remote_ != NULL) {
+  if (remote_ != NULL)
     remote_->Shutdown(SD_BOTH);
-    delete remote_;
-    remote_ = NULL;
-  }
 
   request_.Clear();
   url_ = GURL::EmptyGURL();
@@ -404,7 +395,7 @@ void HttpProxySession::EndSession() {
   }
 }
 
-bool HttpProxySession::FireReceived(AsyncSocket* socket, DWORD error,
+bool HttpProxySession::FireReceived(const AsyncSocketPtr& socket, DWORD error,
                                     int length) {
   EventArgs* args = new EventArgs;
   if (args == NULL)
@@ -414,7 +405,7 @@ bool HttpProxySession::FireReceived(AsyncSocket* socket, DWORD error,
 
   args->event = Received;
   args->session = this;
-  args->socket = socket;
+  args->socket = socket.get();
   args->error = error;
   args->length = length;
 
@@ -514,7 +505,7 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
     return;
   }
 
-  remote_ = new AsyncSocket();
+  remote_.reset(new AsyncSocket());
   if (!remote_->ConnectAsync(*resolver_, this)) {
     SendError(HTTP::INTERNAL_SERVER_ERROR);
     return;

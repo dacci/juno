@@ -5,7 +5,7 @@
 
 #include <madoka/concurrent/critical_section.h>
 
-#include <map>
+#include <list>
 
 #include "net/async_socket.h"
 
@@ -13,14 +13,15 @@ class TunnelingService {
  public:
   static bool Init();
   static void Term();
-  static bool Bind(AsyncSocket* a, AsyncSocket* b);
+  static bool Bind(const AsyncSocketPtr& a, const AsyncSocketPtr& b);
 
  private:
   class Session : AsyncSocket::Listener {
    public:
     static const size_t kBufferSize = 8192;
 
-    Session(TunnelingService* service, AsyncSocket* from, AsyncSocket* to);
+    Session(TunnelingService* service, const AsyncSocketPtr& from,
+            const AsyncSocketPtr& to);
     ~Session();
 
     bool Start();
@@ -33,16 +34,16 @@ class TunnelingService {
                                     void* param);
 
     TunnelingService* service_;
-    AsyncSocket* from_;
-    AsyncSocket* to_;
+    AsyncSocketPtr from_;
+    AsyncSocketPtr to_;
     char* buffer_;
   };
 
   TunnelingService();
   ~TunnelingService();
 
-  bool BindSocket(AsyncSocket* from, AsyncSocket* to);
-  void EndSession(AsyncSocket* from, AsyncSocket* to);
+  bool BindSocket(const AsyncSocketPtr& from, const AsyncSocketPtr& to);
+  void EndSession(Session* session);
 
   static TunnelingService* instance_;
 
@@ -51,8 +52,7 @@ class TunnelingService {
   madoka::concurrent::CriticalSection critical_section_;
   bool stopped_;
 
-  std::map<AsyncSocket*, Session*> session_map_;
-  std::map<AsyncSocket*, int> count_map_;
+  std::list<Session*> sessions_;
 };
 
 #endif  // JUNO_NET_TUNNELING_SERVICE_H_

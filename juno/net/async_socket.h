@@ -5,6 +5,8 @@
 
 #include <madoka/net/socket.h>
 
+#include <memory>
+
 class AsyncSocket : public madoka::net::Socket {
  public:
   class Listener {
@@ -82,5 +84,7 @@ class AsyncSocket : public madoka::net::Socket {
   bool initialized_;
   PTP_IO io_;
 };
+
+typedef std::shared_ptr<AsyncSocket> AsyncSocketPtr;
 
 #endif  // JUNO_NET_ASYNC_SOCKET_H_

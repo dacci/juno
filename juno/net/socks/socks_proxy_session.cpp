@@ -62,17 +62,11 @@ SocksProxySession::SocksProxySession(SocksProxy* proxy)
 }
 
 SocksProxySession::~SocksProxySession() {
-  if (client_ != NULL) {
+  if (client_ != NULL)
     client_->Shutdown(SD_BOTH);
-    delete client_;
-    client_ = NULL;
-  }
 
-  if (remote_ != NULL) {
+  if (remote_ != NULL)
     remote_->Shutdown(SD_BOTH);
-    delete remote_;
-    remote_ = NULL;
-  }
 
   if (request_buffer_ != NULL) {
     delete[] request_buffer_;
@@ -88,7 +82,7 @@ SocksProxySession::~SocksProxySession() {
 }
 
 bool SocksProxySession::Start(AsyncSocket* client) {
-  client_ = client;
+  client_.reset(client);
 
   if (!client_->ReceiveAsync(request_buffer_, kBufferSize, 0, this)) {
     client_ = NULL;
@@ -198,7 +192,7 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
 
     if (request->command == SOCKS4::CONNECT) {
       do {
-        remote_ = new AsyncSocket();
+        remote_.reset(new AsyncSocket());
         if (remote_ == NULL)
           break;
 
@@ -318,7 +312,7 @@ bool SocksProxySession::ConnectIPv4(const SOCKS5::ADDRESS& address) {
     if (end_point == NULL)
       break;
 
-    remote_ = new AsyncSocket();
+    remote_.reset(new AsyncSocket());
     if (remote_ == NULL)
       break;
 
@@ -353,7 +347,7 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
     if (resolver == NULL)
       break;
 
-    remote_ = new AsyncSocket();
+    remote_.reset(new AsyncSocket());
     if (remote_ == NULL)
       break;
 
@@ -381,7 +375,7 @@ bool SocksProxySession::ConnectIPv6(const SOCKS5::ADDRESS& address) {
     if (end_point == NULL)
       break;
 
-    remote_ = new AsyncSocket();
+    remote_.reset(new AsyncSocket());
     if (remote_ == NULL)
       break;
 

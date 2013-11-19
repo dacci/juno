@@ -56,7 +56,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   static const std::string kProxyConnection;
   static const std::string kTransferEncoding;
 
-  bool ReceiveAsync(AsyncSocket* socket, int flags);
+  bool ReceiveAsync(const AsyncSocketPtr& socket, int flags);
 
   static int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size);
 
@@ -68,7 +68,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   void SendError(HTTP::StatusCode status);
   void EndSession();
 
-  bool FireReceived(AsyncSocket* socket, DWORD error, int length);
+  bool FireReceived(const AsyncSocketPtr& socket, DWORD error, int length);
   static DWORD CALLBACK FireEvent(void* param);
 
   void OnRequestReceived(DWORD error, int length);
@@ -95,14 +95,14 @@ class HttpProxySession : public AsyncSocket::Listener {
   static FILETIME kTimerDueTime;
 
   HttpProxy* const proxy_;
-  AsyncSocket* client_;
+  AsyncSocketPtr client_;
   std::string client_buffer_;
   HttpRequest request_;
   bool tunnel_;
   GURL url_;
   madoka::net::AddressInfo resolver_;
 
-  AsyncSocket* remote_;
+  AsyncSocketPtr remote_;
   std::string remote_buffer_;
   HttpResponse response_;
 

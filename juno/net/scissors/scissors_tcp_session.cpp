@@ -27,16 +27,6 @@ ScissorsTcpSession::ScissorsTcpSession(Scissors* service)
 }
 
 ScissorsTcpSession::~ScissorsTcpSession() {
-  if (client_ != NULL) {
-    delete client_;
-    client_ = NULL;
-  }
-
-  if (remote_ != NULL) {
-    delete remote_;
-    remote_ = NULL;
-  }
-
   if (context_ != NULL) {
     delete context_;
     context_ = NULL;
@@ -56,7 +46,7 @@ ScissorsTcpSession::~ScissorsTcpSession() {
 }
 
 bool ScissorsTcpSession::Start(AsyncSocket* client) {
-  remote_ = new AsyncSocket();
+  remote_.reset(new AsyncSocket());
   if (remote_ == NULL)
     return false;
 
@@ -75,7 +65,7 @@ bool ScissorsTcpSession::Start(AsyncSocket* client) {
       return false;
   }
 
-  client_ = client;
+  client_.reset(client);
 
   if (!remote_->ConnectAsync(*service_->resolver_, this)) {
     client_ = NULL;
@@ -117,9 +107,9 @@ void ScissorsTcpSession::OnReceived(AsyncSocket* socket, DWORD error,
   if (error == 0 && length > 0) {
     bool succeeded = false;
 
-    if (socket == client_)
+    if (socket == client_.get())
       succeeded = OnClientReceived(length);
-    else if (socket == remote_)
+    else if (socket == remote_.get())
       succeeded = OnRemoteReceived(length);
     else
       assert(false);
@@ -135,9 +125,9 @@ void ScissorsTcpSession::OnSent(AsyncSocket* socket, DWORD error, int length) {
   if (error == 0 && length > 0) {
     bool succeeded = false;
 
-    if (socket == client_)
+    if (socket == client_.get())
       succeeded = OnClientSent(length);
-    else if (socket == remote_)
+    else if (socket == remote_.get())
       succeeded = OnRemoteSent(length);
     else
       assert(false);
@@ -149,7 +139,7 @@ void ScissorsTcpSession::OnSent(AsyncSocket* socket, DWORD error, int length) {
   EndSession(socket);
 }
 
-bool ScissorsTcpSession::SendAsync(AsyncSocket* socket,
+bool ScissorsTcpSession::SendAsync(const AsyncSocketPtr& socket,
                                    const SecBuffer& buffer) {
   return socket->SendAsync(buffer.pvBuffer, buffer.cbBuffer, 0, this);
 }
@@ -289,11 +279,11 @@ void ScissorsTcpSession::EndSession(AsyncSocket* socket) {
 
   switch (::InterlockedDecrement(&ref_count_)) {
     case 1:
-      if (socket == client_) {
+      if (socket == client_.get()) {
         shutdown_ = true;
         context_->ApplyControlToken(SCHANNEL_SHUTDOWN);
         DoNegotiation();
-      } else if (socket == remote_) {
+      } else if (socket == remote_.get()) {
         client_->Shutdown(SD_BOTH);
       } else {
         assert(false);

@@ -31,8 +31,8 @@ class SocksProxySession : public AsyncSocket::Listener {
   static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
 
   SocksProxy* const proxy_;
-  AsyncSocket* client_;
-  AsyncSocket* remote_;
+  AsyncSocketPtr client_;
+  AsyncSocketPtr remote_;
   char* request_buffer_;
   char* response_buffer_;
 
