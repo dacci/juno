@@ -409,7 +409,11 @@ bool HttpProxySession::FireReceived(const AsyncSocketPtr& socket, DWORD error,
   args->error = error;
   args->length = length;
 
+#ifdef LEGACY_PLATFORM
   if (!::QueueUserWorkItem(FireEvent, args, 0)) {
+#else   // LEGACY_PLATFORM
+  if (!::TrySubmitThreadpoolCallback(FireEvent, args, NULL)) {
+#endif  // LEGACY_PLATFORM
     delete args;
     return false;
   }
@@ -417,7 +421,12 @@ bool HttpProxySession::FireReceived(const AsyncSocketPtr& socket, DWORD error,
   return true;
 }
 
+#ifdef LEGACY_PLATFORM
 DWORD CALLBACK HttpProxySession::FireEvent(void* param) {
+#else   // LEGACY_PLATFORM
+void CALLBACK HttpProxySession::FireEvent(PTP_CALLBACK_INSTANCE instance,
+                                          void* param) {
+#endif  // LEGACY_PLATFORM
   EventArgs* args = static_cast<EventArgs*>(param);
 
   switch (args->event) {
@@ -436,7 +445,9 @@ DWORD CALLBACK HttpProxySession::FireEvent(void* param) {
 
   delete args;
 
+#ifdef LEGACY_PLATFORM
   return 0;
+#endif  // LEGACY_PLATFORM
 }
 
 void HttpProxySession::OnRequestReceived(DWORD error, int length) {

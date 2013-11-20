@@ -69,7 +69,11 @@ class HttpProxySession : public AsyncSocket::Listener {
   void EndSession();
 
   bool FireReceived(const AsyncSocketPtr& socket, DWORD error, int length);
+#ifdef LEGACY_PLATFORM
   static DWORD CALLBACK FireEvent(void* param);
+#else   // LEGACY_PLATFORM
+  static void CALLBACK FireEvent(PTP_CALLBACK_INSTANCE instance, void* param);
+#endif  // LEGACY_PLATFORM
 
   void OnRequestReceived(DWORD error, int length);
   void OnRequestSent(DWORD error, int length);
