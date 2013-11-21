@@ -31,33 +31,35 @@ class RegistryKey {
 
   void Close();
 
-  bool QueryString(const char* name, std::string* value);
-  std::string QueryString(const char* name);
-  std::string QueryString(const std::string& name);
+  bool QueryString(const char* name, std::string* value) const;
+  bool QueryString(const std::string& name, std::string* value) const;
+  std::string QueryString(const char* name) const;
+  std::string QueryString(const std::string& name) const;
 
-  bool QueryString(const wchar_t* name, std::wstring* value);
-  std::wstring QueryString(const wchar_t* name);
-  std::wstring QueryString(const std::wstring& name);
+  bool QueryString(const wchar_t* name, std::wstring* value) const;
+  bool QueryString(const std::wstring& name, std::wstring* value) const;
+  std::wstring QueryString(const wchar_t* name) const;
+  std::wstring QueryString(const std::wstring& name) const;
 
   bool SetString(const char* name, const std::string& value);
   bool SetString(const std::string& name, const std::string& value);
   bool SetString(const wchar_t* name, const std::wstring& value);
   bool SetString(const std::wstring& name, const std::wstring& value);
 
-  bool QueryInteger(const char* name, int* value);
-  bool QueryInteger(const std::string& name, int* value);
-  int QueryInteger(const char* name);
-  int QueryInteger(const std::string& name);
+  bool QueryInteger(const char* name, int* value) const;
+  bool QueryInteger(const std::string& name, int* value) const;
+  int QueryInteger(const char* name) const;
+  int QueryInteger(const std::string& name) const;
 
-  bool QueryInteger(const wchar_t* name, int* value);
-  bool QueryInteger(const std::wstring& name, int* value);
-  int QueryInteger(const wchar_t* name);
-  int QueryInteger(const std::wstring& name);
+  bool QueryInteger(const wchar_t* name, int* value) const;
+  bool QueryInteger(const std::wstring& name, int* value) const;
+  int QueryInteger(const wchar_t* name) const;
+  int QueryInteger(const std::wstring& name) const;
 
-  bool QueryBinary(const char* name, void* data, int* length);
-  bool QueryBinary(const std::string& name, void* data, int* length);
-  bool QueryBinary(const wchar_t* name, void* data, int* length);
-  bool QueryBinary(const std::wstring& name, void* data, int* length);
+  bool QueryBinary(const char* name, void* data, int* length) const;
+  bool QueryBinary(const std::string& name, void* data, int* length) const;
+  bool QueryBinary(const wchar_t* name, void* data, int* length) const;
+  bool QueryBinary(const std::wstring& name, void* data, int* length) const;
 
   bool SetBinary(const char* name, const void* data, int length);
   bool SetBinary(const std::string& name, const void* data, int length);

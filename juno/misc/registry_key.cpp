@@ -81,7 +81,7 @@ void RegistryKey::Close() {
   }
 }
 
-bool RegistryKey::QueryString(const char* name, std::string* value) {
+bool RegistryKey::QueryString(const char* name, std::string* value) const {
   DWORD type, size = 0;
   LSTATUS result = ::RegQueryValueExA(key_, name, NULL, &type, NULL, &size);
   if (result != ERROR_SUCCESS || type != REG_SZ)
@@ -109,7 +109,7 @@ bool RegistryKey::QueryString(const char* name, std::string* value) {
   return true;
 }
 
-bool RegistryKey::QueryString(const wchar_t* name, std::wstring* value) {
+bool RegistryKey::QueryString(const wchar_t* name, std::wstring* value) const {
   DWORD type, size = 0;
   LSTATUS result = ::RegQueryValueExW(key_, name, NULL, &type, NULL, &size);
   if (result != ERROR_SUCCESS || type != REG_SZ)
@@ -149,7 +149,7 @@ bool RegistryKey::SetString(const wchar_t* name, const std::wstring& value) {
                           value.size() + 1) == ERROR_SUCCESS;
 }
 
-bool RegistryKey::QueryInteger(const char* name, int* value) {
+bool RegistryKey::QueryInteger(const char* name, int* value) const {
   int stored;
   DWORD type, size = sizeof(stored);
   LSTATUS result = ::RegQueryValueExA(key_, name, NULL, &type,
@@ -162,7 +162,7 @@ bool RegistryKey::QueryInteger(const char* name, int* value) {
   return true;
 }
 
-bool RegistryKey::QueryInteger(const wchar_t* name, int* value) {
+bool RegistryKey::QueryInteger(const wchar_t* name, int* value) const {
   int stored;
   DWORD type, size = sizeof(stored);
   LSTATUS result = ::RegQueryValueExW(key_, name, NULL, &type,
@@ -175,7 +175,7 @@ bool RegistryKey::QueryInteger(const wchar_t* name, int* value) {
   return true;
 }
 
-bool RegistryKey::QueryBinary(const char* name, void* data, int* length) {
+bool RegistryKey::QueryBinary(const char* name, void* data, int* length) const {
   DWORD type, size = 0;
   LSTATUS status = ::RegQueryValueExA(key_, name, NULL, &type, NULL, &size);
   if (status != ERROR_SUCCESS || type != REG_BINARY)
@@ -199,7 +199,8 @@ bool RegistryKey::QueryBinary(const char* name, void* data, int* length) {
   return true;
 }
 
-bool RegistryKey::QueryBinary(const wchar_t* name, void* data, int* length) {
+bool RegistryKey::QueryBinary(const wchar_t* name, void* data,
+                              int* length) const {
   DWORD type, size = 0;
   LSTATUS status = ::RegQueryValueExW(key_, name, NULL, &type, NULL, &size);
   if (status != ERROR_SUCCESS || type != REG_BINARY)
