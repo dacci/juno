@@ -92,6 +92,9 @@ TunnelingService::Session::Session(TunnelingService* service,
 }
 
 TunnelingService::Session::~Session() {
+  from_->Shutdown(SD_BOTH);
+  to_->Shutdown(SD_BOTH);
+
   delete buffer_;
 }
 
