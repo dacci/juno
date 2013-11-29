@@ -3,6 +3,8 @@
 #ifndef JUNO_NET_SCISSORS_SCISSORS_UDP_SESSION_H_
 #define JUNO_NET_SCISSORS_SCISSORS_UDP_SESSION_H_
 
+#include <memory>
+
 #include "net/async_datagram_socket.h"
 #include "net/service_provider.h"
 #include "net/scissors/scissors.h"
@@ -41,7 +43,7 @@ class ScissorsUdpSession
   Scissors* const service_;
   ServiceProvider::Datagram* datagram_;
   AsyncDatagramSocket* remote_;
-  char* buffer_;
+  std::unique_ptr<char[]> buffer_;
 
 #ifdef LEGACY_PLATFORM
   HANDLE timer_;

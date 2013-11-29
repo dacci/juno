@@ -6,6 +6,7 @@
 #include <madoka/concurrent/critical_section.h>
 
 #include <list>
+#include <memory>
 
 #include "net/async_socket.h"
 
@@ -36,7 +37,7 @@ class TunnelingService {
     TunnelingService* service_;
     AsyncSocketPtr from_;
     AsyncSocketPtr to_;
-    char* buffer_;
+    std::unique_ptr<char[]> buffer_;
   };
 
   TunnelingService();

@@ -68,23 +68,13 @@ SocksProxySession::~SocksProxySession() {
   if (remote_ != NULL)
     remote_->Shutdown(SD_BOTH);
 
-  if (request_buffer_ != NULL) {
-    delete[] request_buffer_;
-    request_buffer_ = NULL;
-  }
-
-  if (response_buffer_ != NULL) {
-    delete[] response_buffer_;
-    response_buffer_ = NULL;
-  }
-
   proxy_->EndSession(this);
 }
 
 bool SocksProxySession::Start(AsyncSocket* client) {
   client_.reset(client);
 
-  if (!client_->ReceiveAsync(request_buffer_, kBufferSize, 0, this)) {
+  if (!client_->ReceiveAsync(request_buffer_.get(), kBufferSize, 0, this)) {
     client_ = NULL;
     return false;
   }
@@ -105,7 +95,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     delete static_cast<SocketAddress4*>(end_point_);
 
     SOCKS4::RESPONSE* response =
-        reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_);
+        reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_.get());
 
     if (error == 0 && TunnelingService::Bind(client_, remote_))
         response->code = SOCKS4::GRANTED;
@@ -114,10 +104,10 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
       return;
   } else if (request_buffer_[0] == 5) {
     SOCKS5::REQUEST* request =
-        reinterpret_cast<SOCKS5::REQUEST*>(request_buffer_);
+        reinterpret_cast<SOCKS5::REQUEST*>(request_buffer_.get());
 
     SOCKS5::RESPONSE* response =
-        reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_);
+        reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_.get());
     int response_length = 10;
 
     switch (request->type) {
@@ -183,10 +173,10 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
 
   if (request_buffer_[0] == 4) {
     SOCKS4::REQUEST* request =
-        reinterpret_cast<SOCKS4::REQUEST*>(request_buffer_);
+        reinterpret_cast<SOCKS4::REQUEST*>(request_buffer_.get());
 
     SOCKS4::RESPONSE* response =
-        reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_);
+        reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_.get());
     ::memset(response, 0, sizeof(*response));
     response->code = SOCKS4::FAILED;
 
@@ -216,10 +206,10 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
   } else if (request_buffer_[0] == 5) {
     if (phase_ == 0) {
       SOCKS5::METHOD_REQUEST* request =
-          reinterpret_cast<SOCKS5::METHOD_REQUEST*>(request_buffer_);
+          reinterpret_cast<SOCKS5::METHOD_REQUEST*>(request_buffer_.get());
 
       SOCKS5::METHOD_RESPONSE* response =
-          reinterpret_cast<SOCKS5::METHOD_RESPONSE*>(response_buffer_);
+          reinterpret_cast<SOCKS5::METHOD_RESPONSE*>(response_buffer_.get());
       response->version = 5;
       response->method = SOCKS5::UNSUPPORTED;
 
@@ -234,10 +224,10 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
         return;
     } else if (phase_ == 1) {
       SOCKS5::REQUEST* request =
-          reinterpret_cast<SOCKS5::REQUEST*>(request_buffer_);
+          reinterpret_cast<SOCKS5::REQUEST*>(request_buffer_.get());
 
       SOCKS5::RESPONSE* response =
-          reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_);
+          reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_.get());
       ::memset(response, 0, sizeof(*response));
       response->version = 5;
       response->code = SOCKS5::GENERAL_FAILURE;
@@ -279,7 +269,7 @@ void SocksProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
 
   if (request_buffer_[0] == 4) {
     SOCKS4::RESPONSE* response =
-        reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_);
+        reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_.get());
     if (response->code == SOCKS4::GRANTED) {
       client_ = NULL;
       remote_ = NULL;
@@ -287,11 +277,11 @@ void SocksProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
   } else if (request_buffer_[0] == 5) {
     if (phase_ == 0) {
       ++phase_;
-      if (client_->ReceiveAsync(request_buffer_, kBufferSize, 0, this))
+      if (client_->ReceiveAsync(request_buffer_.get(), kBufferSize, 0, this))
         return;
     } else if (phase_ == 1) {
       SOCKS5::RESPONSE* response =
-          reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_);
+          reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_.get());
       if (response->code == SOCKS5::SUCCEEDED) {
         client_ = NULL;
         remote_ = NULL;

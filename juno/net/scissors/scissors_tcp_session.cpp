@@ -4,6 +4,8 @@
 
 #include <assert.h>
 
+#include <memory>
+
 #include "misc/string_util.h"
 #include "misc/schannel/schannel_context.h"
 #include "net/tunneling_service.h"
@@ -32,16 +34,6 @@ ScissorsTcpSession::~ScissorsTcpSession() {
     context_ = NULL;
   }
 
-  if (client_buffer_ != NULL) {
-    delete client_buffer_;
-    client_buffer_ = NULL;
-  }
-
-  if (remote_buffer_ != NULL) {
-    delete remote_buffer_;
-    remote_buffer_ = NULL;
-  }
-
   service_->EndSession(this);
 }
 
@@ -50,11 +42,11 @@ bool ScissorsTcpSession::Start(AsyncSocket* client) {
   if (remote_ == NULL)
     return false;
 
-  client_buffer_ = new char[kBufferSize];
+  client_buffer_.reset(new char[kBufferSize]);
   if (client_buffer_ == NULL)
     return false;
 
-  remote_buffer_ = new char[kBufferSize];
+  remote_buffer_.reset(new char[kBufferSize]);
   if (remote_buffer_ == NULL)
     return false;
 
@@ -163,7 +155,7 @@ bool ScissorsTcpSession::DoNegotiation() {
     return false;
 
   if (status == SEC_E_INCOMPLETE_MESSAGE)
-    return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
+    return remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
 
   remote_data_.clear();
 
@@ -172,7 +164,8 @@ bool ScissorsTcpSession::DoNegotiation() {
       if (token_output_[0].cbBuffer > 0)
         return SendAsync(remote_, token_output_[0]);
       else
-        return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
+        return remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0,
+                                     this);
 
     case SEC_E_OK:
       status = context_->QueryAttributes(SECPKG_ATTR_STREAM_SIZES,
@@ -201,7 +194,7 @@ bool ScissorsTcpSession::CompleteNegotiation() {
   } else {
     established_ = true;
 
-    if (!client_->ReceiveAsync(client_buffer_, kBufferSize, 0, this))
+    if (!client_->ReceiveAsync(client_buffer_.get(), kBufferSize, 0, this))
       return false;
 
     ref_count_ = 2;
@@ -210,13 +203,14 @@ bool ScissorsTcpSession::CompleteNegotiation() {
   if (shutdown_)
     return true;
   else
-    return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
+    return remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
 }
 
 bool ScissorsTcpSession::DoEncryption() {
-  char* buffer = new char[stream_sizes_.cbHeader + stream_sizes_.cbTrailer +
-                          stream_sizes_.cbMaximumMessage];
-  char* pointer = buffer;
+  std::unique_ptr<char[]> buffer(new char[stream_sizes_.cbHeader +
+                                          stream_sizes_.cbTrailer +
+                                          stream_sizes_.cbMaximumMessage]);
+  char* pointer = buffer.get();
 
   encrypted_.ClearBuffers();
 
@@ -233,15 +227,18 @@ bool ScissorsTcpSession::DoEncryption() {
   encrypted_.AddBuffer(SECBUFFER_EMPTY);
 
   SECURITY_STATUS status = context_->EncryptMessage(0, &encrypted_);
-  if (FAILED(status)) {
-    delete[] buffer;
+  if (FAILED(status))
     return false;
-  }
 
   int total_length = encrypted_[0].cbBuffer + encrypted_[1].cbBuffer +
                      encrypted_[2].cbBuffer;
 
-  return remote_->SendAsync(buffer, total_length, 0, this);
+  if (!remote_->SendAsync(buffer.get(), total_length, 0, this))
+    return false;
+
+  buffer.release();
+
+  return true;
 }
 
 bool ScissorsTcpSession::DoDecryption() {
@@ -257,7 +254,7 @@ bool ScissorsTcpSession::DoDecryption() {
 
   switch (status) {
     case SEC_E_INCOMPLETE_MESSAGE:
-      return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
+      return remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
 
     case SEC_I_RENEGOTIATE:
       return DoNegotiation();
@@ -300,8 +297,8 @@ void ScissorsTcpSession::EndSession(AsyncSocket* socket) {
 }
 
 bool ScissorsTcpSession::OnClientReceived(int length) {
-  client_data_.insert(client_data_.end(), client_buffer_,
-                      client_buffer_ + length);
+  client_data_.insert(client_data_.end(), client_buffer_.get(),
+                      client_buffer_.get() + length);
 
   if (negotiating_)
     return true;
@@ -310,8 +307,8 @@ bool ScissorsTcpSession::OnClientReceived(int length) {
 }
 
 bool ScissorsTcpSession::OnRemoteReceived(int length) {
-  remote_data_.insert(remote_data_.end(), remote_buffer_,
-                      remote_buffer_ + length);
+  remote_data_.insert(remote_data_.end(), remote_buffer_.get(),
+                      remote_buffer_.get() + length);
 
   if (negotiating_)
     return DoNegotiation();
@@ -325,7 +322,7 @@ bool ScissorsTcpSession::OnClientSent(int length) {
   remote_data_.resize(decrypted_[3].cbBuffer);
 
   if (remote_data_.empty())
-    return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
+    return remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
   else
     return DoDecryption();
 }
@@ -338,7 +335,7 @@ bool ScissorsTcpSession::OnRemoteSent(int length) {
     if (negotiating_ == 2)
       return CompleteNegotiation();
     else
-      return remote_->ReceiveAsync(remote_buffer_, kBufferSize, 0, this);
+      return remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
   } else {
     if (encrypted_.cBuffers > 0) {
       delete[] encrypted_[0].pvBuffer;
@@ -346,7 +343,7 @@ bool ScissorsTcpSession::OnRemoteSent(int length) {
       client_data_.clear();
     }
 
-    return client_->ReceiveAsync(client_buffer_, kBufferSize, 0, this);
+    return client_->ReceiveAsync(client_buffer_.get(), kBufferSize, 0, this);
   }
 }
 

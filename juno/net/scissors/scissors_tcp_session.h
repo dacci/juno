@@ -3,6 +3,7 @@
 #ifndef JUNO_NET_SCISSORS_SCISSORS_TCP_SESSION_H_
 #define JUNO_NET_SCISSORS_SCISSORS_TCP_SESSION_H_
 
+#include <memory>
 #include <vector>
 
 #include "misc/schannel/security_buffer.h"
@@ -53,10 +54,10 @@ class ScissorsTcpSession
   int negotiating_;
 
   std::vector<char> client_data_;
-  char* client_buffer_;
+  std::unique_ptr<char[]> client_buffer_;
 
   std::vector<char> remote_data_;
-  char* remote_buffer_;
+  std::unique_ptr<char[]> remote_buffer_;
 
   SecurityBufferBundle token_input_;
   SecurityBufferBundle token_output_;

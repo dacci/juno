@@ -36,11 +36,6 @@ ScissorsUdpSession::~ScissorsUdpSession() {
     remote_ = NULL;
   }
 
-  if (buffer_ != NULL) {
-    delete[] buffer_;
-    buffer_ = NULL;
-  }
-
   if (timer_ != NULL) {
 #ifdef LEGACY_PLATFORM
     ::DeleteTimerQueueTimer(NULL, timer_, INVALID_HANDLE_VALUE);
@@ -60,7 +55,7 @@ bool ScissorsUdpSession::Start() {
   if (remote_ == NULL)
     return false;
 
-  buffer_ = new char[kBufferSize];
+  buffer_.reset(new char[kBufferSize]);
   if (buffer_ == NULL)
     return false;
 
@@ -94,7 +89,8 @@ void ScissorsUdpSession::OnReceived(AsyncDatagramSocket* socket, DWORD error,
     end_point.ai_addrlen = datagram_->from_length;
     end_point.ai_addr = datagram_->from;
 
-    if (datagram_->socket->SendToAsync(buffer_, length, 0, &end_point, this))
+    if (datagram_->socket->SendToAsync(buffer_.get(), length, 0, &end_point,
+                                       this))
       return;
   }
 
@@ -120,7 +116,7 @@ void ScissorsUdpSession::OnSent(AsyncDatagramSocket* socket, DWORD error,
       ::SetThreadpoolTimer(timer_, &kTimerDueTime, 0, 0);
 #endif  // LEGACY_PLATFORM
 
-      if (!remote_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+      if (!remote_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
         break;
 
       return;

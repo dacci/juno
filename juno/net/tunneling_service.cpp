@@ -94,12 +94,10 @@ TunnelingService::Session::Session(TunnelingService* service,
 TunnelingService::Session::~Session() {
   from_->Shutdown(SD_BOTH);
   to_->Shutdown(SD_BOTH);
-
-  delete buffer_;
 }
 
 bool TunnelingService::Session::Start() {
-  return from_->ReceiveAsync(buffer_, kBufferSize, 0, this);
+  return from_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this);
 }
 
 void TunnelingService::Session::OnConnected(AsyncSocket*, DWORD) {
@@ -109,7 +107,7 @@ void TunnelingService::Session::OnConnected(AsyncSocket*, DWORD) {
 void TunnelingService::Session::OnReceived(AsyncSocket* socket, DWORD error,
                                            int length) {
   if (error != 0 || length == 0 ||
-      !to_->SendAsync(buffer_, length, 0, this))
+      !to_->SendAsync(buffer_.get(), length, 0, this))
 #ifdef LEGACY_PLATFORM
     service_->EndSession(this);
 #else   // LEGACY_PLATFORM
@@ -120,7 +118,7 @@ void TunnelingService::Session::OnReceived(AsyncSocket* socket, DWORD error,
 void TunnelingService::Session::OnSent(AsyncSocket* socket, DWORD error,
                                        int length) {
   if (error != 0 || length == 0 ||
-      !from_->ReceiveAsync(buffer_, kBufferSize, 0, this))
+      !from_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
 #ifdef LEGACY_PLATFORM
     service_->EndSession(this);
 #else   // LEGACY_PLATFORM

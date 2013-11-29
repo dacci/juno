@@ -4,6 +4,8 @@
 
 #include <assert.h>
 
+#include <memory>
+
 #include "net/service_provider.h"
 
 UdpServer::UdpServer() : service_(), count_() {
@@ -39,22 +41,19 @@ bool UdpServer::Setup(const char* address, int port) {
   bool succeeded = false;
 
   for (auto i = resolver_.begin(), l = resolver_.end(); i != l; ++i) {
-    char* buffer = new char[kBufferSize];
+    std::unique_ptr<char[]> buffer(new char[kBufferSize]);
     if (buffer == NULL)
       break;
 
     AsyncDatagramSocket* server = new AsyncDatagramSocket();
-    if (server == NULL) {
-      delete buffer;
+    if (server == NULL)
       break;
-    }
 
     if (server->Bind(*i)) {
       succeeded = true;
       servers_.push_back(server);
-      buffers_.insert(std::make_pair(server, buffer));
+      buffers_.insert(std::make_pair(server, buffer.release()));
     } else {
-      delete buffer;
       delete server;
     }
   }

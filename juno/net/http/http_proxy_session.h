@@ -7,6 +7,8 @@
 
 #include <url/gurl.h>
 
+#include <memory>
+
 #include "net/async_socket.h"
 #include "net/http/http_request.h"
 #include "net/http/http_response.h"
@@ -110,7 +112,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   std::string remote_buffer_;
   HttpResponse response_;
 
-  char* buffer_;
+  std::unique_ptr<char[]> buffer_;
   Phase phase_;
   int64_t content_length_;
   bool chunked_;

@@ -3,6 +3,8 @@
 #ifndef JUNO_NET_SOCKS_SOCKS_PROXY_SESSION_H_
 #define JUNO_NET_SOCKS_SOCKS_PROXY_SESSION_H_
 
+#include <memory>
+
 #include "net/async_socket.h"
 #include "net/socks/socks4.h"
 #include "net/socks/socks5.h"
@@ -33,8 +35,8 @@ class SocksProxySession : public AsyncSocket::Listener {
   SocksProxy* const proxy_;
   AsyncSocketPtr client_;
   AsyncSocketPtr remote_;
-  char* request_buffer_;
-  char* response_buffer_;
+  std::unique_ptr<char[]> request_buffer_;
+  std::unique_ptr<char[]> response_buffer_;
 
   int phase_;
   addrinfo* end_point_;
