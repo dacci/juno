@@ -279,7 +279,7 @@ void HttpProxySession::ProcessResponseHeader() {
   content_length_ = -2;
   chunked_ = false;
   ProcessMessageLength(&response_);
-  if (!chunked_ && content_length_ < 0)
+  if (response_.minor_version() < 1)
     close_client_ = true;
 
   ProcessHopByHopHeaders(&response_);
@@ -741,7 +741,7 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
         return;
     }
   } else {
-    if (content_length_ == 0) {
+    if (content_length_ <= 0) {
       // no content, session end
       EndSession();
       return;
