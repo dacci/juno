@@ -91,8 +91,6 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     return;
   }
 
-  std::string request_string;
-
   if (tunnel_ && !proxy_->use_remote_proxy()) {
     phase_ = Response;
 
@@ -101,39 +99,34 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
       return;
     }
 
-    request_string += "HTTP/1.1 200 Connection Established\x0D\x0A";
-    request_string += "Content-Length: 0\x0D\x0A";
-    request_string += "\x0D\x0A";
-    ::memmove(buffer_.get(), request_string.data(), request_string.size());
+    remote_buffer_ += "HTTP/1.1 200 Connection Established\x0D\x0A";
+    remote_buffer_ += "Content-Length: 0\x0D\x0A";
+    remote_buffer_ += "\x0D\x0A";
 
-    response_.Parse(request_string);
+    response_.Parse(remote_buffer_);
 
-    if (!client_->SendAsync(buffer_.get(), request_string.size(), 0, this)) {
+    if (!client_->SendAsync(remote_buffer_.data(), remote_buffer_.size(), 0,
+                            this)) {
       DELETE_THIS();
       return;
     }
   } else {
-    request_string += request_.method();
-    request_string += ' ';
+    remote_buffer_ += request_.method();
+    remote_buffer_ += ' ';
 
     if (proxy_->use_remote_proxy())
-      request_string += request_.path();
+      remote_buffer_ += request_.path();
     else
-      request_string += url_.PathForRequest();
+      remote_buffer_ += url_.PathForRequest();
 
-    request_string += " HTTP/1.";
-    request_string += '0' + request_.minor_version();
-    request_string += "\x0D\x0A";
-    request_.SerializeHeaders(&request_string);
-    request_string += "\x0D\x0A";
-    if (request_string.size() > kBufferSize) {
-      SendError(HTTP::REQUEST_ENTITY_TOO_LARGE);
-      return;
-    }
+    remote_buffer_ += " HTTP/1.";
+    remote_buffer_ += '0' + request_.minor_version();
+    remote_buffer_ += "\x0D\x0A";
+    request_.SerializeHeaders(&remote_buffer_);
+    remote_buffer_ += "\x0D\x0A";
 
-    ::memmove(buffer_.get(), request_string.data(), request_string.size());
-
-    if (!remote_->SendAsync(buffer_.get(), request_string.size(), 0, this)) {
+    if (!remote_->SendAsync(remote_buffer_.data(), remote_buffer_.size(), 0,
+                            this)) {
       SendError(HTTP::INTERNAL_SERVER_ERROR);
       return;
     }
@@ -452,10 +445,6 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
   }
 
   client_buffer_.append(buffer_.get(), length);
-  if (client_buffer_.size() > kBufferSize) {
-    SendError(HTTP::REQUEST_ENTITY_TOO_LARGE);
-    return;
-  }
 
   int result = request_.Parse(client_buffer_);
   if (result == HttpRequest::kPartial) {
@@ -524,6 +513,7 @@ void HttpProxySession::OnRequestSent(DWORD error, int length) {
     return;
   }
 
+  remote_buffer_.clear();
   phase_ = RequestBody;
 
   if (continue_) {
