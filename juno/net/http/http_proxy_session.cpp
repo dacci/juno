@@ -328,8 +328,7 @@ void HttpProxySession::ProcessHopByHopHeaders(HttpHeaders* headers) {
 }
 
 void HttpProxySession::SendError(HTTP::StatusCode status) {
-  phase_ = Error;
-  close_client_ = true;
+  phase_ = Response;
 
   const char* message = HTTP::GetStatusMessage(status);
   if (message == NULL)
@@ -338,7 +337,6 @@ void HttpProxySession::SendError(HTTP::StatusCode status) {
   int length = ::sprintf_s(buffer_.get(), kBufferSize,
                            "HTTP/1.1 %d %s\x0D\x0A"
                            "Content-Length: 0\x0D\x0A"
-                           "Connection: close\x0D\x0A"
                            "\x0D\x0A", status, message);
   if (length > 0) {
     response_.Parse(buffer_.get(), length);
