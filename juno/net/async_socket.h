@@ -25,6 +25,8 @@ class AsyncSocket : public madoka::net::Socket {
 
   bool UpdateAcceptContext(SOCKET descriptor);
 
+  // Connects to a specified address asynchronously. The process will complete
+  // when any connection attempt succeeds or all attempts fail.
   bool ConnectAsync(const addrinfo* end_points, Listener* listener);
   OVERLAPPED* BeginConnect(const addrinfo* end_points, HANDLE event);
   void EndConnect(OVERLAPPED* overlapped);

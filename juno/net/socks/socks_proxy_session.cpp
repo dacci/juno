@@ -92,7 +92,14 @@ void SocksProxySession::Stop() {
 
 void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
   if (request_buffer_[0] == 4) {
-    delete static_cast<SocketAddress4*>(end_point_);
+    SOCKS4::REQUEST* request =
+        reinterpret_cast<SOCKS4::REQUEST*>(request_buffer_.get());
+
+    if (request->address.s_addr != 0 &&
+        ::htonl(request->address.s_addr) <= 0x000000FF)
+      delete static_cast<madoka::net::AddressInfo*>(end_point_);
+    else
+      delete static_cast<SocketAddress4*>(end_point_);
 
     SOCKS4::RESPONSE* response =
         reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_.get());
@@ -186,16 +193,35 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
         if (remote_ == NULL)
           break;
 
-        SocketAddress4* address = new SocketAddress4();
-        if (address == NULL)
-          break;
+        if (request->address.s_addr != 0 &&
+            ::htonl(request->address.s_addr) <= 0x000000FF) {
+          // SOCKS4a extension
+          const char* host = request->user_id + ::strlen(request->user_id) + 1;
 
-        address->ai_socktype = SOCK_STREAM;
-        address->sin_port = request->port;
-        address->sin_addr = request->address;
-        end_point_ = address;
-        if (!remote_->ConnectAsync(end_point_, this))
-          break;
+          auto resolver = new madoka::net::AddressInfo();
+          if (resolver == NULL)
+            break;
+
+          if (!resolver->Resolve(host, ::htons(request->port)))
+            break;
+
+          end_point_ = resolver;
+
+          if (!remote_->ConnectAsync(**resolver, this))
+            break;
+        } else {
+          auto address = new SocketAddress4();
+          if (address == NULL)
+            break;
+
+          address->ai_socktype = SOCK_STREAM;
+          address->sin_port = request->port;
+          address->sin_addr = request->address;
+          end_point_ = address;
+
+          if (!remote_->ConnectAsync(end_point_, this))
+            break;
+        }
 
         return;
       } while (false);
