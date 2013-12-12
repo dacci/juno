@@ -29,6 +29,8 @@ ScissorsTcpSession::ScissorsTcpSession(Scissors* service)
 }
 
 ScissorsTcpSession::~ScissorsTcpSession() {
+  Stop();
+
   if (context_ != NULL) {
     delete context_;
     context_ = NULL;
@@ -70,6 +72,9 @@ bool ScissorsTcpSession::Start(AsyncSocket* client) {
 void ScissorsTcpSession::Stop() {
   if (client_ != NULL)
     client_->Shutdown(SD_BOTH);
+
+  if (remote_ != NULL && !remote_->connected())
+    remote_->CancelAsyncConnect();
 }
 
 void ScissorsTcpSession::OnConnected(AsyncSocket* socket, DWORD error) {

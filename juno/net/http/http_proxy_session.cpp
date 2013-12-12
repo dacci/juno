@@ -46,11 +46,7 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy)
 }
 
 HttpProxySession::~HttpProxySession() {
-  if (client_ != NULL)
-    client_->Shutdown(SD_BOTH);
-
-  if (remote_ != NULL)
-    remote_->Shutdown(SD_BOTH);
+  Stop();
 
   if (timer_ != NULL) {
 #ifdef LEGACY_PLATFORM
@@ -81,8 +77,12 @@ void HttpProxySession::Stop() {
   if (client_ != NULL)
     client_->Shutdown(SD_BOTH);
 
-  if (remote_ != NULL)
-    remote_->Shutdown(SD_BOTH);
+  if (remote_ != NULL) {
+    if (remote_->connected())
+      remote_->Shutdown(SD_BOTH);
+    else
+      remote_->CancelAsyncConnect();
+  }
 }
 
 void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {

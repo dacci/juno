@@ -31,6 +31,8 @@ class AsyncSocket : public madoka::net::Socket {
   OVERLAPPED* BeginConnect(const addrinfo* end_points, HANDLE event);
   void EndConnect(OVERLAPPED* overlapped);
 
+  void CancelAsyncConnect();
+
   bool ReceiveAsync(void* buffer, int size, int flags, Listener* listener);
   OVERLAPPED* BeginReceive(void* buffer, int size, int flags, HANDLE event);
   int EndReceive(OVERLAPPED* overlapped);
@@ -85,6 +87,7 @@ class AsyncSocket : public madoka::net::Socket {
 
   bool initialized_;
   PTP_IO io_;
+  bool cancel_connect_;
 };
 
 typedef std::shared_ptr<AsyncSocket> AsyncSocketPtr;

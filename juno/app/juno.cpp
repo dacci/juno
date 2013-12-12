@@ -89,12 +89,12 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
     _Module.RemoveMessageLoop();
   }
 
+  ::CloseHandle(mutex);
   _Module.Term();
   delete service_manager;
   TunnelingService::Term();
   url_util::Shutdown();
   ::CoUninitialize();
-  ::CloseHandle(mutex);
 
   return 0;
 }

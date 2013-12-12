@@ -15,6 +15,7 @@ AsyncSocket::~AsyncSocket() {
 
 void AsyncSocket::Close() {
   initialized_ = false;
+  cancel_connect_ = true;
 
   Socket::Close();
 
@@ -45,6 +46,8 @@ bool AsyncSocket::ConnectAsync(const addrinfo* end_points, Listener* listener) {
   if (connected_)
     return false;
 
+  cancel_connect_ = false;
+
   AsyncContext* context = CreateAsyncContext();
   if (context == NULL)
     return false;
@@ -73,6 +76,8 @@ OVERLAPPED* AsyncSocket::BeginConnect(const addrinfo* end_points,
     return NULL;
   if (connected_)
     return NULL;
+
+  cancel_connect_ = false;
 
   AsyncContext* context = CreateAsyncContext();
   if (context == NULL)
@@ -114,6 +119,14 @@ void AsyncSocket::EndConnect(OVERLAPPED* overlapped) {
   }
 
   DestroyAsyncContext(context);
+}
+
+void AsyncSocket::CancelAsyncConnect() {
+  if (connected_)
+    return;
+
+  cancel_connect_ = true;
+  Close();
 }
 
 bool AsyncSocket::ReceiveAsync(void* buffer, int size, int flags,
@@ -418,7 +431,7 @@ void CALLBACK AsyncSocket::OnTransferred(PTP_CALLBACK_INSTANCE instance,
     error = context->error;
 
   if (context->action == Connecting && error != 0) {
-    if (context->end_point->ai_next != NULL) {
+    if (!socket->cancel_connect_ && context->end_point->ai_next != NULL) {
       context->end_point = context->end_point->ai_next;
 #ifdef LEGACY_PLATFORM
       BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,

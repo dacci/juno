@@ -62,11 +62,7 @@ SocksProxySession::SocksProxySession(SocksProxy* proxy)
 }
 
 SocksProxySession::~SocksProxySession() {
-  if (client_ != NULL)
-    client_->Shutdown(SD_BOTH);
-
-  if (remote_ != NULL)
-    remote_->Shutdown(SD_BOTH);
+  Stop();
 
   proxy_->EndSession(this);
 }
@@ -86,8 +82,12 @@ void SocksProxySession::Stop() {
   if (client_ != NULL)
     client_->Shutdown(SD_BOTH);
 
-  if (remote_ != NULL)
-    remote_->Shutdown(SD_BOTH);
+  if (remote_ != NULL) {
+    if (remote_->connected())
+      remote_->Shutdown(SD_BOTH);
+    else
+      remote_->CancelAsyncConnect();
+  }
 }
 
 void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
