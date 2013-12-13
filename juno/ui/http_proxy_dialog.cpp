@@ -79,7 +79,7 @@ BOOL HttpProxyDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
 
   use_remote_proxy_check_.SetCheck(config_->use_remote_proxy);
   address_edit_.SetWindowText(config_->remote_proxy_host);
-  port_spin_.SetRange32(1, 65535);
+  port_spin_.SetRange32(0, 65535);
   auth_remote_check_.SetCheck(config_->auth_remote_proxy);
   remote_user_edit_.SetWindowText(config_->remote_proxy_user);
 
@@ -148,7 +148,26 @@ void HttpProxyDialog::OnScrollDown(UINT notify_code, int id, CWindow control) {
 }
 
 void HttpProxyDialog::OnOk(UINT notify_code, int id, CWindow control) {
+  EDITBALLOONTIP balloon = { sizeof(balloon) };
+  CString message;
+
   DoDataExchange(DDX_SAVE);
+
+  if (use_remote_proxy_check_.GetCheck()) {
+    if (address_edit_.GetWindowTextLength() == 0) {
+      message.LoadString(IDS_NOT_SPECIFIED);
+      balloon.pszText = message;
+      address_edit_.ShowBalloonTip(&balloon);
+      return;
+    }
+
+    if (port_ <= 0 || 65536 <= port_) {
+      message.LoadString(IDS_INVALID_PORT);
+      balloon.pszText = message;
+      port_edit_.ShowBalloonTip(&balloon);
+      return;
+    }
+  }
 
   config_->use_remote_proxy = use_remote_proxy_check_.GetCheck();
   address_edit_.GetWindowText(config_->remote_proxy_host);

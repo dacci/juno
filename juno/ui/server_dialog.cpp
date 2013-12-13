@@ -58,10 +58,11 @@ void ServerDialog::FillServiceCombo() {
 }
 
 BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
-  name_ = entry_->name;
   listen_ = entry_->listen;
 
   DoDataExchange();
+
+  name_edit_.SetWindowText(entry_->name);
 
   FillBindCombo();
 
@@ -71,7 +72,7 @@ BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   FillServiceCombo();
 
   bind_combo_.SetWindowText(entry_->bind);
-  listen_spin_.SetRange32(1, 65535);
+  listen_spin_.SetRange32(0, 65535);
   type_combo_.SetCurSel(entry_->type - SOCK_STREAM);
   service_combo_.SelectString(0, entry_->service);
   enable_check_.SetCheck(entry_->enabled);
@@ -80,9 +81,26 @@ BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
 }
 
 void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
+  EDITBALLOONTIP balloon = { sizeof(balloon) };
+  CString message;
+
   DoDataExchange(DDX_SAVE);
 
-  entry_->name = name_;
+  if (name_edit_.GetWindowTextLength() == 0) {
+    message.LoadString(IDS_NAME_NOT_SPECIFIED);
+    balloon.pszText = message.GetString();
+    name_edit_.ShowBalloonTip(&balloon);
+    return;
+  }
+
+  if (listen_ <= 0 || 65536 <= listen_) {
+    message.LoadString(IDS_INVALID_PORT);
+    balloon.pszText = message.GetString();
+    listen_edit_.ShowBalloonTip(&balloon);
+    return;
+  }
+
+  name_edit_.GetWindowText(entry_->name);
   bind_combo_.GetWindowText(entry_->bind);
   entry_->listen = listen_;
   entry_->type = type_combo_.GetCurSel() + SOCK_STREAM;

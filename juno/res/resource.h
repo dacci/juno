@@ -23,6 +23,7 @@
 #define IDS_NAME_NOT_SPECIFIED          203
 #define IDS_DUPLICATE_NAME              204
 #define IDS_NOT_SPECIFIED               205
+#define IDS_INVALID_PORT                206
 #define IDS_COLUMN_NAME                 301
 #define IDS_COLUMN_PROVIDER             302
 #define IDS_COLUMN_BIND                 303

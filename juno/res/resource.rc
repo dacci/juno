@@ -416,6 +416,7 @@ BEGIN
     IDS_NAME_NOT_SPECIFIED  "名前が指定されていません"
     IDS_DUPLICATE_NAME      "この名前はすでに使われています"
     IDS_NOT_SPECIFIED       "入力されていません"
+    IDS_INVALID_PORT        "ポート番号が正しくありません"
 END
 
 STRINGTABLE

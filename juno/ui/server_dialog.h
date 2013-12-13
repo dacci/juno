@@ -25,9 +25,10 @@ class ServerDialog
   ~ServerDialog();
 
   BEGIN_DDX_MAP(ServerDialog)
-    DDX_TEXT(IDC_NAME, name_)
+    DDX_CONTROL_HANDLE(IDC_NAME, name_edit_)
     DDX_CONTROL_HANDLE(IDC_BIND, bind_combo_)
     DDX_INT(IDC_LISTEN, listen_)
+    DDX_CONTROL_HANDLE(IDC_LISTEN, listen_edit_)
     DDX_CONTROL_HANDLE(IDC_LISTEN_SPIN, listen_spin_)
     DDX_CONTROL_HANDLE(IDC_PROTOCOL, type_combo_)
     DDX_CONTROL_HANDLE(IDC_SERVICE, service_combo_)
@@ -53,9 +54,10 @@ class ServerDialog
   PreferenceDialog* parent_;
   PreferenceDialog::ServerEntry* entry_;
 
-  CString name_;
+  CEdit name_edit_;
   CComboBox bind_combo_;
   int listen_;
+  CEdit listen_edit_;
   CUpDownCtrl listen_spin_;
   CComboBox type_combo_;
   CComboBox service_combo_;

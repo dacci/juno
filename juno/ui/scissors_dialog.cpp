@@ -10,12 +10,12 @@ ScissorsDialog::~ScissorsDialog() {
 }
 
 BOOL ScissorsDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
-  address_ = config_->remote_address_;
   port_ = config_->remote_port_;
 
   DoDataExchange();
 
-  port_spin_.SetRange32(1, 65535);
+  address_edit_.SetWindowText(config_->remote_address_);
+  port_spin_.SetRange32(0, 65535);
   use_ssl_check_.SetCheck(config_->remote_ssl_);
   use_udp_check_.SetCheck(config_->remote_udp_);
 
@@ -33,20 +33,26 @@ void ScissorsDialog::OnUseUdp(UINT notify_code, int id, CWindow control) {
 }
 
 void ScissorsDialog::OnOk(UINT notify_code, int id, CWindow control) {
-  CString message;
-  message.LoadString(IDS_NOT_SPECIFIED);
-
   EDITBALLOONTIP balloon = { sizeof(balloon) };
-  balloon.pszText = message;
+  CString message;
 
   DoDataExchange(DDX_SAVE);
 
-  if (address_.IsEmpty()) {
+  if (address_edit_.GetWindowTextLength() == 0) {
+    message.LoadString(IDS_NOT_SPECIFIED);
+    balloon.pszText = message;
     address_edit_.ShowBalloonTip(&balloon);
     return;
   }
 
-  config_->remote_address_ = address_;
+  if (port_ <= 0 || 65536 <= port_) {
+    message.LoadString(IDS_INVALID_PORT);
+    balloon.pszText = message;
+    port_edit_.ShowBalloonTip(&balloon);
+    return;
+  }
+
+  address_edit_.GetWindowText(config_->remote_address_);
   config_->remote_port_ = port_;
   config_->remote_ssl_ = use_ssl_check_.GetCheck();
   config_->remote_udp_ = use_udp_check_.GetCheck();

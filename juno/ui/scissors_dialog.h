@@ -24,9 +24,9 @@ class ScissorsDialog
   ~ScissorsDialog();
 
   BEGIN_DDX_MAP(ScissorsDialog)
-    DDX_TEXT(IDC_ADDRESS, address_)
     DDX_CONTROL_HANDLE(IDC_ADDRESS, address_edit_)
     DDX_INT(IDC_PORT, port_)
+    DDX_CONTROL_HANDLE(IDC_PORT, port_edit_)
     DDX_CONTROL_HANDLE(IDC_PORT_SPIN, port_spin_)
     DDX_CONTROL_HANDLE(IDC_USE_SSL, use_ssl_check_)
     DDX_CONTROL_HANDLE(IDC_USE_UDP, use_udp_check_)
@@ -51,9 +51,9 @@ class ScissorsDialog
 
   PreferenceDialog::ScissorsEntry* config_;
 
-  CString address_;
   CEdit address_edit_;
   int port_;
+  CEdit port_edit_;
   CUpDownCtrl port_spin_;
   CButton use_ssl_check_;
   CButton use_udp_check_;

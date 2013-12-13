@@ -27,6 +27,7 @@ class HttpProxyDialog
     DDX_CONTROL_HANDLE(IDC_USE_REMOTE_PROXY, use_remote_proxy_check_)
     DDX_CONTROL_HANDLE(IDC_ADDRESS, address_edit_)
     DDX_INT(IDC_PORT, port_)
+    DDX_CONTROL_HANDLE(IDC_PORT, port_edit_)
     DDX_CONTROL_HANDLE(IDC_PORT_SPIN, port_spin_)
     DDX_CONTROL_HANDLE(IDC_AUTH_REMOTE, auth_remote_check_)
     DDX_CONTROL_HANDLE(IDC_REMOTE_USER, remote_user_edit_)
@@ -74,6 +75,7 @@ class HttpProxyDialog
   CButton use_remote_proxy_check_;
   CEdit address_edit_;
   int port_;
+  CEdit port_edit_;
   CUpDownCtrl port_spin_;
   CButton auth_remote_check_;
   CEdit remote_user_edit_;
