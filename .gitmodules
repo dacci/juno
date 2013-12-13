@@ -1,3 +1,6 @@
 [submodule "third_party/picohttpparser/picohttpparser"]
 	path = third_party/picohttpparser/picohttpparser
 	url = https://github.com/kazuho/picohttpparser.git
+[submodule "madoka"]
+	path = madoka
+	url = https://github.com/dacci/madoka.git
