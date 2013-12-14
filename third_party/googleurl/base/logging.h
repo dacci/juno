@@ -14,6 +14,7 @@ class LogMessage {
 }  // namespace logging
 
 #define DCHECK(cond) true ? (void)0 : logging::LogMessage()
+#define DCHECK_LT(val1, val2)  true ? (void)0 : logging::LogMessage()
 
 #define NOTREACHED()
 

@@ -22,7 +22,9 @@
     <ClInclude Include="base\base_export.h" />
     <ClInclude Include="base\basictypes.h" />
     <ClInclude Include="base\compiler_specific.h" />
+    <ClInclude Include="base\lazy_instance.h" />
     <ClInclude Include="base\logging.h" />
+    <ClInclude Include="base\memory\scoped_ptr.h" />
     <ClInclude Include="base\port.h" />
     <ClInclude Include="base\strings\string16.h" />
     <ClInclude Include="build\build_config.h" />
@@ -57,6 +59,7 @@
     <ClCompile Include="url\url_canon_pathurl.cc" />
     <ClCompile Include="url\url_canon_query.cc" />
     <ClCompile Include="url\url_canon_relative.cc" />
+    <ClCompile Include="url\url_canon_stdstring.cc" />
     <ClCompile Include="url\url_canon_stdurl.cc" />
     <ClCompile Include="url\url_parse_file.cc" />
     <ClCompile Include="url\url_util.cc" />
@@ -140,6 +143,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4244;4267</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -156,6 +160,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4244;4267</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -174,6 +179,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4244;4267</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -194,6 +200,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <DisableSpecificWarnings>4244;4267</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
