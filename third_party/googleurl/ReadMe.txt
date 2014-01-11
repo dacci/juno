@@ -1,13 +1,12 @@
-Checkout from https://src.chromium.org/chrome/trunk/src/url and
-apply following patch.
+Apply following patch under "url" directory.
 
-Index: url_canon_icu.cc
-===================================================================
---- url_canon_icu.cc	(revision 217736)
-+++ url_canon_icu.cc	(working copy)
-@@ -8,9 +8,9 @@
- #include <string.h>
+diff --git a/url_canon_icu.cc b/url_canon_icu.cc
+index cabbbf2..42da8b3 100644
+--- a/url_canon_icu.cc
++++ b/url_canon_icu.cc
+@@ -9,9 +9,9 @@
  
+ #include "base/lazy_instance.h"
  #include "base/logging.h"
 -#include "third_party/icu/source/common/unicode/ucnv.h"
 -#include "third_party/icu/source/common/unicode/ucnv_cb.h"
