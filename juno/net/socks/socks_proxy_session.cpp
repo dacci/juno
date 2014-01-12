@@ -8,8 +8,8 @@
 
 #include <string>
 
-#include "net/tunneling_service.h"
 #include "net/socks/socks_proxy.h"
+#include "net/tunneling_service.h"
 
 namespace {
 

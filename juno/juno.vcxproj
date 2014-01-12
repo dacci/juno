@@ -191,14 +191,19 @@
     <ClCompile Include="net\connection_manager.cpp" />
     <ClCompile Include="net\http\http_headers.cpp" />
     <ClCompile Include="net\http\http_proxy.cpp" />
+    <ClCompile Include="net\http\http_proxy_config.cpp" />
+    <ClCompile Include="net\http\http_proxy_provider.cpp" />
     <ClCompile Include="net\http\http_proxy_session.cpp" />
     <ClCompile Include="net\http\http_request.cpp" />
     <ClCompile Include="net\http\http_response.cpp" />
     <ClCompile Include="net\http\http_status.cpp" />
     <ClCompile Include="net\scissors\scissors.cpp" />
+    <ClCompile Include="net\scissors\scissors_config.cpp" />
+    <ClCompile Include="net\scissors\scissors_provider.cpp" />
     <ClCompile Include="net\scissors\scissors_tcp_session.cpp" />
     <ClCompile Include="net\scissors\scissors_udp_session.cpp" />
     <ClCompile Include="net\socks\socks_proxy.cpp" />
+    <ClCompile Include="net\socks\socks_proxy_provider.cpp" />
     <ClCompile Include="net\socks\socks_proxy_session.cpp" />
     <ClCompile Include="net\tcp_server.cpp" />
     <ClCompile Include="net\tunneling_service.cpp" />
@@ -216,7 +221,10 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app\juno.h" />
+    <ClInclude Include="app\service.h" />
+    <ClInclude Include="app\service_config.h" />
     <ClInclude Include="app\service_manager.h" />
+    <ClInclude Include="app\service_provider.h" />
     <ClInclude Include="build\precompile.h" />
     <ClInclude Include="misc\registry_key-inl.h" />
     <ClInclude Include="misc\registry_key.h" />
@@ -230,18 +238,22 @@
     <ClInclude Include="net\connection_manager.h" />
     <ClInclude Include="net\http\http_headers.h" />
     <ClInclude Include="net\http\http_proxy.h" />
+    <ClInclude Include="net\http\http_proxy_config.h" />
+    <ClInclude Include="net\http\http_proxy_provider.h" />
     <ClInclude Include="net\http\http_proxy_session.h" />
     <ClInclude Include="net\http\http_request.h" />
     <ClInclude Include="net\http\http_response.h" />
     <ClInclude Include="net\http\http_status.h" />
     <ClInclude Include="net\scissors\scissors.h" />
+    <ClInclude Include="net\scissors\scissors_config.h" />
+    <ClInclude Include="net\scissors\scissors_provider.h" />
     <ClInclude Include="net\scissors\scissors_tcp_session.h" />
     <ClInclude Include="net\scissors\scissors_udp_session.h" />
     <ClInclude Include="net\server.h" />
-    <ClInclude Include="net\service_provider.h" />
     <ClInclude Include="net\socks\socks4.h" />
     <ClInclude Include="net\socks\socks5.h" />
     <ClInclude Include="net\socks\socks_proxy.h" />
+    <ClInclude Include="net\socks\socks_proxy_provider.h" />
     <ClInclude Include="net\socks\socks_proxy_session.h" />
     <ClInclude Include="net\tcp_server.h" />
     <ClInclude Include="net\tunneling_service.h" />

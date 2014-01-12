@@ -1,9 +1,10 @@
 // Copyright (c) 2013 dacci.org
 
 #include "net/tcp_server.h"
+
+#include "app/service.h"
 #include "net/async_server_socket.h"
 #include "net/async_socket.h"
-#include "net/service_provider.h"
 
 TcpServer::TcpServer() : service_(), count_() {
   event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);

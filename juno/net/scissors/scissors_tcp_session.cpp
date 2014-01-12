@@ -6,8 +6,9 @@
 
 #include <memory>
 
-#include "misc/string_util.h"
 #include "misc/schannel/schannel_context.h"
+#include "misc/string_util.h"
+#include "net/scissors/scissors_config.h"
 #include "net/tunneling_service.h"
 
 #ifdef LEGACY_PLATFORM
@@ -52,8 +53,9 @@ bool ScissorsTcpSession::Start(AsyncSocket* client) {
   if (remote_buffer_ == NULL)
     return false;
 
-  if (service_->remote_ssl_) {
-    std::wstring target_name = ::to_wstring(service_->remote_address_);
+  if (service_->config_->remote_ssl()) {
+    std::wstring target_name =
+        ::to_wstring(service_->config_->remote_address());
     context_ = new SchannelContext(service_->credential_, target_name.c_str());
     if (context_ == NULL)
       return false;
@@ -83,7 +85,7 @@ void ScissorsTcpSession::OnConnected(AsyncSocket* socket, DWORD error) {
     return;
   }
 
-  if (!service_->remote_ssl_) {
+  if (!service_->config_->remote_ssl()) {
     if (TunnelingService::Bind(client_, remote_)) {
       client_ = NULL;
       remote_ = NULL;

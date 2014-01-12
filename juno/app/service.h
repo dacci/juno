@@ -1,7 +1,7 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_NET_SERVICE_PROVIDER_H_
-#define JUNO_NET_SERVICE_PROVIDER_H_
+#ifndef JUNO_APP_SERVICE_H_
+#define JUNO_APP_SERVICE_H_
 
 #include <windows.h>
 
@@ -10,10 +10,10 @@ struct sockaddr;
 class AsyncSocket;
 class AsyncDatagramSocket;
 
-class ServiceProvider {
+class Service {
  public:
   struct Datagram {
-    ServiceProvider* service;
+    Service* service;
     AsyncDatagramSocket* socket;
     int data_length;
     void* data;
@@ -21,10 +21,9 @@ class ServiceProvider {
     sockaddr* from;
   };
 
-  virtual ~ServiceProvider() {
+  virtual ~Service() {
   }
 
-  virtual bool Setup(HKEY key) = 0;
   virtual void Stop() = 0;
 
   virtual bool OnAccepted(AsyncSocket* client) = 0;
@@ -32,4 +31,4 @@ class ServiceProvider {
   virtual void OnError(DWORD error) = 0;
 };
 
-#endif  // JUNO_NET_SERVICE_PROVIDER_H_
+#endif  // JUNO_APP_SERVICE_H_

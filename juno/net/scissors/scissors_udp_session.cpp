@@ -18,7 +18,7 @@ FILETIME ScissorsUdpSession::kTimerDueTime = {
 };
 
 ScissorsUdpSession::ScissorsUdpSession(Scissors* service,
-                                       ServiceProvider::Datagram* datagram)
+                                       Service::Datagram* datagram)
     : service_(service), datagram_(datagram), remote_(), buffer_(), timer_() {
 #ifndef LEGACY_PLATFORM
   timer_ = ::CreateThreadpoolTimer(OnTimeout, this, NULL);

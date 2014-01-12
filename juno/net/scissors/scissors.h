@@ -10,12 +10,13 @@
 #include <map>
 #include <string>
 
+#include "app/service.h"
 #include "net/async_datagram_socket.h"
-#include "net/service_provider.h"
 
 class SchannelCredential;
+class ScissorsConfig;
 
-class Scissors : public ServiceProvider {
+class Scissors : public Service {
  public:
   class Session {
    public:
@@ -24,10 +25,10 @@ class Scissors : public ServiceProvider {
     virtual void Stop() = 0;
   };
 
-  Scissors();
+  explicit Scissors(ScissorsConfig* config);
   virtual ~Scissors();
 
-  bool Setup(HKEY key);
+  bool Init();
   void Stop();
 
   bool OnAccepted(AsyncSocket* client);
@@ -42,6 +43,8 @@ class Scissors : public ServiceProvider {
 
   void EndSession(Session* session);
 
+  ScissorsConfig* const config_;
+
   // TODO(dacci): replace with condition variable.
   HANDLE empty_event_;
   madoka::concurrent::CriticalSection critical_section_;
@@ -51,11 +54,6 @@ class Scissors : public ServiceProvider {
   std::map<AsyncDatagramSocket*, char*> buffers_;
 
   bool stopped_;
-
-  std::string remote_address_;
-  int remote_port_;
-  int remote_ssl_;
-  int remote_udp_;
 
   madoka::net::AddressInfo resolver_;
   SchannelCredential* credential_;

@@ -7,13 +7,14 @@
 
 #include <list>
 
-#include "net/service_provider.h"
+#include "app/service.h"
 
+class SocksProxyConfig;
 class SocksProxySession;
 
-class SocksProxy : public ServiceProvider {
+class SocksProxy : public Service {
  public:
-  SocksProxy();
+  explicit SocksProxy(SocksProxyConfig* config);
   ~SocksProxy();
 
   bool Setup(HKEY key);

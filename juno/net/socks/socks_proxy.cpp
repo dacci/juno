@@ -7,7 +7,7 @@
 #include "net/async_socket.h"
 #include "net/socks/socks_proxy_session.h"
 
-SocksProxy::SocksProxy() : stopped_() {
+SocksProxy::SocksProxy(SocksProxyConfig* config) : stopped_() {
   empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
 }
 

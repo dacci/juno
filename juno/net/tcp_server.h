@@ -10,7 +10,7 @@
 #include "net/async_server_socket.h"
 #include "net/server.h"
 
-class ServiceProvider;
+class Service;
 
 class TcpServer : public Server, public AsyncServerSocket::Listener {
  public:
@@ -23,14 +23,14 @@ class TcpServer : public Server, public AsyncServerSocket::Listener {
 
   void OnAccepted(AsyncServerSocket* server, AsyncSocket* client, DWORD error);
 
-  void SetService(ServiceProvider* service) {
+  void SetService(Service* service) {
     service_ = service;
   }
 
  private:
   madoka::net::AddressInfo resolver_;
   std::vector<AsyncServerSocket*> servers_;
-  ServiceProvider* service_;
+  Service* service_;
 
   LONG count_;
   HANDLE event_;

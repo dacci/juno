@@ -2,17 +2,16 @@
 
 #include "net/http/http_proxy.h"
 
-#include <wincrypt.h>
-
 #include <madoka/concurrent/lock_guard.h>
 
 #include <utility>
 
 #include "misc/registry_key-inl.h"
 #include "net/async_server_socket.h"
+#include "net/http/http_proxy_config.h"
 #include "net/http/http_proxy_session.h"
 
-HttpProxy::HttpProxy() : stopped_(), use_remote_proxy_(), remote_proxy_port_() {
+HttpProxy::HttpProxy(HttpProxyConfig* config) : config_(config), stopped_() {
   empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
 }
 
@@ -21,85 +20,7 @@ HttpProxy::~HttpProxy() {
   ::CloseHandle(empty_event_);
 }
 
-bool HttpProxy::Setup(HKEY key) {
-  RegistryKey reg_key(key);
-
-  use_remote_proxy_ = reg_key.QueryInteger("UseRemoteProxy");
-
-  if (!reg_key.QueryString("RemoteProxyHost", &remote_proxy_host_))
-    use_remote_proxy_ = FALSE;
-
-  remote_proxy_port_ = reg_key.QueryInteger("RemoteProxyPort");
-  if (remote_proxy_port_ <= 0 || 65536 <= remote_proxy_port_)
-    use_remote_proxy_ = FALSE;
-
-  auth_remote_proxy_ = reg_key.QueryInteger("AuthRemoteProxy");
-
-  if (!reg_key.QueryString("RemoteProxyUser", &remote_proxy_user_))
-    auth_remote_proxy_ = 0;
-
-  int length = 0;
-  if (reg_key.QueryBinary("RemoteProxyPassword", NULL, &length)) {
-    BYTE* buffer = new BYTE[length];
-    reg_key.QueryBinary("RemoteProxyPassword", buffer, &length);
-
-    DATA_BLOB encrypted = { length, buffer }, decrypted = {};
-    if (::CryptUnprotectData(&encrypted, NULL, NULL, NULL, NULL, 0,
-                             &decrypted)) {
-      remote_proxy_password_.assign(reinterpret_cast<char*>(decrypted.pbData),
-                                    decrypted.cbData);
-      ::LocalFree(decrypted.pbData);
-    }
-
-    delete[] buffer;
-  }
-
-  std::string auth = remote_proxy_user_ + ':' + remote_proxy_password_;
-  DWORD buffer_size = (((auth.size() - 1) / 3) + 2) * 4;
-  char* buffer = new char[buffer_size];
-
-  ::CryptBinaryToStringA(reinterpret_cast<const BYTE*>(auth.c_str()),
-                         auth.size(), CRYPT_STRING_BASE64, buffer,
-                         &buffer_size);
-  char* end = buffer + buffer_size - 1;
-  while (end > buffer) {
-    if (!::isspace(*end))
-      break;
-    --end;
-  }
-
-  basic_authorization_ = "Basic ";
-  basic_authorization_.append(buffer, end + 1);
-
-  delete[] buffer;
-
-  RegistryKey filters_key;
-  if (filters_key.Open(reg_key, "HeaderFilters")) {
-    for (DWORD i = 0; ; ++i) {
-      std::string name;
-      if (!filters_key.EnumerateKey(i, &name))
-        break;
-
-      RegistryKey filter_key;
-      filter_key.Open(filters_key, name);
-
-      header_filters_.push_back(HeaderFilter());
-      HeaderFilter& filter = header_filters_.back();
-
-      filter.request = filter_key.QueryInteger("Request") != 0;
-      filter.response = filter_key.QueryInteger("Response") != 0;
-      filter.action =
-          static_cast<FilterAction>(filter_key.QueryInteger("Action"));
-      filter_key.QueryString("Name", &filter.name);
-      filter_key.QueryString("Value", &filter.value);
-      filter_key.QueryString("Replace", &filter.replace);
-    }
-
-    filters_key.Close();
-  }
-
-  reg_key.Detach();
-
+bool HttpProxy::Init() {
   return true;
 }
 
@@ -122,37 +43,40 @@ void HttpProxy::Stop() {
 }
 
 void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
-  for (auto i = header_filters_.begin(), l = header_filters_.end();
-       i != l; ++i) {
-    HeaderFilter& filter = *i;
+  madoka::concurrent::ReadLock read_lock(&config_->lock_);
+  madoka::concurrent::LockGuard guard(&read_lock);
+
+  for (auto i = config_->header_filters_.begin(),
+            l = config_->header_filters_.end(); i != l; ++i) {
+    auto& filter = *i;
 
     if (request && filter.request || !request && filter.response) {
       switch (filter.action) {
-        case Set:
+        case HttpProxyConfig::Set:
           headers->SetHeader(filter.name, filter.value);
           break;
 
-        case Append:
+        case HttpProxyConfig::Append:
           headers->AppendHeader(filter.name, filter.value);
           break;
 
-        case Add:
+        case HttpProxyConfig::Add:
           headers->AddHeader(filter.name, filter.value);
           break;
 
-        case Unset:
+        case HttpProxyConfig::Unset:
           headers->RemoveHeader(filter.name);
           break;
 
-        case Merge:
+        case HttpProxyConfig::Merge:
           headers->MergeHeader(filter.name, filter.value);
           break;
 
-        case Edit:
+        case HttpProxyConfig::Edit:
           headers->EditHeader(filter.name, filter.value, filter.replace, false);
           break;
 
-        case EditR:
+        case HttpProxyConfig::EditR:
           headers->EditHeader(filter.name, filter.value, filter.replace, true);
           break;
       }
@@ -174,7 +98,7 @@ bool HttpProxy::OnAccepted(AsyncSocket* client) {
   if (stopped_)
     return false;
 
-  HttpProxySession* session = new HttpProxySession(this);
+  HttpProxySession* session = new HttpProxySession(this, config_);
   if (session == NULL)
     return false;
 

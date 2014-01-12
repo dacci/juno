@@ -9,17 +9,18 @@
 #include <string>
 #include <vector>
 
-#include "net/service_provider.h"
+#include "app/service.h"
 
 class HttpHeaders;
+class HttpProxyConfig;
 class HttpProxySession;
 
-class HttpProxy : public ServiceProvider {
+class HttpProxy : public Service {
  public:
-  HttpProxy();
+  explicit HttpProxy(HttpProxyConfig* config);
   ~HttpProxy();
 
-  bool Setup(HKEY key);
+  bool Init();
   void Stop();
 
   void FilterHeaders(HttpHeaders* headers, bool request);
@@ -29,55 +30,14 @@ class HttpProxy : public ServiceProvider {
   bool OnReceivedFrom(Datagram* datagram);
   void OnError(DWORD error);
 
-  bool use_remote_proxy() const {
-    return use_remote_proxy_ != 0;
-  }
-
-  const char* remote_proxy_host() const {
-    return remote_proxy_host_.c_str();
-  }
-
-  int remote_proxy_port() const {
-    return remote_proxy_port_;
-  }
-
-  DWORD auth_remote_proxy() const {
-    return auth_remote_proxy_;
-  }
-
-  const std::string& basic_authorization() const {
-    return basic_authorization_;
-  }
-
  private:
-  enum FilterAction {
-    Set, Append, Add, Unset, Merge, Edit, EditR,
-  };
-
-  struct HeaderFilter {
-    bool request;
-    bool response;
-    FilterAction action;
-    std::string name;
-    std::string value;
-    std::string replace;
-  };
+  HttpProxyConfig* const config_;
 
   // TODO(dacci): replace with condition variable
   HANDLE empty_event_;
   madoka::concurrent::CriticalSection critical_section_;
   bool stopped_;
   std::list<HttpProxySession*> sessions_;
-
-  DWORD use_remote_proxy_;
-  std::string remote_proxy_host_;
-  DWORD remote_proxy_port_;
-  DWORD auth_remote_proxy_;
-  std::string remote_proxy_user_;
-  std::string remote_proxy_password_;
-  std::vector<HeaderFilter> header_filters_;
-
-  std::string basic_authorization_;
 };
 
 #endif  // JUNO_NET_HTTP_HTTP_PROXY_H_

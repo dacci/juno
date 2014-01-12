@@ -5,14 +5,14 @@
 
 #include <memory>
 
+#include "app/service.h"
 #include "net/async_datagram_socket.h"
-#include "net/service_provider.h"
 #include "net/scissors/scissors.h"
 
 class ScissorsUdpSession
     : public Scissors::Session, public AsyncDatagramSocket::Listener {
  public:
-  ScissorsUdpSession(Scissors* service, ServiceProvider::Datagram* datagram);
+  ScissorsUdpSession(Scissors* service, Service::Datagram* datagram);
   virtual ~ScissorsUdpSession();
 
   bool Start();
@@ -41,7 +41,7 @@ class ScissorsUdpSession
   static FILETIME kTimerDueTime;
 
   Scissors* const service_;
-  ServiceProvider::Datagram* datagram_;
+  Service::Datagram* datagram_;
   AsyncDatagramSocket* remote_;
   std::unique_ptr<char[]> buffer_;
 

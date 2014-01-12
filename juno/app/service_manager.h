@@ -10,6 +10,8 @@
 #include <vector>
 
 class ServiceProvider;
+class ServiceConfig;
+class Service;
 class Server;
 
 class ServiceManager {
@@ -27,9 +29,12 @@ class ServiceManager {
   void StopServers();
 
  private:
-  typedef std::map<std::string, ServiceProvider*> ServiceMap;
+  typedef std::map<std::string, Service*> ServiceMap;
 
-  ServiceProvider* LoadService(HKEY parent, const std::string& key_name);
+  std::map<std::string, ServiceProvider*> providers_;
+  std::map<std::string, ServiceConfig*> configs_;
+
+  Service* LoadService(HKEY parent, const std::string& key_name);
   Server* LoadServer(HKEY parent, const std::string& key_name);
 
   ServiceMap services_;

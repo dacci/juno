@@ -15,10 +15,11 @@
 #include "net/http/http_status.h"
 
 class HttpProxy;
+class HttpProxyConfig;
 
 class HttpProxySession : public AsyncSocket::Listener {
  public:
-  explicit HttpProxySession(HttpProxy* proxy);
+  HttpProxySession(HttpProxy* proxy, HttpProxyConfig* config);
   virtual ~HttpProxySession();
 
   bool Start(AsyncSocket* client);
@@ -101,6 +102,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   static FILETIME kTimerDueTime;
 
   HttpProxy* const proxy_;
+  HttpProxyConfig* const config_;
   AsyncSocketPtr client_;
   std::string client_buffer_;
   HttpRequest request_;

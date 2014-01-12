@@ -11,7 +11,7 @@
 #include "net/async_datagram_socket.h"
 #include "net/server.h"
 
-class ServiceProvider;
+class Service;
 
 class UdpServer : public Server, public AsyncDatagramSocket::Listener {
  public:
@@ -29,7 +29,7 @@ class UdpServer : public Server, public AsyncDatagramSocket::Listener {
   void OnSentTo(AsyncDatagramSocket* socket, DWORD error, int length,
                 sockaddr* to, int to_length);
 
-  void SetService(ServiceProvider* service) {
+  void SetService(Service* service) {
     service_ = service;
   }
 
@@ -45,7 +45,7 @@ class UdpServer : public Server, public AsyncDatagramSocket::Listener {
   madoka::net::AddressInfo resolver_;
   std::vector<AsyncDatagramSocket*> servers_;
   std::map<AsyncDatagramSocket*, char*> buffers_;
-  ServiceProvider* service_;
+  Service* service_;
 
   LONG count_;
   HANDLE event_;

@@ -6,6 +6,7 @@
 
 #include "misc/string_util.h"
 #include "net/http/http_proxy.h"
+#include "net/http/http_proxy_config.h"
 #include "net/tunneling_service.h"
 
 #ifdef LEGACY_PLATFORM
@@ -31,8 +32,9 @@ FILETIME HttpProxySession::kTimerDueTime = {
   -1
 };
 
-HttpProxySession::HttpProxySession(HttpProxy* proxy)
+HttpProxySession::HttpProxySession(HttpProxy* proxy, HttpProxyConfig* config)
     : proxy_(proxy),
+      config_(config),
       client_(),
       remote_(),
       buffer_(new char[kBufferSize]),
@@ -91,7 +93,7 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     return;
   }
 
-  if (tunnel_ && !proxy_->use_remote_proxy()) {
+  if (tunnel_ && !config_->use_remote_proxy()) {
     phase_ = Response;
 
     if (!TunnelingService::Bind(client_, remote_)) {
@@ -114,7 +116,7 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     remote_buffer_ += request_.method();
     remote_buffer_ += ' ';
 
-    if (proxy_->use_remote_proxy())
+    if (config_->use_remote_proxy())
       remote_buffer_ += request_.path();
     else
       remote_buffer_ += url_.PathForRequest();
@@ -264,8 +266,8 @@ void HttpProxySession::ProcessRequestHeader() {
 
   proxy_->FilterHeaders(&request_, true);
 
-  if (proxy_->use_remote_proxy() && proxy_->auth_remote_proxy())
-    request_.AddHeader(kProxyAuthorization, proxy_->basic_authorization());
+  if (config_->use_remote_proxy() && config_->auth_remote_proxy())
+    request_.AddHeader(kProxyAuthorization, config_->basic_authorization());
 }
 
 void HttpProxySession::ProcessResponseHeader() {
@@ -472,7 +474,7 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
       SendError(HTTP::BAD_REQUEST);
       return;
     }
-    if (!proxy_->use_remote_proxy() && !url_.SchemeIs("http")) {
+    if (!config_->use_remote_proxy() && !url_.SchemeIs("http")) {
       SendError(HTTP::NOT_IMPLEMENTED);
       return;
     }
@@ -487,9 +489,9 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
   }
 
   bool resolved = false;
-  if (proxy_->use_remote_proxy())
-    resolved = resolver_.Resolve(proxy_->remote_proxy_host(),
-                                 proxy_->remote_proxy_port());
+  if (config_->use_remote_proxy())
+    resolved = resolver_.Resolve(config_->remote_proxy_host().c_str(),
+                                 config_->remote_proxy_port());
   else
     resolved = resolver_.Resolve(url_.host().c_str(), url_.EffectiveIntPort());
 

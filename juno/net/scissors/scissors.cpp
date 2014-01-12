@@ -6,11 +6,12 @@
 
 #include "misc/registry_key.h"
 #include "misc/schannel/schannel_credential.h"
+#include "net/scissors/scissors_config.h"
 #include "net/scissors/scissors_tcp_session.h"
 #include "net/scissors/scissors_udp_session.h"
 
-Scissors::Scissors()
-    : stopped_(), remote_port_(), remote_ssl_(), credential_() {
+Scissors::Scissors(ScissorsConfig* config)
+    : config_(config), stopped_(), credential_() {
   empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
 }
 
@@ -21,25 +22,18 @@ Scissors::~Scissors() {
   ::CloseHandle(empty_event_);
 }
 
-bool Scissors::Setup(HKEY key) {
-  RegistryKey reg_key(key);
-
-  reg_key.QueryString("RemoteAddress", &remote_address_);
-  reg_key.QueryInteger("RemotePort", &remote_port_);
-  reg_key.QueryInteger("RemoteSSL", &remote_ssl_);
-  reg_key.QueryInteger("RemoteUDP", &remote_udp_);
-
-  reg_key.Detach();
-
-  if (remote_udp_)
+bool Scissors::Init() {
+  if (config_->remote_udp())
     resolver_.ai_socktype = SOCK_DGRAM;
   else
     resolver_.ai_socktype = SOCK_STREAM;
 
-  if (!resolver_.Resolve(remote_address_.c_str(), remote_port_))
+  // XXX(dacci): saving resolved name could be harmful.
+  if (!resolver_.Resolve(config_->remote_address().c_str(),
+                         config_->remote_port()))
     return false;
 
-  if (remote_ssl_) {
+  if (config_->remote_ssl()) {
     credential_ = new SchannelCredential();
     if (credential_ == NULL)
       return false;

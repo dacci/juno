@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "net/service_provider.h"
+#include "app/service.h"
 
 UdpServer::UdpServer() : service_(), count_() {
   event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
@@ -100,25 +100,24 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
     char* received = NULL;
 
     do {
-      received = new char[sizeof(ServiceProvider::Datagram) + length +
-                          from_length];
+      received = new char[sizeof(Service::Datagram) + length + from_length];
       if (received == NULL)
         break;
 
       char* buffer = buffers_[socket];
 
-      ServiceProvider::Datagram* datagram =
-          reinterpret_cast<ServiceProvider::Datagram*>(received);
+      Service::Datagram* datagram =
+          reinterpret_cast<Service::Datagram*>(received);
       datagram->service = service_;
       datagram->socket = socket;
 
       datagram->data_length = length;
-      datagram->data = received + sizeof(ServiceProvider::Datagram);
+      datagram->data = received + sizeof(Service::Datagram);
       ::memmove(datagram->data, buffer, length);
 
       datagram->from_length = from_length;
       datagram->from = reinterpret_cast<sockaddr*>(
-          received + sizeof(ServiceProvider::Datagram) + length);
+          received + sizeof(Service::Datagram) + length);
       ::memmove(datagram->from, from, from_length);
 
       BOOL succeeded = FALSE;
@@ -163,8 +162,7 @@ DWORD CALLBACK UdpServer::Dispatch(void* context) {
 void CALLBACK UdpServer::Dispatch(PTP_CALLBACK_INSTANCE instance,
                                   void* context) {
 #endif  // LEGACY_PLATFORM
-  ServiceProvider::Datagram* datagram =
-      static_cast<ServiceProvider::Datagram*>(context);
+  Service::Datagram* datagram = static_cast<Service::Datagram*>(context);
 
   bool succeeded = datagram->service->OnReceivedFrom(datagram);
   if (!succeeded)

@@ -3,7 +3,7 @@
 #ifndef JUNO_NET_SERVER_H_
 #define JUNO_NET_SERVER_H_
 
-class ServiceProvider;
+class Service;
 
 class Server {
  public:
@@ -13,7 +13,7 @@ class Server {
   virtual bool Start() = 0;
   virtual void Stop() = 0;
 
-  virtual void SetService(ServiceProvider* service) = 0;
+  virtual void SetService(Service* service) = 0;
 };
 
 #endif  // JUNO_NET_SERVER_H_

@@ -2,30 +2,59 @@
 
 #include "app/service_manager.h"
 
-#include "misc/registry_key.h"
-#include "net/http/http_proxy.h"
-#include "net/scissors/scissors.h"
-#include "net/socks/socks_proxy.h"
+#include "app/service.h"
+#include "misc/registry_key-inl.h"
+#include "net/http/http_proxy_provider.h"
+#include "net/scissors/scissors_provider.h"
+#include "net/socks/socks_proxy_provider.h"
 #include "net/tcp_server.h"
 #include "net/udp_server.h"
 
 ServiceManager* service_manager = NULL;
 
+namespace {
+const char kConfigKeyName[] = "Software\\dacci.org\\Juno";
+const char kServicesKeyName[] = "Services";
+const char kServersKeyName[] = "Servers";
+const char kProviderValueName[] = "Provider";
+const char kEnabledValueName[] = "Enabled";
+const char kServiceValueName[] = "Service";
+const char kListenValueName[] = "Listen";
+const char kBindValueName[] = "Bind";
+const char kTypeValueName[] = "Type";
+}  // namespace
+
 ServiceManager::ServiceManager() {
+#define PROVIDER_ENTRY(key) \
+  providers_.insert(std::make_pair(#key, new key##Provider))
+
+  PROVIDER_ENTRY(HttpProxy);
+  PROVIDER_ENTRY(SocksProxy);
+  PROVIDER_ENTRY(Scissors);
+
+#undef PROVIDER_ENTRY
 }
 
 ServiceManager::~ServiceManager() {
   UnloadServers();
   UnloadServices();
+
+  for (auto i = configs_.begin(), l = configs_.end(); i != l; ++i)
+    delete i->second;
+  configs_.clear();
+
+  for (auto i = providers_.begin(), l = providers_.end(); i != l; ++i)
+    delete i->second;
+  providers_.clear();
 }
 
 bool ServiceManager::LoadServices() {
   RegistryKey app_key;
-  if (!app_key.Create(HKEY_CURRENT_USER, "Software\\dacci.org\\Juno"))
+  if (!app_key.Create(HKEY_CURRENT_USER, kConfigKeyName))
     return false;
 
   RegistryKey services_key;
-  if (!services_key.Create(app_key, "Services"))
+  if (!services_key.Create(app_key, kServicesKeyName))
     return false;
 
   for (DWORD i = 0; ; ++i) {
@@ -33,7 +62,7 @@ bool ServiceManager::LoadServices() {
     if (!services_key.EnumerateKey(i, &name))
       break;
 
-    ServiceProvider* service = LoadService(services_key, name);
+    Service* service = LoadService(services_key, name);
     if (service != NULL)
       services_[name] = service;
   }
@@ -59,11 +88,11 @@ void ServiceManager::StopServices() {
 
 bool ServiceManager::LoadServers() {
   RegistryKey app_key;
-  if (!app_key.Create(HKEY_CURRENT_USER, "Software\\dacci.org\\Juno"))
+  if (!app_key.Create(HKEY_CURRENT_USER, kConfigKeyName))
     return false;
 
   RegistryKey servers_key;
-  if (!servers_key.Create(app_key, "Servers"))
+  if (!servers_key.Create(app_key, kServersKeyName))
     return false;
 
   for (DWORD i = 0; ; ++i) {
@@ -104,34 +133,26 @@ void ServiceManager::StopServers() {
     (*i)->Stop();
 }
 
-ServiceProvider* ServiceManager::LoadService(HKEY parent,
-                                             const std::string& key_name) {
+Service* ServiceManager::LoadService(HKEY parent, const std::string& key_name) {
   RegistryKey reg_key;
   if (!reg_key.Open(parent, key_name))
     return NULL;
 
   std::string provider_name;
-  if (!reg_key.QueryString("Provider", &provider_name))
+  if (!reg_key.QueryString(kProviderValueName, &provider_name))
     return NULL;
 
-  ServiceProvider* provider = NULL;
-
-  if (provider_name.compare("HttpProxy") == 0)
-    provider = new HttpProxy();
-  else if (provider_name.compare("SocksProxy") == 0)
-    provider = new SocksProxy();
-  else if (provider_name.compare("Scissors") == 0)
-    provider = new Scissors();
-
-  if (provider == NULL)
+  auto pair = providers_.find(provider_name);
+  if (pair == providers_.end())
     return NULL;
 
-  if (!provider->Setup(reg_key)) {
-    delete provider;
+  ServiceConfig* config = pair->second->LoadConfig(reg_key);
+  if (config == NULL)
     return NULL;
-  }
 
-  return provider;
+  configs_.insert(std::make_pair(key_name, config));
+
+  return pair->second->CreateService(config);
 }
 
 Server* ServiceManager::LoadServer(HKEY parent, const std::string& key_name) {
@@ -139,28 +160,28 @@ Server* ServiceManager::LoadServer(HKEY parent, const std::string& key_name) {
   if (!reg_key.Open(parent, key_name))
     return NULL;
 
-  int enabled = reg_key.QueryInteger("Enabled");
+  int enabled = reg_key.QueryInteger(kEnabledValueName);
   if (!enabled)
     return NULL;
 
   std::string service;
-  if (!reg_key.QueryString("Service", &service))
+  if (!reg_key.QueryString(kServiceValueName, &service))
     return NULL;
 
   auto service_entry = services_.find(service);
   if (service_entry == services_.end())
     return NULL;
 
-  int listen = reg_key.QueryInteger("Listen");
+  int listen = reg_key.QueryInteger(kListenValueName);
   if (listen == 0)
     return NULL;
 
   std::string bind;
-  if (!reg_key.QueryString("Bind", &bind))
+  if (!reg_key.QueryString(kBindValueName, &bind))
     return NULL;
 
   int type = SOCK_STREAM;
-  reg_key.QueryInteger("Type", &type);
+  reg_key.QueryInteger(kTypeValueName, &type);
 
   Server* server = NULL;
   switch (type) {
