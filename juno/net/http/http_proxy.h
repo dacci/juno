@@ -31,6 +31,8 @@ class HttpProxy : public Service {
   void OnError(DWORD error);
 
  private:
+  friend class HttpProxyProvider;
+
   HttpProxyConfig* const config_;
 
   // TODO(dacci): replace with condition variable

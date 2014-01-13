@@ -7,17 +7,24 @@
 SocksProxyProvider::~SocksProxyProvider() {
 }
 
-ServiceConfig* SocksProxyProvider::LoadConfig(const RegistryKey& key) {
+ServiceConfig* SocksProxyProvider::CreateConfig() {
   return new SocksProxyConfig();
 }
 
-bool SocksProxyProvider::LoadConfig(ServiceConfig* config,
-                                    const RegistryKey& key) {
+ServiceConfig* SocksProxyProvider::LoadConfig(const RegistryKey& key) {
+  return CreateConfig();
+}
+
+bool SocksProxyProvider::SaveConfig(ServiceConfig* config, RegistryKey* key) {
   return true;
 }
 
 ServiceConfig* SocksProxyProvider::CopyConfig(ServiceConfig* config) {
   return new SocksProxyConfig(*static_cast<SocksProxyConfig*>(config));
+}
+
+bool SocksProxyProvider::UpdateConfig(Service* service, ServiceConfig* config) {
+  return true;
 }
 
 Service* SocksProxyProvider::CreateService(ServiceConfig* config) {

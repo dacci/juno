@@ -27,6 +27,7 @@ ScissorsTcpSession::ScissorsTcpSession(Scissors* service)
       established_(),
       ref_count_(1),
       shutdown_() {
+  resolver_.ai_socktype = SOCK_STREAM;
 }
 
 ScissorsTcpSession::~ScissorsTcpSession() {
@@ -41,6 +42,10 @@ ScissorsTcpSession::~ScissorsTcpSession() {
 }
 
 bool ScissorsTcpSession::Start(AsyncSocket* client) {
+  if (!resolver_.Resolve(service_->config_->remote_address().c_str(),
+                         service_->config_->remote_port()))
+    return false;
+
   remote_.reset(new AsyncSocket());
   if (remote_ == NULL)
     return false;
@@ -63,7 +68,7 @@ bool ScissorsTcpSession::Start(AsyncSocket* client) {
 
   client_.reset(client);
 
-  if (!remote_->ConnectAsync(*service_->resolver_, this)) {
+  if (!remote_->ConnectAsync(*resolver_, this)) {
     client_ = NULL;
     return false;
   }

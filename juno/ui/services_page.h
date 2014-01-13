@@ -11,8 +11,12 @@
 #include <atlddx.h>
 #include <atldlgs.h>
 
+#include <map>
+
 #include "res/resource.h"
 #include "ui/preference_dialog.h"
+
+class ServiceConfig;
 
 class ServicesPage
     : public CPropertyPageImpl<ServicesPage>,
@@ -20,7 +24,8 @@ class ServicesPage
  public:
   static const UINT IDD = IDD_SERVICES_PAGE;
 
-  explicit ServicesPage(PreferenceDialog* parent);
+  ServicesPage(PreferenceDialog* parent,
+               std::map<std::string, ServiceConfig*>* configs);
   ~ServicesPage();
 
   void OnPageRelease();
@@ -46,7 +51,7 @@ class ServicesPage
   END_MSG_MAP()
 
  private:
-  void AddServiceItem(const PreferenceDialog::ServiceEntry& entry, int index);
+  void AddServiceItem(ServiceConfig* entry, int index);
 
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
@@ -57,7 +62,8 @@ class ServicesPage
   LRESULT OnServiceListChanged(LPNMHDR header);
   LRESULT OnServiceListDoubleClicked(LPNMHDR header);
 
-  PreferenceDialog* parent_;
+  PreferenceDialog* const parent_;
+  std::map<std::string, ServiceConfig*>* const configs_;
   bool initialized_;
 
   CListViewCtrl service_list_;

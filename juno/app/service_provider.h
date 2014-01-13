@@ -16,9 +16,11 @@ class ServiceProvider {
  public:
   virtual ~ServiceProvider() {}
 
+  virtual ServiceConfig* CreateConfig() = 0;
   virtual ServiceConfig* LoadConfig(const RegistryKey& key) = 0;
-  virtual bool LoadConfig(ServiceConfig* config, const RegistryKey& key) = 0;
+  virtual bool SaveConfig(ServiceConfig* config, RegistryKey* key) = 0;
   virtual ServiceConfig* CopyConfig(ServiceConfig* config) = 0;
+  virtual bool UpdateConfig(Service* service, ServiceConfig* config) = 0;
 
   virtual Service* CreateService(ServiceConfig* config) = 0;
 

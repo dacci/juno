@@ -3,6 +3,8 @@
 #ifndef JUNO_NET_SCISSORS_SCISSORS_UDP_SESSION_H_
 #define JUNO_NET_SCISSORS_SCISSORS_UDP_SESSION_H_
 
+#include <madoka/net/address_info.h>
+
 #include <memory>
 
 #include "app/service.h"
@@ -41,6 +43,7 @@ class ScissorsUdpSession
   static FILETIME kTimerDueTime;
 
   Scissors* const service_;
+  madoka::net::AddressInfo resolver_;
   Service::Datagram* datagram_;
   AsyncDatagramSocket* remote_;
   std::unique_ptr<char[]> buffer_;

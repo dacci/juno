@@ -14,13 +14,16 @@
 #include "res/resource.h"
 #include "ui/preference_dialog.h"
 
+class ServerConfig;
+
 class ServersPage
     : public CPropertyPageImpl<ServersPage>,
       public CWinDataExchange<ServersPage> {
  public:
   static const UINT IDD = IDD_SERVERS_PAGE;
 
-  explicit ServersPage(PreferenceDialog* parent);
+  ServersPage(PreferenceDialog* parent,
+              std::map<std::string, ServerConfig*>* configs);
   ~ServersPage();
 
   void OnPageRelease();
@@ -46,7 +49,7 @@ class ServersPage
   END_MSG_MAP()
 
  private:
-  void AddServerItem(const PreferenceDialog::ServerEntry& entry, int index);
+  void AddServerItem(ServerConfig* entry, int index);
 
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
@@ -57,7 +60,8 @@ class ServersPage
   LRESULT OnServerListChanged(LPNMHDR header);
   LRESULT OnServerListDoubleClicked(LPNMHDR header);
 
-  PreferenceDialog* parent_;
+  PreferenceDialog* const parent_;
+  std::map<std::string, ServerConfig*>* const configs_;
   bool initialized_;
 
   CListViewCtrl server_list_;

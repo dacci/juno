@@ -9,9 +9,11 @@ class ScissorsProvider : public ServiceProvider {
  public:
   virtual ~ScissorsProvider();
 
+  ServiceConfig* CreateConfig();
   ServiceConfig* LoadConfig(const RegistryKey& key);
-  bool LoadConfig(ServiceConfig* config, const RegistryKey& key);
+  bool SaveConfig(ServiceConfig* config, RegistryKey* key);
   ServiceConfig* CopyConfig(ServiceConfig* config);
+  bool UpdateConfig(Service* service, ServiceConfig* config);
 
   Service* CreateService(ServiceConfig* config);
 

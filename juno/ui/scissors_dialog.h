@@ -14,13 +14,16 @@
 #include "res/resource.h"
 #include "ui/preference_dialog.h"
 
+class ScissorsConfig;
+class ServiceConfig;
+
 class ScissorsDialog
     : public CDialogImpl<ScissorsDialog>,
       public CWinDataExchange<ScissorsDialog> {
  public:
   static const UINT IDD = IDD_SCISSORS;
 
-  explicit ScissorsDialog(PreferenceDialog::ServiceEntry* entry);
+  explicit ScissorsDialog(ServiceConfig* config);
   ~ScissorsDialog();
 
   BEGIN_DDX_MAP(ScissorsDialog)
@@ -49,7 +52,7 @@ class ScissorsDialog
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
 
-  PreferenceDialog::ScissorsEntry* config_;
+  ScissorsConfig* const config_;
 
   CEdit address_edit_;
   int port_;

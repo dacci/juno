@@ -2,12 +2,15 @@
 
 #include "ui/servers_page.h"
 
+#include <memory>
 #include <utility>
 
+#include "app/server_config.h"
 #include "ui/server_dialog.h"
 
-ServersPage::ServersPage(PreferenceDialog* parent)
-    : parent_(parent), initialized_() {
+ServersPage::ServersPage(PreferenceDialog* parent,
+                         std::map<std::string, ServerConfig*>* configs)
+    : parent_(parent), configs_(configs), initialized_() {
 }
 
 ServersPage::~ServersPage() {
@@ -17,19 +20,23 @@ void ServersPage::OnPageRelease() {
   delete this;
 }
 
-void ServersPage::AddServerItem(const PreferenceDialog::ServerEntry& entry,
-                                int index) {
+void ServersPage::AddServerItem(ServerConfig* entry, int index) {
   if (index < 0)
     index = server_list_.GetItemCount();
 
-  CString listen;
-  listen.Format(_T("%u"), entry.listen);
+  CString name(entry->name_.c_str());
+  CString bind(entry->bind_.c_str());
+  CString service_name(entry->service_name_.c_str());
 
-  server_list_.InsertItem(index, entry.name);
-  server_list_.AddItem(index, 1, entry.bind);
+  CString listen;
+  listen.Format(_T("%u"), entry->listen_);
+
+  server_list_.InsertItem(index, name);
+  server_list_.AddItem(index, 1, bind);
   server_list_.AddItem(index, 2, listen);
-  server_list_.AddItem(index, 3, entry.service);
-  server_list_.SetCheckState(index, entry.enabled);
+  server_list_.AddItem(index, 3, service_name);
+  server_list_.SetCheckState(index, entry->enabled_);
+  server_list_.SetItemData(index, reinterpret_cast<DWORD_PTR>(entry));
 }
 
 BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
@@ -56,9 +63,8 @@ BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
   server_list_.AddColumn(caption, 3);
   server_list_.SetColumnWidth(3, 100);
 
-  for (auto i = parent_->servers_.begin(), l = parent_->servers_.end();
-       i != l; ++i)
-    AddServerItem(*i, -1);
+  for (auto i = configs_->begin(), l = configs_->end(); i != l; ++i)
+    AddServerItem(i->second, -1);
 
   edit_button_.EnableWindow(FALSE);
   delete_button_.EnableWindow(FALSE);
@@ -69,32 +75,42 @@ BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
 }
 
 void ServersPage::OnAddServer(UINT notify_code, int id, CWindow control) {
-  PreferenceDialog::ServerEntry entry;
-  ServerDialog dialog(parent_, &entry);
+  std::unique_ptr<ServerConfig> entry(new ServerConfig());
+  ServerDialog dialog(parent_, entry.get());
   if (dialog.DoModal(m_hWnd) != IDOK)
     return;
 
-  parent_->servers_.push_back(std::move(entry));
-  AddServerItem(parent_->servers_.back(), -1);
+  configs_->insert(std::make_pair(entry->name_, entry.get()));
+  AddServerItem(entry.get(), -1);
   server_list_.SelectItem(server_list_.GetItemCount());
+
+  entry.release();
 }
 
 void ServersPage::OnEditServer(UINT notify_code, int id, CWindow control) {
   int index = server_list_.GetSelectedIndex();
-  PreferenceDialog::ServerEntry& entry = parent_->servers_[index];
-  ServerDialog dialog(parent_, &entry);
+  ServerConfig* config =
+      reinterpret_cast<ServerConfig*>(server_list_.GetItemData(index));
+
+  ServerDialog dialog(parent_, config);
   if (dialog.DoModal(m_hWnd) != IDOK)
     return;
 
   server_list_.DeleteItem(index);
-  AddServerItem(entry, index);
+  AddServerItem(config, index);
   server_list_.SelectItem(index);
 }
 
 void ServersPage::OnDeleteServer(UINT notify_code, int id, CWindow control) {
   int index = server_list_.GetSelectedIndex();
+  ServerConfig* config =
+      reinterpret_cast<ServerConfig*>(server_list_.GetItemData(index));
+
   server_list_.DeleteItem(index);
-  parent_->servers_.erase(parent_->servers_.begin() + index);
+  configs_->erase(config->name_);
+  delete config;
+
+  server_list_.SelectItem(index);
 }
 
 LRESULT ServersPage::OnServerListChanged(LPNMHDR header) {
@@ -104,8 +120,12 @@ LRESULT ServersPage::OnServerListChanged(LPNMHDR header) {
   NMLISTVIEW* notify = reinterpret_cast<NMLISTVIEW*>(header);
 
   if (notify->uNewState & LVIS_STATEIMAGEMASK &&
-      notify->uOldState & LVIS_STATEIMAGEMASK)
-    parent_->servers_[notify->iItem].enabled = (notify->uNewState >> 12) - 1;
+      notify->uOldState & LVIS_STATEIMAGEMASK) {
+    DWORD_PTR item_data = server_list_.GetItemData(notify->lParam);
+    ServerConfig* config = reinterpret_cast<ServerConfig*>(item_data);
+    if (config != NULL)
+      config->enabled_ = (notify->uNewState >> 12) - 1;
+  }
 
   UINT count = server_list_.GetSelectedCount();
   edit_button_.EnableWindow(count > 0);

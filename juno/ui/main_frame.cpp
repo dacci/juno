@@ -9,18 +9,8 @@
 const UINT MainFrame::WM_TASKBARCREATED =
     ::RegisterWindowMessage(_T("TaskbarCreated"));
 
-MainFrame::MainFrame() : notify_icon_(), configuring_() {
-  OSVERSIONINFOEX version_info = { sizeof(version_info) };
-  version_info.dwMajorVersion = 6;
-  version_info.dwMinorVersion = 1;
-
-  DWORDLONG condition_mask = 0;
-  VER_SET_CONDITION(condition_mask, VER_MAJORVERSION, VER_GREATER_EQUAL);
-  VER_SET_CONDITION(condition_mask, VER_MINORVERSION, VER_GREATER_EQUAL);
-
-  old_windows_ = ::VerifyVersionInfo(&version_info,
-                                     VER_MAJORVERSION | VER_MINORVERSION,
-                                     condition_mask) == FALSE;
+MainFrame::MainFrame()
+    : old_windows_(!RunTimeHelper::IsWin7()), notify_icon_(), configuring_() {
 }
 
 MainFrame::~MainFrame() {
@@ -151,6 +141,7 @@ void MainFrame::OnFileNew(UINT notify_code, int id, CWindow control) {
   if (result != IDOK)
     return;
 
+#if 0
   dialog.SaveServices();
   dialog.SaveServers();
 
@@ -161,6 +152,10 @@ void MainFrame::OnFileNew(UINT notify_code, int id, CWindow control) {
 
   StopAndUnload();
   LoadAndStart();
+#else
+  service_manager->UpdateConfiguration(std::move(dialog.service_configs_),
+                                       std::move(dialog.server_configs_));
+#endif
 }
 
 void MainFrame::OnAppExit(UINT notify_code, int id, CWindow control) {

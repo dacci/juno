@@ -56,6 +56,11 @@ class RegistryKey {
   int QueryInteger(const wchar_t* name) const;
   int QueryInteger(const std::wstring& name) const;
 
+  bool SetInteger(const char* name, int value);
+  bool SetInteger(const std::string& name, int value);
+  bool SetInteger(const wchar_t* name, int value);
+  bool SetInteger(const std::wstring& name, int value);
+
   bool QueryBinary(const char* name, void* data, int* length) const;
   bool QueryBinary(const std::string& name, void* data, int* length) const;
   bool QueryBinary(const wchar_t* name, void* data, int* length) const;
@@ -68,6 +73,11 @@ class RegistryKey {
 
   bool EnumerateKey(int index, std::string* name);
   bool EnumerateKey(int index, std::wstring* name);
+
+  bool DeleteKey(const char* sub_key);
+  bool DeleteKey(const std::string& sub_key);
+  bool DeleteKey(const wchar_t* sub_key);
+  bool DeleteKey(const std::wstring& sub_key);
 
   RegistryKey& operator=(RegistryKey&& other);
 

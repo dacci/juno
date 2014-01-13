@@ -2,6 +2,9 @@
 
 #include "ui/http_proxy_dialog.h"
 
+#include <utility>
+
+#include "misc/string_util.h"
 #include "ui/http_header_filter_dialog.h"
 
 static const TCHAR* kActions[] = {
@@ -14,8 +17,9 @@ static const TCHAR* kActions[] = {
   _T("Edit*"),
 };
 
-HttpProxyDialog::HttpProxyDialog(PreferenceDialog::ServiceEntry* entry)
-    : config_(static_cast<PreferenceDialog::HttpProxyEntry*>(entry->extra)) {
+HttpProxyDialog::HttpProxyDialog(ServiceConfig* entry)
+    : config_(static_cast<HttpProxyConfig*>(entry)),
+      filters_(config_->header_filters_) {
   image_list_.CreateFromImage(IDB_UPDOWN_ARROW, 16, 0, CLR_NONE, 0,
                               LR_CREATEDIBSECTION);
 }
@@ -23,9 +27,8 @@ HttpProxyDialog::HttpProxyDialog(PreferenceDialog::ServiceEntry* entry)
 HttpProxyDialog::~HttpProxyDialog() {
 }
 
-void HttpProxyDialog::AddFilterItem(
-    const PreferenceDialog::HttpHeaderFilter& filter, int filter_index,
-    int index) {
+void HttpProxyDialog::AddFilterItem(const HttpProxyConfig::HeaderFilter& filter,
+                                    int filter_index, int index) {
   if (index == -1)
     index = filter_list_.GetItemCount();
 
@@ -38,14 +41,13 @@ void HttpProxyDialog::AddFilterItem(
   filter_list_.InsertItem(LVIF_IMAGE | LVIF_PARAM, index, NULL, 0, 0, image - 1,
                           filter_index);
   filter_list_.AddItem(index, 1, kActions[filter.action]);
-  filter_list_.AddItem(index, 2, filter.name);
-  filter_list_.AddItem(index, 3, filter.value);
-  filter_list_.AddItem(index, 4, filter.replace);
+  filter_list_.AddItem(index, 2, CString(filter.name.c_str()));
+  filter_list_.AddItem(index, 3, CString(filter.value.c_str()));
+  filter_list_.AddItem(index, 4, CString(filter.replace.c_str()));
 }
 
 BOOL HttpProxyDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
-  port_ = config_->remote_proxy_port;
-  remote_password_ = config_->remote_proxy_password;
+  port_ = config_->remote_proxy_port_;
 
   DoDataExchange();
 
@@ -77,28 +79,29 @@ BOOL HttpProxyDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   delete_button_.SetBitmap(::AtlLoadBitmapImage(IDB_DOCUMENT_CLOSE));
   down_button_.SetBitmap(::AtlLoadBitmapImage(IDB_ARROW_DOWN));
 
-  use_remote_proxy_check_.SetCheck(config_->use_remote_proxy);
-  address_edit_.SetWindowText(config_->remote_proxy_host);
+  use_remote_proxy_check_.SetCheck(config_->use_remote_proxy_);
+  address_edit_.SetWindowText(CString(config_->remote_proxy_host_.c_str()));
   port_spin_.SetRange32(0, 65535);
-  auth_remote_check_.SetCheck(config_->auth_remote_proxy);
-  remote_user_edit_.SetWindowText(config_->remote_proxy_user);
+  auth_remote_check_.SetCheck(config_->auth_remote_proxy_);
+  remote_user_edit_.SetWindowText(CString(config_->remote_proxy_user_.c_str()));
+  remote_password_edit_.SetWindowText(
+      CString(config_->remote_proxy_password_.c_str()));
 
   int filter_index = 0;
-  for (auto i = config_->header_filters.begin(),
-            l = config_->header_filters.end(); i != l; ++i)
+  for (auto i = filters_.begin(), l = filters_.end(); i != l; ++i)
     AddFilterItem(*i, filter_index++, -1);
 
   return TRUE;
 }
 
 void HttpProxyDialog::OnAddFilter(UINT notify_code, int id, CWindow control) {
-  PreferenceDialog::HttpHeaderFilter filter = { true };
+  HttpProxyConfig::HeaderFilter filter = { true };
   HttpHeaderFilterDialog dialog(&filter);
   if (dialog.DoModal(m_hWnd) != IDOK)
     return;
 
-  config_->header_filters.push_back(filter);
-  AddFilterItem(filter, config_->header_filters.size() - 1, -1);
+  filters_.push_back(filter);
+  AddFilterItem(filter, filters_.size() - 1, -1);
   filter_list_.SelectItem(filter_list_.GetItemCount());
 }
 
@@ -108,8 +111,7 @@ void HttpProxyDialog::OnEditFilter(UINT notify_code, int id, CWindow control) {
 
   int index = filter_list_.GetSelectedIndex();
   int filter_index = filter_list_.GetItemData(index);
-  PreferenceDialog::HttpHeaderFilter& filter =
-      config_->header_filters[filter_index];
+  HttpProxyConfig::HeaderFilter& filter = filters_[filter_index];
 
   HttpHeaderFilterDialog dialog(&filter);
   if (dialog.DoModal(m_hWnd) != IDOK)
@@ -128,7 +130,7 @@ void HttpProxyDialog::OnDeleteFilter(UINT notify_code, int id,
   int index = filter_list_.GetSelectedIndex();
   int filter_index = filter_list_.GetItemData(index);
   filter_list_.DeleteItem(index);
-  config_->header_filters[filter_index].removed = true;
+  filters_.erase(filters_.begin() + filter_index);
 }
 
 void HttpProxyDialog::OnScrollUp(UINT notify_code, int id, CWindow control) {
@@ -154,7 +156,7 @@ void HttpProxyDialog::OnOk(UINT notify_code, int id, CWindow control) {
   DoDataExchange(DDX_SAVE);
 
   if (use_remote_proxy_check_.GetCheck()) {
-    if (address_edit_.GetWindowTextLength() == 0) {
+    if (address_edit_.GetWindowTextLength() <= 0) {
       message.LoadString(IDS_NOT_SPECIFIED);
       balloon.pszText = message;
       address_edit_.ShowBalloonTip(&balloon);
@@ -169,51 +171,31 @@ void HttpProxyDialog::OnOk(UINT notify_code, int id, CWindow control) {
     }
   }
 
-  config_->use_remote_proxy = use_remote_proxy_check_.GetCheck();
-  address_edit_.GetWindowText(config_->remote_proxy_host);
-  config_->remote_proxy_port = port_;
-  config_->auth_remote_proxy = auth_remote_check_.GetCheck();
-  remote_user_edit_.GetWindowText(config_->remote_proxy_user);
-  config_->remote_proxy_password = remote_password_;
+  config_->use_remote_proxy_ = use_remote_proxy_check_.GetCheck();
 
-  auto& filters = config_->header_filters;
-  auto i = filters.begin();
-  while (i != filters.end()) {
-    if (i->removed) {
-      if (i == filters.begin()) {
-        filters.erase(i);
-        i = filters.begin();
-        continue;
-      } else {
-        filters.erase(i--);
-      }
-    }
+  std::string temp;
 
-    ++i;
-  }
+  temp.resize(::GetWindowTextLengthA(address_edit_));
+  ::GetWindowTextA(address_edit_, &temp[0], temp.size() + 1);
+  config_->remote_proxy_host_ = temp;
+
+  config_->remote_proxy_port_ = port_;
+  config_->auth_remote_proxy_ = auth_remote_check_.GetCheck();
+
+  temp.resize(::GetWindowTextLengthA(remote_user_edit_));
+  ::GetWindowTextA(remote_user_edit_, &temp[0], temp.size() + 1);
+  config_->remote_proxy_user_ = temp;
+
+  temp.resize(::GetWindowTextLengthA(remote_password_edit_));
+  ::GetWindowTextA(remote_password_edit_, &temp[0], temp.size() + 1);
+  config_->remote_proxy_password_ = temp;
+
+  config_->header_filters_ = std::move(filters_);
 
   EndDialog(IDOK);
 }
 
 void HttpProxyDialog::OnCancel(UINT notify_code, int id, CWindow control) {
-  auto& filters = config_->header_filters;
-  auto i = filters.begin();
-  while (i != filters.end()) {
-    if (i->added) {
-      if (i == filters.begin()) {
-        filters.erase(i);
-        i = filters.begin();
-        continue;
-      } else {
-        filters.erase(i--);
-      }
-    } else if (i->removed) {
-      i->removed = false;
-    }
-
-    ++i;
-  }
-
   EndDialog(IDCANCEL);
 }
 

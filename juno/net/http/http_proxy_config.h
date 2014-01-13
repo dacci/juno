@@ -32,7 +32,10 @@ class HttpProxyConfig : public ServiceConfig {
 
   virtual ~HttpProxyConfig();
 
+  HttpProxyConfig& operator=(const HttpProxyConfig& other);
+
   bool Load(const RegistryKey& key);
+  bool Save(RegistryKey* key);
 
   int use_remote_proxy();
   std::string remote_proxy_host();
@@ -44,6 +47,9 @@ class HttpProxyConfig : public ServiceConfig {
 
  private:
   friend class HttpProxy;
+  friend class HttpProxyDialog;
+
+  void SetBasicAuthorization();
 
   madoka::concurrent::ReadWriteLock lock_;
 

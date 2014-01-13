@@ -11,8 +11,11 @@
 #include <atlddx.h>
 #include <atldlgs.h>
 
+#include "net/http/http_proxy_config.h"
 #include "res/resource.h"
 #include "ui/preference_dialog.h"
+
+class ServiceConfig;
 
 class HttpProxyDialog
     : public CDialogImpl<HttpProxyDialog>,
@@ -20,7 +23,7 @@ class HttpProxyDialog
  public:
   static const UINT IDD = IDD_HTTP_PROXY;
 
-  explicit HttpProxyDialog(PreferenceDialog::ServiceEntry* entry);
+  explicit HttpProxyDialog(ServiceConfig* entry);
   ~HttpProxyDialog();
 
   BEGIN_DDX_MAP(HttpProxyDialog)
@@ -31,7 +34,7 @@ class HttpProxyDialog
     DDX_CONTROL_HANDLE(IDC_PORT_SPIN, port_spin_)
     DDX_CONTROL_HANDLE(IDC_AUTH_REMOTE, auth_remote_check_)
     DDX_CONTROL_HANDLE(IDC_REMOTE_USER, remote_user_edit_)
-    DDX_TEXT(IDC_REMOTE_PASSWORD, remote_password_)
+    DDX_CONTROL_HANDLE(IDC_REMOTE_PASSWORD, remote_password_edit_)
     DDX_CONTROL_HANDLE(IDC_FILTER_LIST, filter_list_)
     DDX_CONTROL_HANDLE(IDC_ADD_BUTTON, add_button_)
     DDX_CONTROL_HANDLE(IDC_EDIT_BUTTON, edit_button_)
@@ -55,7 +58,7 @@ class HttpProxyDialog
   END_MSG_MAP()
 
  private:
-  void AddFilterItem(const PreferenceDialog::HttpHeaderFilter& filter,
+  void AddFilterItem(const HttpProxyConfig::HeaderFilter& filter,
                      int filter_index, int index);
 
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
@@ -70,7 +73,8 @@ class HttpProxyDialog
 
   LRESULT OnFilterListDoubleClicked(LPNMHDR header);
 
-  PreferenceDialog::HttpProxyEntry* config_;
+  HttpProxyConfig* const config_;
+  std::vector<HttpProxyConfig::HeaderFilter> filters_;
 
   CButton use_remote_proxy_check_;
   CEdit address_edit_;
@@ -79,7 +83,7 @@ class HttpProxyDialog
   CUpDownCtrl port_spin_;
   CButton auth_remote_check_;
   CEdit remote_user_edit_;
-  CString remote_password_;
+  CEdit remote_password_edit_;
   CListViewCtrl filter_list_;
   CImageList image_list_;
   CButton add_button_;

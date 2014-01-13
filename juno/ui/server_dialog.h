@@ -14,14 +14,15 @@
 #include "res/resource.h"
 #include "ui/preference_dialog.h"
 
+class ServerConfig;
+
 class ServerDialog
     : public CDialogImpl<ServerDialog>,
       public CWinDataExchange<ServerDialog> {
  public:
   static const UINT IDD = IDD_SERVER;
 
-  explicit ServerDialog(PreferenceDialog* parent,
-                        PreferenceDialog::ServerEntry* entry);
+  ServerDialog(PreferenceDialog* parent, ServerConfig* entry);
   ~ServerDialog();
 
   BEGIN_DDX_MAP(ServerDialog)
@@ -51,8 +52,8 @@ class ServerDialog
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
 
-  PreferenceDialog* parent_;
-  PreferenceDialog::ServerEntry* entry_;
+  PreferenceDialog* const parent_;
+  ServerConfig* const entry_;
 
   CEdit name_edit_;
   CComboBox bind_combo_;

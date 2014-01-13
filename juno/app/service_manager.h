@@ -9,9 +9,16 @@
 #include <string>
 #include <vector>
 
+#include "misc/registry_key.h"
+
+#ifdef CreateService
+#undef CreateService
+#endif
+
 class ServiceProvider;
 class ServiceConfig;
 class Service;
+class ServerConfig;
 class Server;
 
 class ServiceManager {
@@ -24,20 +31,38 @@ class ServiceManager {
   void StopServices();
 
   bool LoadServers();
-  void UnloadServers();
   bool StartServers();
   void StopServers();
+  void UnloadServers();
+  void ClearServers();
+
+  ServiceProvider* GetProvider(const std::string& name) const;
+
+  ServiceConfig* GetServiceConfig(const std::string& name) const;
+  void CopyServiceConfigs(std::map<std::string, ServiceConfig*>* configs) const;
+
+  void CopyServerConfigs(std::map<std::string, ServerConfig*>* configs) const;
+
+  bool UpdateConfiguration(
+      std::map<std::string, ServiceConfig*>&& service_configs,
+      std::map<std::string, ServerConfig*>&& server_configs);
+
+  const std::map<std::string, ServiceProvider*>& providers() const {
+    return providers_;
+  }
 
  private:
-  typedef std::map<std::string, Service*> ServiceMap;
+  bool LoadService(const RegistryKey& parent, const std::string& key_name);
+  bool SaveService(const RegistryKey& parent, ServiceConfig* config);
+  bool CreateService(ServiceConfig* config);
+
+  bool LoadServer(const RegistryKey& parent, const std::string& key_name);
+  bool SaveServer(const RegistryKey& parent, ServerConfig* config);
+  bool CreateServer(ServerConfig* config);
 
   std::map<std::string, ServiceProvider*> providers_;
-  std::map<std::string, ServiceConfig*> configs_;
-
-  Service* LoadService(HKEY parent, const std::string& key_name);
-  Server* LoadServer(HKEY parent, const std::string& key_name);
-
-  ServiceMap services_;
+  std::map<std::string, ServiceConfig*> service_configs_;
+  std::map<std::string, ServerConfig*> server_configs_;
   std::vector<Server*> servers_;
 };
 

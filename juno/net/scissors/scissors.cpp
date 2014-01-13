@@ -23,16 +23,6 @@ Scissors::~Scissors() {
 }
 
 bool Scissors::Init() {
-  if (config_->remote_udp())
-    resolver_.ai_socktype = SOCK_DGRAM;
-  else
-    resolver_.ai_socktype = SOCK_STREAM;
-
-  // XXX(dacci): saving resolved name could be harmful.
-  if (!resolver_.Resolve(config_->remote_address().c_str(),
-                         config_->remote_port()))
-    return false;
-
   if (config_->remote_ssl()) {
     credential_ = new SchannelCredential();
     if (credential_ == NULL)

@@ -4,7 +4,6 @@
 #define JUNO_NET_SCISSORS_SCISSORS_H_
 
 #include <madoka/concurrent/critical_section.h>
-#include <madoka/net/address_info.h>
 
 #include <list>
 #include <map>
@@ -36,6 +35,7 @@ class Scissors : public Service {
   void OnError(DWORD error);
 
  private:
+  friend class ScissorsProvider;
   friend class ScissorsTcpSession;
   friend class ScissorsUdpSession;
 
@@ -55,7 +55,6 @@ class Scissors : public Service {
 
   bool stopped_;
 
-  madoka::net::AddressInfo resolver_;
   SchannelCredential* credential_;
 };
 

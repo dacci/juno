@@ -259,6 +259,7 @@
     <ClInclude Include="net\tunneling_service.h" />
     <ClInclude Include="net\udp_server.h" />
     <ClInclude Include="res\resource.h" />
+    <ClInclude Include="app\server_config.h" />
     <ClInclude Include="ui\http_header_filter_dialog.h" />
     <ClInclude Include="ui\http_proxy_dialog.h" />
     <ClInclude Include="ui\main_frame.h" />

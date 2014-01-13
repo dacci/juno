@@ -175,6 +175,18 @@ bool RegistryKey::QueryInteger(const wchar_t* name, int* value) const {
   return true;
 }
 
+bool RegistryKey::SetInteger(const char* name, int value) {
+  return ::RegSetValueExA(key_, name, 0, REG_DWORD,
+                          reinterpret_cast<BYTE*>(&value),
+                          sizeof(value)) == ERROR_SUCCESS;
+}
+
+bool RegistryKey::SetInteger(const wchar_t* name, int value) {
+  return ::RegSetValueExW(key_, name, 0, REG_DWORD,
+                          reinterpret_cast<BYTE*>(&value),
+                          sizeof(value)) == ERROR_SUCCESS;
+}
+
 bool RegistryKey::QueryBinary(const char* name, void* data, int* length) const {
   DWORD type, size = 0;
   LSTATUS status = ::RegQueryValueExA(key_, name, NULL, &type, NULL, &size);
@@ -258,6 +270,14 @@ bool RegistryKey::EnumerateKey(int index, std::wstring* name) {
 
   name->assign(buffer, length);
   return true;
+}
+
+bool RegistryKey::DeleteKey(const char* sub_key) {
+  return ::RegDeleteTreeA(key_, sub_key) == ERROR_SUCCESS;
+}
+
+bool RegistryKey::DeleteKey(const wchar_t* sub_key) {
+  return ::RegDeleteTreeW(key_, sub_key) == ERROR_SUCCESS;
 }
 
 RegistryKey& RegistryKey::operator=(RegistryKey&& other) {

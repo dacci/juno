@@ -2,15 +2,17 @@
 
 #include "ui/services_page.h"
 
+#include <memory>
 #include <utility>
 
-#include "ui/http_proxy_dialog.h"
+#include "app/service_config.h"
+#include "app/service_provider.h"
+#include "misc/string_util.h"
 #include "ui/provider_dialog.h"
-#include "ui/scissors_dialog.h"
-#include "ui/socks_proxy_dialog.h"
 
-ServicesPage::ServicesPage(PreferenceDialog* parent)
-    : parent_(parent), initialized_() {
+ServicesPage::ServicesPage(PreferenceDialog* parent,
+                           std::map<std::string, ServiceConfig*>* configs)
+    : parent_(parent), configs_(configs), initialized_() {
 }
 
 ServicesPage::~ServicesPage() {
@@ -20,13 +22,13 @@ void ServicesPage::OnPageRelease() {
   delete this;
 }
 
-void ServicesPage::AddServiceItem(const PreferenceDialog::ServiceEntry& entry,
-                                  int index) {
+void ServicesPage::AddServiceItem(ServiceConfig* entry, int index) {
   if (index == -1)
     index = service_list_.GetItemCount();
 
-  service_list_.InsertItem(index, entry.name);
-  service_list_.AddItem(index, 1, entry.provider);
+  service_list_.InsertItem(index, CString(entry->name_.c_str()));
+  service_list_.AddItem(index, 1, CString(entry->provider_name_.c_str()));
+  service_list_.SetItemData(index, reinterpret_cast<DWORD_PTR>(entry));
 }
 
 BOOL ServicesPage::OnInitDialog(CWindow focus, LPARAM init_param) {
@@ -44,9 +46,8 @@ BOOL ServicesPage::OnInitDialog(CWindow focus, LPARAM init_param) {
   service_list_.AddColumn(caption, 1);
   service_list_.SetColumnWidth(1, 150);
 
-  for (auto i = parent_->services_.begin(), l = parent_->services_.end();
-       i != l; ++i)
-    AddServiceItem(*i, -1);
+  for (auto i = configs_->begin(), l = configs_->end(); i != l; ++i)
+    AddServiceItem(i->second, -1);
 
   edit_button_.EnableWindow(FALSE);
   delete_button_.EnableWindow(FALSE);
@@ -57,74 +58,53 @@ BOOL ServicesPage::OnInitDialog(CWindow focus, LPARAM init_param) {
 }
 
 void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
-  PreferenceDialog::ServiceEntry entry;
-
-  ProviderDialog provider_dialog(parent_, &entry);
-  INT_PTR provider = provider_dialog.DoModal(m_hWnd);
-  if (provider < 0)
+  ProviderDialog provider_dialog(parent_);
+  if (provider_dialog.DoModal(m_hWnd) != IDOK)
     return;
 
-  INT_PTR dialog_result = IDCANCEL;
+  ServiceProvider* provider = provider_dialog.GetProvider();
+  if (provider == NULL)
+    return;
 
-  switch (provider) {
-    case 0: {  // HttpProxy
-      entry.extra = new PreferenceDialog::HttpProxyEntry();
+  std::unique_ptr<ServiceConfig> config(provider->CreateConfig());
+  config->name_ = provider_dialog.name();
+  config->provider_name_ = provider_dialog.GetProviderName();
+  config->provider_ = provider;
 
-      HttpProxyDialog dialog(&entry);
-      dialog_result = dialog.DoModal(m_hWnd);
-      break;
-    }
-    case 1: {  // SocksProxy
-      // no configuration
-      dialog_result = IDOK;
-      break;
-    }
-    case 2: {  // Scissors
-      entry.extra = new PreferenceDialog::ScissorsEntry();
-
-      ScissorsDialog dialog(&entry);
-      dialog_result = dialog.DoModal(m_hWnd);
-      break;
-    }
-  }
-
+  INT_PTR dialog_result = provider->Configure(config.get(), *parent_);
   if (dialog_result != IDOK)
     return;
 
-  parent_->services_.push_back(std::move(entry));
-  AddServiceItem(parent_->services_.back(), -1);
+  configs_->insert(std::make_pair(config->name_, config.get()));
+  AddServiceItem(config.get(), -1);
   service_list_.SelectItem(service_list_.GetItemCount());
+
+  config.release();
 }
 
 void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
   int index = service_list_.GetSelectedIndex();
-  PreferenceDialog::ServiceEntry& entry = parent_->services_[index];
+  ServiceConfig* config = reinterpret_cast<ServiceConfig*>(
+      service_list_.GetItemData(index));
 
-  INT_PTR dialog_result = IDCANCEL;
-
-  if (entry.provider.Compare(_T("HttpProxy")) == 0) {
-    HttpProxyDialog dialog(&entry);
-    dialog_result = dialog.DoModal(m_hWnd);
-  } else if (entry.provider.Compare(_T("SocksProxy")) == 0) {
-    // no configuration
-    dialog_result = IDOK;
-  } else if (entry.provider.Compare(_T("Scissors")) == 0) {
-    ScissorsDialog dialog(&entry);
-    dialog_result = dialog.DoModal(m_hWnd);
-  }
-
-  if (dialog_result != IDOK)
+  if (config->provider_->Configure(config, *parent_) != IDOK)
     return;
 
   service_list_.DeleteItem(index);
-  AddServiceItem(entry, index);
+  AddServiceItem(config, index);
   service_list_.SelectItem(index);
 }
 
 void ServicesPage::OnDeleteService(UINT notify_code, int id, CWindow control) {
   int index = service_list_.GetSelectedIndex();
+  ServiceConfig* config = reinterpret_cast<ServiceConfig*>(
+      service_list_.GetItemData(index));
+
   service_list_.DeleteItem(index);
-  parent_->services_.erase(parent_->services_.begin() + index);
+  configs_->erase(config->name_);
+  delete config;
+
+  service_list_.SelectItem(index);
 }
 
 LRESULT ServicesPage::OnServiceListChanged(LPNMHDR header) {

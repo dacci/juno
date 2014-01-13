@@ -11,8 +11,13 @@
 #include <atlddx.h>
 #include <atldlgs.h>
 
+#include <string>
+#include <vector>
+
 #include "res/resource.h"
 #include "ui/preference_dialog.h"
+
+class ServiceProvider;
 
 class ProviderDialog
     : public CDialogImpl<ProviderDialog>,
@@ -20,8 +25,7 @@ class ProviderDialog
  public:
   static const UINT IDD = IDD_PROVIDER;
 
-  ProviderDialog(PreferenceDialog* parent,
-                 PreferenceDialog::ServiceEntry* entry);
+  explicit ProviderDialog(PreferenceDialog* parent);
   ~ProviderDialog();
 
   BEGIN_DDX_MAP(ProviderDialog)
@@ -36,17 +40,28 @@ class ProviderDialog
     COMMAND_ID_HANDLER_EX(IDCANCEL, OnCancel)
   END_MSG_MAP()
 
+  const std::string& GetProviderName() const;
+  ServiceProvider* GetProvider() const;
+
+  const std::string& name() const {
+    return name_;
+  }
+
  private:
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
 
-  PreferenceDialog* parent_;
-  PreferenceDialog::ServiceEntry* entry_;
+  PreferenceDialog* const parent_;
+
+  std::vector<std::string> provider_names_;
+  std::vector<ServiceProvider*> providers_;
+  std::string name_;
 
   CEdit name_edit_;
   CComboBox provider_combo_;
+  int provider_index_;
 };
 
 #endif  // JUNO_UI_PROVIDER_DIALOG_H_

@@ -11,6 +11,7 @@
 #include <atlddx.h>
 #include <atldlgs.h>
 
+#include "net/http/http_proxy_config.h"
 #include "res/resource.h"
 #include "ui/preference_dialog.h"
 
@@ -20,7 +21,7 @@ class HttpHeaderFilterDialog
  public:
   static const UINT IDD = IDD_HTTP_HEADER_FILTER;
 
-  explicit HttpHeaderFilterDialog(PreferenceDialog::HttpHeaderFilter* filter);
+  explicit HttpHeaderFilterDialog(HttpProxyConfig::HeaderFilter* filter);
   ~HttpHeaderFilterDialog();
 
   BEGIN_DDX_MAP(HttpHeaderFilterDialog)
@@ -45,7 +46,7 @@ class HttpHeaderFilterDialog
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
 
-  PreferenceDialog::HttpHeaderFilter* filter_;
+  HttpProxyConfig::HeaderFilter* filter_;
 
   CButton request_check_;
   CButton response_check_;

@@ -4,9 +4,11 @@
 
 #include <iphlpapi.h>
 
-ServerDialog::ServerDialog(PreferenceDialog* parent,
-                           PreferenceDialog::ServerEntry* entry)
-    : entry_(entry), parent_(parent) {
+#include "app/server_config.h"
+#include "misc/string_util.h"
+
+ServerDialog::ServerDialog(PreferenceDialog* parent, ServerConfig* entry)
+    : parent_(parent), entry_(entry) {
 }
 
 ServerDialog::~ServerDialog() {
@@ -52,17 +54,17 @@ void ServerDialog::FillBindCombo() {
 void ServerDialog::FillServiceCombo() {
   service_combo_.Clear();
 
-  for (auto i = parent_->services_.begin(), l = parent_->services_.end();
-       i != l; ++i)
-    service_combo_.AddString(i->name);
+  auto& services = parent_->service_configs_;
+  for (auto i = services.begin(), l = services.end(); i != l; ++i)
+    service_combo_.AddString(CString(i->first.c_str()));
 }
 
 BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
-  listen_ = entry_->listen;
+  listen_ = entry_->listen_;
 
   DoDataExchange();
 
-  name_edit_.SetWindowText(entry_->name);
+  name_edit_.SetWindowText(CString(entry_->name_.c_str()));
 
   FillBindCombo();
 
@@ -71,11 +73,11 @@ BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
 
   FillServiceCombo();
 
-  bind_combo_.SetWindowText(entry_->bind);
+  bind_combo_.SetWindowText(CString(entry_->bind_.c_str()));
   listen_spin_.SetRange32(0, 65535);
-  type_combo_.SetCurSel(entry_->type - SOCK_STREAM);
-  service_combo_.SelectString(0, entry_->service);
-  enable_check_.SetCheck(entry_->enabled);
+  type_combo_.SetCurSel(entry_->type_ - SOCK_STREAM);
+  service_combo_.SelectString(0, CString(entry_->service_name_.c_str()));
+  enable_check_.SetCheck(entry_->enabled_);
 
   return TRUE;
 }
@@ -86,7 +88,7 @@ void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
 
   DoDataExchange(DDX_SAVE);
 
-  if (name_edit_.GetWindowTextLength() == 0) {
+  if (name_edit_.GetWindowTextLength() <= 0) {
     message.LoadString(IDS_NAME_NOT_SPECIFIED);
     balloon.pszText = message.GetString();
     name_edit_.ShowBalloonTip(&balloon);
@@ -100,12 +102,23 @@ void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
     return;
   }
 
-  name_edit_.GetWindowText(entry_->name);
-  bind_combo_.GetWindowText(entry_->bind);
-  entry_->listen = listen_;
-  entry_->type = type_combo_.GetCurSel() + SOCK_STREAM;
-  service_combo_.GetWindowText(entry_->service);
-  entry_->enabled = enable_check_.GetCheck();
+  std::string temp;
+
+  temp.resize(::GetWindowTextLengthA(name_edit_));
+  ::GetWindowTextA(name_edit_, &temp[0], temp.size() + 1);
+  entry_->name_ = temp;
+
+  temp.resize(::GetWindowTextLengthA(bind_combo_));
+  ::GetWindowTextA(bind_combo_, &temp[0], temp.size() + 1);
+  entry_->bind_ = temp;
+
+  temp.resize(::GetWindowTextLengthA(service_combo_));
+  ::GetWindowTextA(service_combo_, &temp[0], temp.size() + 1);
+  entry_->service_name_ = temp;
+
+  entry_->listen_ = listen_;
+  entry_->type_ = type_combo_.GetCurSel() + SOCK_STREAM;
+  entry_->enabled_ = enable_check_.GetCheck();
 
   EndDialog(IDOK);
 }

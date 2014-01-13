@@ -2,8 +2,7 @@
 
 #include "ui/socks_proxy_dialog.h"
 
-SocksProxyDialog::SocksProxyDialog(PreferenceDialog::ServiceEntry* entry)
-    : entry_(entry) {
+SocksProxyDialog::SocksProxyDialog(ServiceConfig* config) : config_(config) {
 }
 
 SocksProxyDialog::~SocksProxyDialog() {

@@ -4,6 +4,8 @@
 
 #include <assert.h>
 
+#include "net/scissors/scissors_config.h"
+
 #ifdef LEGACY_PLATFORM
   #define DELETE_THIS() \
     delete this
@@ -20,6 +22,7 @@ FILETIME ScissorsUdpSession::kTimerDueTime = {
 ScissorsUdpSession::ScissorsUdpSession(Scissors* service,
                                        Service::Datagram* datagram)
     : service_(service), datagram_(datagram), remote_(), buffer_(), timer_() {
+  resolver_.ai_socktype = SOCK_DGRAM;
 #ifndef LEGACY_PLATFORM
   timer_ = ::CreateThreadpoolTimer(OnTimeout, this, NULL);
 #endif  // LEGACY_PLATFORM
@@ -51,6 +54,10 @@ ScissorsUdpSession::~ScissorsUdpSession() {
 }
 
 bool ScissorsUdpSession::Start() {
+  if (!resolver_.Resolve(service_->config_->remote_address().c_str(),
+                         service_->config_->remote_port()))
+    return false;
+
   remote_ = new AsyncDatagramSocket();
   if (remote_ == NULL)
     return false;
@@ -59,7 +66,7 @@ bool ScissorsUdpSession::Start() {
   if (buffer_ == NULL)
     return false;
 
-  if (!remote_->Connect(*service_->resolver_))
+  if (!remote_->Connect(*resolver_))
     return false;
 
   if (!remote_->SendAsync(datagram_->data, datagram_->data_length, 0, this))

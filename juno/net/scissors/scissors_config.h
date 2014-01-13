@@ -15,7 +15,10 @@ class ScissorsConfig : public ServiceConfig {
 
   virtual ~ScissorsConfig();
 
+  ScissorsConfig& operator=(const ScissorsConfig& other);
+
   bool Load(const RegistryKey& key);
+  bool Save(RegistryKey* key);
 
   std::string remote_address();
   void set_remote_address(const std::string& remote_address);

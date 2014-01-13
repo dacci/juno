@@ -2,7 +2,11 @@
 
 #include "app/service_manager.h"
 
+#include <memory>
+
+#include "app/server_config.h"
 #include "app/service.h"
+#include "app/service_config.h"
 #include "misc/registry_key-inl.h"
 #include "net/http/http_proxy_provider.h"
 #include "net/scissors/scissors_provider.h"
@@ -36,12 +40,13 @@ ServiceManager::ServiceManager() {
 }
 
 ServiceManager::~ServiceManager() {
-  UnloadServers();
+  ClearServers();
   UnloadServices();
 
-  for (auto i = configs_.begin(), l = configs_.end(); i != l; ++i)
+  for (auto i = service_configs_.begin(), l = service_configs_.end(); i != l;
+       ++i)
     delete i->second;
-  configs_.clear();
+  service_configs_.clear();
 
   for (auto i = providers_.begin(), l = providers_.end(); i != l; ++i)
     delete i->second;
@@ -62,9 +67,7 @@ bool ServiceManager::LoadServices() {
     if (!services_key.EnumerateKey(i, &name))
       break;
 
-    Service* service = LoadService(services_key, name);
-    if (service != NULL)
-      services_[name] = service;
+    LoadService(services_key, name);
   }
 
   return true;
@@ -73,17 +76,20 @@ bool ServiceManager::LoadServices() {
 void ServiceManager::UnloadServices() {
   StopServices();
 
-  for (auto i = services_.begin(), l = services_.end(); i != l; ++i)
-    delete i->second;
-
-  services_.clear();
+  for (auto i = service_configs_.begin(), l = service_configs_.end(); i != l;
+       ++i) {
+    delete i->second->instance_;
+    i->second->instance_ = NULL;
+  }
 }
 
 void ServiceManager::StopServices() {
   StopServers();
 
-  for (auto i = services_.begin(), l = services_.end(); i != l; ++i)
-    i->second->Stop();
+  for (auto i = service_configs_.begin(), l = service_configs_.end(); i != l;
+       ++i)
+    if (i->second->instance_ != NULL)
+      i->second->instance_->Stop();
 }
 
 bool ServiceManager::LoadServers() {
@@ -100,21 +106,10 @@ bool ServiceManager::LoadServers() {
     if (!servers_key.EnumerateKey(i, &name))
       break;
 
-    Server* server = LoadServer(servers_key, name);
-    if (server != NULL)
-      servers_.push_back(server);
+    LoadServer(servers_key, name);
   }
 
   return true;
-}
-
-void ServiceManager::UnloadServers() {
-  StopServers();
-
-  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
-    delete *i;
-
-  servers_.clear();
 }
 
 bool ServiceManager::StartServers() {
@@ -133,79 +128,252 @@ void ServiceManager::StopServers() {
     (*i)->Stop();
 }
 
-Service* ServiceManager::LoadService(HKEY parent, const std::string& key_name) {
-  RegistryKey reg_key;
-  if (!reg_key.Open(parent, key_name))
-    return NULL;
+void ServiceManager::UnloadServers() {
+  StopServers();
 
-  std::string provider_name;
-  if (!reg_key.QueryString(kProviderValueName, &provider_name))
-    return NULL;
+  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
+    delete *i;
 
-  auto pair = providers_.find(provider_name);
+  servers_.clear();
+}
+
+void ServiceManager::ClearServers() {
+  UnloadServers();
+
+  for (auto i = server_configs_.begin(), l = server_configs_.end(); i != l; ++i)
+    delete i->second;
+
+  server_configs_.clear();
+}
+
+ServiceProvider* ServiceManager::GetProvider(const std::string& name) const {
+  auto pair = providers_.find(name);
   if (pair == providers_.end())
     return NULL;
 
-  ServiceConfig* config = pair->second->LoadConfig(reg_key);
-  if (config == NULL)
-    return NULL;
-
-  configs_.insert(std::make_pair(key_name, config));
-
-  return pair->second->CreateService(config);
+  return pair->second;
 }
 
-Server* ServiceManager::LoadServer(HKEY parent, const std::string& key_name) {
+ServiceConfig* ServiceManager::GetServiceConfig(const std::string& name) const {
+  auto pair = service_configs_.find(name);
+  if (pair == service_configs_.end())
+    return NULL;
+
+  return pair->second;
+}
+
+void ServiceManager::CopyServiceConfigs(
+    std::map<std::string, ServiceConfig*>* configs) const {
+  for (auto i = service_configs_.begin(), l = service_configs_.end(); i != l;
+       ++i) {
+    ServiceConfig* copied = i->second->provider_->CopyConfig(i->second);
+    configs->insert(std::make_pair(i->first, copied));
+  }
+}
+
+void ServiceManager::CopyServerConfigs(
+    std::map<std::string, ServerConfig*>* configs) const {
+  for (auto i = server_configs_.begin(), l = server_configs_.end(); i != l;
+       ++i) {
+    ServerConfig* copied = new ServerConfig(*i->second);
+    configs->insert(std::make_pair(i->first, copied));
+  }
+}
+
+bool ServiceManager::UpdateConfiguration(
+    std::map<std::string, ServiceConfig*>&& new_services,
+    std::map<std::string, ServerConfig*>&& new_servers) {
+  UnloadServers();
+
+  RegistryKey config_key;
+  config_key.Create(HKEY_CURRENT_USER, kConfigKeyName);
+
+  RegistryKey services_key;
+  services_key.Open(config_key, kServicesKeyName);
+
+  // removed services
+  for (auto i = service_configs_.begin();;) {
+    if (i == service_configs_.end())
+      break;
+
+    auto updated = new_services.find(i->first);
+    if (updated == new_services.end()) {
+      services_key.DeleteKey(i->first.c_str());
+
+      i->second->instance_->Stop();
+      delete i->second->instance_;
+      delete i->second;
+      service_configs_.erase(i++);
+    } else {
+      ++i;
+    }
+  }
+
+  // added or updated services
+  for (auto i = new_services.begin(), l = new_services.end(); i != l; ++i) {
+    SaveService(services_key, i->second);
+
+    auto existing = service_configs_.find(i->first);
+    if (existing == service_configs_.end()) {
+      // added service
+      CreateService(i->second);
+      service_configs_.insert(*i);
+    } else {
+      // updated service
+      i->second->provider_->UpdateConfig(i->second->instance_, i->second);
+      delete i->second;
+    }
+  }
+
+  RegistryKey servers_key;
+  servers_key.Create(config_key, kServersKeyName);
+
+  // removed servers
+  for (auto i = server_configs_.begin();;) {
+    if (i == server_configs_.end())
+      break;
+
+    auto updated = new_servers.find(i->first);
+    if (updated == new_servers.end()) {
+      servers_key.DeleteKey(i->first.c_str());
+
+      delete i->second;
+      server_configs_.erase(i++);
+    } else {
+      ++i;
+    }
+  }
+
+  // added or updated servers
+  for (auto i = new_servers.begin(), l = new_servers.end(); i != l; ++i) {
+    SaveServer(servers_key, i->second);
+
+    auto existing = server_configs_.find(i->first);
+    if (existing == server_configs_.end()) {
+      server_configs_.insert(*i);
+    } else {
+      delete existing->second;
+      existing->second = i->second;
+    }
+  }
+
+  for (auto i = server_configs_.begin(), l = server_configs_.end(); i != l; ++i)
+    CreateServer(i->second);
+
+  StartServers();
+
+  return true;
+}
+
+bool ServiceManager::LoadService(const RegistryKey& parent,
+                                 const std::string& key_name) {
   RegistryKey reg_key;
   if (!reg_key.Open(parent, key_name))
-    return NULL;
+    return false;
 
-  int enabled = reg_key.QueryInteger(kEnabledValueName);
-  if (!enabled)
-    return NULL;
+  std::string provider_name;
+  if (!reg_key.QueryString(kProviderValueName, &provider_name))
+    return false;
 
-  std::string service;
-  if (!reg_key.QueryString(kServiceValueName, &service))
-    return NULL;
+  ServiceProvider* provider = GetProvider(provider_name);
+  if (provider == NULL)
+    return false;
 
-  auto service_entry = services_.find(service);
-  if (service_entry == services_.end())
-    return NULL;
+  ServiceConfig* config = provider->LoadConfig(reg_key);
+  if (config == NULL)
+    return false;
 
-  int listen = reg_key.QueryInteger(kListenValueName);
-  if (listen == 0)
-    return NULL;
+  config->name_ = key_name;
+  config->provider_name_ = provider_name;
+  config->provider_ = provider;
 
-  std::string bind;
-  if (!reg_key.QueryString(kBindValueName, &bind))
-    return NULL;
+  service_configs_.insert(std::make_pair(key_name, config));
 
-  int type = SOCK_STREAM;
-  reg_key.QueryInteger(kTypeValueName, &type);
+  return CreateService(config);
+}
 
-  Server* server = NULL;
-  switch (type) {
+bool ServiceManager::SaveService(const RegistryKey& parent,
+                                 ServiceConfig* config) {
+  RegistryKey service_key;
+  if (!service_key.Create(parent, config->name_))
+    return false;
+
+  if (!service_key.SetString(kProviderValueName, config->provider_name_))
+    return false;
+
+  return config->provider_->SaveConfig(config, &service_key);
+}
+
+bool ServiceManager::CreateService(ServiceConfig* config) {
+  config->instance_ = config->provider_->CreateService(config);
+  return config->instance_ != NULL;
+}
+
+bool ServiceManager::LoadServer(const RegistryKey& parent,
+                                const std::string& key_name) {
+  RegistryKey reg_key;
+  if (!reg_key.Open(parent, key_name))
+    return false;
+
+  ServerConfig* config = new ServerConfig();
+  config->name_ = key_name;
+
+  reg_key.QueryString(kBindValueName, &config->bind_);
+  reg_key.QueryInteger(kListenValueName, &config->listen_);
+  reg_key.QueryInteger(kTypeValueName, &config->type_);
+  reg_key.QueryString(kServiceValueName, &config->service_name_);
+  reg_key.QueryInteger(kEnabledValueName, &config->enabled_);
+
+  server_configs_.insert(std::make_pair(key_name, config));
+
+  return CreateServer(config);
+}
+
+bool ServiceManager::SaveServer(const RegistryKey& parent,
+                                ServerConfig* config) {
+  RegistryKey key;
+  if (!key.Create(parent, config->name_))
+    return false;
+
+  key.SetString(kBindValueName, config->bind_);
+  key.SetInteger(kListenValueName, config->listen_);
+  key.SetInteger(kTypeValueName, config->type_);
+  key.SetString(kServiceValueName, config->service_name_);
+  key.SetInteger(kEnabledValueName, config->enabled_);
+
+  return true;
+}
+
+bool ServiceManager::CreateServer(ServerConfig* config) {
+  if (!config->enabled_)
+    return true;
+
+  auto service_entry = service_configs_.find(config->service_name_);
+  if (service_entry == service_configs_.end())
+    return false;
+
+  std::unique_ptr<Server> server;
+  switch (config->type_) {
     case SOCK_STREAM:
-      server = new TcpServer();
+      server.reset(new TcpServer());
       break;
 
     case SOCK_DGRAM:
-      server = new UdpServer();
+      server.reset(new UdpServer());
       break;
 
     default:
-      return NULL;
+      return false;
   }
 
   if (server == NULL)
-    return NULL;
+    return false;
 
-  if (!server->Setup(bind.c_str(), listen)) {
-    delete server;
-    return NULL;
-  }
+  if (!server->Setup(config->bind_.c_str(), config->listen_))
+    return false;
 
-  server->SetService(service_entry->second);
+  server->SetService(service_entry->second->instance_);
+  servers_.push_back(server.release());
 
-  return server;
+  return true;
 }

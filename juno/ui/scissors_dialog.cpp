@@ -2,22 +2,24 @@
 
 #include "ui/scissors_dialog.h"
 
-ScissorsDialog::ScissorsDialog(PreferenceDialog::ServiceEntry* entry)
-    : config_(static_cast<PreferenceDialog::ScissorsEntry*>(entry->extra)) {
+#include "net/scissors/scissors_config.h"
+
+ScissorsDialog::ScissorsDialog(ServiceConfig* config)
+    : config_(static_cast<ScissorsConfig*>(config)) {
 }
 
 ScissorsDialog::~ScissorsDialog() {
 }
 
 BOOL ScissorsDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
-  port_ = config_->remote_port_;
+  port_ = config_->remote_port();
 
   DoDataExchange();
 
-  address_edit_.SetWindowText(config_->remote_address_);
+  address_edit_.SetWindowText(CString(config_->remote_address().c_str()));
   port_spin_.SetRange32(0, 65535);
-  use_ssl_check_.SetCheck(config_->remote_ssl_);
-  use_udp_check_.SetCheck(config_->remote_udp_);
+  use_ssl_check_.SetCheck(config_->remote_ssl());
+  use_udp_check_.SetCheck(config_->remote_udp());
 
   return TRUE;
 }
@@ -38,7 +40,7 @@ void ScissorsDialog::OnOk(UINT notify_code, int id, CWindow control) {
 
   DoDataExchange(DDX_SAVE);
 
-  if (address_edit_.GetWindowTextLength() == 0) {
+  if (address_edit_.GetWindowTextLength() <= 0) {
     message.LoadString(IDS_NOT_SPECIFIED);
     balloon.pszText = message;
     address_edit_.ShowBalloonTip(&balloon);
@@ -52,10 +54,14 @@ void ScissorsDialog::OnOk(UINT notify_code, int id, CWindow control) {
     return;
   }
 
-  address_edit_.GetWindowText(config_->remote_address_);
-  config_->remote_port_ = port_;
-  config_->remote_ssl_ = use_ssl_check_.GetCheck();
-  config_->remote_udp_ = use_udp_check_.GetCheck();
+  std::string temp;
+  temp.resize(::GetWindowTextLengthA(address_edit_));
+  ::GetWindowTextA(address_edit_, &temp[0], temp.size() + 1);
+
+  config_->set_remote_address(temp);
+  config_->set_remote_port(port_);
+  config_->set_remote_ssl(use_ssl_check_.GetCheck());
+  config_->set_remote_udp(use_udp_check_.GetCheck());
 
   EndDialog(IDOK);
 }
