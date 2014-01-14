@@ -141,21 +141,13 @@ void MainFrame::OnFileNew(UINT notify_code, int id, CWindow control) {
   if (result != IDOK)
     return;
 
-#if 0
-  dialog.SaveServices();
-  dialog.SaveServers();
-
-  CString message;
-  message.LoadString(IDS_CONFIRM_APPLY);
-  if (MessageBox(message, NULL, MB_ICONQUESTION | MB_YESNO) != IDYES)
-    return;
-
-  StopAndUnload();
-  LoadAndStart();
-#else
-  service_manager->UpdateConfiguration(std::move(dialog.service_configs_),
-                                       std::move(dialog.server_configs_));
-#endif
+  bool succeeded = service_manager->UpdateConfiguration(
+      std::move(dialog.service_configs_), std::move(dialog.server_configs_));
+  if (!succeeded) {
+    CString message;
+    message.LoadString(IDS_ERR_START_FAILED);
+    MessageBox(message, NULL, MB_ICONERROR);
+  }
 }
 
 void MainFrame::OnAppExit(UINT notify_code, int id, CWindow control) {

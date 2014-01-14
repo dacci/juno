@@ -183,13 +183,21 @@ void ServiceManager::CopyServerConfigs(
 bool ServiceManager::UpdateConfiguration(
     std::map<std::string, ServiceConfig*>&& new_services,
     std::map<std::string, ServerConfig*>&& new_servers) {
-  UnloadServers();
-
   RegistryKey config_key;
-  config_key.Create(HKEY_CURRENT_USER, kConfigKeyName);
+  if (!config_key.Create(HKEY_CURRENT_USER, kConfigKeyName))
+    return false;
 
   RegistryKey services_key;
-  services_key.Open(config_key, kServicesKeyName);
+  if (!services_key.Create(config_key, kServicesKeyName))
+    return false;
+
+  RegistryKey servers_key;
+  if (!servers_key.Create(config_key, kServersKeyName))
+    return false;
+
+  UnloadServers();
+
+  bool succeeded = true;
 
   // removed services
   for (auto i = service_configs_.begin();;) {
@@ -198,35 +206,42 @@ bool ServiceManager::UpdateConfiguration(
 
     auto updated = new_services.find(i->first);
     if (updated == new_services.end()) {
-      services_key.DeleteKey(i->first.c_str());
-
-      i->second->instance_->Stop();
-      delete i->second->instance_;
-      delete i->second;
-      service_configs_.erase(i++);
-    } else {
-      ++i;
+      if (services_key.DeleteKey(i->first.c_str())) {
+        i->second->instance_->Stop();
+        delete i->second->instance_;
+        delete i->second;
+        service_configs_.erase(i++);
+        continue;
+      } else {
+        succeeded = false;
+      }
     }
+
+    ++i;
   }
 
   // added or updated services
   for (auto i = new_services.begin(), l = new_services.end(); i != l; ++i) {
-    SaveService(services_key, i->second);
-
-    auto existing = service_configs_.find(i->first);
-    if (existing == service_configs_.end()) {
-      // added service
-      CreateService(i->second);
-      service_configs_.insert(*i);
-    } else {
-      // updated service
-      i->second->provider_->UpdateConfig(i->second->instance_, i->second);
-      delete i->second;
+    if (SaveService(services_key, i->second)) {
+      auto existing = service_configs_.find(i->first);
+      if (existing == service_configs_.end()) {
+        // added service
+        if (CreateService(i->second)) {
+          service_configs_.insert(*i);
+          continue;
+        } else {
+          succeeded = false;
+        }
+      } else {
+        // updated service
+        if (!i->second->provider_->UpdateConfig(i->second->instance_,
+                                                i->second))
+          succeeded = false;
+      }
     }
-  }
 
-  RegistryKey servers_key;
-  servers_key.Create(config_key, kServersKeyName);
+    delete i->second;
+  }
 
   // removed servers
   for (auto i = server_configs_.begin();;) {
@@ -235,34 +250,42 @@ bool ServiceManager::UpdateConfiguration(
 
     auto updated = new_servers.find(i->first);
     if (updated == new_servers.end()) {
-      servers_key.DeleteKey(i->first.c_str());
-
-      delete i->second;
-      server_configs_.erase(i++);
-    } else {
-      ++i;
+      if (servers_key.DeleteKey(i->first.c_str())) {
+        delete i->second;
+        server_configs_.erase(i++);
+        continue;
+      }
     }
+
+    ++i;
   }
 
   // added or updated servers
   for (auto i = new_servers.begin(), l = new_servers.end(); i != l; ++i) {
-    SaveServer(servers_key, i->second);
-
-    auto existing = server_configs_.find(i->first);
-    if (existing == server_configs_.end()) {
-      server_configs_.insert(*i);
+    if (SaveServer(servers_key, i->second)) {
+      auto existing = server_configs_.find(i->first);
+      if (existing == server_configs_.end()) {
+        // added server
+        server_configs_.insert(*i);
+      } else {
+        // updated server
+        delete existing->second;
+        existing->second = i->second;
+      }
     } else {
-      delete existing->second;
-      existing->second = i->second;
+      succeeded = false;
+      delete i->second;
     }
   }
 
   for (auto i = server_configs_.begin(), l = server_configs_.end(); i != l; ++i)
-    CreateServer(i->second);
+    if (!CreateServer(i->second))
+      succeeded = false;
 
-  StartServers();
+  if (!StartServers())
+    succeeded = false;
 
-  return true;
+  return succeeded;
 }
 
 bool ServiceManager::LoadService(const RegistryKey& parent,
