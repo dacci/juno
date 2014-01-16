@@ -56,7 +56,7 @@ BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
   server_list_.SetColumnWidth(1, 80);
 
   caption.LoadString(IDS_COLUMN_LISTEN);
-  server_list_.AddColumn(caption, 2);
+  server_list_.AddColumn(caption, 2, -1, LVCF_FMT | LVCF_TEXT, LVCFMT_RIGHT);
   server_list_.SetColumnWidth(2, 50);
 
   caption.LoadString(IDS_COLUMN_SERVICE);

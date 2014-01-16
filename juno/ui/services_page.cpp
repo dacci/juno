@@ -40,11 +40,11 @@ BOOL ServicesPage::OnInitDialog(CWindow focus, LPARAM init_param) {
 
   caption.LoadString(IDS_COLUMN_NAME);
   service_list_.AddColumn(caption, 0);
-  service_list_.SetColumnWidth(0, 150);
+  service_list_.SetColumnWidth(0, 220);
 
   caption.LoadString(IDS_COLUMN_PROVIDER);
   service_list_.AddColumn(caption, 1);
-  service_list_.SetColumnWidth(1, 150);
+  service_list_.SetColumnWidth(1, 90);
 
   for (auto i = configs_->begin(), l = configs_->end(); i != l; ++i)
     AddServiceItem(i->second, -1);
