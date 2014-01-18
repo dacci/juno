@@ -32,5 +32,5 @@ Service* SocksProxyProvider::CreateService(ServiceConfig* config) {
 }
 
 INT_PTR SocksProxyProvider::Configure(ServiceConfig* config, HWND parent) {
-  return IDCANCEL;
+  return IDOK;
 }
