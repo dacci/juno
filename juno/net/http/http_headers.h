@@ -22,13 +22,31 @@ class HttpHeaders {
   HttpHeaders();
   virtual ~HttpHeaders();
 
+  // The response header is added to the existing set of headers,
+  // even if this header already exists.
   void AddHeader(const std::string& name, const std::string& value) {
     list_.push_back(std::make_pair(name, value));
   }
 
+  // The request header is appended to any existing header of the same name.
+  // When a new value is merged onto an existing header it is separated
+  // from the existing header with a comma. This is the HTTP standard way of
+  // giving a header multiple values.
   void AppendHeader(const std::string& name, const std::string& value);
+
+  // The response header is set, replacing any previous header with this name.
   void SetHeader(const std::string& name, const std::string& value);
+
+  // The request header is appended to any existing header of the same name,
+  // unless the value to be appended already appears in the existing header's
+  // comma-delimited list of values. When a new value is merged onto
+  // an existing header it is separated from the existing header with a comma.
+  // This is the HTTP standard way of giving a header multiple values.
+  // Values are compared in a case sensitive manner.
   void MergeHeader(const std::string& name, const std::string& value);
+
+  // If this request header exists, its value is transformed according to
+  // a regular expression search-and-replace.
   void EditHeader(const std::string& name, const std::string& find,
                   const std::string& replace, bool all);
 
