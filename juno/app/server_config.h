@@ -9,7 +9,17 @@ class Server;
 
 class ServerConfig {
  public:
-  ServerConfig() : listen_(), type_(), enabled_(1) {
+  ServerConfig() : listen_(), type_(), enabled_(1), server_() {
+  }
+
+  ServerConfig(const ServerConfig& other)
+      : name_(other.name_),
+        bind_(other.bind_),
+        listen_(other.listen_),
+        type_(other.type_),
+        service_name_(other.service_name_),
+        enabled_(other.enabled_),
+        server_() {
   }
 
   std::string name_;
@@ -20,6 +30,9 @@ class ServerConfig {
   int enabled_;
 
   Server* server_;
+
+ private:
+  ServerConfig& operator=(const ServerConfig&);
 };
 
 #endif  // JUNO_APP_SERVER_CONFIG_H_

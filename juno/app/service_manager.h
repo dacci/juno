@@ -61,9 +61,8 @@ class ServiceManager {
   bool CreateServer(ServerConfig* config);
 
   std::map<std::string, ServiceProvider*> providers_;
-  std::map<std::string, ServiceConfig*> service_configs_;
-  std::map<std::string, ServerConfig*> server_configs_;
-  std::vector<Server*> servers_;
+  std::map<std::string, ServiceConfig*> services_;
+  std::map<std::string, ServerConfig*> servers_;
 };
 
 extern ServiceManager* service_manager;

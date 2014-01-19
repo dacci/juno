@@ -35,7 +35,7 @@ void HttpHeaders::SetHeader(const std::string& name, const std::string& value) {
   bool first = true;
   bool found = false;
 
-  for (auto i = list_.begin(), l = list_.end(); i != l; ++i) {
+  for (auto i = list_.begin(), l = list_.end(); i != l;) {
     if (::_stricmp(i->first.c_str(), name.c_str()) == 0) {
       found = true;
 
@@ -43,9 +43,12 @@ void HttpHeaders::SetHeader(const std::string& name, const std::string& value) {
         first = false;
         i->second = value;
       } else {
-        list_.erase(i--);
+        list_.erase(i++);
+        continue;
       }
     }
+
+    ++i;
   }
 
   if (!found)
@@ -125,7 +128,7 @@ void HttpHeaders::RemoveHeader(const std::string& name,
   typedef int (*Comparator)(const char*, const char*);
   Comparator comparator = exact ? strcmp : _stricmp;
 
-  for (List::iterator i = list_.begin(), l = list_.end(); i != l; ++i) {
+  for (auto i = list_.begin(), l = list_.end(); i != l; ++i) {
     if (::_stricmp(i->first.c_str(), name.c_str()) == 0 &&
         comparator(i->second.c_str(), value.c_str()) == 0) {
       list_.erase(i);
@@ -135,24 +138,16 @@ void HttpHeaders::RemoveHeader(const std::string& name,
 }
 
 void HttpHeaders::RemoveHeader(const std::string& name) {
-  List::iterator i = list_.begin();
-  while (i != list_.end()) {
-    if (::_stricmp(i->first.c_str(), name.c_str()) == 0) {
-      if (i == list_.begin()) {
-        list_.erase(i);
-        i = list_.begin();
-        continue;
-      } else {
-        list_.erase(i--);
-      }
-    }
-
-    ++i;
+  for (auto i = list_.begin(), l = list_.end(); i != l;) {
+    if (::_stricmp(i->first.c_str(), name.c_str()) == 0)
+      list_.erase(i++);
+    else
+      ++i;
   }
 }
 
 bool HttpHeaders::HeaderExists(const std::string& name) {
-  for (Iterator i = begin(), l = end(); i != l; ++i) {
+  for (auto i = begin(), l = end(); i != l; ++i) {
     if (::_stricmp(i->first.c_str(), name.c_str()) == 0)
       return true;
   }
@@ -164,7 +159,7 @@ const std::string& HttpHeaders::GetHeader(const std::string& name,
                                           size_t position) {
   size_t index = 0;
 
-  for (Iterator i = begin(), l = end(); i != l; ++i) {
+  for (auto i = begin(), l = end(); i != l; ++i) {
     if (::_stricmp(i->first.c_str(), name.c_str()) == 0) {
       if (index == position)
         return i->second;
@@ -178,7 +173,7 @@ const std::string& HttpHeaders::GetHeader(const std::string& name,
 HttpHeaders::ValueList HttpHeaders::GetAllHeaders(const std::string& name) {
   ValueList list;
 
-  for (Iterator i = begin(), l = end(); i != l; ++i) {
+  for (auto i = begin(), l = end(); i != l; ++i) {
     if (::_stricmp(i->first.c_str(), name.c_str()) == 0)
       list.push_back(i->second);
   }
@@ -187,7 +182,7 @@ HttpHeaders::ValueList HttpHeaders::GetAllHeaders(const std::string& name) {
 }
 
 void HttpHeaders::SerializeHeaders(std::string* buffer) {
-  for (Iterator i = begin(), l = end(); i != l; ++i) {
+  for (auto i = begin(), l = end(); i != l; ++i) {
     buffer->append(i->first);
     buffer->append(": ");
     buffer->append(i->second);

@@ -6,18 +6,19 @@
 #include <string.h>
 #include <tchar.h>
 
-#include <vector>
+#include <string>
 
 #include "misc/schannel/schannel_credential.h"
 
 class SchannelContext {
  public:
-  SchannelContext(SchannelCredential* credential, const TCHAR* target_name)
-      : credential_(credential), attributes_(), expiry_() {
+  SchannelContext(SchannelCredential* credential,
+                  const std::string& target_name)
+      : credential_(credential),
+        target_name_(target_name),
+        attributes_(),
+        expiry_() {
     SecInvalidateHandle(&handle_);
-
-    size_t length = ::_tcslen(target_name);
-    target_name_.assign(target_name, target_name + length);
   }
 
   virtual ~SchannelContext() {
@@ -35,18 +36,18 @@ class SchannelContext {
     else
       out_handle = &handle_;
 
-    return ::InitializeSecurityContext(&credential_->handle_,
-                                       in_handle,
-                                       target_name_.data(),
-                                       request,
-                                       0,     // reserved
-                                       0,     // unused
-                                       input,
-                                       0,     // reserved
-                                       out_handle,
-                                       output,
-                                       &attributes_,
-                                       &expiry_);
+    return ::InitializeSecurityContextA(&credential_->handle_,
+                                        in_handle,
+                                        &target_name_[0],
+                                        request,
+                                        0,     // reserved
+                                        0,     // unused
+                                        input,
+                                        0,     // reserved
+                                        out_handle,
+                                        output,
+                                        &attributes_,
+                                        &expiry_);
   }
 
   SECURITY_STATUS AcceptContext(ULONG request, SecBufferDesc* input,
@@ -76,7 +77,7 @@ class SchannelContext {
   }
 
   SECURITY_STATUS QueryAttributes(ULONG attribute, void* buffer) {
-    return ::QueryContextAttributes(&handle_, attribute, buffer);
+    return ::QueryContextAttributesA(&handle_, attribute, buffer);
   }
 
   SECURITY_STATUS EncryptMessage(ULONG qop, SecBufferDesc* message) {
@@ -103,7 +104,7 @@ class SchannelContext {
 
  private:
   SchannelCredential* const credential_;
-  std::vector<TCHAR> target_name_;
+  std::string target_name_;
   CtxtHandle handle_;
   ULONG attributes_;
   TimeStamp expiry_;

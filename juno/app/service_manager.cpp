@@ -2,6 +2,8 @@
 
 #include "app/service_manager.h"
 
+#include <assert.h>
+
 #include <memory>
 
 #include "app/server_config.h"
@@ -43,10 +45,9 @@ ServiceManager::~ServiceManager() {
   ClearServers();
   UnloadServices();
 
-  for (auto i = service_configs_.begin(), l = service_configs_.end(); i != l;
-       ++i)
+  for (auto i = services_.begin(), l = services_.end(); i != l; ++i)
     delete i->second;
-  service_configs_.clear();
+  services_.clear();
 
   for (auto i = providers_.begin(), l = providers_.end(); i != l; ++i)
     delete i->second;
@@ -76,8 +77,7 @@ bool ServiceManager::LoadServices() {
 void ServiceManager::UnloadServices() {
   StopServices();
 
-  for (auto i = service_configs_.begin(), l = service_configs_.end(); i != l;
-       ++i) {
+  for (auto i = services_.begin(), l = services_.end(); i != l; ++i) {
     delete i->second->instance_;
     i->second->instance_ = NULL;
   }
@@ -86,8 +86,7 @@ void ServiceManager::UnloadServices() {
 void ServiceManager::StopServices() {
   StopServers();
 
-  for (auto i = service_configs_.begin(), l = service_configs_.end(); i != l;
-       ++i)
+  for (auto i = services_.begin(), l = services_.end(); i != l; ++i)
     if (i->second->instance_ != NULL)
       i->second->instance_->Stop();
 }
@@ -116,7 +115,7 @@ bool ServiceManager::StartServers() {
   bool all_started = true;
 
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
-    if (!(*i)->Start())
+    if (!i->second->server_->Start())
       all_started = false;
   }
 
@@ -125,25 +124,26 @@ bool ServiceManager::StartServers() {
 
 void ServiceManager::StopServers() {
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
-    (*i)->Stop();
+    if (i->second->server_ != NULL)
+      i->second->server_->Stop();
 }
 
 void ServiceManager::UnloadServers() {
   StopServers();
 
-  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
-    delete *i;
-
-  servers_.clear();
+  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
+    delete i->second->server_;
+    i->second->server_ = NULL;
+  }
 }
 
 void ServiceManager::ClearServers() {
   UnloadServers();
 
-  for (auto i = server_configs_.begin(), l = server_configs_.end(); i != l; ++i)
+  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
     delete i->second;
 
-  server_configs_.clear();
+  servers_.clear();
 }
 
 ServiceProvider* ServiceManager::GetProvider(const std::string& name) const {
@@ -155,8 +155,8 @@ ServiceProvider* ServiceManager::GetProvider(const std::string& name) const {
 }
 
 ServiceConfig* ServiceManager::GetServiceConfig(const std::string& name) const {
-  auto pair = service_configs_.find(name);
-  if (pair == service_configs_.end())
+  auto pair = services_.find(name);
+  if (pair == services_.end())
     return NULL;
 
   return pair->second;
@@ -164,8 +164,7 @@ ServiceConfig* ServiceManager::GetServiceConfig(const std::string& name) const {
 
 void ServiceManager::CopyServiceConfigs(
     std::map<std::string, ServiceConfig*>* configs) const {
-  for (auto i = service_configs_.begin(), l = service_configs_.end(); i != l;
-       ++i) {
+  for (auto i = services_.begin(), l = services_.end(); i != l; ++i) {
     ServiceConfig* copied = i->second->provider_->CopyConfig(i->second);
     configs->insert(std::make_pair(i->first, copied));
   }
@@ -173,8 +172,7 @@ void ServiceManager::CopyServiceConfigs(
 
 void ServiceManager::CopyServerConfigs(
     std::map<std::string, ServerConfig*>* configs) const {
-  for (auto i = server_configs_.begin(), l = server_configs_.end(); i != l;
-       ++i) {
+  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
     ServerConfig* copied = new ServerConfig(*i->second);
     configs->insert(std::make_pair(i->first, copied));
   }
@@ -200,17 +198,14 @@ bool ServiceManager::UpdateConfiguration(
   bool succeeded = true;
 
   // removed services
-  for (auto i = service_configs_.begin();;) {
-    if (i == service_configs_.end())
-      break;
-
+  for (auto i = services_.begin(), l = services_.end(); i != l;) {
     auto updated = new_services.find(i->first);
     if (updated == new_services.end()) {
       if (services_key.DeleteKey(i->first.c_str())) {
         i->second->instance_->Stop();
         delete i->second->instance_;
         delete i->second;
-        service_configs_.erase(i++);
+        services_.erase(i++);
         continue;
       } else {
         succeeded = false;
@@ -223,11 +218,11 @@ bool ServiceManager::UpdateConfiguration(
   // added or updated services
   for (auto i = new_services.begin(), l = new_services.end(); i != l; ++i) {
     if (SaveService(services_key, i->second)) {
-      auto existing = service_configs_.find(i->first);
-      if (existing == service_configs_.end()) {
+      auto existing = services_.find(i->first);
+      if (existing == services_.end()) {
         // added service
         if (CreateService(i->second)) {
-          service_configs_.insert(*i);
+          services_.insert(*i);
           continue;
         } else {
           succeeded = false;
@@ -244,15 +239,12 @@ bool ServiceManager::UpdateConfiguration(
   }
 
   // removed servers
-  for (auto i = server_configs_.begin();;) {
-    if (i == server_configs_.end())
-      break;
-
+  for (auto i = servers_.begin(), l = servers_.end(); i != l;) {
     auto updated = new_servers.find(i->first);
     if (updated == new_servers.end()) {
       if (servers_key.DeleteKey(i->first.c_str())) {
         delete i->second;
-        server_configs_.erase(i++);
+        servers_.erase(i++);
         continue;
       }
     }
@@ -263,10 +255,10 @@ bool ServiceManager::UpdateConfiguration(
   // added or updated servers
   for (auto i = new_servers.begin(), l = new_servers.end(); i != l; ++i) {
     if (SaveServer(servers_key, i->second)) {
-      auto existing = server_configs_.find(i->first);
-      if (existing == server_configs_.end()) {
+      auto existing = servers_.find(i->first);
+      if (existing == servers_.end()) {
         // added server
-        server_configs_.insert(*i);
+        servers_.insert(*i);
       } else {
         // updated server
         delete existing->second;
@@ -278,7 +270,7 @@ bool ServiceManager::UpdateConfiguration(
     }
   }
 
-  for (auto i = server_configs_.begin(), l = server_configs_.end(); i != l; ++i)
+  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
     if (!CreateServer(i->second))
       succeeded = false;
 
@@ -310,7 +302,7 @@ bool ServiceManager::LoadService(const RegistryKey& parent,
   config->provider_name_ = provider_name;
   config->provider_ = provider;
 
-  service_configs_.insert(std::make_pair(key_name, config));
+  services_.insert(std::make_pair(key_name, config));
 
   return CreateService(config);
 }
@@ -347,7 +339,7 @@ bool ServiceManager::LoadServer(const RegistryKey& parent,
   reg_key.QueryString(kServiceValueName, &config->service_name_);
   reg_key.QueryInteger(kEnabledValueName, &config->enabled_);
 
-  server_configs_.insert(std::make_pair(key_name, config));
+  servers_.insert(std::make_pair(key_name, config));
 
   return CreateServer(config);
 }
@@ -368,11 +360,13 @@ bool ServiceManager::SaveServer(const RegistryKey& parent,
 }
 
 bool ServiceManager::CreateServer(ServerConfig* config) {
+  assert(config->server_ == NULL);
+
   if (!config->enabled_)
     return true;
 
-  auto service_entry = service_configs_.find(config->service_name_);
-  if (service_entry == service_configs_.end())
+  auto service_entry = services_.find(config->service_name_);
+  if (service_entry == services_.end())
     return false;
 
   std::unique_ptr<Server> server;
@@ -396,7 +390,7 @@ bool ServiceManager::CreateServer(ServerConfig* config) {
     return false;
 
   server->SetService(service_entry->second->instance_);
-  servers_.push_back(server.release());
+  config->server_ = server.release();
 
   return true;
 }

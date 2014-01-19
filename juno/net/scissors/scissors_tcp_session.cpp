@@ -59,9 +59,8 @@ bool ScissorsTcpSession::Start(AsyncSocket* client) {
     return false;
 
   if (service_->config_->remote_ssl()) {
-    std::wstring target_name =
-        ::to_wstring(service_->config_->remote_address());
-    context_ = new SchannelContext(service_->credential_, target_name.c_str());
+    context_ = new SchannelContext(service_->credential_,
+                                   service_->config_->remote_address());
     if (context_ == NULL)
       return false;
   }
