@@ -114,10 +114,9 @@ bool ServiceManager::LoadServers() {
 bool ServiceManager::StartServers() {
   bool all_started = true;
 
-  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
-    if (!i->second->server_->Start())
-      all_started = false;
-  }
+  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
+    if (i->second->server_ != NULL && !i->second->server_->Start())
+        all_started = false;
 
   return all_started;
 }
