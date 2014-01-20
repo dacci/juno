@@ -121,8 +121,7 @@ LRESULT ServersPage::OnServerListChanged(LPNMHDR header) {
 
   if (notify->uNewState & LVIS_STATEIMAGEMASK &&
       notify->uOldState & LVIS_STATEIMAGEMASK) {
-    DWORD_PTR item_data = server_list_.GetItemData(notify->lParam);
-    ServerConfig* config = reinterpret_cast<ServerConfig*>(item_data);
+    ServerConfig* config = reinterpret_cast<ServerConfig*>(notify->lParam);
     if (config != NULL)
       config->enabled_ = (notify->uNewState >> 12) - 1;
   }
