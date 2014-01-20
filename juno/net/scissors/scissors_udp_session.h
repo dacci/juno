@@ -45,7 +45,7 @@ class ScissorsUdpSession
   Scissors* const service_;
   madoka::net::AddressInfo resolver_;
   Service::Datagram* datagram_;
-  AsyncDatagramSocket* remote_;
+  std::unique_ptr<AsyncDatagramSocket> remote_;
   std::unique_ptr<char[]> buffer_;
 
 #ifdef LEGACY_PLATFORM

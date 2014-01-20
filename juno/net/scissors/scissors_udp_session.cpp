@@ -34,11 +34,6 @@ ScissorsUdpSession::~ScissorsUdpSession() {
     datagram_ = NULL;
   }
 
-  if (remote_ != NULL) {
-    delete remote_;
-    remote_ = NULL;
-  }
-
   if (timer_ != NULL) {
 #ifdef LEGACY_PLATFORM
     ::DeleteTimerQueueTimer(NULL, timer_, INVALID_HANDLE_VALUE);
@@ -58,7 +53,7 @@ bool ScissorsUdpSession::Start() {
                          service_->config_->remote_port()))
     return false;
 
-  remote_ = new AsyncDatagramSocket();
+  remote_.reset(new AsyncDatagramSocket());
   if (remote_ == NULL)
     return false;
 
