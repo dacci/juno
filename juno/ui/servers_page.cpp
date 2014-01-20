@@ -2,6 +2,8 @@
 
 #include "ui/servers_page.h"
 
+#include <assert.h>
+
 #include <memory>
 #include <utility>
 
@@ -89,8 +91,12 @@ void ServersPage::OnAddServer(UINT notify_code, int id, CWindow control) {
 
 void ServersPage::OnEditServer(UINT notify_code, int id, CWindow control) {
   int index = server_list_.GetSelectedIndex();
+  if (index == CB_ERR)
+    return;
+
   ServerConfig* config =
       reinterpret_cast<ServerConfig*>(server_list_.GetItemData(index));
+  assert(config != NULL);
 
   ServerDialog dialog(parent_, config);
   if (dialog.DoModal(m_hWnd) != IDOK)
@@ -103,8 +109,12 @@ void ServersPage::OnEditServer(UINT notify_code, int id, CWindow control) {
 
 void ServersPage::OnDeleteServer(UINT notify_code, int id, CWindow control) {
   int index = server_list_.GetSelectedIndex();
+  if (index == CB_ERR)
+    return;
+
   ServerConfig* config =
       reinterpret_cast<ServerConfig*>(server_list_.GetItemData(index));
+  assert(config != NULL);
 
   server_list_.DeleteItem(index);
   configs_->erase(config->name_);

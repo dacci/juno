@@ -2,6 +2,8 @@
 
 #include "ui/services_page.h"
 
+#include <assert.h>
+
 #include <memory>
 #include <utility>
 
@@ -84,8 +86,12 @@ void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
 
 void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
   int index = service_list_.GetSelectedIndex();
+  if (index == CB_ERR)
+    return;
+
   ServiceConfig* config = reinterpret_cast<ServiceConfig*>(
       service_list_.GetItemData(index));
+  assert(config != NULL);
 
   if (config->provider_->Configure(config, *parent_) != IDOK)
     return;
@@ -97,8 +103,12 @@ void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
 
 void ServicesPage::OnDeleteService(UINT notify_code, int id, CWindow control) {
   int index = service_list_.GetSelectedIndex();
+  if (index == CB_ERR)
+    return;
+
   ServiceConfig* config = reinterpret_cast<ServiceConfig*>(
       service_list_.GetItemData(index));
+  assert(config != NULL);
 
   service_list_.DeleteItem(index);
   configs_->erase(config->name_);
