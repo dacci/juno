@@ -72,11 +72,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   void EndSession();
 
   bool FireReceived(const AsyncSocketPtr& socket, DWORD error, int length);
-#ifdef LEGACY_PLATFORM
-  static DWORD CALLBACK FireEvent(void* param);
-#else   // LEGACY_PLATFORM
   static void CALLBACK FireEvent(PTP_CALLBACK_INSTANCE instance, void* param);
-#endif  // LEGACY_PLATFORM
 
   void OnRequestReceived(DWORD error, int length);
   void OnRequestSent(DWORD error, int length);
@@ -90,13 +86,8 @@ class HttpProxySession : public AsyncSocket::Listener {
   void OnResponseBodyReceived(DWORD error, int length);
   void OnResponseBodySent(DWORD error, int length);
 
-#ifdef LEGACY_PLATFORM
-  static void CALLBACK OnTimeout(void* param, BOOLEAN fired);
-#else   // LEGACY_PLATFORM
   static void CALLBACK OnTimeout(PTP_CALLBACK_INSTANCE instance, PVOID param,
                                  PTP_TIMER timer);
-#endif  // LEGACY_PLATFORM
-
   static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
 
   static FILETIME kTimerDueTime;
@@ -120,12 +111,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   bool chunked_;
   int64_t chunk_size_;
   bool close_client_;
-
-#ifdef LEGACY_PLATFORM
-  HANDLE timer_;
-#else   // LEGACY_PLATFORM
   PTP_TIMER timer_;
-#endif  // LEGACY_PLATFORM
   AsyncSocket* receiving_;
   bool continue_;
 };

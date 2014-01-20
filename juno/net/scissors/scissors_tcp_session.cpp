@@ -11,13 +11,8 @@
 #include "net/scissors/scissors_config.h"
 #include "net/tunneling_service.h"
 
-#ifdef LEGACY_PLATFORM
-  #define DELETE_THIS() \
-    delete this
-#else   // LEGACY_PLATFORM
-  #define DELETE_THIS() \
-    ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
-#endif  // LEGACY_PLATFORM
+#define DELETE_THIS() \
+  ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
 
 ScissorsTcpSession::ScissorsTcpSession(Scissors* service)
     : service_(service),

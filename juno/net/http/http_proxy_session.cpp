@@ -9,13 +9,8 @@
 #include "net/http/http_proxy_config.h"
 #include "net/tunneling_service.h"
 
-#ifdef LEGACY_PLATFORM
-  #define DELETE_THIS() \
-    delete this
-#else   // LEGACY_PLATFORM
-  #define DELETE_THIS() \
-    ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
-#endif  // LEGACY_PLATFORM
+#define DELETE_THIS() \
+  ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
 
 const std::string HttpProxySession::kConnection("Connection");
 const std::string HttpProxySession::kContentEncoding("Content-Encoding");
@@ -42,22 +37,16 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy, HttpProxyConfig* config)
       close_client_(),
       timer_(),
       continue_() {
-#ifndef LEGACY_PLATFORM
   timer_ = ::CreateThreadpoolTimer(OnTimeout, this, NULL);
-#endif  // LEGACY_PLATFORM
 }
 
 HttpProxySession::~HttpProxySession() {
   Stop();
 
   if (timer_ != NULL) {
-#ifdef LEGACY_PLATFORM
-    ::DeleteTimerQueueTimer(NULL, timer_, INVALID_HANDLE_VALUE);
-#else   // LEGACY_PLATFORM
     ::SetThreadpoolTimer(timer_, NULL, 0, 0);
     ::WaitForThreadpoolTimerCallbacks(timer_, TRUE);
     ::CloseThreadpoolTimer(timer_);
-#endif  // LEGACY_PLATFORM
     timer_ = NULL;
   }
 
@@ -137,15 +126,8 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 
 void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
                                   int length) {
-#ifdef LEGACY_PLATFORM
-  if (timer_ != NULL) {
-    ::DeleteTimerQueueTimer(NULL, timer_, INVALID_HANDLE_VALUE);
-    timer_ = NULL;
-  }
-#else   // LEGACY_PLATFORM
   assert(timer_ != NULL);
   ::SetThreadpoolTimer(timer_, NULL, 0, 0);
-#endif  // LEGACY_PLATFORM
 
   switch (phase_) {
     case Request:
@@ -195,15 +177,8 @@ void HttpProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
 }
 
 bool HttpProxySession::ReceiveAsync(const AsyncSocketPtr& socket, int flags) {
-#ifdef LEGACY_PLATFORM
-  assert(timer_ == NULL);
-  if (!::CreateTimerQueueTimer(&timer_, NULL, OnTimeout, this, kTimeout, 0,
-                               WT_EXECUTEDEFAULT))
-    return false;
-#else   // LEGACY_PLATFORM
   assert(timer_ != NULL);
   ::SetThreadpoolTimer(timer_, &kTimerDueTime, 0, 0);
-#endif  // LEGACY_PLATFORM
 
   receiving_ = socket.get();
 
@@ -397,11 +372,7 @@ bool HttpProxySession::FireReceived(const AsyncSocketPtr& socket, DWORD error,
   args->error = error;
   args->length = length;
 
-#ifdef LEGACY_PLATFORM
-  if (!::QueueUserWorkItem(FireEvent, args, 0)) {
-#else   // LEGACY_PLATFORM
   if (!::TrySubmitThreadpoolCallback(FireEvent, args, NULL)) {
-#endif  // LEGACY_PLATFORM
     delete args;
     return false;
   }
@@ -409,12 +380,8 @@ bool HttpProxySession::FireReceived(const AsyncSocketPtr& socket, DWORD error,
   return true;
 }
 
-#ifdef LEGACY_PLATFORM
-DWORD CALLBACK HttpProxySession::FireEvent(void* param) {
-#else   // LEGACY_PLATFORM
 void CALLBACK HttpProxySession::FireEvent(PTP_CALLBACK_INSTANCE instance,
                                           void* param) {
-#endif  // LEGACY_PLATFORM
   EventArgs* args = static_cast<EventArgs*>(param);
 
   switch (args->event) {
@@ -432,10 +399,6 @@ void CALLBACK HttpProxySession::FireEvent(PTP_CALLBACK_INSTANCE instance,
   }
 
   delete args;
-
-#ifdef LEGACY_PLATFORM
-  return 0;
-#endif  // LEGACY_PLATFORM
 }
 
 void HttpProxySession::OnRequestReceived(DWORD error, int length) {
@@ -817,12 +780,8 @@ void HttpProxySession::OnResponseBodySent(DWORD error, int length) {
   DELETE_THIS();
 }
 
-#ifdef LEGACY_PLATFORM
-void CALLBACK HttpProxySession::OnTimeout(void* param, BOOLEAN fired) {
-#else   // LEGACY_PLATFORM
 void CALLBACK HttpProxySession::OnTimeout(PTP_CALLBACK_INSTANCE instance,
                                           PVOID param, PTP_TIMER timer) {
-#endif  // LEGACY_PLATFORM
   HttpProxySession* session = static_cast<HttpProxySession*>(param);
   session->receiving_->Shutdown(SD_BOTH);
 }

@@ -36,11 +36,7 @@ class UdpServer : public Server, public AsyncDatagramSocket::Listener {
  private:
   static const int kBufferSize = 65536;
 
-#ifdef LEGACY_PLATFORM
-  static DWORD CALLBACK Dispatch(void* context);
-#else   // LEGACY_PLATFORM
   static void CALLBACK Dispatch(PTP_CALLBACK_INSTANCE instance, void* context);
-#endif  // LEGACY_PLATFORM
 
   madoka::net::AddressInfo resolver_;
   std::vector<AsyncDatagramSocket*> servers_;

@@ -43,13 +43,8 @@ struct SocketAddress6 : addrinfo, sockaddr_in6 {
 
 }  // namespace
 
-#ifdef LEGACY_PLATFORM
-  #define DELETE_THIS() \
-    delete this
-#else   // LEGACY_PLATFORM
-  #define DELETE_THIS() \
-    ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
-#endif  // LEGACY_PLATFORM
+#define DELETE_THIS() \
+  ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
 
 SocksProxySession::SocksProxySession(SocksProxy* proxy)
     : proxy_(proxy),

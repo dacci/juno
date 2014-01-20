@@ -6,13 +6,8 @@
 
 #include "net/scissors/scissors_config.h"
 
-#ifdef LEGACY_PLATFORM
-  #define DELETE_THIS() \
-    delete this
-#else   // LEGACY_PLATFORM
-  #define DELETE_THIS() \
-    ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
-#endif  // LEGACY_PLATFORM
+#define DELETE_THIS() \
+  ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
 
 FILETIME ScissorsUdpSession::kTimerDueTime = {
   -kTimeout * 1000 * 10,   // in 100-nanoseconds
@@ -23,9 +18,7 @@ ScissorsUdpSession::ScissorsUdpSession(Scissors* service,
                                        Service::Datagram* datagram)
     : service_(service), datagram_(datagram), remote_(), buffer_(), timer_() {
   resolver_.ai_socktype = SOCK_DGRAM;
-#ifndef LEGACY_PLATFORM
   timer_ = ::CreateThreadpoolTimer(OnTimeout, this, NULL);
-#endif  // LEGACY_PLATFORM
 }
 
 ScissorsUdpSession::~ScissorsUdpSession() {
@@ -35,13 +28,9 @@ ScissorsUdpSession::~ScissorsUdpSession() {
   }
 
   if (timer_ != NULL) {
-#ifdef LEGACY_PLATFORM
-    ::DeleteTimerQueueTimer(NULL, timer_, INVALID_HANDLE_VALUE);
-#else   // LEGACY_PLATFORM
     ::SetThreadpoolTimer(timer_, NULL, 0, 0);
     ::WaitForThreadpoolTimerCallbacks(timer_, TRUE);
     ::CloseThreadpoolTimer(timer_);
-#endif  // LEGACY_PLATFORM
     timer_ = NULL;
   }
 
@@ -76,15 +65,8 @@ void ScissorsUdpSession::Stop() {
 
 void ScissorsUdpSession::OnReceived(AsyncDatagramSocket* socket, DWORD error,
                                     int length) {
-#ifdef LEGACY_PLATFORM
-  if (timer_ != NULL) {
-    ::DeleteTimerQueueTimer(NULL, timer_, INVALID_HANDLE_VALUE);
-    timer_ = NULL;
-  }
-#else   // LEGACY_PLATFORM
   assert(timer_ != NULL);
   ::SetThreadpoolTimer(timer_, NULL, 0, 0);
-#endif  // LEGACY_PLATFORM
 
   if (error == 0) {
     addrinfo end_point = {};
@@ -108,15 +90,8 @@ void ScissorsUdpSession::OnSent(AsyncDatagramSocket* socket, DWORD error,
                                 int length) {
   if (error == 0) {
     do {
-#ifdef LEGACY_PLATFORM
-      assert(timer_ == NULL);
-      if (!::CreateTimerQueueTimer(&timer_, NULL, OnTimeout, this, kTimeout, 0,
-                                   WT_EXECUTEDEFAULT))
-        break;
-#else   // LEGACY_PLATFORM
       assert(timer_ != NULL);
       ::SetThreadpoolTimer(timer_, &kTimerDueTime, 0, 0);
-#endif  // LEGACY_PLATFORM
 
       if (!remote_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
         break;
@@ -133,12 +108,8 @@ void ScissorsUdpSession::OnSentTo(AsyncDatagramSocket* socket, DWORD error,
   DELETE_THIS();
 }
 
-#ifdef LEGACY_PLATFORM
-void CALLBACK ScissorsUdpSession::OnTimeout(void* param, BOOLEAN fired) {
-#else   // LEGACY_PLATFORM
 void CALLBACK ScissorsUdpSession::OnTimeout(PTP_CALLBACK_INSTANCE instance,
                                             PVOID param, PTP_TIMER timer) {
-#endif  // LEGACY_PLATFORM
   ScissorsUdpSession* session = static_cast<ScissorsUdpSession*>(param);
   session->Stop();
 }

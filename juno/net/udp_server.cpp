@@ -120,12 +120,7 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
           received + sizeof(Service::Datagram) + length);
       ::memmove(datagram->from, from, from_length);
 
-      BOOL succeeded = FALSE;
-#ifdef LEGACY_PLATFORM
-      succeeded = ::QueueUserWorkItem(Dispatch, datagram, 0);
-#else   // LEGACY_PLATFORM
-      succeeded = ::TrySubmitThreadpoolCallback(Dispatch, datagram, NULL);
-#endif  // LEGACY_PLATFORM
+      BOOL succeeded = ::TrySubmitThreadpoolCallback(Dispatch, datagram, NULL);
       if (!succeeded) {
         error = ::GetLastError();
         break;
@@ -156,19 +151,11 @@ void UdpServer::OnSentTo(AsyncDatagramSocket* socket, DWORD error, int length,
   assert(false);
 }
 
-#ifdef LEGACY_PLATFORM
-DWORD CALLBACK UdpServer::Dispatch(void* context) {
-#else   // LEGACY_PLATFORM
 void CALLBACK UdpServer::Dispatch(PTP_CALLBACK_INSTANCE instance,
                                   void* context) {
-#endif  // LEGACY_PLATFORM
   Service::Datagram* datagram = static_cast<Service::Datagram*>(context);
 
   bool succeeded = datagram->service->OnReceivedFrom(datagram);
   if (!succeeded)
     delete[] static_cast<char*>(context);
-
-#ifdef LEGACY_PLATFORM
-  return 0;
-#endif  // LEGACY_PLATFORM
 }

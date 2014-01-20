@@ -19,13 +19,11 @@ void AsyncSocket::Close() {
 
   Socket::Close();
 
-#ifndef LEGACY_PLATFORM
   if (io_ != NULL) {
     ::WaitForThreadpoolIoCallbacks(io_, FALSE);
     ::CloseThreadpoolIo(io_);
     io_ = NULL;
   }
-#endif  // LEGACY_PLATFORM
 }
 
 bool AsyncSocket::UpdateAcceptContext(SOCKET descriptor) {
@@ -56,12 +54,7 @@ bool AsyncSocket::ConnectAsync(const addrinfo* end_points, Listener* listener) {
   context->end_point = end_points;
   context->listener = listener;
 
-#ifdef LEGACY_PLATFORM
-  BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
-                                       WT_EXECUTEINIOTHREAD);
-#else   // LEGACY_PLATFORM
   BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
-#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return false;
@@ -88,12 +81,7 @@ OVERLAPPED* AsyncSocket::BeginConnect(const addrinfo* end_points,
   context->event = event;
   ::ResetEvent(event);
 
-#ifdef LEGACY_PLATFORM
-  BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
-                                       WT_EXECUTEINIOTHREAD);
-#else   // LEGACY_PLATFORM
   BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
-#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return NULL;
@@ -146,12 +134,7 @@ bool AsyncSocket::ReceiveAsync(void* buffer, int size, int flags,
   context->flags = flags;
   context->listener = listener;
 
-#ifdef LEGACY_PLATFORM
-  BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
-                                       WT_EXECUTEINIOTHREAD);
-#else   // LEGACY_PLATFORM
   BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
-#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return false;
@@ -178,12 +161,7 @@ OVERLAPPED* AsyncSocket::BeginReceive(void* buffer, int size, int flags,
   context->event = event;
   ::ResetEvent(event);
 
-#ifdef LEGACY_PLATFORM
-  BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
-                                       WT_EXECUTEINIOTHREAD);
-#else   // LEGACY_PLATFORM
   BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
-#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return NULL;
@@ -228,12 +206,7 @@ bool AsyncSocket::SendAsync(const void* buffer, int size, int flags,
   context->flags = flags;
   context->listener = listener;
 
-#ifdef LEGACY_PLATFORM
-  BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
-                                       WT_EXECUTEINIOTHREAD);
-#else   // LEGACY_PLATFORM
   BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
-#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return false;
@@ -260,12 +233,7 @@ OVERLAPPED* AsyncSocket::BeginSend(const void* buffer, int size, int flags,
   context->event = event;
   ::ResetEvent(event);
 
-#ifdef LEGACY_PLATFORM
-  BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
-                                       WT_EXECUTEINIOTHREAD);
-#else   // LEGACY_PLATFORM
   BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
-#endif  // LEGACY_PLATFORM
   if (!succeeded) {
     DestroyAsyncContext(context);
     return NULL;
@@ -297,12 +265,8 @@ bool AsyncSocket::Init() {
   if (initialized_)
     return true;
 
-#ifdef LEGACY_PLATFORM
-  if (!::BindIoCompletionCallback(*this, OnTransferred, 0))
-#else   // LEGACY_PLATFORM
   io_ = ::CreateThreadpoolIo(*this, OnTransferred, this, NULL);
   if (io_ == NULL)
-#endif  // LEGACY_PLATFORM
     return false;
 
   initialized_ = true;
@@ -353,20 +317,14 @@ int AsyncSocket::DoAsyncConnect(AsyncContext* context) {
   if (result != 0)
     return SOCKET_ERROR;
 
-#ifndef LEGACY_PLATFORM
   ::StartThreadpoolIo(context->socket->io_);
-#endif  // LEGACY_PLATFORM
 
   return ConnectEx(descriptor_, end_point->ai_addr, end_point->ai_addrlen, NULL,
                    0, NULL, context);
 }
 
-#ifdef LEGACY_PLATFORM
-DWORD CALLBACK AsyncSocket::AsyncWork(void* param) {
-#else   // LEGACY_PLATFORM
 void CALLBACK AsyncSocket::AsyncWork(PTP_CALLBACK_INSTANCE instance,
                                      void* param) {
-#endif  // LEGACY_PLATFORM
   AsyncContext* context = static_cast<AsyncContext*>(param);
 
   DWORD bytes = 0;
@@ -377,16 +335,12 @@ void CALLBACK AsyncSocket::AsyncWork(PTP_CALLBACK_INSTANCE instance,
     result = context->socket->DoAsyncConnect(context);
     error = ::WSAGetLastError();
   } else if (context->action == Receiving) {
-#ifndef LEGACY_PLATFORM
-  ::StartThreadpoolIo(context->socket->io_);
-#endif  // LEGACY_PLATFORM
+    ::StartThreadpoolIo(context->socket->io_);
     result = ::WSARecv(*context->socket, context, 1, &bytes, &context->flags,
                        context, NULL);
     error = ::WSAGetLastError();
   } else if (context->action == Sending) {
-#ifndef LEGACY_PLATFORM
-  ::StartThreadpoolIo(context->socket->io_);
-#endif  // LEGACY_PLATFORM
+    ::StartThreadpoolIo(context->socket->io_);
     result = ::WSASend(*context->socket, context, 1, &bytes, context->flags,
                        context, NULL);
     error = ::WSAGetLastError();
@@ -396,25 +350,12 @@ void CALLBACK AsyncSocket::AsyncWork(PTP_CALLBACK_INSTANCE instance,
 
   if (result != 0 && error != WSA_IO_PENDING) {
     context->error = error;
-#ifdef LEGACY_PLATFORM
-    OnTransferred(error, 0, context);
-#else   // LEGACY_PLATFORM
     ::CancelThreadpoolIo(context->socket->io_);
     OnTransferred(instance, context->socket, static_cast<OVERLAPPED*>(context),
                   error, 0, context->socket->io_);
-#endif  // LEGACY_PLATFORM
   }
-
-#ifdef LEGACY_PLATFORM
-  return 0;
-#endif  // LEGACY_PLATFORM
 }
 
-#ifdef LEGACY_PLATFORM
-void CALLBACK AsyncSocket::OnTransferred(DWORD error, DWORD bytes,
-                                         OVERLAPPED* overlapped) {
-  AsyncContext* context = static_cast<AsyncContext*>(overlapped);
-#else   // LEGACY_PLATFORM
 void CALLBACK AsyncSocket::OnTransferred(PTP_CALLBACK_INSTANCE instance,
                                          void* self,
                                          void* overlapped,
@@ -423,7 +364,6 @@ void CALLBACK AsyncSocket::OnTransferred(PTP_CALLBACK_INSTANCE instance,
                                          PTP_IO io) {
   AsyncContext* context =
       static_cast<AsyncContext*>(static_cast<OVERLAPPED*>(overlapped));
-#endif  // LEGACY_PLATFORM
   AsyncSocket* socket = context->socket;
   Listener* listener = context->listener;
 
@@ -433,12 +373,7 @@ void CALLBACK AsyncSocket::OnTransferred(PTP_CALLBACK_INSTANCE instance,
   if (context->action == Connecting && error != 0) {
     if (!socket->cancel_connect_ && context->end_point->ai_next != NULL) {
       context->end_point = context->end_point->ai_next;
-#ifdef LEGACY_PLATFORM
-      BOOL succeeded = ::QueueUserWorkItem(AsyncWork, context,
-                                           WT_EXECUTEINIOTHREAD);
-#else   // LEGACY_PLATFORM
       BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
-#endif  // LEGACY_PLATFORM
       if (succeeded)
         return;
     }

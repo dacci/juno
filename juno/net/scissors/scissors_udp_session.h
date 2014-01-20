@@ -31,13 +31,8 @@ class ScissorsUdpSession
   static const size_t kBufferSize = 64 * 1024;  // 64 KiB
   static const int kTimeout = 15 * 1000;        // 15 sec
 
-#ifdef LEGACY_PLATFORM
-  static void CALLBACK OnTimeout(void* param, BOOLEAN fired);
-#else   // LEGACY_PLATFORM
   static void CALLBACK OnTimeout(PTP_CALLBACK_INSTANCE instance, PVOID param,
                                  PTP_TIMER timer);
-#endif  // LEGACY_PLATFORM
-
   static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
 
   static FILETIME kTimerDueTime;
@@ -47,12 +42,7 @@ class ScissorsUdpSession
   Service::Datagram* datagram_;
   std::unique_ptr<AsyncDatagramSocket> remote_;
   std::unique_ptr<char[]> buffer_;
-
-#ifdef LEGACY_PLATFORM
-  HANDLE timer_;
-#else   // LEGACY_PLATFORM
   PTP_TIMER timer_;
-#endif  // LEGACY_PLATFORM
 };
 
 #endif  // JUNO_NET_SCISSORS_SCISSORS_UDP_SESSION_H_

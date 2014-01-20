@@ -108,22 +108,14 @@ void TunnelingService::Session::OnReceived(AsyncSocket* socket, DWORD error,
                                            int length) {
   if (error != 0 || length == 0 ||
       !to_->SendAsync(buffer_.get(), length, 0, this))
-#ifdef LEGACY_PLATFORM
-    service_->EndSession(this);
-#else   // LEGACY_PLATFORM
     ::TrySubmitThreadpoolCallback(EndSession, this, NULL);
-#endif  // LEGACY_PLATFORM
 }
 
 void TunnelingService::Session::OnSent(AsyncSocket* socket, DWORD error,
                                        int length) {
   if (error != 0 || length == 0 ||
       !from_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
-#ifdef LEGACY_PLATFORM
-    service_->EndSession(this);
-#else   // LEGACY_PLATFORM
     ::TrySubmitThreadpoolCallback(EndSession, this, NULL);
-#endif  // LEGACY_PLATFORM
 }
 
 void CALLBACK TunnelingService::Session::EndSession(

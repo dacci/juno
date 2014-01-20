@@ -42,11 +42,6 @@ class AsyncServerSocket : public madoka::net::ServerSocket {
   AcceptContext* CreateAcceptContext();
   void DestroyAcceptContext(AcceptContext* context);
 
-#ifdef LEGACY_PLATFORM
-  static DWORD CALLBACK AsyncWork(void* param);
-  static void CALLBACK OnAccepted(DWORD error, DWORD bytes,
-                                  OVERLAPPED* overlapped);
-#else   // LEGACY_PLATFORM
   static void CALLBACK AsyncWork(PTP_CALLBACK_INSTANCE instance,
                                   void* param);
   static void CALLBACK OnAccepted(PTP_CALLBACK_INSTANCE instance,
@@ -55,7 +50,6 @@ class AsyncServerSocket : public madoka::net::ServerSocket {
                                   ULONG error,
                                   ULONG_PTR bytes,
                                   PTP_IO io);
-#endif  // LEGACY_PLATFORM
 
   bool initialized_;
   PTP_IO io_;

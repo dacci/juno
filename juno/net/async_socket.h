@@ -69,11 +69,6 @@ class AsyncSocket : public madoka::net::Socket {
 
   int DoAsyncConnect(AsyncContext* context);
 
-#ifdef LEGACY_PLATFORM
-  static DWORD CALLBACK AsyncWork(void* param);
-  static void CALLBACK OnTransferred(DWORD error, DWORD bytes,
-                                     OVERLAPPED* overlapped);
-#else   // LEGACY_PLATFORM
   static void CALLBACK AsyncWork(PTP_CALLBACK_INSTANCE instance, void* param);
   static void CALLBACK OnTransferred(PTP_CALLBACK_INSTANCE instance,
                                      void* self,
@@ -81,7 +76,6 @@ class AsyncSocket : public madoka::net::Socket {
                                      ULONG error,
                                      ULONG_PTR bytes,
                                      PTP_IO io);
-#endif  // LEGACY_PLATFORM
 
   static LPFN_CONNECTEX ConnectEx;
 
