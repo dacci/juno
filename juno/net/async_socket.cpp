@@ -309,11 +309,9 @@ int AsyncSocket::DoAsyncConnect(AsyncContext* context) {
                sizeof(guid), &ConnectEx, sizeof(ConnectEx), &size, NULL, NULL);
   }
 
-  sockaddr* address =
-      static_cast<sockaddr*>(::calloc(end_point->ai_addrlen, 1));
-  address->sa_family = end_point->ai_family;
-  int result = ::bind(descriptor_, address, end_point->ai_addrlen);
-  ::free(address);
+  sockaddr_storage address = { end_point->ai_family };
+  int result = ::bind(descriptor_, reinterpret_cast<sockaddr*>(&address),
+                      end_point->ai_addrlen);
   if (result != 0)
     return SOCKET_ERROR;
 

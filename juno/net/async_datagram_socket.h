@@ -58,8 +58,8 @@ class AsyncDatagramSocket : public madoka::net::DatagramSocket {
     Action action;
     const addrinfo* end_point;
     DWORD flags;
+    sockaddr_storage address;
     int address_length;
-    sockaddr* address;
     AsyncDatagramSocket* socket;
     Listener* listener;
     HANDLE event;

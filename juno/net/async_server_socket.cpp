@@ -126,7 +126,7 @@ AsyncServerSocket::AcceptContext* AsyncServerSocket::CreateAcceptContext() {
     return NULL;
   }
 
-  context->buffer = new char[(address_length_ + 16) * 2];
+  context->buffer = new char[(sizeof(sockaddr_storage) + 16) * 2];
   if (context->buffer == NULL) {
     DestroyAcceptContext(context);
     return NULL;
@@ -158,8 +158,8 @@ void CALLBACK AsyncServerSocket::AsyncWork(PTP_CALLBACK_INSTANCE instance,
                               *context->client,
                               context->buffer,
                               0,
-                              context->server->address_length_ + 16,
-                              context->server->address_length_ + 16,
+                              sizeof(sockaddr_storage) + 16,
+                              sizeof(sockaddr_storage) + 16,
                               &bytes,
                               context);
   DWORD error = ::WSAGetLastError();

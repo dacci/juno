@@ -182,8 +182,7 @@ bool AsyncDatagramSocket::ReceiveFromAsync(void* buffer, int size, int flags,
   context->buf = static_cast<char*>(buffer);
   context->action = ReceivingFrom;
   context->flags = flags;
-  context->address_length = 64;
-  context->address = static_cast<sockaddr*>(::malloc(context->address_length));
+  context->address_length = sizeof(context->address);
   context->listener = listener;
 
   BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
@@ -210,8 +209,7 @@ OVERLAPPED* AsyncDatagramSocket::BeginReceiveFrom(void* buffer, int size,
   context->buf = static_cast<char*>(buffer);
   context->action = ReceivingFrom;
   context->flags = flags;
-  context->address_length = 64;
-  context->address = static_cast<sockaddr*>(::malloc(context->address_length));
+  context->address_length = sizeof(context->address);
   context->event = event;
   ::ResetEvent(event);
 
@@ -238,7 +236,7 @@ int AsyncDatagramSocket::EndReceiveFrom(OVERLAPPED* overlapped,
                                          FALSE);
   if (succeeded && address != NULL && length != NULL) {
     if (*length >= context->address_length)
-      ::memmove(address, context->address, context->address_length);
+      ::memmove(address, &context->address, context->address_length);
     *length = context->address_length;
   }
 
@@ -267,9 +265,9 @@ bool AsyncDatagramSocket::SendToAsync(const void* buffer, int size, int flags,
   context->action = SendingTo;
   context->flags = flags;
   context->address_length = end_point->ai_addrlen;
-  context->address = static_cast<sockaddr*>(::malloc(context->address_length));
-  ::memmove(context->address, end_point->ai_addr, context->address_length);
   context->listener = listener;
+
+  ::memmove(&context->address, end_point->ai_addr, context->address_length);
 
   BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
   if (!succeeded) {
@@ -299,9 +297,9 @@ OVERLAPPED* AsyncDatagramSocket::BeginSendTo(const void* buffer,
   context->action = SendingTo;
   context->flags = flags;
   context->address_length = end_point->ai_addrlen;
-  context->address = static_cast<sockaddr*>(::malloc(context->address_length));
-  ::memmove(context->address, end_point->ai_addr, context->address_length);
   context->event = event;
+
+  ::memmove(&context->address, end_point->ai_addr, context->address_length);
   ::ResetEvent(event);
 
   BOOL succeeded = ::TrySubmitThreadpoolCallback(AsyncWork, context, NULL);
@@ -353,11 +351,6 @@ AsyncDatagramSocket::AsyncContext* AsyncDatagramSocket::CreateAsyncContext() {
 }
 
 void AsyncDatagramSocket::DestroyAsyncContext(AsyncContext* context) {
-  if (context->address != NULL) {
-    ::free(context->address);
-    context->address = NULL;
-  }
-
   delete context;
 }
 
@@ -381,13 +374,14 @@ void CALLBACK AsyncDatagramSocket::AsyncWork(PTP_CALLBACK_INSTANCE instance,
     error = ::WSAGetLastError();
   } else if (context->action == ReceivingFrom) {
     result = ::WSARecvFrom(*context->socket, context, 1, &bytes,
-                           &context->flags, context->address,
+                           &context->flags,
+                           reinterpret_cast<sockaddr*>(&context->address),
                            &context->address_length, context, NULL);
     error = ::WSAGetLastError();
   } else if (context->action == SendingTo) {
     result = ::WSASendTo(*context->socket, context, 1, &bytes, context->flags,
-                         context->address, context->address_length, context,
-                         NULL);
+                         reinterpret_cast<sockaddr*>(&context->address),
+                         context->address_length, context, NULL);
     error = ::WSAGetLastError();
   } else {
     assert(false);
@@ -424,20 +418,18 @@ void CALLBACK AsyncDatagramSocket::OnTransferred(PTP_CALLBACK_INSTANCE instance,
       listener->OnSent(socket, error, bytes);
     } else if (context->action == ReceivingFrom) {
       int from_length = context->address_length;
-      sockaddr* from = context->address;
-      context->address = NULL;
+      sockaddr_storage from = context->address;
       socket->EndReceiveFrom(context, NULL, NULL);
 
-      listener->OnReceivedFrom(socket, error, bytes, from, from_length);
-      ::free(from);
+      listener->OnReceivedFrom(socket, error, bytes,
+                               reinterpret_cast<sockaddr*>(&from), from_length);
     } else if (context->action == SendingTo) {
       int to_length = context->address_length;
-      sockaddr* to = context->address;
-      context->address = NULL;
+      sockaddr_storage to = context->address;
       socket->EndSendTo(context);
 
-      listener->OnSentTo(socket, error, bytes, to, to_length);
-      ::free(to);
+      listener->OnSentTo(socket, error, bytes, reinterpret_cast<sockaddr*>(&to),
+                         to_length);
     } else {
       assert(false);
     }

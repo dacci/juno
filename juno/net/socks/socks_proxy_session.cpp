@@ -127,13 +127,14 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     }
 
     if (error == 0) {
-      int length = 32;
-      sockaddr* address = static_cast<sockaddr*>(::malloc(length));
+      sockaddr_storage address;
+      int length = sizeof(address);
 
-      if (remote_->GetLocalEndPoint(address, &length)) {
-        switch (address->sa_family) {
+      if (remote_->GetLocalEndPoint(reinterpret_cast<sockaddr*>(&address),
+                                    &length)) {
+        switch (address.ss_family) {
           case AF_INET: {
-            sockaddr_in* address4 = reinterpret_cast<sockaddr_in*>(address);
+            sockaddr_in* address4 = reinterpret_cast<sockaddr_in*>(&address);
             response->type = SOCKS5::IP_V4;
             response->address.ipv4.ipv4_addr = address4->sin_addr;
             response->address.ipv4.ipv4_port = address4->sin_port;
@@ -141,7 +142,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
           }
 
           case AF_INET6: {
-            sockaddr_in6* address6 = reinterpret_cast<sockaddr_in6*>(address);
+            sockaddr_in6* address6 = reinterpret_cast<sockaddr_in6*>(&address);
             response->type = SOCKS5::IP_V6;
             response->address.ipv6.ipv6_addr = address6->sin6_addr;
             response->address.ipv6.ipv6_port = address6->sin6_port;
@@ -150,8 +151,6 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
           }
         }
       }
-
-      ::free(address);
 
       if (TunnelingService::Bind(client_, remote_))
         response->code = SOCKS5::SUCCEEDED;
