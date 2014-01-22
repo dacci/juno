@@ -45,7 +45,7 @@ BOOL ProviderDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
 
 void ProviderDialog::OnOk(UINT notify_code, int id, CWindow control) {
   EDITBALLOONTIP balloon = { sizeof(balloon) };
-  CString message;
+  CStringW message;
 
   DoDataExchange(DDX_SAVE);
 

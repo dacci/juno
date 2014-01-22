@@ -151,7 +151,7 @@ void HttpProxyDialog::OnScrollDown(UINT notify_code, int id, CWindow control) {
 
 void HttpProxyDialog::OnOk(UINT notify_code, int id, CWindow control) {
   EDITBALLOONTIP balloon = { sizeof(balloon) };
-  CString message;
+  CStringW message;
 
   DoDataExchange(DDX_SAVE);
 

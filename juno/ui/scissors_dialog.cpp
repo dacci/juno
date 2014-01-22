@@ -36,7 +36,7 @@ void ScissorsDialog::OnUseUdp(UINT notify_code, int id, CWindow control) {
 
 void ScissorsDialog::OnOk(UINT notify_code, int id, CWindow control) {
   EDITBALLOONTIP balloon = { sizeof(balloon) };
-  CString message;
+  CStringW message;
 
   DoDataExchange(DDX_SAVE);
 

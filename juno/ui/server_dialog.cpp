@@ -68,8 +68,8 @@ BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
 
   FillBindCombo();
 
-  type_combo_.AddString(L"TCP");
-  type_combo_.AddString(L"UDP");
+  type_combo_.AddString(_T("TCP"));
+  type_combo_.AddString(_T("UDP"));
 
   FillServiceCombo();
 
@@ -84,7 +84,7 @@ BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
 
 void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
   EDITBALLOONTIP balloon = { sizeof(balloon) };
-  CString message;
+  CStringW message;
 
   DoDataExchange(DDX_SAVE);
 
