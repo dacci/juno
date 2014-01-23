@@ -232,17 +232,11 @@ void HttpProxyConfig::SetBasicAuthorization() {
   char* buffer = new char[buffer_size];
 
   ::CryptBinaryToStringA(reinterpret_cast<const BYTE*>(auth.c_str()),
-                         auth.size(), CRYPT_STRING_BASE64, buffer,
-                         &buffer_size);
-  char* end = buffer + buffer_size - 1;
-  while (end > buffer) {
-    if (!::isspace(*end))
-      break;
-    --end;
-  }
+                         auth.size(), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
+                         buffer, &buffer_size);
 
   basic_authorization_ = "Basic ";
-  basic_authorization_.append(buffer, end + 1);
+  basic_authorization_.append(buffer);
 
   delete[] buffer;
 }
