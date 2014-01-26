@@ -196,6 +196,7 @@
     <ClCompile Include="net\http\http_request.cpp" />
     <ClCompile Include="net\http\http_response.cpp" />
     <ClCompile Include="net\http\http_status.cpp" />
+    <ClCompile Include="net\http\http_util.cpp" />
     <ClCompile Include="net\scissors\scissors.cpp" />
     <ClCompile Include="net\scissors\scissors_config.cpp" />
     <ClCompile Include="net\scissors\scissors_provider.cpp" />
@@ -242,6 +243,7 @@
     <ClInclude Include="net\http\http_request.h" />
     <ClInclude Include="net\http\http_response.h" />
     <ClInclude Include="net\http\http_status.h" />
+    <ClInclude Include="net\http\http_util.h" />
     <ClInclude Include="net\scissors\scissors.h" />
     <ClInclude Include="net\scissors\scissors_config.h" />
     <ClInclude Include="net\scissors\scissors_provider.h" />

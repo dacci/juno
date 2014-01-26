@@ -61,8 +61,6 @@ class HttpProxySession : public AsyncSocket::Listener {
 
   bool ReceiveAsync(const AsyncSocketPtr& socket, int flags);
 
-  static int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size);
-
   void ProcessRequestHeader();
   void ProcessResponseHeader();
   void ProcessMessageLength(HttpHeaders* headers);

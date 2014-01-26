@@ -7,6 +7,7 @@
 #include "misc/string_util.h"
 #include "net/http/http_proxy.h"
 #include "net/http/http_proxy_config.h"
+#include "net/http/http_util.h"
 #include "net/tunneling_service.h"
 
 #define DELETE_THIS() \
@@ -183,51 +184,6 @@ bool HttpProxySession::ReceiveAsync(const AsyncSocketPtr& socket, int flags) {
   receiving_ = socket.get();
 
   return socket->ReceiveAsync(buffer_.get(), kBufferSize, flags, this);
-}
-
-int64_t HttpProxySession::ParseChunk(const std::string& buffer,
-                                     int64_t* chunk_size) {
-  char* start = const_cast<char*>(buffer.c_str());
-  char* end = start;
-  *chunk_size = ::_strtoi64(start, &end, 16);
-
-  while (*end) {
-    if (*end != '\x0D' && *end != '\x0A')
-      return -1;
-
-    if (*end == '\x0A')
-      break;
-
-    ++end;
-  }
-
-  if (*end == '\0')
-    return -2;
-
-  ++end;
-
-  int64_t length = *chunk_size + (end - start);
-  if (buffer.size() < length)
-    return -2;
-
-  end = start + length;
-
-  while (*end) {
-    if (*end != '\x0D' && *end != '\x0A')
-      return -1;
-
-    if (*end == '\x0A')
-      break;
-
-    ++end;
-  }
-
-  if (*end == '\0')
-    return -2;
-
-  ++end;
-
-  return end - start;
 }
 
 void HttpProxySession::ProcessRequestHeader() {
@@ -484,7 +440,7 @@ void HttpProxySession::OnRequestSent(DWORD error, int length) {
     if (remote_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
       return;
   } else if (chunked_) {
-    content_length_ = ParseChunk(client_buffer_, &chunk_size_);
+    content_length_ = http::ParseChunk(client_buffer_, &chunk_size_);
     if (content_length_ == -2) {
       if (ReceiveAsync(client_, 0))
         return;
@@ -522,7 +478,7 @@ void HttpProxySession::OnRequestBodyReceived(DWORD error, int length) {
   if (chunked_) {
     client_buffer_.append(buffer_.get(), length);
 
-    content_length_ = ParseChunk(client_buffer_, &chunk_size_);
+    content_length_ = http::ParseChunk(client_buffer_, &chunk_size_);
     if (content_length_ == -2) {
       if (ReceiveAsync(client_, 0))
         return;
@@ -554,7 +510,7 @@ void HttpProxySession::OnRequestBodySent(DWORD error, int length) {
         return;
     }
 
-    content_length_ = ParseChunk(client_buffer_, &chunk_size_);
+    content_length_ = http::ParseChunk(client_buffer_, &chunk_size_);
     if (content_length_ == -2) {
       if (ReceiveAsync(client_, 0))
         return;
@@ -684,7 +640,7 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
         return;
     }
   } else if (chunked_) {
-    content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
+    content_length_ = http::ParseChunk(remote_buffer_, &chunk_size_);
 
     if (content_length_ == -2) {
       if (remote_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
@@ -722,7 +678,7 @@ void HttpProxySession::OnResponseBodyReceived(DWORD error, int length) {
   if (chunked_) {
     remote_buffer_.append(buffer_.get(), length);
 
-    content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
+    content_length_ = http::ParseChunk(remote_buffer_, &chunk_size_);
     if (content_length_ == -2) {
       if (remote_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
         return;
@@ -754,7 +710,7 @@ void HttpProxySession::OnResponseBodySent(DWORD error, int length) {
       return;
     }
 
-    content_length_ = ParseChunk(remote_buffer_, &chunk_size_);
+    content_length_ = http::ParseChunk(remote_buffer_, &chunk_size_);
     if (content_length_ == -2) {
       if (remote_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
         return;
