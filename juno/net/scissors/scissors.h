@@ -3,6 +3,7 @@
 #ifndef JUNO_NET_SCISSORS_SCISSORS_H_
 #define JUNO_NET_SCISSORS_SCISSORS_H_
 
+#include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
 
 #include <list>
@@ -45,8 +46,7 @@ class Scissors : public Service {
 
   ScissorsConfig* const config_;
 
-  // TODO(dacci): replace with condition variable.
-  HANDLE empty_event_;
+  madoka::concurrent::ConditionVariable empty_;
   madoka::concurrent::CriticalSection critical_section_;
   std::list<Session*> sessions_;
 

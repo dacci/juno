@@ -12,14 +12,11 @@
 
 Scissors::Scissors(ScissorsConfig* config)
     : config_(config), stopped_(), credential_() {
-  empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
 }
 
 Scissors::~Scissors() {
   if (credential_ != NULL)
     delete credential_;
-
-  ::CloseHandle(empty_event_);
 }
 
 bool Scissors::Init() {
@@ -47,14 +44,8 @@ void Scissors::Stop() {
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
     (*i)->Stop();
 
-  while (true) {
-    critical_section_.Unlock();
-    ::WaitForSingleObject(empty_event_, INFINITE);
-    critical_section_.Lock();
-
-    if (sessions_.empty())
-      break;
-  }
+  while (!sessions_.empty())
+    empty_.Sleep(&critical_section_);
 }
 
 void Scissors::EndSession(Session* session) {
@@ -63,7 +54,7 @@ void Scissors::EndSession(Session* session) {
   sessions_.remove(session);
 
   if (sessions_.empty())
-    ::SetEvent(empty_event_);
+    empty_.WakeAll();
 }
 
 bool Scissors::OnAccepted(AsyncSocket* client) {
@@ -77,7 +68,6 @@ bool Scissors::OnAccepted(AsyncSocket* client) {
     return false;
 
   sessions_.push_back(session);
-  ::ResetEvent(empty_event_);
 
   if (!session->Start(client)) {
     delete session;
@@ -98,7 +88,6 @@ bool Scissors::OnReceivedFrom(Datagram* datagram) {
     return false;
 
   sessions_.push_back(session);
-  ::ResetEvent(empty_event_);
 
   if (!session->Start()) {
     delete session;

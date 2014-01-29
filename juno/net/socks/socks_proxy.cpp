@@ -8,11 +8,9 @@
 #include "net/socks/socks_proxy_session.h"
 
 SocksProxy::SocksProxy(SocksProxyConfig* config) : stopped_() {
-  empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
 }
 
 SocksProxy::~SocksProxy() {
-  ::CloseHandle(empty_event_);
 }
 
 bool SocksProxy::Setup(HKEY key) {
@@ -27,14 +25,8 @@ void SocksProxy::Stop() {
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
     (*i)->Stop();
 
-  while (true) {
-    critical_section_.Unlock();
-    ::WaitForSingleObject(empty_event_, INFINITE);
-    critical_section_.Lock();
-
-    if (sessions_.empty())
-      break;
-  }
+  while (!sessions_.empty())
+    empty_.Sleep(&critical_section_);
 }
 
 void SocksProxy::EndSession(SocksProxySession* session) {
@@ -43,7 +35,7 @@ void SocksProxy::EndSession(SocksProxySession* session) {
   sessions_.remove(session);
 
   if (sessions_.empty())
-    ::SetEvent(empty_event_);
+    empty_.WakeAll();
 }
 
 bool SocksProxy::OnAccepted(AsyncSocket* client) {
@@ -57,7 +49,6 @@ bool SocksProxy::OnAccepted(AsyncSocket* client) {
     return false;
 
   sessions_.push_back(session);
-  ::ResetEvent(empty_event_);
 
   if (!session->Start(client)) {
     delete session;

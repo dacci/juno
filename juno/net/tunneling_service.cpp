@@ -30,7 +30,6 @@ bool TunnelingService::Bind(const AsyncSocketPtr& a, const AsyncSocketPtr& b) {
 }
 
 TunnelingService::TunnelingService() : stopped_() {
-  empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
 }
 
 TunnelingService::~TunnelingService() {
@@ -41,16 +40,8 @@ TunnelingService::~TunnelingService() {
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
     (*i)->from_->Shutdown(SD_BOTH);
 
-  while (true) {
-    critical_section_.Unlock();
-    ::WaitForSingleObject(empty_event_, INFINITE);
-    critical_section_.Lock();
-
-    if (sessions_.empty())
-      break;
-  }
-
-  ::CloseHandle(empty_event_);
+  while (!sessions_.empty())
+    empty_.Sleep(&critical_section_);
 }
 
 bool TunnelingService::BindSocket(const AsyncSocketPtr& from,
@@ -65,12 +56,10 @@ bool TunnelingService::BindSocket(const AsyncSocketPtr& from,
     return false;
 
   bool started = pair->Start();
-  if (started) {
+  if (started)
     sessions_.push_back(pair);
-    ::ResetEvent(empty_event_);
-  } else {
+  else
     delete pair;
-  }
 
   return started;
 }
@@ -80,7 +69,7 @@ void TunnelingService::EndSession(Session* session) {
 
   sessions_.remove(session);
   if (sessions_.empty())
-    ::SetEvent(empty_event_);
+    empty_.WakeAll();
 
   delete session;
 }

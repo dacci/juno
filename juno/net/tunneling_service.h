@@ -3,6 +3,7 @@
 #ifndef JUNO_NET_TUNNELING_SERVICE_H_
 #define JUNO_NET_TUNNELING_SERVICE_H_
 
+#include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
 
 #include <list>
@@ -48,8 +49,7 @@ class TunnelingService {
 
   static TunnelingService* instance_;
 
-  // TODO(dacci): replace with condition variable
-  HANDLE empty_event_;
+  madoka::concurrent::ConditionVariable empty_;
   madoka::concurrent::CriticalSection critical_section_;
   bool stopped_;
 

@@ -3,6 +3,7 @@
 #ifndef JUNO_NET_SOCKS_SOCKS_PROXY_H_
 #define JUNO_NET_SOCKS_SOCKS_PROXY_H_
 
+#include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
 
 #include <list>
@@ -26,8 +27,7 @@ class SocksProxy : public Service {
   void OnError(DWORD error);
 
  private:
-  // TODO(dacci): replace with condition variable.
-  HANDLE empty_event_;
+  madoka::concurrent::ConditionVariable empty_;
   madoka::concurrent::CriticalSection critical_section_;
   std::list<SocksProxySession*> sessions_;
   bool stopped_;

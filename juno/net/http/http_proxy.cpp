@@ -12,12 +12,10 @@
 #include "net/http/http_proxy_session.h"
 
 HttpProxy::HttpProxy(HttpProxyConfig* config) : config_(config), stopped_() {
-  empty_event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
 }
 
 HttpProxy::~HttpProxy() {
   Stop();
-  ::CloseHandle(empty_event_);
 }
 
 bool HttpProxy::Init() {
@@ -32,14 +30,8 @@ void HttpProxy::Stop() {
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
     (*i)->Stop();
 
-  while (true) {
-    critical_section_.Unlock();
-    ::WaitForSingleObject(empty_event_, INFINITE);
-    critical_section_.Lock();
-
-    if (sessions_.empty())
-      break;
-  }
+  while (sessions_.empty())
+    empty_.Sleep(&critical_section_);
 }
 
 void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
@@ -89,7 +81,7 @@ void HttpProxy::EndSession(HttpProxySession* session) {
 
   sessions_.remove(session);
   if (sessions_.empty())
-    ::SetEvent(empty_event_);
+    empty_.WakeAll();
 }
 
 bool HttpProxy::OnAccepted(AsyncSocket* client) {
@@ -103,7 +95,6 @@ bool HttpProxy::OnAccepted(AsyncSocket* client) {
     return false;
 
   sessions_.push_back(session);
-  ::ResetEvent(empty_event_);
 
   if (!session->Start(client)) {
     delete session;
