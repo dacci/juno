@@ -30,7 +30,7 @@ void HttpProxy::Stop() {
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
     (*i)->Stop();
 
-  while (sessions_.empty())
+  while (!sessions_.empty())
     empty_.Sleep(&critical_section_);
 }
 
