@@ -2,7 +2,7 @@
 
 #include "ui/http_header_filter_dialog.h"
 
-#include <boost/regex.hpp>
+#include <regex>
 
 HttpHeaderFilterDialog::HttpHeaderFilterDialog(
     HttpProxyConfig::HeaderFilter* filter) : filter_(filter) {
@@ -55,11 +55,11 @@ void HttpHeaderFilterDialog::OnOk(UINT notify_code, int id, CWindow control) {
       CString value;
       value_edit_.GetWindowText(value);
 #ifdef UNICODE
-      boost::wregex(value.GetString());
+      std::wregex(value.GetString());
 #else   // UNICODE
-      boost::regex(value.GetString());
+      std::regex(value.GetString());
 #endif  // UNICODE
-    } catch (const boost::regex_error& e) {  // NOLINT(*)
+    } catch (const std::regex_error& e) {  // NOLINT(*)
       message = e.what();
       balloon.pszText = message;
       value_edit_.ShowBalloonTip(&balloon);
