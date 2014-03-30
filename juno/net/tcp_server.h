@@ -3,7 +3,7 @@
 #ifndef JUNO_NET_TCP_SERVER_H_
 #define JUNO_NET_TCP_SERVER_H_
 
-#include <madoka/net/address_info.h>
+#include <madoka/net/resolver.h>
 
 #include <vector>
 
@@ -28,7 +28,7 @@ class TcpServer : public Server, public AsyncServerSocket::Listener {
   }
 
  private:
-  madoka::net::AddressInfo resolver_;
+  madoka::net::Resolver resolver_;
   std::vector<AsyncServerSocket*> servers_;
   Service* service_;
 

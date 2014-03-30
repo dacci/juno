@@ -3,7 +3,7 @@
 #ifndef JUNO_NET_SCISSORS_SCISSORS_TCP_SESSION_H_
 #define JUNO_NET_SCISSORS_SCISSORS_TCP_SESSION_H_
 
-#include <madoka/net/address_info.h>
+#include <madoka/net/resolver.h>
 
 #include <memory>
 #include <vector>
@@ -45,7 +45,7 @@ class ScissorsTcpSession
   static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
 
   Scissors* const service_;
-  madoka::net::AddressInfo resolver_;
+  madoka::net::Resolver resolver_;
   AsyncSocketPtr client_;
   AsyncSocketPtr remote_;
   SchannelContext* context_;

@@ -33,8 +33,8 @@ bool UdpServer::Setup(const char* address, int port) {
   if (address[0] == '*')
     address = NULL;
 
-  resolver_.ai_flags = AI_PASSIVE;
-  resolver_.ai_socktype = SOCK_DGRAM;
+  resolver_.SetFlags(AI_PASSIVE);
+  resolver_.SetType(SOCK_DGRAM);
   if (!resolver_.Resolve(address, port))
     return false;
 

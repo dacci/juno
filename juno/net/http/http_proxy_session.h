@@ -7,6 +7,8 @@
 
 #include <url/gurl.h>
 
+#include <madoka/net/resolver.h>
+
 #include <memory>
 
 #include "net/async_socket.h"
@@ -97,7 +99,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   HttpRequest request_;
   bool tunnel_;
   GURL url_;
-  madoka::net::AddressInfo resolver_;
+  madoka::net::Resolver resolver_;
 
   AsyncSocketPtr remote_;
   std::string remote_buffer_;

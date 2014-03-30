@@ -293,7 +293,6 @@ void HttpProxySession::EndSession() {
 
   request_.Clear();
   url_ = GURL::EmptyGURL();
-  resolver_.Free();
 
   remote_buffer_.clear();
   response_.Clear();
@@ -420,7 +419,7 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
   }
 
   remote_.reset(new AsyncSocket());
-  if (!remote_->ConnectAsync(*resolver_, this)) {
+  if (!remote_->ConnectAsync(*resolver_.begin(), this)) {
     SendError(HTTP::INTERNAL_SERVER_ERROR);
     return;
   }

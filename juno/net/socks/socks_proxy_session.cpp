@@ -4,7 +4,7 @@
 
 #include <assert.h>
 
-#include <madoka/net/address_info.h>
+#include <madoka/net/resolver.h>
 
 #include <string>
 
@@ -92,7 +92,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 
     if (request->address.s_addr != 0 &&
         ::htonl(request->address.s_addr) <= 0x000000FF)
-      delete static_cast<madoka::net::AddressInfo*>(end_point_);
+      delete static_cast<madoka::net::Resolver*>(end_point_);
     else
       delete static_cast<SocketAddress4*>(end_point_);
 
@@ -118,7 +118,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
         break;
 
       case SOCKS5::DOMAINNAME:
-        delete static_cast<madoka::net::AddressInfo*>(end_point_);
+        delete static_cast<madoka::net::Resolver*>(end_point_);
         break;
 
       case SOCKS5::IP_V6:
@@ -192,7 +192,7 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
           // SOCKS4a extension
           const char* host = request->user_id + ::strlen(request->user_id) + 1;
 
-          auto resolver = new madoka::net::AddressInfo();
+          auto resolver = new madoka::net::Resolver();
           if (resolver == NULL)
             break;
 
@@ -201,7 +201,7 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
 
           end_point_ = resolver;
 
-          if (!remote_->ConnectAsync(**resolver, this))
+          if (!remote_->ConnectAsync(*resolver->begin(), this))
             break;
         } else {
           auto address = new SocketAddress4();
@@ -213,7 +213,7 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
           address->sin_addr = request->address;
           end_point_ = address;
 
-          if (!remote_->ConnectAsync(end_point_, this))
+          if (!remote_->ConnectAsync(address, this))
             break;
         }
 
@@ -332,7 +332,7 @@ bool SocksProxySession::ConnectIPv4(const SOCKS5::ADDRESS& address) {
 
     end_point_ = end_point;
 
-    if (!remote_->ConnectAsync(end_point_, this))
+    if (!remote_->ConnectAsync(end_point, this))
       break;
 
     return true;
@@ -350,10 +350,10 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
       address.domain.domain_name +
       address.domain.domain_len);
 
-  madoka::net::AddressInfo* resolver = NULL;
+  madoka::net::Resolver* resolver = NULL;
 
   do {
-    resolver = new madoka::net::AddressInfo();
+    resolver = new madoka::net::Resolver();
     if (resolver == NULL)
       break;
 
@@ -366,7 +366,7 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
 
     end_point_ = resolver;
 
-    if (!remote_->ConnectAsync(**resolver, this))
+    if (!remote_->ConnectAsync(*resolver->begin(), this))
       break;
 
     return true;
@@ -395,7 +395,7 @@ bool SocksProxySession::ConnectIPv6(const SOCKS5::ADDRESS& address) {
 
     end_point_ = end_point;
 
-    if (!remote_->ConnectAsync(end_point_, this))
+    if (!remote_->ConnectAsync(end_point, this))
       break;
 
     return true;

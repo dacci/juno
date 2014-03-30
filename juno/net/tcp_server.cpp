@@ -27,8 +27,8 @@ bool TcpServer::Setup(const char* address, int port) {
   if (address[0] == '*')
     address = NULL;
 
-  resolver_.ai_flags = AI_PASSIVE;
-  resolver_.ai_socktype = SOCK_STREAM;
+  resolver_.SetFlags(AI_PASSIVE);
+  resolver_.SetType(SOCK_STREAM);
   if (!resolver_.Resolve(address, port))
     return false;
 

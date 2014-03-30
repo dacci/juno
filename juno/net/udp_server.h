@@ -3,7 +3,7 @@
 #ifndef JUNO_NET_UDP_SERVER_H_
 #define JUNO_NET_UDP_SERVER_H_
 
-#include <madoka/net/address_info.h>
+#include <madoka/net/resolver.h>
 
 #include <map>
 #include <vector>
@@ -38,7 +38,7 @@ class UdpServer : public Server, public AsyncDatagramSocket::Listener {
 
   static void CALLBACK Dispatch(PTP_CALLBACK_INSTANCE instance, void* context);
 
-  madoka::net::AddressInfo resolver_;
+  madoka::net::Resolver resolver_;
   std::vector<AsyncDatagramSocket*> servers_;
   std::map<AsyncDatagramSocket*, char*> buffers_;
   Service* service_;

@@ -17,7 +17,7 @@ FILETIME ScissorsUdpSession::kTimerDueTime = {
 ScissorsUdpSession::ScissorsUdpSession(Scissors* service,
                                        Service::Datagram* datagram)
     : service_(service), datagram_(datagram), remote_(), buffer_(), timer_() {
-  resolver_.ai_socktype = SOCK_DGRAM;
+  resolver_.SetType(SOCK_DGRAM);
   timer_ = ::CreateThreadpoolTimer(OnTimeout, this, NULL);
 }
 
@@ -50,7 +50,7 @@ bool ScissorsUdpSession::Start() {
   if (buffer_ == NULL)
     return false;
 
-  if (!remote_->Connect(*resolver_))
+  if (!remote_->Connect(*resolver_.begin()))
     return false;
 
   if (!remote_->SendAsync(datagram_->data, datagram_->data_length, 0, this))

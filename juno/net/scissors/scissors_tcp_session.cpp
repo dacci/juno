@@ -22,7 +22,7 @@ ScissorsTcpSession::ScissorsTcpSession(Scissors* service)
       established_(),
       ref_count_(1),
       shutdown_() {
-  resolver_.ai_socktype = SOCK_STREAM;
+  resolver_.SetType(SOCK_STREAM);
 }
 
 ScissorsTcpSession::~ScissorsTcpSession() {
@@ -62,7 +62,7 @@ bool ScissorsTcpSession::Start(AsyncSocket* client) {
 
   client_.reset(client);
 
-  if (!remote_->ConnectAsync(*resolver_, this)) {
+  if (!remote_->ConnectAsync(*resolver_.begin(), this)) {
     client_ = NULL;
     return false;
   }

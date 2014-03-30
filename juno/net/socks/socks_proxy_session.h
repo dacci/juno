@@ -39,7 +39,7 @@ class SocksProxySession : public AsyncSocket::Listener {
   std::unique_ptr<char[]> response_buffer_;
 
   int phase_;
-  addrinfo* end_point_;
+  void* end_point_;
 };
 
 #endif  // JUNO_NET_SOCKS_SOCKS_PROXY_SESSION_H_
