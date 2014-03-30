@@ -22,13 +22,19 @@
     <ClInclude Include="base\base_export.h" />
     <ClInclude Include="base\basictypes.h" />
     <ClInclude Include="base\compiler_specific.h" />
+    <ClInclude Include="base\containers\hash_tables.h" />
     <ClInclude Include="base\lazy_instance.h" />
     <ClInclude Include="base\logging.h" />
+    <ClInclude Include="base\macros.h" />
     <ClInclude Include="base\memory\scoped_ptr.h" />
     <ClInclude Include="base\port.h" />
     <ClInclude Include="base\strings\string16.h" />
+    <ClInclude Include="base\strings\string_piece.h" />
+    <ClInclude Include="base\strings\string_util.h" />
+    <ClInclude Include="base\strings\string_util_win.h" />
     <ClInclude Include="build\build_config.h" />
     <ClInclude Include="url\gurl.h" />
+    <ClInclude Include="url\origin.h" />
     <ClInclude Include="url\third_party\mozilla\url_parse.h" />
     <ClInclude Include="url\url_canon.h" />
     <ClInclude Include="url\url_canon_icu.h" />
@@ -46,6 +52,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="url\gurl.cc" />
+    <ClCompile Include="url\origin.cc" />
     <ClCompile Include="url\third_party\mozilla\url_parse.cc" />
     <ClCompile Include="url\url_canon_etc.cc" />
     <ClCompile Include="url\url_canon_filesystemurl.cc" />
