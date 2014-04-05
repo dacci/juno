@@ -11,7 +11,6 @@
 #include <string>
 
 #include "app/service.h"
-#include "net/async_datagram_socket.h"
 
 class SchannelCredential;
 class ScissorsConfig;
@@ -31,7 +30,7 @@ class Scissors : public Service {
   bool Init();
   void Stop();
 
-  bool OnAccepted(AsyncSocket* client);
+  bool OnAccepted(madoka::net::AsyncSocket* client);
   bool OnReceivedFrom(Datagram* datagram);
   void OnError(DWORD error);
 
@@ -50,8 +49,8 @@ class Scissors : public Service {
   madoka::concurrent::CriticalSection critical_section_;
   std::list<Session*> sessions_;
 
-  std::map<AsyncDatagramSocket*, Datagram*> datagrams_;
-  std::map<AsyncDatagramSocket*, char*> buffers_;
+  std::map<madoka::net::AsyncDatagramSocket*, Datagram*> datagrams_;
+  std::map<madoka::net::AsyncDatagramSocket*, char*> buffers_;
 
   bool stopped_;
 

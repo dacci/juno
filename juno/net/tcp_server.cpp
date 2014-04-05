@@ -3,8 +3,9 @@
 #include "net/tcp_server.h"
 
 #include "app/service.h"
-#include "net/async_server_socket.h"
-#include "net/async_socket.h"
+
+using ::madoka::net::AsyncServerSocket;
+using ::madoka::net::AsyncSocket;
 
 TcpServer::TcpServer() : service_(), count_() {
   event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);

@@ -4,16 +4,16 @@
 #define JUNO_NET_UDP_SERVER_H_
 
 #include <madoka/net/resolver.h>
+#include <madoka/net/socket_event_listener.h>
 
 #include <map>
 #include <vector>
 
-#include "net/async_datagram_socket.h"
 #include "net/server.h"
 
 class Service;
 
-class UdpServer : public Server, public AsyncDatagramSocket::Listener {
+class UdpServer : public Server, public madoka::net::SocketEventAdapter {
  public:
   UdpServer();
   virtual ~UdpServer();
@@ -22,12 +22,8 @@ class UdpServer : public Server, public AsyncDatagramSocket::Listener {
   bool Start();
   void Stop();
 
-  void OnReceived(AsyncDatagramSocket* socket, DWORD error, int length);
-  void OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error, int length,
-                      sockaddr* from, int from_length);
-  void OnSent(AsyncDatagramSocket* socket, DWORD error, int length);
-  void OnSentTo(AsyncDatagramSocket* socket, DWORD error, int length,
-                sockaddr* to, int to_length);
+  void OnReceivedFrom(madoka::net::AsyncDatagramSocket* socket, DWORD error,
+                      int length, sockaddr* from, int from_length);
 
   void SetService(Service* service) {
     service_ = service;
@@ -39,8 +35,8 @@ class UdpServer : public Server, public AsyncDatagramSocket::Listener {
   static void CALLBACK Dispatch(PTP_CALLBACK_INSTANCE instance, void* context);
 
   madoka::net::Resolver resolver_;
-  std::vector<AsyncDatagramSocket*> servers_;
-  std::map<AsyncDatagramSocket*, char*> buffers_;
+  std::vector<madoka::net::AsyncDatagramSocket*> servers_;
+  std::map<madoka::net::AsyncDatagramSocket*, char*> buffers_;
   Service* service_;
 
   LONG count_;

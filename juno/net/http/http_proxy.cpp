@@ -7,7 +7,6 @@
 #include <utility>
 
 #include "misc/registry_key-inl.h"
-#include "net/async_server_socket.h"
 #include "net/http/http_proxy_config.h"
 #include "net/http/http_proxy_session.h"
 
@@ -84,7 +83,7 @@ void HttpProxy::EndSession(HttpProxySession* session) {
     empty_.WakeAll();
 }
 
-bool HttpProxy::OnAccepted(AsyncSocket* client) {
+bool HttpProxy::OnAccepted(madoka::net::AsyncSocket* client) {
   madoka::concurrent::LockGuard lock(&critical_section_);
 
   if (stopped_)

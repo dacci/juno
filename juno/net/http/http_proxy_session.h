@@ -8,10 +8,10 @@
 #include <url/gurl.h>
 
 #include <madoka/net/resolver.h>
+#include <madoka/net/socket_event_listener.h>
 
 #include <memory>
 
-#include "net/async_socket.h"
 #include "net/http/http_request.h"
 #include "net/http/http_response.h"
 #include "net/http/http_status.h"
@@ -19,19 +19,21 @@
 class HttpProxy;
 class HttpProxyConfig;
 
-class HttpProxySession : public AsyncSocket::Listener {
+class HttpProxySession : public madoka::net::SocketEventAdapter {
  public:
   HttpProxySession(HttpProxy* proxy, HttpProxyConfig* config);
   virtual ~HttpProxySession();
 
-  bool Start(AsyncSocket* client);
+  bool Start(madoka::net::AsyncSocket* client);
   void Stop();
 
-  void OnConnected(AsyncSocket* socket, DWORD error);
-  void OnReceived(AsyncSocket* socket, DWORD error, int length);
-  void OnSent(AsyncSocket* socket, DWORD error, int length);
+  void OnConnected(madoka::net::AsyncSocket* socket, DWORD error);
+  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, int length);
+  void OnSent(madoka::net::AsyncSocket* socket, DWORD error, int length);
 
  private:
+  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
+
   enum Phase {
     Request, RequestBody, Response, ResponseBody, Error,
   };
@@ -43,7 +45,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   struct EventArgs {
     Event event;
     HttpProxySession* session;
-    AsyncSocket* socket;
+    madoka::net::AsyncSocket* socket;
     DWORD error;
     int length;
   };
@@ -112,7 +114,7 @@ class HttpProxySession : public AsyncSocket::Listener {
   int64_t chunk_size_;
   bool close_client_;
   PTP_TIMER timer_;
-  AsyncSocket* receiving_;
+  madoka::net::AsyncSocket* receiving_;
   bool continue_;
 };
 

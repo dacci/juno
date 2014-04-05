@@ -5,11 +5,13 @@
 
 #include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
+#include <madoka/net/async_socket.h>
+#include <madoka/net/socket_event_listener.h>
 
 #include <list>
 #include <memory>
 
-#include "net/async_socket.h"
+typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
 
 class TunnelingService {
  public:
@@ -18,7 +20,7 @@ class TunnelingService {
   static bool Bind(const AsyncSocketPtr& a, const AsyncSocketPtr& b);
 
  private:
-  class Session : AsyncSocket::Listener {
+  class Session : public madoka::net::SocketEventAdapter {
    public:
     static const size_t kBufferSize = 8192;
 
@@ -28,9 +30,8 @@ class TunnelingService {
 
     bool Start();
 
-    void OnConnected(AsyncSocket* socket, DWORD error);
-    void OnReceived(AsyncSocket* socket, DWORD error, int length);
-    void OnSent(AsyncSocket* socket, DWORD error, int length);
+    void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, int length);
+    void OnSent(madoka::net::AsyncSocket* socket, DWORD error, int length);
 
     static void CALLBACK EndSession(PTP_CALLBACK_INSTANCE instance,
                                     void* param);

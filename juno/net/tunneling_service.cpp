@@ -6,6 +6,8 @@
 
 #include <madoka/concurrent/lock_guard.h>
 
+using ::madoka::net::AsyncSocket;
+
 TunnelingService* TunnelingService::instance_ = NULL;
 
 bool TunnelingService::Init() {
@@ -87,10 +89,6 @@ TunnelingService::Session::~Session() {
 
 bool TunnelingService::Session::Start() {
   return from_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this);
-}
-
-void TunnelingService::Session::OnConnected(AsyncSocket*, DWORD) {
-  assert(false);
 }
 
 void TunnelingService::Session::OnReceived(AsyncSocket* socket, DWORD error,

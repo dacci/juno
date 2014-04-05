@@ -13,6 +13,8 @@
 #define DELETE_THIS() \
   ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
 
+using ::madoka::net::AsyncSocket;
+
 const std::string HttpProxySession::kConnection("Connection");
 const std::string HttpProxySession::kContentEncoding("Content-Encoding");
 const std::string HttpProxySession::kContentLength("Content-Length");

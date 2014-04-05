@@ -27,7 +27,7 @@ class HttpProxy : public Service {
   void FilterHeaders(HttpHeaders* headers, bool request);
   void EndSession(HttpProxySession* session);
 
-  bool OnAccepted(AsyncSocket* client);
+  bool OnAccepted(madoka::net::AsyncSocket* client);
   bool OnReceivedFrom(Datagram* datagram);
   void OnError(DWORD error);
 

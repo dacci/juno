@@ -10,6 +10,8 @@
 #include "net/scissors/scissors_tcp_session.h"
 #include "net/scissors/scissors_udp_session.h"
 
+using madoka::net::AsyncSocket;
+
 Scissors::Scissors(ScissorsConfig* config)
     : config_(config), stopped_(), credential_() {
 }

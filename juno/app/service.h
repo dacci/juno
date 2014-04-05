@@ -3,18 +3,14 @@
 #ifndef JUNO_APP_SERVICE_H_
 #define JUNO_APP_SERVICE_H_
 
-#include <windows.h>
-
-struct sockaddr;
-
-class AsyncSocket;
-class AsyncDatagramSocket;
+#include <madoka/net/async_datagram_socket.h>
+#include <madoka/net/async_socket.h>
 
 class Service {
  public:
   struct Datagram {
     Service* service;
-    AsyncDatagramSocket* socket;
+    madoka::net::AsyncDatagramSocket* socket;
     int data_length;
     void* data;
     int from_length;
@@ -26,7 +22,7 @@ class Service {
 
   virtual void Stop() = 0;
 
-  virtual bool OnAccepted(AsyncSocket* client) = 0;
+  virtual bool OnAccepted(madoka::net::AsyncSocket* client) = 0;
   virtual bool OnReceivedFrom(Datagram* datagram) = 0;
   virtual void OnError(DWORD error) = 0;
 };

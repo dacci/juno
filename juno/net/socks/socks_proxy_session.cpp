@@ -11,6 +11,8 @@
 #include "net/socks/socks_proxy.h"
 #include "net/tunneling_service.h"
 
+using ::madoka::net::AsyncSocket;
+
 namespace {
 
 struct SocketAddress4 : addrinfo, sockaddr_in {

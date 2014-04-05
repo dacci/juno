@@ -3,27 +3,31 @@
 #ifndef JUNO_NET_SOCKS_SOCKS_PROXY_SESSION_H_
 #define JUNO_NET_SOCKS_SOCKS_PROXY_SESSION_H_
 
+#include <madoka/net/async_socket.h>
+#include <madoka/net/socket_event_listener.h>
+
 #include <memory>
 
-#include "net/async_socket.h"
 #include "net/socks/socks4.h"
 #include "net/socks/socks5.h"
 
 class SocksProxy;
 
-class SocksProxySession : public AsyncSocket::Listener {
+class SocksProxySession : public madoka::net::SocketEventAdapter {
  public:
   explicit SocksProxySession(SocksProxy* proxy);
   virtual ~SocksProxySession();
 
-  bool Start(AsyncSocket* client);
+  bool Start(madoka::net::AsyncSocket* client);
   void Stop();
 
-  void OnConnected(AsyncSocket* socket, DWORD error);
-  void OnReceived(AsyncSocket* socket, DWORD error, int length);
-  void OnSent(AsyncSocket* socket, DWORD error, int length);
+  void OnConnected(madoka::net::AsyncSocket* socket, DWORD error);
+  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, int length);
+  void OnSent(madoka::net::AsyncSocket* socket, DWORD error, int length);
 
  private:
+  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
+
   static const size_t kBufferSize = 1024;
 
   bool ConnectIPv4(const SOCKS5::ADDRESS& address);

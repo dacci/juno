@@ -4,15 +4,16 @@
 #define JUNO_NET_TCP_SERVER_H_
 
 #include <madoka/net/resolver.h>
+#include <madoka/net/async_server_socket.h>
+#include <madoka/net/socket_event_listener.h>
 
 #include <vector>
 
-#include "net/async_server_socket.h"
 #include "net/server.h"
 
 class Service;
 
-class TcpServer : public Server, public AsyncServerSocket::Listener {
+class TcpServer : public Server, public madoka::net::SocketEventAdapter {
  public:
   TcpServer();
   virtual ~TcpServer();
@@ -21,7 +22,8 @@ class TcpServer : public Server, public AsyncServerSocket::Listener {
   bool Start();
   void Stop();
 
-  void OnAccepted(AsyncServerSocket* server, AsyncSocket* client, DWORD error);
+  void OnAccepted(madoka::net::AsyncServerSocket* server,
+                  madoka::net::AsyncSocket* client, DWORD error);
 
   void SetService(Service* service) {
     service_ = service;
@@ -29,7 +31,7 @@ class TcpServer : public Server, public AsyncServerSocket::Listener {
 
  private:
   madoka::net::Resolver resolver_;
-  std::vector<AsyncServerSocket*> servers_;
+  std::vector<madoka::net::AsyncServerSocket*> servers_;
   Service* service_;
 
   LONG count_;

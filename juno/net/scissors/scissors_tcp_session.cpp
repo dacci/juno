@@ -14,6 +14,8 @@
 #define DELETE_THIS() \
   ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
 
+using ::madoka::net::AsyncSocket;
+
 ScissorsTcpSession::ScissorsTcpSession(Scissors* service)
     : service_(service),
       client_(),

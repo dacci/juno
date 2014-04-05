@@ -4,30 +4,32 @@
 #define JUNO_NET_SCISSORS_SCISSORS_TCP_SESSION_H_
 
 #include <madoka/net/resolver.h>
+#include <madoka/net/socket_event_listener.h>
 
 #include <memory>
 #include <vector>
 
 #include "misc/schannel/security_buffer.h"
-#include "net/async_socket.h"
 #include "net/scissors/scissors.h"
 
 class SchannelContext;
 
 class ScissorsTcpSession
-    : public Scissors::Session, public AsyncSocket::Listener {
+    : public Scissors::Session, public madoka::net::SocketEventAdapter {
  public:
   explicit ScissorsTcpSession(Scissors* service);
   virtual ~ScissorsTcpSession();
 
-  bool Start(AsyncSocket* client);
+  bool Start(madoka::net::AsyncSocket* client);
   void Stop();
 
-  void OnConnected(AsyncSocket* socket, DWORD error);
-  void OnReceived(AsyncSocket* socket, DWORD error, int length);
-  void OnSent(AsyncSocket* socket, DWORD error, int length);
+  void OnConnected(madoka::net::AsyncSocket* socket, DWORD error);
+  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, int length);
+  void OnSent(madoka::net::AsyncSocket* socket, DWORD error, int length);
 
  private:
+  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
+
   static const size_t kBufferSize = 8192;
 
   bool SendAsync(const AsyncSocketPtr& socket, const SecBuffer& buffer);
@@ -35,7 +37,7 @@ class ScissorsTcpSession
   bool CompleteNegotiation();
   bool DoEncryption();
   bool DoDecryption();
-  void EndSession(AsyncSocket* socket);
+  void EndSession(madoka::net::AsyncSocket* socket);
 
   bool OnClientReceived(int length);
   bool OnRemoteReceived(int length);

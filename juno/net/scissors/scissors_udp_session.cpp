@@ -9,6 +9,8 @@
 #define DELETE_THIS() \
   ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
 
+using ::madoka::net::AsyncDatagramSocket;
+
 FILETIME ScissorsUdpSession::kTimerDueTime = {
   -kTimeout * 1000 * 10,   // in 100-nanoseconds
   -1
@@ -68,22 +70,13 @@ void ScissorsUdpSession::OnReceived(AsyncDatagramSocket* socket, DWORD error,
   assert(timer_ != NULL);
   ::SetThreadpoolTimer(timer_, NULL, 0, 0);
 
-  if (error == 0) {
-    addrinfo end_point = {};
-    end_point.ai_addrlen = datagram_->from_length;
-    end_point.ai_addr = datagram_->from;
-
-    if (datagram_->socket->SendToAsync(buffer_.get(), length, 0, &end_point,
-                                       this))
-      return;
-  }
+  if (error == 0 &&
+      datagram_->socket->SendToAsync(buffer_.get(), length, 0,
+                                     datagram_->from, datagram_->from_length,
+                                     this))
+    return;
 
   DELETE_THIS();
-}
-
-void ScissorsUdpSession::OnReceivedFrom(AsyncDatagramSocket* socket,
-                                        DWORD error, int length, sockaddr* from,
-                                        int from_length) {
 }
 
 void ScissorsUdpSession::OnSent(AsyncDatagramSocket* socket, DWORD error,

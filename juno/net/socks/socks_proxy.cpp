@@ -4,8 +4,9 @@
 
 #include <madoka/concurrent/lock_guard.h>
 
-#include "net/async_socket.h"
 #include "net/socks/socks_proxy_session.h"
+
+using ::madoka::net::AsyncSocket;
 
 SocksProxy::SocksProxy(SocksProxyConfig* config) : stopped_() {
 }

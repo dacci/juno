@@ -8,6 +8,8 @@
 
 #include "app/service.h"
 
+using ::madoka::net::AsyncDatagramSocket;
+
 UdpServer::UdpServer() : service_(), count_() {
   event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
 }
@@ -89,11 +91,6 @@ void UdpServer::Stop() {
   ::WaitForSingleObject(event_, INFINITE);
 }
 
-void UdpServer::OnReceived(AsyncDatagramSocket* socket, DWORD error,
-                           int length) {
-  assert(false);
-}
-
 void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
                                int length, sockaddr* from, int from_length) {
   if (error == 0) {
@@ -140,15 +137,6 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
 
   if (::InterlockedDecrement(&count_) == 0)
     ::SetEvent(event_);
-}
-
-void UdpServer::OnSent(AsyncDatagramSocket* socket, DWORD error, int length) {
-  assert(false);
-}
-
-void UdpServer::OnSentTo(AsyncDatagramSocket* socket, DWORD error, int length,
-                         sockaddr* to, int to_length) {
-  assert(false);
 }
 
 void CALLBACK UdpServer::Dispatch(PTP_CALLBACK_INSTANCE instance,

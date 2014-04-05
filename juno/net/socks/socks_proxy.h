@@ -22,7 +22,7 @@ class SocksProxy : public Service {
   void Stop();
   void EndSession(SocksProxySession* session);
 
-  bool OnAccepted(AsyncSocket* client);
+  bool OnAccepted(madoka::net::AsyncSocket* client);
   bool OnReceivedFrom(Datagram* datagram);
   void OnError(DWORD error);
 
