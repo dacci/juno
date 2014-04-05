@@ -649,7 +649,7 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
         return;
     }
   } else {
-    if (content_length_ <= 0) {
+    if (content_length_ == 0) {
       // no content, session end
       EndSession();
       return;
