@@ -18,14 +18,14 @@ class ScissorsUdpSession
   virtual ~ScissorsUdpSession();
 
   bool Start();
-  void Stop();
+  void Stop() override;
 
   void OnReceived(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-                  int length);
+                  int length) override;
   void OnSent(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-              int length);
+              int length) override;
   void OnSentTo(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-                int length, sockaddr* to, int to_length);
+                int length, sockaddr* to, int to_length) override;
 
  private:
   static const size_t kBufferSize = 64 * 1024;  // 64 KiB

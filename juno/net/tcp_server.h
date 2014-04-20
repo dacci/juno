@@ -18,14 +18,14 @@ class TcpServer : public Server, public madoka::net::SocketEventAdapter {
   TcpServer();
   virtual ~TcpServer();
 
-  bool Setup(const char* address, int port);
-  bool Start();
-  void Stop();
+  bool Setup(const char* address, int port) override;
+  bool Start() override;
+  void Stop() override;
 
   void OnAccepted(madoka::net::AsyncServerSocket* server,
-                  madoka::net::AsyncSocket* client, DWORD error);
+                  madoka::net::AsyncSocket* client, DWORD error) override;
 
-  void SetService(Service* service) {
+  void SetService(Service* service) override {
     service_ = service;
   }
 

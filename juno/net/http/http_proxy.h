@@ -22,14 +22,14 @@ class HttpProxy : public Service {
   ~HttpProxy();
 
   bool Init();
-  void Stop();
+  void Stop() override;
 
   void FilterHeaders(HttpHeaders* headers, bool request);
   void EndSession(HttpProxySession* session);
 
-  bool OnAccepted(madoka::net::AsyncSocket* client);
-  bool OnReceivedFrom(Datagram* datagram);
-  void OnError(DWORD error);
+  bool OnAccepted(madoka::net::AsyncSocket* client) override;
+  bool OnReceivedFrom(Datagram* datagram) override;
+  void OnError(DWORD error) override;
 
  private:
   friend class HttpProxyProvider;

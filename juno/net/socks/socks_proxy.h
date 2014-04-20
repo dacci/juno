@@ -19,12 +19,12 @@ class SocksProxy : public Service {
   ~SocksProxy();
 
   bool Setup(HKEY key);
-  void Stop();
+  void Stop() override;
   void EndSession(SocksProxySession* session);
 
-  bool OnAccepted(madoka::net::AsyncSocket* client);
-  bool OnReceivedFrom(Datagram* datagram);
-  void OnError(DWORD error);
+  bool OnAccepted(madoka::net::AsyncSocket* client) override;
+  bool OnReceivedFrom(Datagram* datagram) override;
+  void OnError(DWORD error) override;
 
  private:
   madoka::concurrent::ConditionVariable empty_;

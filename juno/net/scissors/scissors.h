@@ -28,11 +28,11 @@ class Scissors : public Service {
   virtual ~Scissors();
 
   bool Init();
-  void Stop();
+  void Stop() override;
 
-  bool OnAccepted(madoka::net::AsyncSocket* client);
-  bool OnReceivedFrom(Datagram* datagram);
-  void OnError(DWORD error);
+  bool OnAccepted(madoka::net::AsyncSocket* client) override;
+  bool OnReceivedFrom(Datagram* datagram) override;
+  void OnError(DWORD error) override;
 
  private:
   friend class ScissorsProvider;

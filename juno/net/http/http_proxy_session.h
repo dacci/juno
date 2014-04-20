@@ -27,9 +27,11 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
   bool Start(madoka::net::AsyncSocket* client);
   void Stop();
 
-  void OnConnected(madoka::net::AsyncSocket* socket, DWORD error);
-  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, int length);
-  void OnSent(madoka::net::AsyncSocket* socket, DWORD error, int length);
+  void OnConnected(madoka::net::AsyncSocket* socket, DWORD error) override;
+  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error,
+                  int length) override;
+  void OnSent(madoka::net::AsyncSocket* socket, DWORD error,
+              int length) override;
 
  private:
   typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;

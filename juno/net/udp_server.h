@@ -18,14 +18,14 @@ class UdpServer : public Server, public madoka::net::SocketEventAdapter {
   UdpServer();
   virtual ~UdpServer();
 
-  bool Setup(const char* address, int port);
-  bool Start();
-  void Stop();
+  bool Setup(const char* address, int port) override;
+  bool Start() override;
+  void Stop() override;
 
   void OnReceivedFrom(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-                      int length, sockaddr* from, int from_length);
+                      int length, sockaddr* from, int from_length) override;
 
-  void SetService(Service* service) {
+  void SetService(Service* service) override {
     service_ = service;
   }
 
