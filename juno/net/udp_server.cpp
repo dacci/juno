@@ -92,7 +92,8 @@ void UdpServer::Stop() {
 }
 
 void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
-                               int length, sockaddr* from, int from_length) {
+                               void* buffer, int length, sockaddr* from,
+                               int from_length) {
   if (error == 0) {
     char* received = NULL;
 

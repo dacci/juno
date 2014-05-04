@@ -92,14 +92,14 @@ bool TunnelingService::Session::Start() {
 }
 
 void TunnelingService::Session::OnReceived(AsyncSocket* socket, DWORD error,
-                                           int length) {
+                                           void* buffer, int length) {
   if (error != 0 || length == 0 ||
       !to_->SendAsync(buffer_.get(), length, 0, this))
     ::TrySubmitThreadpoolCallback(EndSession, this, NULL);
 }
 
 void TunnelingService::Session::OnSent(AsyncSocket* socket, DWORD error,
-                                       int length) {
+                                       void* buffer, int length) {
   if (error != 0 || length == 0 ||
       !from_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
     ::TrySubmitThreadpoolCallback(EndSession, this, NULL);

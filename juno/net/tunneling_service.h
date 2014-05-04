@@ -30,9 +30,9 @@ class TunnelingService {
 
     bool Start();
 
-    void OnReceived(madoka::net::AsyncSocket* socket, DWORD error,
+    void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
                     int length) override;
-    void OnSent(madoka::net::AsyncSocket* socket, DWORD error,
+    void OnSent(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
                 int length) override;
 
     static void CALLBACK EndSession(PTP_CALLBACK_INSTANCE instance,

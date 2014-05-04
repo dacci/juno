@@ -23,7 +23,8 @@ class UdpServer : public Server, public madoka::net::SocketEventAdapter {
   void Stop() override;
 
   void OnReceivedFrom(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-                      int length, sockaddr* from, int from_length) override;
+                      void* buffer, int length, sockaddr* from,
+                      int from_length) override;
 
   void SetService(Service* service) override {
     service_ = service;

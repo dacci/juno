@@ -66,7 +66,7 @@ void ScissorsUdpSession::Stop() {
 }
 
 void ScissorsUdpSession::OnReceived(AsyncDatagramSocket* socket, DWORD error,
-                                    int length) {
+                                    void* buffer, int length) {
   assert(timer_ != NULL);
   ::SetThreadpoolTimer(timer_, NULL, 0, 0);
 
@@ -80,7 +80,7 @@ void ScissorsUdpSession::OnReceived(AsyncDatagramSocket* socket, DWORD error,
 }
 
 void ScissorsUdpSession::OnSent(AsyncDatagramSocket* socket, DWORD error,
-                                int length) {
+                                void* buffer, int length) {
   if (error == 0) {
     do {
       assert(timer_ != NULL);
@@ -97,7 +97,8 @@ void ScissorsUdpSession::OnSent(AsyncDatagramSocket* socket, DWORD error,
 }
 
 void ScissorsUdpSession::OnSentTo(AsyncDatagramSocket* socket, DWORD error,
-                                  int length, sockaddr* to, int to_length) {
+                                  void* buffer, int length, sockaddr* to,
+                                  int to_length) {
   DELETE_THIS();
 }
 

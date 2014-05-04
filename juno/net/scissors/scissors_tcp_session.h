@@ -24,9 +24,9 @@ class ScissorsTcpSession
   void Stop() override;
 
   void OnConnected(madoka::net::AsyncSocket* socket, DWORD error) override;
-  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error,
+  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
                   int length) override;
-  void OnSent(madoka::net::AsyncSocket* socket, DWORD error,
+  void OnSent(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
               int length) override;
 
  private:

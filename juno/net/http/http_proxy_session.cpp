@@ -128,7 +128,7 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 }
 
 void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
-                                  int length) {
+                                  void* buffer, int length) {
   assert(timer_ != NULL);
   ::SetThreadpoolTimer(timer_, NULL, 0, 0);
 
@@ -153,7 +153,8 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
   assert(false);
 }
 
-void HttpProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
+void HttpProxySession::OnSent(AsyncSocket* socket, DWORD error, void* buffer,
+                              int length) {
   switch (phase_) {
     case Request:
       OnRequestSent(error, length);
@@ -347,11 +348,12 @@ void CALLBACK HttpProxySession::FireEvent(PTP_CALLBACK_INSTANCE instance,
       break;
 
     case Received:
-      args->session->OnReceived(args->socket, args->error, args->length);
+      args->session->OnReceived(args->socket, args->error, nullptr,
+                                args->length);
       break;
 
     case Sent:
-      args->session->OnSent(args->socket, args->error, args->length);
+      args->session->OnSent(args->socket, args->error, nullptr, args->length);
       break;
   }
 

@@ -103,7 +103,7 @@ void ScissorsTcpSession::OnConnected(AsyncSocket* socket, DWORD error) {
 }
 
 void ScissorsTcpSession::OnReceived(AsyncSocket* socket, DWORD error,
-                                    int length) {
+                                    void* buffer, int length) {
   if (error == 0 && length > 0) {
     bool succeeded = false;
 
@@ -121,7 +121,8 @@ void ScissorsTcpSession::OnReceived(AsyncSocket* socket, DWORD error,
   EndSession(socket);
 }
 
-void ScissorsTcpSession::OnSent(AsyncSocket* socket, DWORD error, int length) {
+void ScissorsTcpSession::OnSent(AsyncSocket* socket, DWORD error, void* buffer,
+                                int length) {
   if (error == 0 && length > 0) {
     bool succeeded = false;
 

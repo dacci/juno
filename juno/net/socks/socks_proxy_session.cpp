@@ -168,7 +168,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 }
 
 void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
-                                   int length) {
+                                   void* buffer, int length) {
   if (error != 0 || length == 0) {
     DELETE_THIS();
     return;
@@ -283,7 +283,8 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
   DELETE_THIS();
 }
 
-void SocksProxySession::OnSent(AsyncSocket* socket, DWORD error, int length) {
+void SocksProxySession::OnSent(AsyncSocket* socket, DWORD error, void* buffer,
+                               int length) {
   if (error != 0 || length == 0) {
     DELETE_THIS();
     return;
