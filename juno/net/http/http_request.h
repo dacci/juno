@@ -22,16 +22,38 @@ class HttpRequest : public HttpHeaders {
 
   void Clear();
 
+  void Serialize(std::string* output);
+
   const std::string& method() const {
     return method_;
+  }
+
+  void set_method(const char* method) {
+    method_ = method;
+  }
+
+  void set_method(const std::string& method) {
+    method_ = method;
   }
 
   const std::string& path() const {
     return path_;
   }
 
+  void set_path(const char* path) {
+    path_ = path;
+  }
+
+  void set_path(const std::string& path) {
+    path_ = path;
+  }
+
   int minor_version() const {
     return minor_version_;
+  }
+
+  void set_minor_version(int minor_version) {
+    minor_version_ = minor_version;
   }
 
  private:

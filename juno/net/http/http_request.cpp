@@ -41,3 +41,12 @@ void HttpRequest::Clear() {
   minor_version_ = -1;
   ClearHeaders();
 }
+
+void HttpRequest::Serialize(std::string* output) {
+  char version[12];
+  ::sprintf_s(version, " HTTP/1.%d\x0D\x0A", minor_version_);
+
+  output->append(method_).append(" ").append(path_).append(version);
+  SerializeHeaders(output);
+  output->append("\x0D\x0A");
+}

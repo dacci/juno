@@ -6,6 +6,7 @@
 #include <string>
 
 #include "net/http/http_headers.h"
+#include "net/http/http_status.h"
 
 class HttpResponse : public HttpHeaders {
  public:
@@ -22,8 +23,14 @@ class HttpResponse : public HttpHeaders {
 
   void Clear();
 
+  void Serialize(std::string* output);
+
   int minor_version() const {
     return minor_version_;
+  }
+
+  void set_minor_version(int minor_version) {
+    minor_version_ = minor_version;
   }
 
   int status() const {
@@ -32,6 +39,15 @@ class HttpResponse : public HttpHeaders {
 
   const std::string& message() const {
     return message_;
+  }
+
+  void SetStatus(HTTP::StatusCode status) {
+    SetStatus(status, HTTP::GetStatusMessage(status));
+  }
+
+  void SetStatus(HTTP::StatusCode status, const char* message) {
+    status_ = status;
+    message_ = message;
   }
 
  private:

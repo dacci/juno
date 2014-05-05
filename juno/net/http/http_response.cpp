@@ -40,3 +40,12 @@ void HttpResponse::Clear() {
   message_.clear();
   ClearHeaders();
 }
+
+void HttpResponse::Serialize(std::string* output) {
+  char status[14];
+  ::sprintf_s(status, "HTTP/1.%d %d ", minor_version_, status_);
+
+  output->append(status).append(message_).append("\x0D\x0A");
+  SerializeHeaders(output);
+  output->append("\x0D\x0A");
+}
