@@ -78,6 +78,9 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
   bool FireReceived(const AsyncSocketPtr& socket, DWORD error, int length);
   static void CALLBACK FireEvent(PTP_CALLBACK_INSTANCE instance, void* param);
 
+  bool SendRequest();
+  bool SendResponse();
+
   void OnRequestReceived(DWORD error, int length);
   void OnRequestSent(DWORD error, int length);
 

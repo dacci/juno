@@ -86,41 +86,25 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
   }
 
   if (tunnel_ && !config_->use_remote_proxy()) {
-    phase_ = Response;
-
     if (!TunnelingService::Bind(client_, remote_)) {
       SendError(HTTP::INTERNAL_SERVER_ERROR);
       return;
     }
 
-    remote_buffer_ += "HTTP/1.1 200 Connection Established\x0D\x0A";
-    remote_buffer_ += "Content-Length: 0\x0D\x0A";
-    remote_buffer_ += "\x0D\x0A";
+    response_.Clear();
+    response_.set_minor_version(1);
+    response_.SetStatus(HTTP::OK, "Connection Established");
+    response_.SetHeader("Content-Length", "0");
 
-    response_.Parse(remote_buffer_);
-
-    if (!client_->SendAsync(remote_buffer_.data(), remote_buffer_.size(), 0,
-                            this)) {
+    if (!SendResponse()) {
       DELETE_THIS();
       return;
     }
   } else {
-    remote_buffer_ += request_.method();
-    remote_buffer_ += ' ';
+    if (!config_->use_remote_proxy())
+      request_.set_path(url_.PathForRequest());
 
-    if (config_->use_remote_proxy())
-      remote_buffer_ += request_.path();
-    else
-      remote_buffer_ += url_.PathForRequest();
-
-    remote_buffer_ += " HTTP/1.";
-    remote_buffer_ += '0' + request_.minor_version();
-    remote_buffer_ += "\x0D\x0A";
-    request_.SerializeHeaders(&remote_buffer_);
-    remote_buffer_ += "\x0D\x0A";
-
-    if (!remote_->SendAsync(remote_buffer_.data(), remote_buffer_.size(), 0,
-                            this)) {
+    if (!SendRequest()) {
       SendError(HTTP::INTERNAL_SERVER_ERROR);
       return;
     }
@@ -264,24 +248,13 @@ void HttpProxySession::ProcessHopByHopHeaders(HttpHeaders* headers) {
 }
 
 void HttpProxySession::SendError(HTTP::StatusCode status) {
-  phase_ = Response;
+  response_.Clear();
+  response_.set_minor_version(1);
+  response_.SetStatus(status);
+  response_.SetHeader("Content-Length", "0");
 
-  const char* message = HTTP::GetStatusMessage(status);
-  if (message == NULL)
-    message = HTTP::GetStatusMessage(HTTP::INTERNAL_SERVER_ERROR);
-
-  int length = ::sprintf_s(buffer_.get(), kBufferSize,
-                           "HTTP/1.1 %d %s\x0D\x0A"
-                           "Content-Length: 0\x0D\x0A"
-                           "\x0D\x0A", status, message);
-  if (length > 0) {
-    response_.Parse(buffer_.get(), length);
-
-    if (client_->SendAsync(buffer_.get(), length, 0, this))
-      return;
-  }
-
-  DELETE_THIS();
+  if (!SendResponse())
+    DELETE_THIS();
 }
 
 // Resets internal stats and starts new session.
@@ -358,6 +331,30 @@ void CALLBACK HttpProxySession::FireEvent(PTP_CALLBACK_INSTANCE instance,
   }
 
   delete args;
+}
+
+bool HttpProxySession::SendRequest() {
+  std::string message;
+  request_.Serialize(&message);
+  if (message.size() > kBufferSize)
+    return false;
+
+  ::memmove(buffer_.get(), message.data(), message.size());
+  phase_ = Request;
+
+  return remote_->SendAsync(buffer_.get(), message.size(), 0, this);
+}
+
+bool HttpProxySession::SendResponse() {
+  std::string message;
+  response_.Serialize(&message);
+  if (message.size() > kBufferSize)
+    return false;
+
+  ::memmove(buffer_.get(), message.data(), message.size());
+  phase_ = Response;
+
+  return client_->SendAsync(buffer_.get(), message.size(), 0, this);
 }
 
 void HttpProxySession::OnRequestReceived(DWORD error, int length) {
@@ -560,21 +557,11 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
     remote_buffer_.erase(0, result);
   }
 
-  continue_ = response_.status() == HTTP::CONTINUE;
-  if (!continue_)
-    ProcessResponseHeader();
-
-  std::string response_string;
-
-  // XXX(dacci): isn't there any better way?
   if (tunnel_ && response_.status() == 200) {
     if (TunnelingService::Bind(client_, remote_)) {
-      response_string += "HTTP/1.1 200 Connection Established\x0D\x0A";
-      response_string += "Content-Length: 0\x0D\x0A";
-      response_string += "\x0D\x0A";
-      ::memmove(buffer_.get(), response_string.data(), response_string.size());
+      response_.SetHeader("Content-Length", "0");
 
-      if (!client_->SendAsync(buffer_.get(), response_string.size(), 0, this))
+      if (!SendResponse())
         DELETE_THIS();
     } else {
       SendError(HTTP::INTERNAL_SERVER_ERROR);
@@ -582,24 +569,12 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
     return;
   }
 
-  response_string += "HTTP/1.";
-  response_string += '0' + response_.minor_version();
-  response_string += ' ';
-  ::sprintf_s(buffer_.get(), kBufferSize, "%d ", response_.status());
-  response_string += buffer_.get();
-  response_string += response_.message();
-  response_string += "\x0D\x0A";
-  response_.SerializeHeaders(&response_string);
-  response_string += "\x0D\x0A";
-  if (response_string.size() > kBufferSize) {
+  continue_ = response_.status() == HTTP::CONTINUE;
+  if (!continue_)
+    ProcessResponseHeader();
+
+  if (!SendResponse()) {
     SendError(HTTP::BAD_GATEWAY);
-    return;
-  }
-
-  ::memmove(buffer_.get(), response_string.data(), response_string.size());
-
-  if (!client_->SendAsync(buffer_.get(), response_string.size(), 0, this)) {
-    DELETE_THIS();
     return;
   }
 }
