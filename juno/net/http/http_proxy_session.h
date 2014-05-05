@@ -37,7 +37,7 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
   typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
 
   enum Phase {
-    Request, RequestBody, Response, ResponseBody, Error,
+    Request, RequestBody, Response, ResponseBody, Error, Retry
   };
 
   enum Event {
@@ -93,6 +93,8 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
   void OnResponseBodyReceived(DWORD error, int length);
   void OnResponseBodySent(DWORD error, int length);
 
+  void OnRetryReceived(DWORD error, int length);
+
   static void CALLBACK OnTimeout(PTP_CALLBACK_INSTANCE instance, PVOID param,
                                  PTP_TIMER timer);
   static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
@@ -121,6 +123,7 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
   PTP_TIMER timer_;
   madoka::net::AsyncSocket* receiving_;
   bool continue_;
+  bool retry_;
 };
 
 #endif  // JUNO_NET_HTTP_HTTP_PROXY_SESSION_H_

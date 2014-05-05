@@ -201,6 +201,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="misc\registry_key.cpp" />
+    <ClCompile Include="net\http\http_digest.cpp" />
     <ClCompile Include="net\http\http_headers.cpp" />
     <ClCompile Include="net\http\http_proxy.cpp" />
     <ClCompile Include="net\http\http_proxy_config.cpp" />
@@ -245,6 +246,7 @@
     <ClInclude Include="misc\schannel\schannel_credential.h" />
     <ClInclude Include="misc\schannel\security_buffer.h" />
     <ClInclude Include="misc\string_util.h" />
+    <ClInclude Include="net\http\http_digest.h" />
     <ClInclude Include="net\http\http_headers.h" />
     <ClInclude Include="net\http\http_proxy.h" />
     <ClInclude Include="net\http\http_proxy_config.h" />

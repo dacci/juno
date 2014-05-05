@@ -11,10 +11,13 @@
 #include <vector>
 
 #include "app/service.h"
+#include "net/http/http_digest.h"
 
 class HttpHeaders;
 class HttpProxyConfig;
 class HttpProxySession;
+class HttpRequest;
+class HttpResponse;
 
 class HttpProxy : public Service {
  public:
@@ -25,6 +28,9 @@ class HttpProxy : public Service {
   void Stop() override;
 
   void FilterHeaders(HttpHeaders* headers, bool request);
+  void ProcessAuthenticate(HttpResponse* response);
+  void ProcessAuthorization(HttpRequest* request);
+
   void EndSession(HttpProxySession* session);
 
   bool OnAccepted(madoka::net::AsyncSocket* client) override;
@@ -34,12 +40,18 @@ class HttpProxy : public Service {
  private:
   friend class HttpProxyProvider;
 
+  static const std::string kProxyAuthenticate;
+  static const std::string kProxyAuthorization;
+
   HttpProxyConfig* const config_;
 
   madoka::concurrent::ConditionVariable empty_;
   madoka::concurrent::CriticalSection critical_section_;
   bool stopped_;
   std::list<HttpProxySession*> sessions_;
+  bool auth_digest_;
+  bool auth_basic_;
+  HttpDigest digest_;
 };
 
 #endif  // JUNO_NET_HTTP_HTTP_PROXY_H_

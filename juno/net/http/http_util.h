@@ -10,16 +10,9 @@
 
 namespace http {
 
-struct less_ci {
-  bool operator()(const std::string& left, const std::string& right) const {
-    return ::_stricmp(left.c_str(), right.c_str()) < 0;
-  }
-};
-
-typedef std::map<std::string, std::string, less_ci> AuthParamMap;
-
+// returns the size of chunk-size + chunk-data if successful,
+// -2 if the chunk is partial or -1 on error.
 int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size);
-bool ParseAuthParams(const std::string& string, AuthParamMap* map);
 
 }  // namespace http
 

@@ -10,7 +10,15 @@
 #include "net/http/http_proxy_config.h"
 #include "net/http/http_proxy_session.h"
 
-HttpProxy::HttpProxy(HttpProxyConfig* config) : config_(config), stopped_() {
+const std::string HttpProxy::kProxyAuthenticate("Proxy-Authenticate");
+const std::string HttpProxy::kProxyAuthorization("Proxy-Authorization");
+
+HttpProxy::HttpProxy(HttpProxyConfig* config)
+    : config_(config),
+      stopped_(),
+      auth_digest_(),
+      auth_basic_(),
+      digest_(config_->remote_proxy_user(), config_->remote_proxy_password()) {
 }
 
 HttpProxy::~HttpProxy() {
@@ -72,6 +80,44 @@ void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
           break;
       }
     }
+  }
+}
+
+void HttpProxy::ProcessAuthenticate(HttpResponse* response) {
+  if (!config_->auth_remote_proxy())
+    return;
+  if (!response->HeaderExists(kProxyAuthenticate))
+    return;
+
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
+  auth_digest_ = false;
+  auth_basic_ = false;
+
+  for (auto& field : response->GetAllHeaders(kProxyAuthenticate)) {
+    if (::strncmp(field.c_str(), "Digest", 6) == 0)
+      auth_digest_ = digest_.Input(field);
+    else if (::strncmp(field.c_str(), "Basic", 5) == 0)
+      auth_basic_ = true;
+  }
+}
+
+void HttpProxy::ProcessAuthorization(HttpRequest* request) {
+  if (!config_->auth_remote_proxy())
+    return;
+
+  // client's request has precedence
+  if (request->HeaderExists(kProxyAuthorization))
+    return;
+
+  if (auth_digest_) {
+    madoka::concurrent::LockGuard lock(&critical_section_);
+
+    std::string field;
+    if (digest_.Output(request->method(), request->path(), &field))
+      request->SetHeader(kProxyAuthorization, field);
+  } else if (auth_basic_) {
+    request->SetHeader(kProxyAuthorization, config_->basic_authorization());
   }
 }
 

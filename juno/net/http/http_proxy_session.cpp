@@ -39,7 +39,8 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy, HttpProxyConfig* config)
       phase_(Request),
       close_client_(),
       timer_(),
-      continue_() {
+      continue_(),
+      retry_() {
   timer_ = ::CreateThreadpoolTimer(OnTimeout, this, NULL);
 }
 
@@ -132,6 +133,10 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
     case ResponseBody:
       OnResponseBodyReceived(error, length);
       return;
+
+    case Retry:
+      OnRetryReceived(error, length);
+      return;
   }
 
   assert(false);
@@ -183,9 +188,7 @@ void HttpProxySession::ProcessRequestHeader() {
   ProcessHopByHopHeaders(&request_);
 
   proxy_->FilterHeaders(&request_, true);
-
-  if (config_->use_remote_proxy() && config_->auth_remote_proxy())
-    request_.AddHeader(kProxyAuthorization, config_->basic_authorization());
+  proxy_->ProcessAuthorization(&request_);
 }
 
 void HttpProxySession::ProcessResponseHeader() {
@@ -198,6 +201,7 @@ void HttpProxySession::ProcessResponseHeader() {
   ProcessHopByHopHeaders(&response_);
 
   proxy_->FilterHeaders(&response_, false);
+  proxy_->ProcessAuthenticate(&response_);
 
   if (close_client_)
     response_.AddHeader(kConnection, "close");
@@ -276,6 +280,7 @@ void HttpProxySession::EndSession() {
   phase_ = Request;
   close_client_ = false;
   continue_ = false;
+  retry_ = false;
 
   if (client_buffer_.empty()) {
     if (!ReceiveAsync(client_, 0))
@@ -557,7 +562,7 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
     remote_buffer_.erase(0, result);
   }
 
-  if (tunnel_ && response_.status() == 200) {
+  if (tunnel_ && response_.status() == HTTP::OK) {
     if (TunnelingService::Bind(client_, remote_)) {
       response_.SetHeader("Content-Length", "0");
 
@@ -566,12 +571,26 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
     } else {
       SendError(HTTP::INTERNAL_SERVER_ERROR);
     }
+
     return;
   }
 
   continue_ = response_.status() == HTTP::CONTINUE;
   if (!continue_)
     ProcessResponseHeader();
+
+  if (!retry_ && response_.status() == HTTP::PROXY_AUTHENTICATION_REQUIRED) {
+    proxy_->ProcessAuthorization(&request_);
+
+    // consume response body and send the request again.
+    retry_ = true;
+    phase_ = Retry;
+
+    if (!FireReceived(remote_, 0, -1))
+      SendError(HTTP::INTERNAL_SERVER_ERROR);
+
+    return;
+  }
 
   if (!SendResponse()) {
     SendError(HTTP::BAD_GATEWAY);
@@ -712,6 +731,49 @@ void HttpProxySession::OnResponseBodySent(DWORD error, int length) {
   }
 
   DELETE_THIS();
+}
+
+void HttpProxySession::OnRetryReceived(DWORD error, int length) {
+  if (error != 0 || length == 0) {
+    SendError(HTTP::INTERNAL_SERVER_ERROR);
+    return;
+  }
+
+  if (chunked_) {
+    if (length > 0)
+      remote_buffer_.append(buffer_.get(), length);
+
+    while (true) {
+      content_length_ = http::ParseChunk(remote_buffer_, &chunk_size_);
+      if (content_length_ == -2) {
+        if (remote_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
+          return;
+      } else if (content_length_ > 0) {
+        remote_buffer_.erase(0, content_length_);
+        if (chunk_size_ == 0) {
+          if (SendRequest())
+            return;
+        }
+      } else {
+        break;
+      }
+    }
+  } else {
+    if (length == -1)
+      content_length_ -= remote_buffer_.size();
+    else
+      content_length_ -= length;
+
+    if (content_length_ > 0) {
+      if (remote_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
+        return;
+    } else {
+      if (SendRequest())
+        return;
+    }
+  }
+
+  SendError(HTTP::INTERNAL_SERVER_ERROR);
 }
 
 void CALLBACK HttpProxySession::OnTimeout(PTP_CALLBACK_INSTANCE instance,
