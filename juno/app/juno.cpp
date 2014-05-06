@@ -7,6 +7,7 @@
 
 #include <madoka/net/winsock.h>
 
+#include <url/gurl.h>
 #include <url/url_util.h>
 
 #include "app/service_manager.h"
@@ -62,6 +63,7 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
     return __LINE__;
 
   url_util::Initialize();
+  GURL::EmptyGURL();
 
   if (!TunnelingService::Init()) {
     ATLASSERT(false);
