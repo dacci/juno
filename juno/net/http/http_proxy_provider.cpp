@@ -37,12 +37,12 @@ bool HttpProxyProvider::UpdateConfig(Service* service, ServiceConfig* config) {
   HttpProxy* instance = static_cast<HttpProxy*>(service);
   HttpProxyConfig* proxy_config = static_cast<HttpProxyConfig*>(config);
 
-  *instance->config_ = *proxy_config;
+  instance->set_config(proxy_config);
 
   return true;
 }
 
-  Service* HttpProxyProvider::CreateService(ServiceConfig* config) {
+Service* HttpProxyProvider::CreateService(ServiceConfig* config) {
   std::unique_ptr<HttpProxy> service(
     new HttpProxy(static_cast<HttpProxyConfig*>(config)));
 

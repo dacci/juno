@@ -155,3 +155,11 @@ bool HttpProxy::OnReceivedFrom(Datagram* datagram) {
 
 void HttpProxy::OnError(DWORD error) {
 }
+
+void HttpProxy::set_config(HttpProxyConfig* config) {
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
+  *config_ = *config;
+  digest_.SetCredential(config_->remote_proxy_user(),
+                        config_->remote_proxy_password());
+}

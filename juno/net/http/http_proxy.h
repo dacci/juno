@@ -37,9 +37,9 @@ class HttpProxy : public Service {
   bool OnReceivedFrom(Datagram* datagram) override;
   void OnError(DWORD error) override;
 
- private:
-  friend class HttpProxyProvider;
+  void set_config(HttpProxyConfig* config);
 
+ private:
   static const std::string kProxyAuthenticate;
   static const std::string kProxyAuthorization;
 

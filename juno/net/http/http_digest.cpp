@@ -391,6 +391,14 @@ bool HttpDigest::Output(const std::string& method, const std::string& path,
   return true;
 }
 
+void HttpDigest::SetCredential(const std::string& username,
+                               const std::string& password) {
+  username_ = username;
+  password_ = password;
+
+  Reset();
+}
+
 void HttpDigest::Reset() {
   nonce_count_ = 0;
   digest_ = MD5;

@@ -580,6 +580,7 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
     ProcessResponseHeader();
 
   if (!retry_ && response_.status() == HTTP::PROXY_AUTHENTICATION_REQUIRED) {
+    request_.RemoveHeader(kProxyAuthorization);
     proxy_->ProcessAuthorization(&request_);
 
     // consume response body and send the request again.

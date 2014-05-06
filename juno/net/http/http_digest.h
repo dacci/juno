@@ -13,6 +13,8 @@ class HttpDigest {
   bool Output(const std::string& method, const std::string& path,
               std::string* output);
 
+  void SetCredential(const std::string& username, const std::string& password);
+
  private:
   enum Algorithm {
     MD5SESS, MD5
