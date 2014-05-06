@@ -3,8 +3,6 @@
 #ifndef JUNO_NET_HTTP_HTTP_PROXY_CONFIG_H_
 #define JUNO_NET_HTTP_HTTP_PROXY_CONFIG_H_
 
-#include <madoka/concurrent/read_write_lock.h>
-
 #include <vector>
 
 #include "app/service_config.h"
@@ -37,21 +35,36 @@ class HttpProxyConfig : public ServiceConfig {
   bool Load(const RegistryKey& key);
   bool Save(RegistryKey* key);
 
-  int use_remote_proxy();
-  std::string remote_proxy_host();
-  int remote_proxy_port();
-  int auth_remote_proxy();
-  std::string remote_proxy_user();
-  std::string remote_proxy_password();
-  std::string basic_authorization();
+  inline int use_remote_proxy() const {
+    return use_remote_proxy_;
+  }
+
+  inline const std::string& remote_proxy_host() const {
+    return remote_proxy_host_;
+  }
+
+  inline int remote_proxy_port() const {
+    return remote_proxy_port_;
+  }
+
+  inline int auth_remote_proxy() const {
+    return auth_remote_proxy_;
+  }
+
+  inline const std::string& remote_proxy_user() const {
+    return remote_proxy_user_;
+  }
+
+  inline const std::string& remote_proxy_password() const {
+    return remote_proxy_password_;
+  }
+
+  inline const std::vector<HeaderFilter>& header_filters() const {
+    return header_filters_;
+  }
 
  private:
-  friend class HttpProxy;
   friend class HttpProxyDialog;
-
-  void SetBasicAuthorization();
-
-  madoka::concurrent::ReadWriteLock lock_;
 
   int use_remote_proxy_;
   std::string remote_proxy_host_;
@@ -60,8 +73,6 @@ class HttpProxyConfig : public ServiceConfig {
   std::string remote_proxy_user_;
   std::string remote_proxy_password_;
   std::vector<HeaderFilter> header_filters_;
-
-  std::string basic_authorization_;
 };
 
 #endif  // JUNO_NET_HTTP_HTTP_PROXY_CONFIG_H_

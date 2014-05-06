@@ -2,6 +2,8 @@
 
 #include "net/http/http_proxy.h"
 
+#include <wincrypt.h>
+
 #include <madoka/concurrent/lock_guard.h>
 
 #include <utility>
@@ -19,6 +21,7 @@ HttpProxy::HttpProxy(HttpProxyConfig* config)
       auth_digest_(),
       auth_basic_(),
       digest_(config_->remote_proxy_user(), config_->remote_proxy_password()) {
+  SetBasicCredential();
 }
 
 HttpProxy::~HttpProxy() {
@@ -30,7 +33,8 @@ bool HttpProxy::Init() {
 }
 
 void HttpProxy::Stop() {
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  madoka::concurrent::WriteLock write_lock(&lock_);
+  madoka::concurrent::LockGuard guard(&write_lock);
 
   stopped_ = true;
 
@@ -38,17 +42,14 @@ void HttpProxy::Stop() {
     (*i)->Stop();
 
   while (!sessions_.empty())
-    empty_.Sleep(&critical_section_);
+    empty_.Sleep(&lock_, false);
 }
 
 void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
-  madoka::concurrent::ReadLock read_lock(&config_->lock_);
+  madoka::concurrent::ReadLock read_lock(&lock_);
   madoka::concurrent::LockGuard guard(&read_lock);
 
-  for (auto i = config_->header_filters_.begin(),
-            l = config_->header_filters_.end(); i != l; ++i) {
-    auto& filter = *i;
-
+  for (auto& filter : config_->header_filters()) {
     if (request && filter.request || !request && filter.response) {
       switch (filter.action) {
         case HttpProxyConfig::Set:
@@ -89,7 +90,8 @@ void HttpProxy::ProcessAuthenticate(HttpResponse* response) {
   if (!response->HeaderExists(kProxyAuthenticate))
     return;
 
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  madoka::concurrent::WriteLock write_lock(&lock_);
+  madoka::concurrent::LockGuard guard(&write_lock);
 
   auth_digest_ = false;
   auth_basic_ = false;
@@ -111,18 +113,20 @@ void HttpProxy::ProcessAuthorization(HttpRequest* request) {
     return;
 
   if (auth_digest_) {
-    madoka::concurrent::LockGuard lock(&critical_section_);
+    madoka::concurrent::ReadLock read_lock(&lock_);
+    madoka::concurrent::LockGuard guard(&read_lock);
 
     std::string field;
     if (digest_.Output(request->method(), request->path(), &field))
       request->SetHeader(kProxyAuthorization, field);
   } else if (auth_basic_) {
-    request->SetHeader(kProxyAuthorization, config_->basic_authorization());
+    request->SetHeader(kProxyAuthorization, basic_credential_);
   }
 }
 
 void HttpProxy::EndSession(HttpProxySession* session) {
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  madoka::concurrent::WriteLock write_lock(&lock_);
+  madoka::concurrent::LockGuard guard(&write_lock);
 
   sessions_.remove(session);
   if (sessions_.empty())
@@ -130,7 +134,8 @@ void HttpProxy::EndSession(HttpProxySession* session) {
 }
 
 bool HttpProxy::OnAccepted(madoka::net::AsyncSocket* client) {
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  madoka::concurrent::WriteLock write_lock(&lock_);
+  madoka::concurrent::LockGuard guard(&write_lock);
 
   if (stopped_)
     return false;
@@ -157,9 +162,27 @@ void HttpProxy::OnError(DWORD error) {
 }
 
 void HttpProxy::set_config(HttpProxyConfig* config) {
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  madoka::concurrent::WriteLock write_lock(&lock_);
+  madoka::concurrent::LockGuard guard(&write_lock);
 
   *config_ = *config;
+
   digest_.SetCredential(config_->remote_proxy_user(),
                         config_->remote_proxy_password());
+  SetBasicCredential();
+}
+
+void HttpProxy::SetBasicCredential() {
+  std::string auth = config_->remote_proxy_user() + ':' +
+                     config_->remote_proxy_password();
+
+  DWORD buffer_size = (((auth.size() - 1) / 3) + 1) * 4;
+  basic_credential_.resize(buffer_size);
+  buffer_size = basic_credential_.capacity();
+
+  ::CryptBinaryToStringA(reinterpret_cast<const BYTE*>(auth.c_str()),
+                         auth.size(), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
+                         &basic_credential_[0], &buffer_size);
+
+  basic_credential_.insert(0, "Basic ");
 }

@@ -4,7 +4,7 @@
 #define JUNO_NET_HTTP_HTTP_PROXY_H_
 
 #include <madoka/concurrent/condition_variable.h>
-#include <madoka/concurrent/critical_section.h>
+#include <madoka/concurrent/read_write_lock.h>
 
 #include <list>
 #include <string>
@@ -43,15 +43,18 @@ class HttpProxy : public Service {
   static const std::string kProxyAuthenticate;
   static const std::string kProxyAuthorization;
 
+  void SetBasicCredential();
+
   HttpProxyConfig* const config_;
 
   madoka::concurrent::ConditionVariable empty_;
-  madoka::concurrent::CriticalSection critical_section_;
+  madoka::concurrent::ReadWriteLock lock_;
   bool stopped_;
   std::list<HttpProxySession*> sessions_;
   bool auth_digest_;
   bool auth_basic_;
   HttpDigest digest_;
+  std::string basic_credential_;
 };
 
 #endif  // JUNO_NET_HTTP_HTTP_PROXY_H_

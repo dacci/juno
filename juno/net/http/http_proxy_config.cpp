@@ -37,7 +37,6 @@ HttpProxyConfig::HttpProxyConfig(const HttpProxyConfig& other)
       remote_proxy_user_(other.remote_proxy_user_),
       remote_proxy_password_(other.remote_proxy_password_),
       header_filters_(other.header_filters_) {
-  SetBasicAuthorization();
 }
 
 HttpProxyConfig::~HttpProxyConfig() {
@@ -45,9 +44,6 @@ HttpProxyConfig::~HttpProxyConfig() {
 
 HttpProxyConfig& HttpProxyConfig::operator=(const HttpProxyConfig& other) {
   if (&other != this) {
-    madoka::concurrent::WriteLock write_lock(&lock_);
-    madoka::concurrent::LockGuard guard(&write_lock);
-
     use_remote_proxy_ = other.use_remote_proxy_;
     remote_proxy_host_ = other.remote_proxy_host_;
     remote_proxy_port_ = other.remote_proxy_port_;
@@ -55,17 +51,12 @@ HttpProxyConfig& HttpProxyConfig::operator=(const HttpProxyConfig& other) {
     remote_proxy_user_ = other.remote_proxy_user_;
     remote_proxy_password_ = other.remote_proxy_password_;
     header_filters_ = other.header_filters_;
-
-    SetBasicAuthorization();
   }
 
   return *this;
 }
 
 bool HttpProxyConfig::Load(const RegistryKey& key) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
-
   key.QueryInteger(kUseRemoteProxy, &use_remote_proxy_);
 
   if (!key.QueryString(kRemoteProxyHost, &remote_proxy_host_))
@@ -121,15 +112,10 @@ bool HttpProxyConfig::Load(const RegistryKey& key) {
     filters_key.Close();
   }
 
-  SetBasicAuthorization();
-
   return true;
 }
 
 bool HttpProxyConfig::Save(RegistryKey* key) {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
-
   key->SetInteger(kUseRemoteProxy, use_remote_proxy_);
   key->SetString(kRemoteProxyHost, remote_proxy_host_);
   key->SetInteger(kRemoteProxyPort, remote_proxy_port_);
@@ -175,68 +161,4 @@ bool HttpProxyConfig::Save(RegistryKey* key) {
   }
 
   return true;
-}
-
-int HttpProxyConfig::use_remote_proxy() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
-
-  return use_remote_proxy_;
-}
-
-std::string HttpProxyConfig::remote_proxy_host() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
-
-  return remote_proxy_host_;
-}
-
-int HttpProxyConfig::remote_proxy_port() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
-
-  return remote_proxy_port_;
-}
-
-int HttpProxyConfig::auth_remote_proxy() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
-
-  return auth_remote_proxy_;
-}
-
-std::string HttpProxyConfig::remote_proxy_user() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
-
-  return remote_proxy_user_;
-}
-
-std::string HttpProxyConfig::remote_proxy_password() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
-
-  return remote_proxy_password_;
-}
-
-std::string HttpProxyConfig::basic_authorization() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
-
-  return basic_authorization_;
-}
-
-void HttpProxyConfig::SetBasicAuthorization() {
-  std::string auth = remote_proxy_user_ + ':' + remote_proxy_password_;
-  DWORD buffer_size = (((auth.size() - 1) / 3) + 2) * 4;
-  char* buffer = new char[buffer_size];
-
-  ::CryptBinaryToStringA(reinterpret_cast<const BYTE*>(auth.c_str()),
-                         auth.size(), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
-                         buffer, &buffer_size);
-
-  basic_authorization_ = "Basic ";
-  basic_authorization_.append(buffer);
-
-  delete[] buffer;
 }
