@@ -12,8 +12,7 @@
 #include <map>
 #include <utility>
 
-class ServerConfig;
-class ServiceConfig;
+#include "app/service_manager.h"
 
 class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
  public:
@@ -26,8 +25,8 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
     CHAIN_MSG_MAP(CPropertySheetImpl)
   END_MSG_MAP()
 
-  std::map<std::string, ServiceConfig*> service_configs_;
-  std::map<std::string, ServerConfig*> server_configs_;
+  ServiceConfigMap service_configs_;
+  ServerConfigMap server_configs_;
 
  private:
   void OnShowWindow(BOOL show, UINT status);

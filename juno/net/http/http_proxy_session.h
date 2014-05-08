@@ -21,7 +21,7 @@ class HttpProxyConfig;
 
 class HttpProxySession : public madoka::net::SocketEventAdapter {
  public:
-  HttpProxySession(HttpProxy* proxy, HttpProxyConfig* config);
+  explicit HttpProxySession(HttpProxy* proxy);
   virtual ~HttpProxySession();
 
   bool Start(madoka::net::AsyncSocket* client);
@@ -102,7 +102,6 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
   static FILETIME kTimerDueTime;
 
   HttpProxy* const proxy_;
-  HttpProxyConfig* const config_;
   AsyncSocketPtr client_;
   std::string client_buffer_;
   HttpRequest request_;

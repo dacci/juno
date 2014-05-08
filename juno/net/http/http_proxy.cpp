@@ -15,8 +15,8 @@
 const std::string HttpProxy::kProxyAuthenticate("Proxy-Authenticate");
 const std::string HttpProxy::kProxyAuthorization("Proxy-Authorization");
 
-HttpProxy::HttpProxy(HttpProxyConfig* config)
-    : config_(config),
+HttpProxy::HttpProxy(const ServiceConfigPtr& config)
+    : config_(std::static_pointer_cast<HttpProxyConfig>(config)),
       stopped_(),
       auth_digest_(),
       auth_basic_(),
@@ -29,6 +29,19 @@ HttpProxy::~HttpProxy() {
 }
 
 bool HttpProxy::Init() {
+  return true;
+}
+
+bool HttpProxy::UpdateConfig(const ServiceConfigPtr& config) {
+  madoka::concurrent::WriteLock write_lock(&lock_);
+  madoka::concurrent::LockGuard guard(&write_lock);
+
+  config_ = std::static_pointer_cast<HttpProxyConfig>(config);
+
+  digest_.SetCredential(config_->remote_proxy_user(),
+                        config_->remote_proxy_password());
+  SetBasicCredential();
+
   return true;
 }
 
@@ -124,6 +137,27 @@ void HttpProxy::ProcessAuthorization(HttpRequest* request) {
   }
 }
 
+bool HttpProxy::use_remote_proxy() {
+  madoka::concurrent::ReadLock read_lock(&lock_);
+  madoka::concurrent::LockGuard guard(&read_lock);
+
+  return config_->use_remote_proxy() != 0;
+}
+
+const char* HttpProxy::remote_proxy_host() {
+  madoka::concurrent::ReadLock read_lock(&lock_);
+  madoka::concurrent::LockGuard guard(&read_lock);
+
+  return config_->remote_proxy_host().c_str();
+}
+
+int HttpProxy::remote_proxy_port() {
+  madoka::concurrent::ReadLock read_lock(&lock_);
+  madoka::concurrent::LockGuard guard(&read_lock);
+
+  return config_->remote_proxy_port();
+}
+
 void HttpProxy::EndSession(HttpProxySession* session) {
   madoka::concurrent::WriteLock write_lock(&lock_);
   madoka::concurrent::LockGuard guard(&write_lock);
@@ -140,7 +174,7 @@ bool HttpProxy::OnAccepted(madoka::net::AsyncSocket* client) {
   if (stopped_)
     return false;
 
-  HttpProxySession* session = new HttpProxySession(this, config_);
+  HttpProxySession* session = new HttpProxySession(this);
   if (session == NULL)
     return false;
 
@@ -159,17 +193,6 @@ bool HttpProxy::OnReceivedFrom(Datagram* datagram) {
 }
 
 void HttpProxy::OnError(DWORD error) {
-}
-
-void HttpProxy::set_config(HttpProxyConfig* config) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
-
-  *config_ = *config;
-
-  digest_.SetCredential(config_->remote_proxy_user(),
-                        config_->remote_proxy_password());
-  SetBasicCredential();
 }
 
 void HttpProxy::SetBasicCredential() {

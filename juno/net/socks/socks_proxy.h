@@ -15,10 +15,11 @@ class SocksProxySession;
 
 class SocksProxy : public Service {
  public:
-  explicit SocksProxy(SocksProxyConfig* config);
-  ~SocksProxy();
+  SocksProxy();
+  virtual ~SocksProxy();
 
   bool Setup(HKEY key);
+  bool UpdateConfig(const ServiceConfigPtr& config) override;
   void Stop() override;
   void EndSession(SocksProxySession* session);
 
@@ -31,6 +32,10 @@ class SocksProxy : public Service {
   madoka::concurrent::CriticalSection critical_section_;
   std::list<SocksProxySession*> sessions_;
   bool stopped_;
+
+  // disallow copy and assign
+  SocksProxy(const SocksProxy&);
+  SocksProxy& operator=(const SocksProxy&);
 };
 
 #endif  // JUNO_NET_SOCKS_SOCKS_PROXY_H_

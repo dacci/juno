@@ -3,13 +3,12 @@
 #ifndef JUNO_APP_SERVER_CONFIG_H_
 #define JUNO_APP_SERVER_CONFIG_H_
 
+#include <memory>
 #include <string>
-
-class Server;
 
 class ServerConfig {
  public:
-  ServerConfig() : listen_(), type_(), enabled_(1), server_() {
+  ServerConfig() : listen_(), type_(), enabled_(1) {
   }
 
   ServerConfig(const ServerConfig& other)
@@ -18,8 +17,7 @@ class ServerConfig {
         listen_(other.listen_),
         type_(other.type_),
         service_name_(other.service_name_),
-        enabled_(other.enabled_),
-        server_() {
+        enabled_(other.enabled_) {
   }
 
   std::string name_;
@@ -29,10 +27,10 @@ class ServerConfig {
   std::string service_name_;
   int enabled_;
 
-  Server* server_;
-
  private:
   ServerConfig& operator=(const ServerConfig&);
 };
+
+typedef std::shared_ptr<ServerConfig> ServerConfigPtr;
 
 #endif  // JUNO_APP_SERVER_CONFIG_H_

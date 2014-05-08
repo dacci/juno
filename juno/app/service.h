@@ -6,6 +6,8 @@
 #include <madoka/net/async_datagram_socket.h>
 #include <madoka/net/async_socket.h>
 
+#include "app/service_config.h"
+
 class Service {
  public:
   struct Datagram {
@@ -20,11 +22,14 @@ class Service {
   virtual ~Service() {
   }
 
+  virtual bool UpdateConfig(const ServiceConfigPtr& config) = 0;
   virtual void Stop() = 0;
 
   virtual bool OnAccepted(madoka::net::AsyncSocket* client) = 0;
   virtual bool OnReceivedFrom(Datagram* datagram) = 0;
   virtual void OnError(DWORD error) = 0;
 };
+
+typedef std::unique_ptr<Service> ServicePtr;
 
 #endif  // JUNO_APP_SERVICE_H_

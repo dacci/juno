@@ -12,19 +12,19 @@
 
 using madoka::net::AsyncSocket;
 
-Scissors::Scissors(ScissorsConfig* config)
-    : config_(config), stopped_(), credential_() {
+Scissors::Scissors(const std::shared_ptr<ServiceConfig>& config)
+    : config_(std::static_pointer_cast<ScissorsConfig>(config)),
+      stopped_(),
+      credential_() {
 }
 
 Scissors::~Scissors() {
-  if (credential_ != NULL)
-    delete credential_;
 }
 
 bool Scissors::Init() {
-  if (config_->remote_ssl()) {
-    credential_ = new SchannelCredential();
-    if (credential_ == NULL)
+  if (config_->remote_ssl() && credential_ == nullptr) {
+    credential_.reset(new SchannelCredential());
+    if (credential_ == nullptr)
       return false;
 
     credential_->SetEnabledProtocols(SP_PROT_SSL3TLS1_X_CLIENTS);
@@ -38,13 +38,21 @@ bool Scissors::Init() {
   return true;
 }
 
+bool Scissors::UpdateConfig(const ServiceConfigPtr& config) {
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
+  config_ = std::static_pointer_cast<ScissorsConfig>(config);
+
+  return Init();
+}
+
 void Scissors::Stop() {
   madoka::concurrent::LockGuard lock(&critical_section_);
 
   stopped_ = true;
 
-  for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
-    (*i)->Stop();
+  for (auto& session : sessions_)
+    session->Stop();
 
   while (!sessions_.empty())
     empty_.Sleep(&critical_section_);

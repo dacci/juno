@@ -10,8 +10,7 @@
 #include "app/server_config.h"
 #include "ui/server_dialog.h"
 
-ServersPage::ServersPage(PreferenceDialog* parent,
-                         std::map<std::string, ServerConfig*>* configs)
+ServersPage::ServersPage(PreferenceDialog* parent, ServerConfigMap* configs)
     : parent_(parent), configs_(configs), initialized_() {
 }
 
@@ -22,23 +21,22 @@ void ServersPage::OnPageRelease() {
   delete this;
 }
 
-void ServersPage::AddServerItem(ServerConfig* entry, int index) {
+void ServersPage::AddServerItem(const ServerConfigPtr& config, int index) {
   if (index < 0)
     index = server_list_.GetItemCount();
 
-  CString name(entry->name_.c_str());
-  CString bind(entry->bind_.c_str());
-  CString service_name(entry->service_name_.c_str());
+  CString name(config->name_.c_str());
+  CString bind(config->bind_.c_str());
+  CString service_name(config->service_name_.c_str());
 
   CString listen;
-  listen.Format(_T("%u"), entry->listen_);
+  listen.Format(_T("%u"), config->listen_);
 
   server_list_.InsertItem(index, name);
   server_list_.AddItem(index, 1, bind);
   server_list_.AddItem(index, 2, listen);
   server_list_.AddItem(index, 3, service_name);
-  server_list_.SetCheckState(index, entry->enabled_);
-  server_list_.SetItemData(index, reinterpret_cast<DWORD_PTR>(entry));
+  server_list_.SetCheckState(index, config->enabled_);
 }
 
 BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
@@ -77,16 +75,14 @@ BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
 }
 
 void ServersPage::OnAddServer(UINT notify_code, int id, CWindow control) {
-  std::unique_ptr<ServerConfig> entry(new ServerConfig());
-  ServerDialog dialog(parent_, entry.get());
+  ServerConfigPtr config = std::make_shared<ServerConfig>();
+  ServerDialog dialog(parent_, config.get());
   if (dialog.DoModal(m_hWnd) != IDOK)
     return;
 
-  configs_->insert(std::make_pair(entry->name_, entry.get()));
-  AddServerItem(entry.get(), -1);
+  configs_->insert(std::make_pair(config->name_, config));
+  AddServerItem(config, -1);
   server_list_.SelectItem(server_list_.GetItemCount());
-
-  entry.release();
 }
 
 void ServersPage::OnEditServer(UINT notify_code, int id, CWindow control) {
@@ -94,11 +90,13 @@ void ServersPage::OnEditServer(UINT notify_code, int id, CWindow control) {
   if (index == CB_ERR)
     return;
 
-  ServerConfig* config =
-      reinterpret_cast<ServerConfig*>(server_list_.GetItemData(index));
-  assert(config != NULL);
+  CString name_unicode;
+  server_list_.GetItemText(index, 0, name_unicode);
 
-  ServerDialog dialog(parent_, config);
+  CStringA name(name_unicode);
+  auto& config = configs_->at(name.GetString());
+
+  ServerDialog dialog(parent_, config.get());
   if (dialog.DoModal(m_hWnd) != IDOK)
     return;
 
@@ -112,13 +110,14 @@ void ServersPage::OnDeleteServer(UINT notify_code, int id, CWindow control) {
   if (index == CB_ERR)
     return;
 
-  ServerConfig* config =
-      reinterpret_cast<ServerConfig*>(server_list_.GetItemData(index));
-  assert(config != NULL);
+  CString name_unicode;
+  server_list_.GetItemText(index, 0, name_unicode);
+
+  CStringA name(name_unicode);
+  auto& config = configs_->at(name.GetString());
 
   server_list_.DeleteItem(index);
   configs_->erase(config->name_);
-  delete config;
 
   server_list_.SelectItem(index);
 }
@@ -131,9 +130,13 @@ LRESULT ServersPage::OnServerListChanged(LPNMHDR header) {
 
   if (notify->uNewState & LVIS_STATEIMAGEMASK &&
       notify->uOldState & LVIS_STATEIMAGEMASK) {
-    ServerConfig* config = reinterpret_cast<ServerConfig*>(notify->lParam);
-    if (config != NULL)
-      config->enabled_ = (notify->uNewState >> 12) - 1;
+    CString name_unicode;
+    server_list_.GetItemText(notify->iItem, 0, name_unicode);
+
+    CStringA name(name_unicode);
+    auto& config = configs_->at(name.GetString());
+
+    config->enabled_ = (notify->uNewState >> 12) - 1;
   }
 
   UINT count = server_list_.GetSelectedCount();

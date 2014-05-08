@@ -41,7 +41,6 @@ class ProviderDialog
   END_MSG_MAP()
 
   const std::string& GetProviderName() const;
-  ServiceProvider* GetProvider() const;
 
   const std::string& name() const {
     return name_;
@@ -56,7 +55,6 @@ class ProviderDialog
   PreferenceDialog* const parent_;
 
   std::vector<std::string> provider_names_;
-  std::vector<ServiceProvider*> providers_;
   std::string name_;
 
   CEdit name_edit_;

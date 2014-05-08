@@ -9,15 +9,14 @@ class ScissorsProvider : public ServiceProvider {
  public:
   virtual ~ScissorsProvider();
 
-  ServiceConfig* CreateConfig() override;
-  ServiceConfig* LoadConfig(const RegistryKey& key) override;
-  bool SaveConfig(ServiceConfig* config, RegistryKey* key) override;
-  ServiceConfig* CopyConfig(ServiceConfig* config) override;
-  bool UpdateConfig(Service* service, ServiceConfig* config) override;
+  ServiceConfigPtr CreateConfig() override;
+  ServiceConfigPtr LoadConfig(const RegistryKey& key) override;
+  bool SaveConfig(const ServiceConfigPtr& config, RegistryKey* key) override;
+  ServiceConfigPtr CopyConfig(const ServiceConfigPtr& config) override;
 
-  Service* CreateService(ServiceConfig* config) override;
+  ServicePtr CreateService(const ServiceConfigPtr& config) override;
 
-  INT_PTR Configure(ServiceConfig* config, HWND parent) override;
+  INT_PTR Configure(const ServiceConfigPtr& config, HWND parent) override;
 };
 
 #endif  // JUNO_NET_SCISSORS_SCISSORS_PROVIDER_H_

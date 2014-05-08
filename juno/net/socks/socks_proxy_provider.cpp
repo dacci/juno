@@ -7,30 +7,30 @@
 SocksProxyProvider::~SocksProxyProvider() {
 }
 
-ServiceConfig* SocksProxyProvider::CreateConfig() {
-  return new SocksProxyConfig();
+ServiceConfigPtr SocksProxyProvider::CreateConfig() {
+  return std::make_shared<SocksProxyConfig>();
 }
 
-ServiceConfig* SocksProxyProvider::LoadConfig(const RegistryKey& key) {
+ServiceConfigPtr SocksProxyProvider::LoadConfig(const RegistryKey& key) {
   return CreateConfig();
 }
 
-bool SocksProxyProvider::SaveConfig(ServiceConfig* config, RegistryKey* key) {
+bool SocksProxyProvider::SaveConfig(const ServiceConfigPtr& config,
+                                    RegistryKey* key) {
   return true;
 }
 
-ServiceConfig* SocksProxyProvider::CopyConfig(ServiceConfig* config) {
-  return new SocksProxyConfig(*static_cast<SocksProxyConfig*>(config));
+ServiceConfigPtr SocksProxyProvider::CopyConfig(
+    const ServiceConfigPtr& config) {
+  // nothing to copy for now
+  return CreateConfig();
 }
 
-bool SocksProxyProvider::UpdateConfig(Service* service, ServiceConfig* config) {
-  return true;
+ServicePtr SocksProxyProvider::CreateService(const ServiceConfigPtr& config) {
+  return ServicePtr(new SocksProxy());
 }
 
-Service* SocksProxyProvider::CreateService(ServiceConfig* config) {
-  return new SocksProxy(static_cast<SocksProxyConfig*>(config));
-}
-
-INT_PTR SocksProxyProvider::Configure(ServiceConfig* config, HWND parent) {
+INT_PTR SocksProxyProvider::Configure(const ServiceConfigPtr& config,
+                                      HWND parent) {
   return IDOK;
 }

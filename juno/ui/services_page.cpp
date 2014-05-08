@@ -12,8 +12,7 @@
 #include "misc/string_util.h"
 #include "ui/provider_dialog.h"
 
-ServicesPage::ServicesPage(PreferenceDialog* parent,
-                           std::map<std::string, ServiceConfig*>* configs)
+ServicesPage::ServicesPage(PreferenceDialog* parent, ServiceConfigMap* configs)
     : parent_(parent), configs_(configs), initialized_() {
 }
 
@@ -24,13 +23,12 @@ void ServicesPage::OnPageRelease() {
   delete this;
 }
 
-void ServicesPage::AddServiceItem(ServiceConfig* entry, int index) {
+void ServicesPage::AddServiceItem(const ServiceConfigPtr& config, int index) {
   if (index == -1)
     index = service_list_.GetItemCount();
 
-  service_list_.InsertItem(index, CString(entry->name_.c_str()));
-  service_list_.AddItem(index, 1, CString(entry->provider_name_.c_str()));
-  service_list_.SetItemData(index, reinterpret_cast<DWORD_PTR>(entry));
+  service_list_.InsertItem(index, CString(config->name_.c_str()));
+  service_list_.AddItem(index, 1, CString(config->provider_name_.c_str()));
 }
 
 BOOL ServicesPage::OnInitDialog(CWindow focus, LPARAM init_param) {
@@ -64,24 +62,22 @@ void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
   if (provider_dialog.DoModal(m_hWnd) != IDOK)
     return;
 
-  ServiceProvider* provider = provider_dialog.GetProvider();
-  if (provider == NULL)
+  ServiceProviderPtr provider =
+      service_manager->GetProvider(provider_dialog.GetProviderName());
+  if (provider == nullptr)
     return;
 
-  std::unique_ptr<ServiceConfig> config(provider->CreateConfig());
+  ServiceConfigPtr config = provider->CreateConfig();
   config->name_ = provider_dialog.name();
   config->provider_name_ = provider_dialog.GetProviderName();
-  config->provider_ = provider;
 
-  INT_PTR dialog_result = provider->Configure(config.get(), *parent_);
+  INT_PTR dialog_result = provider->Configure(config, *parent_);
   if (dialog_result != IDOK)
     return;
 
-  configs_->insert(std::make_pair(config->name_, config.get()));
-  AddServiceItem(config.get(), -1);
+  configs_->insert(std::make_pair(config->name_, config));
+  AddServiceItem(config, -1);
   service_list_.SelectItem(service_list_.GetItemCount());
-
-  config.release();
 }
 
 void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
@@ -89,11 +85,14 @@ void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
   if (index == CB_ERR)
     return;
 
-  ServiceConfig* config = reinterpret_cast<ServiceConfig*>(
-      service_list_.GetItemData(index));
-  assert(config != NULL);
+  CString name_unicode;
+  service_list_.GetItemText(index, 0, name_unicode);
 
-  if (config->provider_->Configure(config, *parent_) != IDOK)
+  CStringA name(name_unicode);
+  auto& config = configs_->at(name.GetString());
+
+  auto& provider = service_manager->GetProvider(config->provider_name_);
+  if (provider->Configure(config, *parent_) != IDOK)
     return;
 
   service_list_.DeleteItem(index);
@@ -106,13 +105,14 @@ void ServicesPage::OnDeleteService(UINT notify_code, int id, CWindow control) {
   if (index == CB_ERR)
     return;
 
-  ServiceConfig* config = reinterpret_cast<ServiceConfig*>(
-      service_list_.GetItemData(index));
-  assert(config != NULL);
+  CString name_unicode;
+  service_list_.GetItemText(index, 0, name_unicode);
+
+  CStringA name(name_unicode);
+  auto& config = configs_->at(name.GetString());
 
   service_list_.DeleteItem(index);
   configs_->erase(config->name_);
-  delete config;
 
   service_list_.SelectItem(index);
 }

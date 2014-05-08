@@ -3,10 +3,8 @@
 #ifndef JUNO_APP_SERVICE_CONFIG_H_
 #define JUNO_APP_SERVICE_CONFIG_H_
 
+#include <memory>
 #include <string>
-
-class Service;
-class ServiceProvider;
 
 class ServiceConfig {
  public:
@@ -15,9 +13,8 @@ class ServiceConfig {
 
   std::string name_;
   std::string provider_name_;
-
-  ServiceProvider* provider_;
-  Service* instance_;
 };
+
+typedef std::shared_ptr<ServiceConfig> ServiceConfigPtr;
 
 #endif  // JUNO_APP_SERVICE_CONFIG_H_

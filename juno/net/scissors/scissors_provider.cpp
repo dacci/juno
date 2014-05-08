@@ -11,47 +11,43 @@
 ScissorsProvider::~ScissorsProvider() {
 }
 
-ServiceConfig* ScissorsProvider::CreateConfig() {
-  return new ScissorsConfig();
+ServiceConfigPtr ScissorsProvider::CreateConfig() {
+  return std::make_shared<ScissorsConfig>();
 }
 
-ServiceConfig* ScissorsProvider::LoadConfig(const RegistryKey& key) {
-  std::unique_ptr<ScissorsConfig> config(
-      static_cast<ScissorsConfig*>(CreateConfig()));
+ServiceConfigPtr ScissorsProvider::LoadConfig(const RegistryKey& key) {
+  auto& config = std::static_pointer_cast<ScissorsConfig>(CreateConfig());
+  if (config == nullptr)
+    return nullptr;
 
   if (!config->Load(key))
-    return NULL;
+    return nullptr;
 
-  return config.release();
+  return config;
 }
 
-bool ScissorsProvider::SaveConfig(ServiceConfig* config, RegistryKey* key) {
-  return static_cast<ScissorsConfig*>(config)->Save(key);
+bool ScissorsProvider::SaveConfig(const ServiceConfigPtr& config,
+                                  RegistryKey* key) {
+  return static_cast<ScissorsConfig*>(config.get())->Save(key);
 }
 
-ServiceConfig* ScissorsProvider::CopyConfig(ServiceConfig* config) {
-  return new ScissorsConfig(*static_cast<ScissorsConfig*>(config));
+ServiceConfigPtr ScissorsProvider::CopyConfig(const ServiceConfigPtr& config) {
+  return std::make_shared<ScissorsConfig>(
+      *static_cast<ScissorsConfig*>(config.get()));
 }
 
-bool ScissorsProvider::UpdateConfig(Service* service, ServiceConfig* config) {
-  Scissors* scissors = static_cast<Scissors*>(service);
-  ScissorsConfig* scissors_config = static_cast<ScissorsConfig*>(config);
-
-  *scissors->config_ = *scissors_config;
-
-  return true;
-}
-
-Service* ScissorsProvider::CreateService(ServiceConfig* config) {
-  std::unique_ptr<Scissors> service(
-    new Scissors(static_cast<ScissorsConfig*>(config)));
+ServicePtr ScissorsProvider::CreateService(const ServiceConfigPtr& config) {
+  std::unique_ptr<Scissors> service(new Scissors(config));
+  if (service == nullptr)
+    return nullptr;
 
   if (!service->Init())
-    return NULL;
+    return nullptr;
 
-  return service.release();
+  return std::move(service);
 }
 
-INT_PTR ScissorsProvider::Configure(ServiceConfig* config, HWND parent) {
-  return ScissorsDialog(config).DoModal(parent);
+INT_PTR ScissorsProvider::Configure(const ServiceConfigPtr& config,
+                                    HWND parent) {
+  return ScissorsDialog(config.get()).DoModal(parent);
 }

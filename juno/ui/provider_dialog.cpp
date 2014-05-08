@@ -20,14 +20,7 @@ const std::string& ProviderDialog::GetProviderName() const {
   if (provider_index_ == CB_ERR)
     return kEmptyString;
 
-  return provider_names_[provider_index_];
-}
-
-ServiceProvider* ProviderDialog::GetProvider() const {
-  if (provider_index_ == CB_ERR)
-    return NULL;
-
-  return providers_[provider_index_];
+  return provider_names_.at(provider_index_);
 }
 
 BOOL ProviderDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
@@ -37,7 +30,6 @@ BOOL ProviderDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   for (auto i = providers.begin(), l = providers.end(); i != l; ++i) {
     provider_names_.push_back(i->first);
     provider_combo_.AddString(CString(i->first.c_str()));
-    providers_.push_back(i->second);
   }
 
   return TRUE;

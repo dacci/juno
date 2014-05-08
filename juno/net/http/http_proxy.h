@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "app/service.h"
+#include "app/service_manager.h"
 #include "net/http/http_digest.h"
 
 class HttpHeaders;
@@ -21,15 +22,20 @@ class HttpResponse;
 
 class HttpProxy : public Service {
  public:
-  explicit HttpProxy(HttpProxyConfig* config);
+  explicit HttpProxy(const ServiceConfigPtr& config);
   ~HttpProxy();
 
   bool Init();
+  bool UpdateConfig(const ServiceConfigPtr& config) override;
   void Stop() override;
 
   void FilterHeaders(HttpHeaders* headers, bool request);
   void ProcessAuthenticate(HttpResponse* response);
   void ProcessAuthorization(HttpRequest* request);
+
+  bool use_remote_proxy();
+  const char* remote_proxy_host();
+  int remote_proxy_port();
 
   void EndSession(HttpProxySession* session);
 
@@ -37,15 +43,13 @@ class HttpProxy : public Service {
   bool OnReceivedFrom(Datagram* datagram) override;
   void OnError(DWORD error) override;
 
-  void set_config(HttpProxyConfig* config);
-
  private:
   static const std::string kProxyAuthenticate;
   static const std::string kProxyAuthorization;
 
   void SetBasicCredential();
 
-  HttpProxyConfig* const config_;
+  std::shared_ptr<HttpProxyConfig> config_;
 
   madoka::concurrent::ConditionVariable empty_;
   madoka::concurrent::ReadWriteLock lock_;

@@ -11,6 +11,7 @@
 #include <atlddx.h>
 #include <atldlgs.h>
 
+#include "app/service_manager.h"
 #include "res/resource.h"
 #include "ui/preference_dialog.h"
 
@@ -22,8 +23,7 @@ class ServersPage
  public:
   static const UINT IDD = IDD_SERVERS_PAGE;
 
-  ServersPage(PreferenceDialog* parent,
-              std::map<std::string, ServerConfig*>* configs);
+  ServersPage(PreferenceDialog* parent, ServerConfigMap* configs);
   ~ServersPage();
 
   void OnPageRelease();
@@ -49,7 +49,7 @@ class ServersPage
   END_MSG_MAP()
 
  private:
-  void AddServerItem(ServerConfig* entry, int index);
+  void AddServerItem(const ServerConfigPtr& entry, int index);
 
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
@@ -61,7 +61,7 @@ class ServersPage
   LRESULT OnServerListDoubleClicked(LPNMHDR header);
 
   PreferenceDialog* const parent_;
-  std::map<std::string, ServerConfig*>* const configs_;
+  ServerConfigMap* const configs_;
   bool initialized_;
 
   CListViewCtrl server_list_;

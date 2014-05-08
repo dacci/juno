@@ -23,7 +23,7 @@ class HttpProxyDialog
  public:
   static const UINT IDD = IDD_HTTP_PROXY;
 
-  explicit HttpProxyDialog(ServiceConfig* entry);
+  explicit HttpProxyDialog(const ServiceConfigPtr& entry);
   ~HttpProxyDialog();
 
   BEGIN_DDX_MAP(HttpProxyDialog)
@@ -73,7 +73,7 @@ class HttpProxyDialog
 
   LRESULT OnFilterListDoubleClicked(LPNMHDR header);
 
-  HttpProxyConfig* const config_;
+  std::shared_ptr<HttpProxyConfig> config_;
   std::vector<HttpProxyConfig::HeaderFilter> filters_;
 
   CButton use_remote_proxy_check_;

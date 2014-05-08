@@ -8,13 +8,17 @@
 
 using ::madoka::net::AsyncSocket;
 
-SocksProxy::SocksProxy(SocksProxyConfig* config) : stopped_() {
+SocksProxy::SocksProxy() : stopped_() {
 }
 
 SocksProxy::~SocksProxy() {
 }
 
 bool SocksProxy::Setup(HKEY key) {
+  return true;
+}
+
+bool SocksProxy::UpdateConfig(const ServiceConfigPtr& config) {
   return true;
 }
 
@@ -46,7 +50,7 @@ bool SocksProxy::OnAccepted(AsyncSocket* client) {
     return false;
 
   SocksProxySession* session = new SocksProxySession(this);
-  if (session == NULL)
+  if (session == nullptr)
     return false;
 
   sessions_.push_back(session);

@@ -11,47 +11,43 @@
 HttpProxyProvider::~HttpProxyProvider() {
 }
 
-ServiceConfig* HttpProxyProvider::CreateConfig() {
-  return new HttpProxyConfig();
+ServiceConfigPtr HttpProxyProvider::CreateConfig() {
+  return std::make_shared<HttpProxyConfig>();
 }
 
-ServiceConfig* HttpProxyProvider::LoadConfig(const RegistryKey& key) {
-  std::unique_ptr<HttpProxyConfig> config(
-      static_cast<HttpProxyConfig*>(CreateConfig()));
+ServiceConfigPtr HttpProxyProvider::LoadConfig(const RegistryKey& key) {
+  auto& config = std::static_pointer_cast<HttpProxyConfig>(CreateConfig());
+  if (config == nullptr)
+    return nullptr;
 
   if (!config->Load(key))
-    return NULL;
+    return nullptr;
 
-  return config.release();
+  return config;
 }
 
-bool HttpProxyProvider::SaveConfig(ServiceConfig* config, RegistryKey* key) {
-  return static_cast<HttpProxyConfig*>(config)->Save(key);
+bool HttpProxyProvider::SaveConfig(const ServiceConfigPtr& config,
+                                   RegistryKey* key) {
+  return static_cast<HttpProxyConfig*>(config.get())->Save(key);
 }
 
-ServiceConfig* HttpProxyProvider::CopyConfig(ServiceConfig* config) {
-  return new HttpProxyConfig(*static_cast<HttpProxyConfig*>(config));
+ServiceConfigPtr HttpProxyProvider::CopyConfig(const ServiceConfigPtr& config) {
+  return std::make_shared<HttpProxyConfig>(
+      *static_cast<HttpProxyConfig*>(config.get()));
 }
 
-bool HttpProxyProvider::UpdateConfig(Service* service, ServiceConfig* config) {
-  HttpProxy* instance = static_cast<HttpProxy*>(service);
-  HttpProxyConfig* proxy_config = static_cast<HttpProxyConfig*>(config);
-
-  instance->set_config(proxy_config);
-
-  return true;
-}
-
-Service* HttpProxyProvider::CreateService(ServiceConfig* config) {
-  std::unique_ptr<HttpProxy> service(
-    new HttpProxy(static_cast<HttpProxyConfig*>(config)));
+ServicePtr HttpProxyProvider::CreateService(const ServiceConfigPtr& config) {
+  std::unique_ptr<HttpProxy> service(new HttpProxy(config));
+  if (service == nullptr)
+    return nullptr;
 
   if (!service->Init())
-    return NULL;
+    return nullptr;
 
-  return service.release();
+  return std::move(service);
 }
 
-INT_PTR HttpProxyProvider::Configure(ServiceConfig* config, HWND parent) {
+INT_PTR HttpProxyProvider::Configure(const ServiceConfigPtr& config,
+                                     HWND parent) {
   return HttpProxyDialog(config).DoModal(parent);
 }

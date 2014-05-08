@@ -34,8 +34,7 @@ bool MainFrame::LoadAndStart() {
 
 void MainFrame::StopAndUnload() {
   service_manager->StopServers();
-  service_manager->UnloadServers();
-  service_manager->UnloadServices();
+  service_manager->StopServices();
 }
 
 void MainFrame::TrackTrayMenu(int x, int y) {

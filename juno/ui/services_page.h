@@ -13,6 +13,7 @@
 
 #include <map>
 
+#include "app/service_manager.h"
 #include "res/resource.h"
 #include "ui/preference_dialog.h"
 
@@ -24,8 +25,7 @@ class ServicesPage
  public:
   static const UINT IDD = IDD_SERVICES_PAGE;
 
-  ServicesPage(PreferenceDialog* parent,
-               std::map<std::string, ServiceConfig*>* configs);
+  ServicesPage(PreferenceDialog* parent, ServiceConfigMap* configs);
   ~ServicesPage();
 
   void OnPageRelease();
@@ -51,7 +51,7 @@ class ServicesPage
   END_MSG_MAP()
 
  private:
-  void AddServiceItem(ServiceConfig* entry, int index);
+  void AddServiceItem(const ServiceConfigPtr& config, int index);
 
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
@@ -63,7 +63,7 @@ class ServicesPage
   LRESULT OnServiceListDoubleClicked(LPNMHDR header);
 
   PreferenceDialog* const parent_;
-  std::map<std::string, ServiceConfig*>* const configs_;
+  ServiceConfigMap* const configs_;
   bool initialized_;
 
   CListViewCtrl service_list_;

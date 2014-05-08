@@ -6,7 +6,6 @@
 
 #include <utility>
 
-#include "app/service_manager.h"
 #include "res/resource.h"
 #include "ui/servers_page.h"
 #include "ui/services_page.h"

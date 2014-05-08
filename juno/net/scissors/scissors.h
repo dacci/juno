@@ -8,12 +8,14 @@
 
 #include <list>
 #include <map>
+#include <memory>
 #include <string>
 
 #include "app/service.h"
 
 class SchannelCredential;
 class ScissorsConfig;
+class ServiceConfig;
 
 class Scissors : public Service {
  public:
@@ -24,10 +26,11 @@ class Scissors : public Service {
     virtual void Stop() = 0;
   };
 
-  explicit Scissors(ScissorsConfig* config);
+  explicit Scissors(const std::shared_ptr<ServiceConfig>& config);
   virtual ~Scissors();
 
   bool Init();
+  bool UpdateConfig(const ServiceConfigPtr& config) override;
   void Stop() override;
 
   bool OnAccepted(madoka::net::AsyncSocket* client) override;
@@ -43,7 +46,7 @@ class Scissors : public Service {
 
   void EndSession(Session* session);
 
-  ScissorsConfig* const config_;
+  std::shared_ptr<ScissorsConfig> config_;
 
   madoka::concurrent::ConditionVariable empty_;
   madoka::concurrent::CriticalSection critical_section_;
@@ -54,7 +57,7 @@ class Scissors : public Service {
 
   bool stopped_;
 
-  SchannelCredential* credential_;
+  std::unique_ptr<SchannelCredential> credential_;
 };
 
 #endif  // JUNO_NET_SCISSORS_SCISSORS_H_

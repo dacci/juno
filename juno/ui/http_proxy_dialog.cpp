@@ -17,8 +17,8 @@ static const TCHAR* kActions[] = {
   _T("Edit*"),
 };
 
-HttpProxyDialog::HttpProxyDialog(ServiceConfig* entry)
-    : config_(static_cast<HttpProxyConfig*>(entry)),
+HttpProxyDialog::HttpProxyDialog(const ServiceConfigPtr& entry)
+    : config_(std::static_pointer_cast<HttpProxyConfig>(entry)),
       filters_(config_->header_filters_) {
   image_list_.CreateFromImage(IDB_UPDOWN_ARROW, 16, 0, CLR_NONE, 0,
                               LR_CREATEDIBSECTION);

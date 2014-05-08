@@ -30,9 +30,8 @@ FILETIME HttpProxySession::kTimerDueTime = {
   -1
 };
 
-HttpProxySession::HttpProxySession(HttpProxy* proxy, HttpProxyConfig* config)
+HttpProxySession::HttpProxySession(HttpProxy* proxy)
     : proxy_(proxy),
-      config_(config),
       client_(),
       remote_(),
       buffer_(new char[kBufferSize]),
@@ -86,7 +85,7 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     return;
   }
 
-  if (tunnel_ && !config_->use_remote_proxy()) {
+  if (tunnel_ && !proxy_->use_remote_proxy()) {
     if (!TunnelingService::Bind(client_, remote_)) {
       SendError(HTTP::INTERNAL_SERVER_ERROR);
       return;
@@ -102,7 +101,7 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
       return;
     }
   } else {
-    if (!config_->use_remote_proxy())
+    if (!proxy_->use_remote_proxy())
       request_.set_path(url_.PathForRequest());
 
     if (!SendRequest()) {
@@ -398,7 +397,7 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
       SendError(HTTP::BAD_REQUEST);
       return;
     }
-    if (!config_->use_remote_proxy() && !url_.SchemeIs("http")) {
+    if (!proxy_->use_remote_proxy() && !url_.SchemeIs("http")) {
       SendError(HTTP::NOT_IMPLEMENTED);
       return;
     }
@@ -413,9 +412,9 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
   }
 
   bool resolved = false;
-  if (config_->use_remote_proxy())
-    resolved = resolver_.Resolve(config_->remote_proxy_host().c_str(),
-                                 config_->remote_proxy_port());
+  if (proxy_->use_remote_proxy())
+    resolved = resolver_.Resolve(proxy_->remote_proxy_host(),
+                                 proxy_->remote_proxy_port());
   else
     resolved = resolver_.Resolve(url_.host().c_str(), url_.EffectiveIntPort());
 

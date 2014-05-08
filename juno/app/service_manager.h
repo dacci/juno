@@ -3,23 +3,19 @@
 #ifndef JUNO_APP_SERVICE_MANAGER_H_
 #define JUNO_APP_SERVICE_MANAGER_H_
 
-#include <windows.h>
-
 #include <map>
 #include <string>
 #include <vector>
 
+#include "app/server_config.h"
+#include "app/service_provider.h"
 #include "misc/registry_key.h"
 
-#ifdef CreateService
-#undef CreateService
-#endif
-
-class ServiceProvider;
-class ServiceConfig;
-class Service;
-class ServerConfig;
 class Server;
+
+typedef std::map<std::string, ServiceProviderPtr> ProviderMap;
+typedef std::map<std::string, ServiceConfigPtr> ServiceConfigMap;
+typedef std::map<std::string, ServerConfigPtr> ServerConfigMap;
 
 class ServiceManager {
  public:
@@ -27,42 +23,44 @@ class ServiceManager {
   virtual ~ServiceManager();
 
   bool LoadServices();
-  void UnloadServices();
   void StopServices();
 
   bool LoadServers();
   bool StartServers();
   void StopServers();
-  void UnloadServers();
-  void ClearServers();
 
-  ServiceProvider* GetProvider(const std::string& name) const;
+  ServiceProviderPtr GetProvider(const std::string& name) const;
 
-  ServiceConfig* GetServiceConfig(const std::string& name) const;
-  void CopyServiceConfigs(std::map<std::string, ServiceConfig*>* configs) const;
+  ServiceConfigPtr GetServiceConfig(const std::string& name) const;
+  void CopyServiceConfigs(ServiceConfigMap* configs) const;
 
-  void CopyServerConfigs(std::map<std::string, ServerConfig*>* configs) const;
+  void CopyServerConfigs(ServerConfigMap* configs) const;
 
-  bool UpdateConfiguration(
-      std::map<std::string, ServiceConfig*>&& service_configs,
-      std::map<std::string, ServerConfig*>&& server_configs);
+  bool UpdateConfiguration(ServiceConfigMap&& service_configs,
+                           ServerConfigMap&& server_configs);
 
-  const std::map<std::string, ServiceProvider*>& providers() const {
+  const ProviderMap& providers() const {
     return providers_;
   }
 
  private:
+  typedef std::unique_ptr<Server> ServerPtr;
+  typedef std::map<std::string, ServicePtr> ServiceMap;
+  typedef std::map<std::string, ServerPtr> ServerMap;
+
   bool LoadService(const RegistryKey& parent, const std::string& key_name);
-  bool SaveService(const RegistryKey& parent, ServiceConfig* config);
-  bool CreateService(ServiceConfig* config);
+  bool SaveService(const RegistryKey& parent, const ServiceConfigPtr& config);
+  bool CreateService(const std::string& name);
 
   bool LoadServer(const RegistryKey& parent, const std::string& key_name);
-  bool SaveServer(const RegistryKey& parent, ServerConfig* config);
-  bool CreateServer(ServerConfig* config);
+  bool SaveServer(const RegistryKey& parent, const ServerConfigPtr& config);
+  bool CreateServer(const std::string& name);
 
-  std::map<std::string, ServiceProvider*> providers_;
-  std::map<std::string, ServiceConfig*> services_;
-  std::map<std::string, ServerConfig*> servers_;
+  ProviderMap providers_;
+  ServiceConfigMap service_configs_;
+  ServerConfigMap server_configs_;
+  ServiceMap services_;
+  ServerMap servers_;
 };
 
 extern ServiceManager* service_manager;
