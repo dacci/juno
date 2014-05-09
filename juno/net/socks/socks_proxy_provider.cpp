@@ -22,8 +22,8 @@ bool SocksProxyProvider::SaveConfig(const ServiceConfigPtr& config,
 
 ServiceConfigPtr SocksProxyProvider::CopyConfig(
     const ServiceConfigPtr& config) {
-  // nothing to copy for now
-  return CreateConfig();
+  return std::make_shared<SocksProxyConfig>(
+      *static_cast<SocksProxyConfig*>(config.get()));
 }
 
 ServicePtr SocksProxyProvider::CreateService(const ServiceConfigPtr& config) {
