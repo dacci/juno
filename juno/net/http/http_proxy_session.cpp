@@ -94,7 +94,6 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     response_.Clear();
     response_.set_minor_version(1);
     response_.SetStatus(HTTP::OK, "Connection Established");
-    response_.SetHeader("Content-Length", "0");
 
     if (!SendResponse()) {
       DELETE_THIS();
@@ -563,7 +562,9 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
 
   if (tunnel_ && response_.status() == HTTP::OK) {
     if (TunnelingService::Bind(client_, remote_)) {
-      response_.SetHeader("Content-Length", "0");
+      response_.Clear();
+      response_.set_minor_version(1);
+      response_.SetStatus(HTTP::OK, "Connection Established");
 
       if (!SendResponse())
         DELETE_THIS();
