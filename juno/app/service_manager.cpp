@@ -349,6 +349,10 @@ bool ServiceManager::CreateServer(const std::string& name) {
   if (!config->enabled_)
     return true;
 
+  auto& service = services_.find(config->service_name_);
+  if (service == services_.end())
+    return false;
+
   ServerPtr server;
   switch (config->type_) {
     case SOCK_STREAM:
@@ -369,7 +373,7 @@ bool ServiceManager::CreateServer(const std::string& name) {
   if (!server->Setup(config->bind_.c_str(), config->listen_))
     return false;
 
-  server->SetService(services_.at(config->service_name_).get());
+  server->SetService(service->second.get());
 
   servers_.insert(std::make_pair(name, std::move(server)));
 
