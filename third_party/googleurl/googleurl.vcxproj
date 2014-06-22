@@ -32,6 +32,8 @@
     <ClInclude Include="base\strings\string_piece.h" />
     <ClInclude Include="base\strings\string_util.h" />
     <ClInclude Include="base\strings\string_util_win.h" />
+    <ClInclude Include="base\strings\utf_string_conversion_utils.h" />
+    <ClInclude Include="base\third_party\icu\icu_utf.h" />
     <ClInclude Include="build\build_config.h" />
     <ClInclude Include="url\gurl.h" />
     <ClInclude Include="url\origin.h" />
@@ -42,6 +44,7 @@
     <ClInclude Include="url\url_canon_internal_file.h" />
     <ClInclude Include="url\url_canon_ip.h" />
     <ClInclude Include="url\url_canon_stdstring.h" />
+    <ClInclude Include="url\url_constants.h" />
     <ClInclude Include="url\url_export.h" />
     <ClInclude Include="url\url_file.h" />
     <ClInclude Include="url\url_parse.h" />
@@ -51,6 +54,8 @@
     <ClInclude Include="url\url_util_internal.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="base\strings\utf_string_conversion_utils.cc" />
+    <ClCompile Include="base\third_party\icu\icu_utf.cc" />
     <ClCompile Include="url\gurl.cc" />
     <ClCompile Include="url\origin.cc" />
     <ClCompile Include="url\third_party\mozilla\url_parse.cc" />
@@ -68,6 +73,7 @@
     <ClCompile Include="url\url_canon_relative.cc" />
     <ClCompile Include="url\url_canon_stdstring.cc" />
     <ClCompile Include="url\url_canon_stdurl.cc" />
+    <ClCompile Include="url\url_constants.cc" />
     <ClCompile Include="url\url_parse_file.cc" />
     <ClCompile Include="url\url_util.cc" />
   </ItemGroup>

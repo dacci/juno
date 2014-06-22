@@ -62,7 +62,7 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
   if (!winsock.Initialized())
     return __LINE__;
 
-  url_util::Initialize();
+  url::Initialize();
   GURL::EmptyGURL();
 
   if (!TunnelingService::Init()) {
@@ -95,7 +95,7 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
   _Module.Term();
   delete service_manager;
   TunnelingService::Term();
-  url_util::Shutdown();
+  url::Shutdown();
   ::CoUninitialize();
 
   return 0;
