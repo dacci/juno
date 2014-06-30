@@ -30,12 +30,13 @@ class HttpProxy : public Service {
   void Stop() override;
 
   void FilterHeaders(HttpHeaders* headers, bool request);
-  void ProcessAuthenticate(HttpResponse* response);
+  void ProcessAuthenticate(HttpResponse* response, HttpRequest* request);
   void ProcessAuthorization(HttpRequest* request);
 
   bool use_remote_proxy();
   const char* remote_proxy_host();
   int remote_proxy_port();
+  int auth_remote_proxy();
 
   void EndSession(HttpProxySession* session);
 
@@ -47,6 +48,8 @@ class HttpProxy : public Service {
   static const std::string kProxyAuthenticate;
   static const std::string kProxyAuthorization;
 
+  void DoProcessAuthenticate(HttpResponse* response);
+  void DoProcessAuthorization(HttpRequest* request);
   void SetBasicCredential();
 
   std::shared_ptr<HttpProxyConfig> config_;

@@ -46,6 +46,9 @@ class HttpResponse : public HttpHeaders {
   }
 
   void SetStatus(HTTP::StatusCode status, const char* message) {
+    if (minor_version_ == -1)
+      set_minor_version(1);
+
     status_ = status;
     message_ = message;
   }

@@ -4,7 +4,7 @@
 
 #include <stdlib.h>
 
-namespace http {
+namespace http_util {
 
 int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size) {
   char* start = const_cast<char*>(buffer.c_str());
@@ -12,7 +12,7 @@ int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size) {
   *chunk_size = ::_strtoi64(start, &end, 16);
 
   while (*end) {
-    if (*end != '\x0D' && *end != '\x0A')
+    if (*end != '\x0D' && *end != '\x0A' && *end != ' ')
       return -1;
 
     if (*end == '\x0A')
@@ -50,4 +50,4 @@ int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size) {
   return end - start;
 }
 
-}  // namespace http
+}  // namespace http_util
