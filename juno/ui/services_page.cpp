@@ -46,8 +46,8 @@ BOOL ServicesPage::OnInitDialog(CWindow focus, LPARAM init_param) {
   service_list_.AddColumn(caption, 1);
   service_list_.SetColumnWidth(1, 90);
 
-  for (auto i = configs_->begin(), l = configs_->end(); i != l; ++i)
-    AddServiceItem(i->second, -1);
+  for (auto& pair : *configs_)
+    AddServiceItem(pair.second, -1);
 
   edit_button_.EnableWindow(FALSE);
   delete_button_.EnableWindow(FALSE);

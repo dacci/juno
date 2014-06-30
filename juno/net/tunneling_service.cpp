@@ -39,8 +39,8 @@ TunnelingService::~TunnelingService() {
 
   stopped_ = true;
 
-  for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
-    (*i)->from_->Shutdown(SD_BOTH);
+  for (auto& session : sessions_)
+    session->from_->Shutdown(SD_BOTH);
 
   while (!sessions_.empty())
     empty_.Sleep(&critical_section_);

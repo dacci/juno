@@ -14,8 +14,8 @@ TcpServer::TcpServer() : service_(), count_() {
 TcpServer::~TcpServer() {
   Stop();
 
-  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
-    delete *i;
+  for (auto& server : servers_)
+    delete server;
   servers_.clear();
 
   ::CloseHandle(event_);
@@ -35,12 +35,12 @@ bool TcpServer::Setup(const char* address, int port) {
 
   bool succeeded = false;
 
-  for (auto i = resolver_.begin(), l = resolver_.end(); i != l; ++i) {
+  for (const auto& end_point : resolver_) {
     AsyncServerSocket* server = new AsyncServerSocket();
     if (server == nullptr)
       break;
 
-    if (server->Bind(*i) && server->Listen(SOMAXCONN)) {
+    if (server->Bind(end_point) && server->Listen(SOMAXCONN)) {
       succeeded = true;
       servers_.push_back(server);
     } else {
@@ -57,13 +57,13 @@ bool TcpServer::Start() {
 
   bool succeeded = false;
 
-  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
-    if ((*i)->AcceptAsync(this)) {
+  for (auto& server : servers_) {
+    if (server->AcceptAsync(this)) {
       succeeded = true;
       if (count_++ == 0)
         ::ResetEvent(event_);
     } else {
-      (*i)->Close();
+      server->Close();
     }
   }
 
@@ -71,8 +71,8 @@ bool TcpServer::Start() {
 }
 
 void TcpServer::Stop() {
-  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
-    (*i)->Close();
+  for (auto& server : servers_)
+    server->Close();
 
   ::WaitForSingleObject(event_, INFINITE);
 }

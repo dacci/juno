@@ -51,8 +51,8 @@ class SecurityBufferBundle : public SecBufferDesc {
   }
 
   void FreeBuffers() {
-    for (auto i = buffers_.begin(), l = buffers_.end(); i != l; ++i)
-      i->Free();
+    for (auto& buffer : buffers_)
+      buffer.Free();
   }
 
   SecBuffer& at(size_t index) {

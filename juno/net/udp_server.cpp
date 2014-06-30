@@ -17,12 +17,12 @@ UdpServer::UdpServer() : service_(), count_() {
 UdpServer::~UdpServer() {
   Stop();
 
-  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
-    delete *i;
+  for (auto& server : servers_)
+    delete server;
   servers_.clear();
 
-  for (auto i = buffers_.begin(), l = buffers_.end(); i != l; ++i)
-    delete[] i->second;
+  for (auto& pair : buffers_)
+    delete[] pair.second;
   buffers_.clear();
 
   ::CloseHandle(event_);
@@ -42,7 +42,7 @@ bool UdpServer::Setup(const char* address, int port) {
 
   bool succeeded = false;
 
-  for (auto i = resolver_.begin(), l = resolver_.end(); i != l; ++i) {
+  for (const auto& end_point : resolver_) {
     std::unique_ptr<char[]> buffer(new char[kBufferSize]);
     if (buffer == nullptr)
       break;
@@ -51,7 +51,7 @@ bool UdpServer::Setup(const char* address, int port) {
     if (server == nullptr)
       break;
 
-    if (server->Bind(*i)) {
+    if (server->Bind(end_point)) {
       succeeded = true;
       servers_.push_back(server);
       buffers_.insert(std::make_pair(server, buffer.release()));
@@ -69,9 +69,7 @@ bool UdpServer::Start() {
 
   bool succeeded = false;
 
-  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
-    AsyncDatagramSocket* socket = *i;
-
+  for (auto& socket : servers_) {
     if (socket->ReceiveFromAsync(buffers_[socket], kBufferSize, 0, this)) {
       succeeded = true;
       if (count_++ == 0)
@@ -85,8 +83,8 @@ bool UdpServer::Start() {
 }
 
 void UdpServer::Stop() {
-  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i)
-    (*i)->Close();
+  for (auto& server : servers_)
+    server->Close();
 
   ::WaitForSingleObject(event_, INFINITE);
 }

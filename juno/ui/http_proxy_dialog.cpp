@@ -88,8 +88,8 @@ BOOL HttpProxyDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
       CString(config_->remote_proxy_password_.c_str()));
 
   int filter_index = 0;
-  for (auto i = filters_.begin(), l = filters_.end(); i != l; ++i)
-    AddFilterItem(*i, filter_index++, -1);
+  for (auto& filter : filters_)
+    AddFilterItem(filter, filter_index++, -1);
 
   return TRUE;
 }

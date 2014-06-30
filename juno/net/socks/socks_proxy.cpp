@@ -27,8 +27,8 @@ void SocksProxy::Stop() {
 
   stopped_ = true;
 
-  for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i)
-    (*i)->Stop();
+  for (auto& session : sessions_)
+    session->Stop();
 
   while (!sessions_.empty())
     empty_.Sleep(&critical_section_);

@@ -54,9 +54,8 @@ void ServerDialog::FillBindCombo() {
 void ServerDialog::FillServiceCombo() {
   service_combo_.Clear();
 
-  auto& services = parent_->service_configs_;
-  for (auto i = services.begin(), l = services.end(); i != l; ++i)
-    service_combo_.AddString(CString(i->first.c_str()));
+  for (auto& service : parent_->service_configs_)
+    service_combo_.AddString(CString(service.first.c_str()));
 }
 
 BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {

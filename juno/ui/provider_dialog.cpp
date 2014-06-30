@@ -26,10 +26,9 @@ const std::string& ProviderDialog::GetProviderName() const {
 BOOL ProviderDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   DoDataExchange();
 
-  auto& providers = service_manager->providers();
-  for (auto i = providers.begin(), l = providers.end(); i != l; ++i) {
-    provider_names_.push_back(i->first);
-    provider_combo_.AddString(CString(i->first.c_str()));
+  for (auto& provider : service_manager->providers()) {
+    provider_names_.push_back(provider.first);
+    provider_combo_.AddString(CString(provider.first.c_str()));
   }
 
   return TRUE;

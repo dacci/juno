@@ -144,10 +144,7 @@ bool HttpProxyConfig::Save(RegistryKey* key) {
 
   char name[16];
 
-  for (auto i = header_filters_.begin(), l = header_filters_.end(); i != l;
-       ++i) {
-    HeaderFilter& filter = *i;
-
+  for (auto& filter : header_filters_) {
     ::sprintf_s(name, "%d", index++);
 
     RegistryKey filter_key;

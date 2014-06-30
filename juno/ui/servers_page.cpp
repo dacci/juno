@@ -63,8 +63,8 @@ BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
   server_list_.AddColumn(caption, 3);
   server_list_.SetColumnWidth(3, 100);
 
-  for (auto i = configs_->begin(), l = configs_->end(); i != l; ++i)
-    AddServerItem(i->second, -1);
+  for (auto& config : *configs_)
+    AddServerItem(config.second, -1);
 
   edit_button_.EnableWindow(FALSE);
   delete_button_.EnableWindow(FALSE);
