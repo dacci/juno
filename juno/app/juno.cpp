@@ -36,7 +36,11 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
 
   ::HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, nullptr, 0);
 
-  HANDLE mutex = ::CreateMutex(NULL, TRUE, _T("org.dacci.juno"));
+  CString guid;
+  int length = ::StringFromGUID2(GUID_JUNO_APPLICATION, guid.GetBuffer(40), 40);
+  guid.ReleaseBuffer(length);
+
+  HANDLE mutex = ::CreateMutex(nullptr, TRUE, guid);
   DWORD error = ::GetLastError();
   if (mutex == NULL)
     return __LINE__;
