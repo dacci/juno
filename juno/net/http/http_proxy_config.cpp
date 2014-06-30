@@ -72,12 +72,12 @@ bool HttpProxyConfig::Load(const RegistryKey& key) {
     auth_remote_proxy_ = 0;
 
   int length = 0;
-  if (key.QueryBinary(kRemoteProxyPassword, NULL, &length)) {
+  if (key.QueryBinary(kRemoteProxyPassword, nullptr, &length)) {
     BYTE* buffer = new BYTE[length];
     key.QueryBinary(kRemoteProxyPassword, buffer, &length);
 
     DATA_BLOB encrypted = { length, buffer }, decrypted = {};
-    if (::CryptUnprotectData(&encrypted, NULL, NULL, NULL, NULL, 0,
+    if (::CryptUnprotectData(&encrypted, nullptr, nullptr, nullptr, nullptr, 0,
                              &decrypted)) {
       remote_proxy_password_.assign(reinterpret_cast<char*>(decrypted.pbData),
                                     decrypted.cbData);
@@ -129,7 +129,8 @@ bool HttpProxyConfig::Save(RegistryKey* key) {
     };
     DATA_BLOB encrypted = {};
 
-    if (::CryptProtectData(&decrypted, NULL, NULL, NULL, NULL, 0, &encrypted)) {
+    if (::CryptProtectData(&decrypted, nullptr, nullptr, nullptr, nullptr, 0,
+                           &encrypted)) {
       key->SetBinary(kRemoteProxyPassword, encrypted.pbData, encrypted.cbData);
       ::LocalFree(encrypted.pbData);
     }

@@ -12,7 +12,7 @@
 #include "net/tunneling_service.h"
 
 #define DELETE_THIS() \
-  ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
+  ::TrySubmitThreadpoolCallback(DeleteThis, this, nullptr)
 
 using ::madoka::net::AsyncSocket;
 
@@ -30,9 +30,9 @@ ScissorsTcpSession::ScissorsTcpSession(Scissors* service)
 ScissorsTcpSession::~ScissorsTcpSession() {
   Stop();
 
-  if (context_ != NULL) {
+  if (context_ != nullptr) {
     delete context_;
-    context_ = NULL;
+    context_ = nullptr;
   }
 
   service_->EndSession(this);
@@ -44,28 +44,28 @@ bool ScissorsTcpSession::Start(AsyncSocket* client) {
     return false;
 
   remote_.reset(new AsyncSocket());
-  if (remote_ == NULL)
+  if (remote_ == nullptr)
     return false;
 
   client_buffer_.reset(new char[kBufferSize]);
-  if (client_buffer_ == NULL)
+  if (client_buffer_ == nullptr)
     return false;
 
   remote_buffer_.reset(new char[kBufferSize]);
-  if (remote_buffer_ == NULL)
+  if (remote_buffer_ == nullptr)
     return false;
 
   if (service_->config_->remote_ssl()) {
     context_ = new SchannelContext(service_->credential_.get(),
                                    service_->config_->remote_address());
-    if (context_ == NULL)
+    if (context_ == nullptr)
       return false;
   }
 
   client_.reset(client);
 
   if (!remote_->ConnectAsync(*resolver_.begin(), this)) {
-    client_ = NULL;
+    client_ = nullptr;
     return false;
   }
 
@@ -73,10 +73,10 @@ bool ScissorsTcpSession::Start(AsyncSocket* client) {
 }
 
 void ScissorsTcpSession::Stop() {
-  if (client_ != NULL)
+  if (client_ != nullptr)
     client_->Shutdown(SD_BOTH);
 
-  if (remote_ != NULL && !remote_->connected())
+  if (remote_ != nullptr && !remote_->connected())
     remote_->CancelAsyncConnect();
 }
 
@@ -88,8 +88,8 @@ void ScissorsTcpSession::OnConnected(AsyncSocket* socket, DWORD error) {
 
   if (!service_->config_->remote_ssl()) {
     if (TunnelingService::Bind(client_, remote_)) {
-      client_ = NULL;
-      remote_ = NULL;
+      client_ = nullptr;
+      remote_ = nullptr;
     }
 
     DELETE_THIS();

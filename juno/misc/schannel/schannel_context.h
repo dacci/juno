@@ -30,7 +30,7 @@ class SchannelContext {
 
   SECURITY_STATUS InitializeContext(ULONG request, SecBufferDesc* input,
                                     SecBufferDesc* output) {
-    PCtxtHandle in_handle = NULL, out_handle = NULL;
+    PCtxtHandle in_handle = nullptr, out_handle = nullptr;
     if (SecIsValidHandle(&handle_))
       in_handle = &handle_;
     else
@@ -52,7 +52,7 @@ class SchannelContext {
 
   SECURITY_STATUS AcceptContext(ULONG request, SecBufferDesc* input,
                                 SecBufferDesc* output) {
-    PCtxtHandle in_handle = NULL, out_handle = NULL;
+    PCtxtHandle in_handle = nullptr, out_handle = nullptr;
     if (SecIsValidHandle(&handle_))
       in_handle = &handle_;
     else
@@ -91,7 +91,7 @@ class SchannelContext {
     if (!SecIsValidHandle(&handle_))
       return SEC_E_INVALID_HANDLE;
 
-    return ::DecryptMessage(&handle_, message, 0, NULL);
+    return ::DecryptMessage(&handle_, message, 0, nullptr);
   }
 
   ULONG attributes() const {

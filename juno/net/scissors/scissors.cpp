@@ -74,7 +74,7 @@ bool Scissors::OnAccepted(AsyncSocket* client) {
     return false;
 
   ScissorsTcpSession* session = new ScissorsTcpSession(this);
-  if (session == NULL)
+  if (session == nullptr)
     return false;
 
   sessions_.push_back(session);
@@ -94,7 +94,7 @@ bool Scissors::OnReceivedFrom(Datagram* datagram) {
     return false;
 
   ScissorsUdpSession* session = new ScissorsUdpSession(this, datagram);
-  if (session == NULL)
+  if (session == nullptr)
     return false;
 
   sessions_.push_back(session);

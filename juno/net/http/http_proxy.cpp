@@ -175,7 +175,7 @@ bool HttpProxy::OnAccepted(madoka::net::AsyncSocket* client) {
     return false;
 
   HttpProxySession* session = new HttpProxySession(this);
-  if (session == NULL)
+  if (session == nullptr)
     return false;
 
   sessions_.push_back(session);

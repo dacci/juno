@@ -8,24 +8,24 @@
 
 using ::madoka::net::AsyncSocket;
 
-TunnelingService* TunnelingService::instance_ = NULL;
+TunnelingService* TunnelingService::instance_ = nullptr;
 
 bool TunnelingService::Init() {
   Term();
 
   instance_ = new TunnelingService();
-  return instance_ != NULL;
+  return instance_ != nullptr;
 }
 
 void TunnelingService::Term() {
-  if (instance_ != NULL) {
+  if (instance_ != nullptr) {
     delete instance_;
-    instance_ = NULL;
+    instance_ = nullptr;
   }
 }
 
 bool TunnelingService::Bind(const AsyncSocketPtr& a, const AsyncSocketPtr& b) {
-  if (instance_ == NULL)
+  if (instance_ == nullptr)
     return false;
 
   return instance_->BindSocket(a, b) && instance_->BindSocket(b, a);
@@ -54,7 +54,7 @@ bool TunnelingService::BindSocket(const AsyncSocketPtr& from,
     return false;
 
   Session* pair = new Session(this, from, to);
-  if (pair == NULL)
+  if (pair == nullptr)
     return false;
 
   bool started = pair->Start();
@@ -95,14 +95,14 @@ void TunnelingService::Session::OnReceived(AsyncSocket* socket, DWORD error,
                                            void* buffer, int length) {
   if (error != 0 || length == 0 ||
       !to_->SendAsync(buffer_.get(), length, 0, this))
-    ::TrySubmitThreadpoolCallback(EndSession, this, NULL);
+    ::TrySubmitThreadpoolCallback(EndSession, this, nullptr);
 }
 
 void TunnelingService::Session::OnSent(AsyncSocket* socket, DWORD error,
                                        void* buffer, int length) {
   if (error != 0 || length == 0 ||
       !from_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
-    ::TrySubmitThreadpoolCallback(EndSession, this, NULL);
+    ::TrySubmitThreadpoolCallback(EndSession, this, nullptr);
 }
 
 void CALLBACK TunnelingService::Session::EndSession(

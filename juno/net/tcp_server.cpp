@@ -8,7 +8,7 @@ using ::madoka::net::AsyncServerSocket;
 using ::madoka::net::AsyncSocket;
 
 TcpServer::TcpServer() : service_(), count_() {
-  event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
+  event_ = ::CreateEvent(nullptr, TRUE, TRUE, nullptr);
 }
 
 TcpServer::~TcpServer() {
@@ -26,7 +26,7 @@ bool TcpServer::Setup(const char* address, int port) {
     return false;
 
   if (address[0] == '*')
-    address = NULL;
+    address = nullptr;
 
   resolver_.SetFlags(AI_PASSIVE);
   resolver_.SetType(SOCK_STREAM);
@@ -37,7 +37,7 @@ bool TcpServer::Setup(const char* address, int port) {
 
   for (auto i = resolver_.begin(), l = resolver_.end(); i != l; ++i) {
     AsyncServerSocket* server = new AsyncServerSocket();
-    if (server == NULL)
+    if (server == nullptr)
       break;
 
     if (server->Bind(*i) && server->Listen(SOMAXCONN)) {
@@ -52,7 +52,7 @@ bool TcpServer::Setup(const char* address, int port) {
 }
 
 bool TcpServer::Start() {
-  if (service_ == NULL || servers_.empty())
+  if (service_ == nullptr || servers_.empty())
     return false;
 
   bool succeeded = false;
@@ -81,7 +81,7 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
                            DWORD error) {
   if (error == 0) {
     if (service_->OnAccepted(client))
-      client = NULL;
+      client = nullptr;
 
     if (server->AcceptAsync(this))
       return;
@@ -89,7 +89,7 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
     service_->OnError(error);
   }
 
-  if (client != NULL)
+  if (client != nullptr)
     delete client;
 
   if (::InterlockedDecrement(&count_) == 0)

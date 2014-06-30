@@ -52,7 +52,7 @@ class CryptHash {
         break;
 
       std::unique_ptr<BYTE[]> hash_data(new BYTE[hash_length]);
-      if (hash_data == NULL)
+      if (hash_data == nullptr)
         break;
 
       succeeded = ::CryptGetHashParam(handle_, HP_HASHVAL, hash_data.get(),
@@ -101,7 +101,7 @@ class CryptHash {
 class CryptProvider {
  public:
   CryptProvider() : handle_(NULL) {
-    ::CryptAcquireContext(&handle_, NULL, NULL, PROV_RSA_FULL,
+    ::CryptAcquireContext(&handle_, nullptr, nullptr, PROV_RSA_FULL,
                           CRYPT_VERIFYCONTEXT);
   }
 

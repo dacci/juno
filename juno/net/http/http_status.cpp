@@ -78,7 +78,7 @@ STATUS_MESSAGE http_status_messages[] = {
   { NOT_EXTENDED, "Not Extended" },
   { NETWORK_AUTHENTICATION_REQUIRED, "Network Authentication Required" },
   { PERMISSION_DENIED, "Permission denied" },
-  { 0, NULL }
+  { 0, nullptr }
 };
 
 }  // namespace

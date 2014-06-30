@@ -20,11 +20,11 @@ void ServerDialog::FillBindCombo() {
   bind_combo_.AddString(_T("localhost"));
 
   ULONG size = 0;
-  ::GetAdaptersAddresses(AF_UNSPEC, 0, NULL, NULL, &size);
+  ::GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, nullptr, &size);
 
   IP_ADAPTER_ADDRESSES* addresses =
       static_cast<IP_ADAPTER_ADDRESSES*>(::malloc(size));
-  ULONG error = ::GetAdaptersAddresses(AF_UNSPEC, 0, NULL, addresses, &size);
+  ULONG error = ::GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, addresses, &size);
   ATLASSERT(error == ERROR_SUCCESS);
   if (error != ERROR_SUCCESS)
     return;
@@ -36,7 +36,7 @@ void ServerDialog::FillBindCombo() {
       DWORD length = 48;
       error = ::WSAAddressToString(address->Address.lpSockaddr,
                                    address->Address.iSockaddrLength,
-                                   NULL,
+                                   nullptr,
                                    text.GetBuffer(length),
                                    &length);
       ATLASSERT(error == 0);

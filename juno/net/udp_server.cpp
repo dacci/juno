@@ -11,7 +11,7 @@
 using ::madoka::net::AsyncDatagramSocket;
 
 UdpServer::UdpServer() : service_(), count_() {
-  event_ = ::CreateEvent(NULL, TRUE, TRUE, NULL);
+  event_ = ::CreateEvent(nullptr, TRUE, TRUE, nullptr);
 }
 
 UdpServer::~UdpServer() {
@@ -33,7 +33,7 @@ bool UdpServer::Setup(const char* address, int port) {
     return false;
 
   if (address[0] == '*')
-    address = NULL;
+    address = nullptr;
 
   resolver_.SetFlags(AI_PASSIVE);
   resolver_.SetType(SOCK_DGRAM);
@@ -44,11 +44,11 @@ bool UdpServer::Setup(const char* address, int port) {
 
   for (auto i = resolver_.begin(), l = resolver_.end(); i != l; ++i) {
     std::unique_ptr<char[]> buffer(new char[kBufferSize]);
-    if (buffer == NULL)
+    if (buffer == nullptr)
       break;
 
     AsyncDatagramSocket* server = new AsyncDatagramSocket();
-    if (server == NULL)
+    if (server == nullptr)
       break;
 
     if (server->Bind(*i)) {
@@ -64,7 +64,7 @@ bool UdpServer::Setup(const char* address, int port) {
 }
 
 bool UdpServer::Start() {
-  if (service_ == NULL || servers_.empty())
+  if (service_ == nullptr || servers_.empty())
     return false;
 
   bool succeeded = false;
@@ -95,11 +95,11 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
                                void* buffer, int length, sockaddr* from,
                                int from_length) {
   if (error == 0) {
-    char* received = NULL;
+    char* received = nullptr;
 
     do {
       received = new char[sizeof(Service::Datagram) + length + from_length];
-      if (received == NULL)
+      if (received == nullptr)
         break;
 
       char* buffer = buffers_[socket];
@@ -118,7 +118,8 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
           received + sizeof(Service::Datagram) + length);
       ::memmove(datagram->from, from, from_length);
 
-      BOOL succeeded = ::TrySubmitThreadpoolCallback(Dispatch, datagram, NULL);
+      BOOL succeeded = ::TrySubmitThreadpoolCallback(Dispatch, datagram,
+                                                     nullptr);
       if (!succeeded) {
         error = ::GetLastError();
         break;
@@ -130,7 +131,7 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
       return;
     } while (false);
 
-    if (received != NULL)
+    if (received != nullptr)
       delete[] received;
   }
 

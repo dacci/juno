@@ -13,7 +13,7 @@
 
 class MainFrame : public CFrameWindowImpl<MainFrame> {
  public:
-  DECLARE_FRAME_WND_CLASS(NULL, IDR_MAIN_FRAME)
+  DECLARE_FRAME_WND_CLASS(nullptr, IDR_MAIN_FRAME)
 
   MainFrame();
   ~MainFrame();

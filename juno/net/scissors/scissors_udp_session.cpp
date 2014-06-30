@@ -7,7 +7,7 @@
 #include "net/scissors/scissors_config.h"
 
 #define DELETE_THIS() \
-  ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
+  ::TrySubmitThreadpoolCallback(DeleteThis, this, nullptr)
 
 using ::madoka::net::AsyncDatagramSocket;
 
@@ -20,20 +20,20 @@ ScissorsUdpSession::ScissorsUdpSession(Scissors* service,
                                        Service::Datagram* datagram)
     : service_(service), datagram_(datagram), remote_(), buffer_(), timer_() {
   resolver_.SetType(SOCK_DGRAM);
-  timer_ = ::CreateThreadpoolTimer(OnTimeout, this, NULL);
+  timer_ = ::CreateThreadpoolTimer(OnTimeout, this, nullptr);
 }
 
 ScissorsUdpSession::~ScissorsUdpSession() {
-  if (datagram_ != NULL) {
+  if (datagram_ != nullptr) {
     delete[] reinterpret_cast<char*>(datagram_);
-    datagram_ = NULL;
+    datagram_ = nullptr;
   }
 
-  if (timer_ != NULL) {
-    ::SetThreadpoolTimer(timer_, NULL, 0, 0);
+  if (timer_ != nullptr) {
+    ::SetThreadpoolTimer(timer_, nullptr, 0, 0);
     ::WaitForThreadpoolTimerCallbacks(timer_, TRUE);
     ::CloseThreadpoolTimer(timer_);
-    timer_ = NULL;
+    timer_ = nullptr;
   }
 
   service_->EndSession(this);
@@ -45,11 +45,11 @@ bool ScissorsUdpSession::Start() {
     return false;
 
   remote_.reset(new AsyncDatagramSocket());
-  if (remote_ == NULL)
+  if (remote_ == nullptr)
     return false;
 
   buffer_.reset(new char[kBufferSize]);
-  if (buffer_ == NULL)
+  if (buffer_ == nullptr)
     return false;
 
   if (!remote_->Connect(*resolver_.begin()))
@@ -67,8 +67,8 @@ void ScissorsUdpSession::Stop() {
 
 void ScissorsUdpSession::OnReceived(AsyncDatagramSocket* socket, DWORD error,
                                     void* buffer, int length) {
-  assert(timer_ != NULL);
-  ::SetThreadpoolTimer(timer_, NULL, 0, 0);
+  assert(timer_ != nullptr);
+  ::SetThreadpoolTimer(timer_, nullptr, 0, 0);
 
   if (error == 0 &&
       datagram_->socket->SendToAsync(buffer_.get(), length, 0,
@@ -83,7 +83,7 @@ void ScissorsUdpSession::OnSent(AsyncDatagramSocket* socket, DWORD error,
                                 void* buffer, int length) {
   if (error == 0) {
     do {
-      assert(timer_ != NULL);
+      assert(timer_ != nullptr);
       ::SetThreadpoolTimer(timer_, &kTimerDueTime, 0, 0);
 
       if (!remote_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))

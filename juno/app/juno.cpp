@@ -34,7 +34,7 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
   ::SetSearchPathMode(BASE_SEARCH_PATH_ENABLE_SAFE_SEARCHMODE |
                       BASE_SEARCH_PATH_PERMANENT);
 
-  ::HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
+  ::HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, nullptr, 0);
 
   HANDLE mutex = ::CreateMutex(NULL, TRUE, _T("org.dacci.juno"));
   DWORD error = ::GetLastError();
@@ -47,7 +47,7 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
 
   HRESULT result = S_OK;
 
-  result = ::CoInitializeEx(NULL, COINIT_APARTMENTTHREADED);
+  result = ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
   ATLASSERT(SUCCEEDED(result));
   if (FAILED(result))
     return __LINE__;
@@ -71,11 +71,11 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
   }
 
   service_manager = new ServiceManager();
-  ATLASSERT(service_manager != NULL);
-  if (service_manager == NULL)
+  ATLASSERT(service_manager != nullptr);
+  if (service_manager == nullptr)
     return __LINE__;
 
-  result = _Module.Init(NULL, hInstance);
+  result = _Module.Init(nullptr, hInstance);
   ATLASSERT(SUCCEEDED(result));
   if (FAILED(result))
     return __LINE__;

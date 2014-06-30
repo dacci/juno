@@ -38,8 +38,8 @@ void HttpProxyDialog::AddFilterItem(const HttpProxyConfig::HeaderFilter& filter,
   if (filter.response)
     image |= 2;
 
-  filter_list_.InsertItem(LVIF_IMAGE | LVIF_PARAM, index, NULL, 0, 0, image - 1,
-                          filter_index);
+  filter_list_.InsertItem(LVIF_IMAGE | LVIF_PARAM, index, nullptr, 0, 0,
+                          image - 1, filter_index);
   filter_list_.AddItem(index, 1, kActions[filter.action]);
   filter_list_.AddItem(index, 2, CString(filter.name.c_str()));
   filter_list_.AddItem(index, 3, CString(filter.value.c_str()));
@@ -53,7 +53,7 @@ BOOL HttpProxyDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
 
   filter_list_.SetExtendedListViewStyle(LVS_EX_FULLROWSELECT);
   filter_list_.SetImageList(image_list_, LVSIL_SMALL);
-  filter_list_.AddColumn(NULL, 0);
+  filter_list_.AddColumn(nullptr, 0);
   filter_list_.SetColumnWidth(0, 24);
 
   CString caption;

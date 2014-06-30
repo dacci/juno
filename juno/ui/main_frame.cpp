@@ -26,7 +26,7 @@ bool MainFrame::LoadAndStart() {
   if (!service_manager->StartServers()) {
     CString message;
     message.LoadString(IDS_ERR_START_FAILED);
-    MessageBox(message, NULL, MB_ICONEXCLAMATION);
+    MessageBox(message, nullptr, MB_ICONEXCLAMATION);
   }
 
   return true;
@@ -145,7 +145,7 @@ void MainFrame::OnFileNew(UINT notify_code, int id, CWindow control) {
   if (!succeeded) {
     CString message;
     message.LoadString(IDS_ERR_START_FAILED);
-    MessageBox(message, NULL, MB_ICONERROR);
+    MessageBox(message, nullptr, MB_ICONERROR);
   }
 }
 

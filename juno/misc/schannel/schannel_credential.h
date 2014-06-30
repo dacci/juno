@@ -28,8 +28,8 @@ class SchannelCredential {
     if (SecIsValidHandle(&handle_))
       return SEC_E_INTERNAL_ERROR;
 
-    return ::AcquireCredentialsHandle(NULL, UNISP_NAME, usage, NULL,
-                                      &auth_data_, NULL, NULL, &handle_,
+    return ::AcquireCredentialsHandle(nullptr, UNISP_NAME, usage, nullptr,
+                                      &auth_data_, nullptr, nullptr, &handle_,
                                       &expiry_);
   }
 

@@ -46,7 +46,7 @@ struct SocketAddress6 : addrinfo, sockaddr_in6 {
 }  // namespace
 
 #define DELETE_THIS() \
-  ::TrySubmitThreadpoolCallback(DeleteThis, this, NULL)
+  ::TrySubmitThreadpoolCallback(DeleteThis, this, nullptr)
 
 SocksProxySession::SocksProxySession(SocksProxy* proxy)
     : proxy_(proxy),
@@ -68,7 +68,7 @@ bool SocksProxySession::Start(AsyncSocket* client) {
   client_.reset(client);
 
   if (!client_->ReceiveAsync(request_buffer_.get(), kBufferSize, 0, this)) {
-    client_ = NULL;
+    client_ = nullptr;
     return false;
   }
 
@@ -76,10 +76,10 @@ bool SocksProxySession::Start(AsyncSocket* client) {
 }
 
 void SocksProxySession::Stop() {
-  if (client_ != NULL)
+  if (client_ != nullptr)
     client_->Shutdown(SD_BOTH);
 
-  if (remote_ != NULL) {
+  if (remote_ != nullptr) {
     if (remote_->connected())
       remote_->Shutdown(SD_BOTH);
     else
@@ -186,7 +186,7 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
     if (request->command == SOCKS4::CONNECT) {
       do {
         remote_.reset(new AsyncSocket());
-        if (remote_ == NULL)
+        if (remote_ == nullptr)
           break;
 
         if (request->address.s_addr != 0 &&
@@ -195,7 +195,7 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
           const char* host = request->user_id + ::strlen(request->user_id) + 1;
 
           auto resolver = new madoka::net::Resolver();
-          if (resolver == NULL)
+          if (resolver == nullptr)
             break;
 
           if (!resolver->Resolve(host, ::htons(request->port)))
@@ -207,7 +207,7 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
             break;
         } else {
           auto address = new SocketAddress4();
-          if (address == NULL)
+          if (address == nullptr)
             break;
 
           address->ai_socktype = SOCK_STREAM;
@@ -294,8 +294,8 @@ void SocksProxySession::OnSent(AsyncSocket* socket, DWORD error, void* buffer,
     SOCKS4::RESPONSE* response =
         reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_.get());
     if (response->code == SOCKS4::GRANTED) {
-      client_ = NULL;
-      remote_ = NULL;
+      client_ = nullptr;
+      remote_ = nullptr;
     }
   } else if (request_buffer_[0] == 5) {
     if (phase_ == 0) {
@@ -306,8 +306,8 @@ void SocksProxySession::OnSent(AsyncSocket* socket, DWORD error, void* buffer,
       SOCKS5::RESPONSE* response =
           reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_.get());
       if (response->code == SOCKS5::SUCCEEDED) {
-        client_ = NULL;
-        remote_ = NULL;
+        client_ = nullptr;
+        remote_ = nullptr;
       }
     }
   } else {
@@ -318,15 +318,15 @@ void SocksProxySession::OnSent(AsyncSocket* socket, DWORD error, void* buffer,
 }
 
 bool SocksProxySession::ConnectIPv4(const SOCKS5::ADDRESS& address) {
-  SocketAddress4* end_point = NULL;
+  SocketAddress4* end_point = nullptr;
 
   do {
     end_point = new SocketAddress4;
-    if (end_point == NULL)
+    if (end_point == nullptr)
       break;
 
     remote_.reset(new AsyncSocket());
-    if (remote_ == NULL)
+    if (remote_ == nullptr)
       break;
 
     end_point->ai_socktype = SOCK_STREAM;
@@ -353,15 +353,15 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
       address.domain.domain_name +
       address.domain.domain_len);
 
-  madoka::net::Resolver* resolver = NULL;
+  madoka::net::Resolver* resolver = nullptr;
 
   do {
     resolver = new madoka::net::Resolver();
-    if (resolver == NULL)
+    if (resolver == nullptr)
       break;
 
     remote_.reset(new AsyncSocket());
-    if (remote_ == NULL)
+    if (remote_ == nullptr)
       break;
 
     if (!resolver->Resolve(domain_name.c_str(), ::htons(port)))
@@ -381,15 +381,15 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
 }
 
 bool SocksProxySession::ConnectIPv6(const SOCKS5::ADDRESS& address) {
-  SocketAddress6* end_point = NULL;
+  SocketAddress6* end_point = nullptr;
 
   do {
     end_point = new SocketAddress6;
-    if (end_point == NULL)
+    if (end_point == nullptr)
       break;
 
     remote_.reset(new AsyncSocket());
-    if (remote_ == NULL)
+    if (remote_ == nullptr)
       break;
 
     end_point->ai_socktype = SOCK_STREAM;

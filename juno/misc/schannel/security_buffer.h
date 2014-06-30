@@ -22,7 +22,7 @@ struct SecurityBuffer : SecBuffer {
     SECURITY_STATUS status = ::FreeContextBuffer(pvBuffer);
     if (SUCCEEDED(status)) {
       cbBuffer = 0;
-      pvBuffer = NULL;
+      pvBuffer = nullptr;
     }
 
     return status;
@@ -43,7 +43,7 @@ class SecurityBufferBundle : public SecBufferDesc {
   }
 
   SecurityBuffer* AddBuffer(ULONG type) {
-    return AddBuffer(type, 0, NULL);
+    return AddBuffer(type, 0, nullptr);
   }
 
   void ClearBuffers() {
