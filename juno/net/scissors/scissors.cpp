@@ -67,7 +67,7 @@ void Scissors::EndSession(Session* session) {
     empty_.WakeAll();
 }
 
-bool Scissors::OnAccepted(AsyncSocket* client) {
+bool Scissors::OnAccepted(const AsyncSocketPtr& client) {
   madoka::concurrent::LockGuard lock(&critical_section_);
 
   if (stopped_)

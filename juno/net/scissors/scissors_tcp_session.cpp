@@ -38,7 +38,7 @@ ScissorsTcpSession::~ScissorsTcpSession() {
   service_->EndSession(this);
 }
 
-bool ScissorsTcpSession::Start(AsyncSocket* client) {
+bool ScissorsTcpSession::Start(const Service::AsyncSocketPtr& client) {
   if (!resolver_.Resolve(service_->config_->remote_address().c_str(),
                          service_->config_->remote_port()))
     return false;
@@ -62,7 +62,7 @@ bool ScissorsTcpSession::Start(AsyncSocket* client) {
       return false;
   }
 
-  client_.reset(client);
+  client_ = client;
 
   if (!remote_->ConnectAsync(*resolver_.begin(), this)) {
     client_ = nullptr;

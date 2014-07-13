@@ -10,15 +10,14 @@
 
 #include "net/socks/socks4.h"
 #include "net/socks/socks5.h"
-
-class SocksProxy;
+#include "net/socks/socks_proxy.h"
 
 class SocksProxySession : public madoka::net::SocketEventAdapter {
  public:
   explicit SocksProxySession(SocksProxy* proxy);
   virtual ~SocksProxySession();
 
-  bool Start(madoka::net::AsyncSocket* client);
+  bool Start(const Service::AsyncSocketPtr& client);
   void Stop();
 
   void OnConnected(madoka::net::AsyncSocket* socket, DWORD error) override;
@@ -28,8 +27,6 @@ class SocksProxySession : public madoka::net::SocketEventAdapter {
               int length) override;
 
  private:
-  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
-
   static const size_t kBufferSize = 1024;
 
   bool ConnectIPv4(const SOCKS5::ADDRESS& address);
@@ -39,8 +36,8 @@ class SocksProxySession : public madoka::net::SocketEventAdapter {
   static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
 
   SocksProxy* const proxy_;
-  AsyncSocketPtr client_;
-  AsyncSocketPtr remote_;
+  Service::AsyncSocketPtr client_;
+  Service::AsyncSocketPtr remote_;
   std::unique_ptr<char[]> request_buffer_;
   std::unique_ptr<char[]> response_buffer_;
 

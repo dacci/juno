@@ -150,7 +150,7 @@ void HttpProxy::EndSession(HttpProxySession* session) {
     empty_.WakeAll();
 }
 
-bool HttpProxy::OnAccepted(madoka::net::AsyncSocket* client) {
+bool HttpProxy::OnAccepted(const AsyncSocketPtr& client) {
   madoka::concurrent::WriteLock write_lock(&lock_);
   madoka::concurrent::LockGuard guard(&write_lock);
 

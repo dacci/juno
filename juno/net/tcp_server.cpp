@@ -79,18 +79,17 @@ void TcpServer::Stop() {
 
 void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
                            DWORD error) {
+  std::shared_ptr<AsyncSocket> peer(client);
+
   if (error == 0) {
-    if (service_->OnAccepted(client))
-      client = nullptr;
+    if (service_->OnAccepted(peer))
+      peer.reset();
 
     if (server->AcceptAsync(this))
       return;
   } else {
     service_->OnError(error);
   }
-
-  if (client != nullptr)
-    delete client;
 
   if (::InterlockedDecrement(&count_) == 0)
     ::SetEvent(event_);

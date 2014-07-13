@@ -64,8 +64,8 @@ SocksProxySession::~SocksProxySession() {
   proxy_->EndSession(this);
 }
 
-bool SocksProxySession::Start(AsyncSocket* client) {
-  client_.reset(client);
+bool SocksProxySession::Start(const Service::AsyncSocketPtr& client) {
+  client_ = client;
 
   if (!client_->ReceiveAsync(request_buffer_.get(), kBufferSize, 0, this)) {
     client_ = nullptr;

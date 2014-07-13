@@ -23,7 +23,7 @@ class SocksProxy : public Service {
   void Stop() override;
   void EndSession(SocksProxySession* session);
 
-  bool OnAccepted(madoka::net::AsyncSocket* client) override;
+  bool OnAccepted(const AsyncSocketPtr& client) override;
   bool OnReceivedFrom(Datagram* datagram) override;
   void OnError(DWORD error) override;
 

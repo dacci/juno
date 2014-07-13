@@ -20,7 +20,7 @@ class ScissorsTcpSession
   explicit ScissorsTcpSession(Scissors* service);
   virtual ~ScissorsTcpSession();
 
-  bool Start(madoka::net::AsyncSocket* client);
+  bool Start(const Service::AsyncSocketPtr& client);
   void Stop() override;
 
   void OnConnected(madoka::net::AsyncSocket* socket, DWORD error) override;
@@ -30,11 +30,10 @@ class ScissorsTcpSession
               int length) override;
 
  private:
-  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
-
   static const size_t kBufferSize = 8192;
 
-  bool SendAsync(const AsyncSocketPtr& socket, const SecBuffer& buffer);
+  bool SendAsync(const Service::AsyncSocketPtr& socket,
+                 const SecBuffer& buffer);
   bool DoNegotiation();
   bool CompleteNegotiation();
   bool DoEncryption();
@@ -50,8 +49,8 @@ class ScissorsTcpSession
 
   Scissors* const service_;
   madoka::net::Resolver resolver_;
-  AsyncSocketPtr client_;
-  AsyncSocketPtr remote_;
+  Service::AsyncSocketPtr client_;
+  Service::AsyncSocketPtr remote_;
   SchannelContext* context_;
   bool established_;
   LONG ref_count_;

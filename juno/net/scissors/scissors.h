@@ -33,7 +33,7 @@ class Scissors : public Service {
   bool UpdateConfig(const ServiceConfigPtr& config) override;
   void Stop() override;
 
-  bool OnAccepted(madoka::net::AsyncSocket* client) override;
+  bool OnAccepted(const AsyncSocketPtr& client) override;
   bool OnReceivedFrom(Datagram* datagram) override;
   void OnError(DWORD error) override;
 

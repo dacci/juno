@@ -18,7 +18,7 @@ class HttpProxy;
 
 class HttpProxySession : public madoka::net::SocketEventAdapter {
  public:
-  HttpProxySession(HttpProxy* proxy, madoka::net::AsyncSocket* socket);
+  HttpProxySession(HttpProxy* proxy, const AsyncSocketPtr& socket);
   ~HttpProxySession();
 
   bool Start();

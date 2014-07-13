@@ -43,7 +43,7 @@ void SocksProxy::EndSession(SocksProxySession* session) {
     empty_.WakeAll();
 }
 
-bool SocksProxy::OnAccepted(AsyncSocket* client) {
+bool SocksProxy::OnAccepted(const AsyncSocketPtr& client) {
   madoka::concurrent::LockGuard lock(&critical_section_);
 
   if (stopped_)

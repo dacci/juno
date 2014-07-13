@@ -38,7 +38,7 @@ FILETIME HttpProxySession::kTimerDueTime = {
 };
 
 HttpProxySession::HttpProxySession(HttpProxy* proxy,
-                                   madoka::net::AsyncSocket* socket)
+                                   const AsyncSocketPtr& socket)
     : proxy_(proxy),
       ref_count_(1),
       close_client_(false),
