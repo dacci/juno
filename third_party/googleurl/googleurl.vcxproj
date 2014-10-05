@@ -23,6 +23,7 @@
     <ClInclude Include="base\basictypes.h" />
     <ClInclude Include="base\compiler_specific.h" />
     <ClInclude Include="base\containers\hash_tables.h" />
+    <ClInclude Include="base\debug\leak_annotations.h" />
     <ClInclude Include="base\lazy_instance.h" />
     <ClInclude Include="base\logging.h" />
     <ClInclude Include="base\macros.h" />
