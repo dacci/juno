@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "app/service.h"
+#include "service/service.h"
 
 using ::madoka::net::AsyncDatagramSocket;
 

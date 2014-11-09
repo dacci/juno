@@ -11,8 +11,8 @@
 #include <atlddx.h>
 #include <atldlgs.h>
 
-#include "net/http/http_proxy_config.h"
 #include "res/resource.h"
+#include "service/http/http_proxy_config.h"
 #include "ui/preference_dialog.h"
 
 class ServiceConfig;

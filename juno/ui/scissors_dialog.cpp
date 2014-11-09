@@ -2,7 +2,7 @@
 
 #include "ui/scissors_dialog.h"
 
-#include "net/scissors/scissors_config.h"
+#include "service/scissors/scissors_config.h"
 
 ScissorsDialog::ScissorsDialog(ServiceConfig* config)
     : config_(static_cast<ScissorsConfig*>(config)) {

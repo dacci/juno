@@ -8,8 +8,8 @@
 #include <vector>
 
 #include "app/server_config.h"
-#include "app/service_provider.h"
 #include "misc/registry_key.h"
+#include "service/service_provider.h"
 
 class Server;
 

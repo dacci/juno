@@ -2,7 +2,7 @@
 
 #include "net/tcp_server.h"
 
-#include "app/service.h"
+#include "service/service.h"
 
 using ::madoka::net::AsyncServerSocket;
 using ::madoka::net::AsyncSocket;

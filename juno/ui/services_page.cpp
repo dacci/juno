@@ -7,8 +7,8 @@
 #include <memory>
 #include <utility>
 
-#include "app/service_config.h"
-#include "app/service_provider.h"
+#include "service/service_config.h"
+#include "service/service_provider.h"
 #include "misc/string_util.h"
 #include "ui/provider_dialog.h"
 
