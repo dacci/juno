@@ -56,18 +56,15 @@ bool ScissorsTcpSession::Start(const Service::AsyncSocketPtr& client) {
     return false;
 
   if (service_->config_->remote_ssl()) {
-    context_ = new SchannelContext(service_->credential_.get(),
-                                   service_->config_->remote_address());
+    context_ = new SchannelContext(service_->credential_.get());
     if (context_ == nullptr)
       return false;
+
+    context_->set_target_name(service_->config_->remote_address());
   }
 
   client_ = client;
-
-  if (!remote_->ConnectAsync(*resolver_.begin(), this)) {
-    client_ = nullptr;
-    return false;
-  }
+  remote_->ConnectAsync(*resolver_.begin(), this);
 
   return true;
 }
@@ -140,9 +137,9 @@ void ScissorsTcpSession::OnSent(AsyncSocket* socket, DWORD error, void* buffer,
   EndSession(socket);
 }
 
-bool ScissorsTcpSession::SendAsync(const AsyncSocketPtr& socket,
+void ScissorsTcpSession::SendAsync(const AsyncSocketPtr& socket,
                                    const SecBuffer& buffer) {
-  return socket->SendAsync(buffer.pvBuffer, buffer.cbBuffer, 0, this);
+  socket->SendAsync(buffer.pvBuffer, buffer.cbBuffer, 0, this);
 }
 
 bool ScissorsTcpSession::DoNegotiation() {
@@ -163,18 +160,20 @@ bool ScissorsTcpSession::DoNegotiation() {
   if (FAILED(status))
     return false;
 
-  if (status == SEC_E_INCOMPLETE_MESSAGE)
-    return remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
+  if (status == SEC_E_INCOMPLETE_MESSAGE) {
+    remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
+    return true;
+  }
 
   remote_data_.clear();
 
   switch (status) {
     case SEC_I_CONTINUE_NEEDED:
       if (token_output_[0].cbBuffer > 0)
-        return SendAsync(remote_, token_output_[0]);
+        SendAsync(remote_, token_output_[0]);
       else
-        return remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0,
-                                     this);
+        remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
+      break;
 
     case SEC_E_OK:
       status = context_->QueryAttributes(SECPKG_ATTR_STREAM_SIZES,
@@ -184,7 +183,8 @@ bool ScissorsTcpSession::DoNegotiation() {
 
       if (token_output_[0].cbBuffer > 0) {
         negotiating_ = 2;
-        return SendAsync(remote_, token_output_[0]);
+        SendAsync(remote_, token_output_[0]);
+        break;
       }
 
       return CompleteNegotiation();
@@ -192,6 +192,8 @@ bool ScissorsTcpSession::DoNegotiation() {
     default:
       return false;
   }
+
+  return true;
 }
 
 bool ScissorsTcpSession::CompleteNegotiation() {
@@ -202,17 +204,15 @@ bool ScissorsTcpSession::CompleteNegotiation() {
       return DoEncryption();
   } else {
     established_ = true;
-
-    if (!client_->ReceiveAsync(client_buffer_.get(), kBufferSize, 0, this))
-      return false;
-
     ref_count_ = 2;
+    client_->ReceiveAsync(client_buffer_.get(), kBufferSize, 0, this);
+    return true;
   }
 
-  if (shutdown_)
-    return true;
-  else
-    return remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
+  if (!shutdown_)
+    remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
+
+  return true;
 }
 
 bool ScissorsTcpSession::DoEncryption() {
@@ -241,11 +241,7 @@ bool ScissorsTcpSession::DoEncryption() {
 
   int total_length = encrypted_[0].cbBuffer + encrypted_[1].cbBuffer +
                      encrypted_[2].cbBuffer;
-
-  if (!remote_->SendAsync(buffer.get(), total_length, 0, this))
-    return false;
-
-  buffer.release();
+  remote_->SendAsync(buffer.release(), total_length, 0, this);
 
   return true;
 }
@@ -263,13 +259,15 @@ bool ScissorsTcpSession::DoDecryption() {
 
   switch (status) {
     case SEC_E_INCOMPLETE_MESSAGE:
-      return remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
+      remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
+      break;
 
     case SEC_I_RENEGOTIATE:
       return DoNegotiation();
 
     case SEC_E_OK:
-      return SendAsync(client_, decrypted_[1]);
+      SendAsync(client_, decrypted_[1]);
+      break;
 
     case SEC_I_CONTEXT_EXPIRED:
       context_->ApplyControlToken(SCHANNEL_SHUTDOWN);
@@ -278,6 +276,8 @@ bool ScissorsTcpSession::DoDecryption() {
     default:
       return false;
   }
+
+  return true;
 }
 
 void ScissorsTcpSession::EndSession(AsyncSocket* socket) {
@@ -330,10 +330,12 @@ bool ScissorsTcpSession::OnClientSent(int length) {
             decrypted_[3].cbBuffer);
   remote_data_.resize(decrypted_[3].cbBuffer);
 
-  if (remote_data_.empty())
-    return remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
-  else
+  if (!remote_data_.empty())
     return DoDecryption();
+
+  remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
+
+  return true;
 }
 
 bool ScissorsTcpSession::OnRemoteSent(int length) {
@@ -343,8 +345,8 @@ bool ScissorsTcpSession::OnRemoteSent(int length) {
 
     if (negotiating_ == 2)
       return CompleteNegotiation();
-    else
-      return remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
+
+    remote_->ReceiveAsync(remote_buffer_.get(), kBufferSize, 0, this);
   } else {
     if (encrypted_.cBuffers > 0) {
       delete[] encrypted_[0].pvBuffer;
@@ -352,8 +354,10 @@ bool ScissorsTcpSession::OnRemoteSent(int length) {
       client_data_.clear();
     }
 
-    return client_->ReceiveAsync(client_buffer_.get(), kBufferSize, 0, this);
+    client_->ReceiveAsync(client_buffer_.get(), kBufferSize, 0, this);
   }
+
+  return true;
 }
 
 void CALLBACK ScissorsTcpSession::DeleteThis(PTP_CALLBACK_INSTANCE instance,

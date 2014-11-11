@@ -32,7 +32,7 @@ class ScissorsTcpSession
  private:
   static const size_t kBufferSize = 8192;
 
-  bool SendAsync(const Service::AsyncSocketPtr& socket,
+  void SendAsync(const Service::AsyncSocketPtr& socket,
                  const SecBuffer& buffer);
   bool DoNegotiation();
   bool CompleteNegotiation();

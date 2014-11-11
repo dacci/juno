@@ -51,7 +51,7 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
 
   static void CALLBACK TimerCallback(PTP_CALLBACK_INSTANCE instance,
                                      void* context, PTP_TIMER timer);
-  bool ClientReceiveAsync();
+  void ClientReceiveAsync();
 
   bool FireEvent(Event event, madoka::net::AsyncSocket* socket, DWORD error,
                  void* buffer, int length);
@@ -60,15 +60,15 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
   static int64_t ProcessMessageLength(HttpHeaders* headers);
   void ProcessHopByHopHeaders(HttpHeaders* headers);
   void ProcessRequest();
-  bool ProcessRequestChunk();
+  void ProcessRequestChunk();
   void ProcessResponse();
   bool ProcessResponseChunk();
 
-  bool SendRequest();
-  bool SendResponse();
-  bool SendError(HTTP::StatusCode status);
+  void SendRequest();
+  void SendResponse();
+  void SendError(HTTP::StatusCode status);
 
-  bool EndRequest();
+  void EndRequest();
   bool EndResponse();
 
   void OnConnected(madoka::net::AsyncSocket* socket, DWORD error) override;

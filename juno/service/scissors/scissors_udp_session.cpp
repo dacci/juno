@@ -55,8 +55,7 @@ bool ScissorsUdpSession::Start() {
   if (!remote_->Connect(*resolver_.begin()))
     return false;
 
-  if (!remote_->SendAsync(datagram_->data, datagram_->data_length, 0, this))
-    return false;
+  remote_->SendAsync(datagram_->data, datagram_->data_length, 0, this);
 
   return true;
 }
@@ -70,30 +69,23 @@ void ScissorsUdpSession::OnReceived(AsyncDatagramSocket* socket, DWORD error,
   assert(timer_ != nullptr);
   ::SetThreadpoolTimer(timer_, nullptr, 0, 0);
 
-  if (error == 0 &&
-      datagram_->socket->SendToAsync(buffer_.get(), length, 0,
-                                     datagram_->from, datagram_->from_length,
-                                     this))
-    return;
-
-  DELETE_THIS();
+  if (error == 0)
+    datagram_->socket->SendToAsync(buffer_.get(), length, 0, datagram_->from,
+                                   datagram_->from_length, this);
+  else
+    DELETE_THIS();
 }
 
 void ScissorsUdpSession::OnSent(AsyncDatagramSocket* socket, DWORD error,
                                 void* buffer, int length) {
-  if (error == 0) {
-    do {
-      assert(timer_ != nullptr);
-      ::SetThreadpoolTimer(timer_, &kTimerDueTime, 0, 0);
-
-      if (!remote_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
-        break;
-
-      return;
-    } while (false);
+  if (error != 0) {
+    DELETE_THIS();
+    return;
   }
 
-  DELETE_THIS();
+  assert(timer_ != nullptr);
+  ::SetThreadpoolTimer(timer_, &kTimerDueTime, 0, 0);
+  remote_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this);
 }
 
 void ScissorsUdpSession::OnSentTo(AsyncDatagramSocket* socket, DWORD error,

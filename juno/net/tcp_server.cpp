@@ -2,23 +2,18 @@
 
 #include "net/tcp_server.h"
 
+#include <madoka/concurrent/lock_guard.h>
+
 #include "service/service.h"
 
 using ::madoka::net::AsyncServerSocket;
 using ::madoka::net::AsyncSocket;
 
-TcpServer::TcpServer() : service_(), count_() {
-  event_ = ::CreateEvent(nullptr, TRUE, TRUE, nullptr);
+TcpServer::TcpServer() : service_() {
 }
 
 TcpServer::~TcpServer() {
   Stop();
-
-  for (auto& server : servers_)
-    delete server;
-  servers_.clear();
-
-  ::CloseHandle(event_);
 }
 
 bool TcpServer::Setup(const char* address, int port) {
@@ -33,19 +28,17 @@ bool TcpServer::Setup(const char* address, int port) {
   if (!resolver_.Resolve(address, port))
     return false;
 
-  bool succeeded = false;
+  bool succeeded = true;
 
   for (const auto& end_point : resolver_) {
-    AsyncServerSocket* server = new AsyncServerSocket();
+    auto server = std::unique_ptr<AsyncServerSocket>(new AsyncServerSocket());
     if (server == nullptr)
       break;
 
-    if (server->Bind(end_point) && server->Listen(SOMAXCONN)) {
-      succeeded = true;
-      servers_.push_back(server);
-    } else {
-      delete server;
-    }
+    if (server->Bind(end_point) && server->Listen(SOMAXCONN))
+      servers_.push_back(std::move(server));
+    else
+      succeeded = false;
   }
 
   return succeeded;
@@ -55,42 +48,67 @@ bool TcpServer::Start() {
   if (service_ == nullptr || servers_.empty())
     return false;
 
-  bool succeeded = false;
+  madoka::concurrent::LockGuard guard(&lock_);
 
-  for (auto& server : servers_) {
-    if (server->AcceptAsync(this)) {
-      succeeded = true;
-      if (count_++ == 0)
-        ::ResetEvent(event_);
-    } else {
-      server->Close();
-    }
-  }
+  for (auto& server : servers_)
+    server->AcceptAsync(this);
 
-  return succeeded;
+  return true;
 }
 
 void TcpServer::Stop() {
+  madoka::concurrent::LockGuard guard(&lock_);
+
   for (auto& server : servers_)
     server->Close();
 
-  ::WaitForSingleObject(event_, INFINITE);
+  while (!servers_.empty())
+    empty_.Sleep(&lock_);
 }
 
 void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
                            DWORD error) {
-  std::shared_ptr<AsyncSocket> peer(client);
-
   if (error == 0) {
+    server->AcceptAsync(this);
+
+    Service::AsyncSocketPtr peer(client);
     if (service_->OnAccepted(peer))
       peer.reset();
-
-    if (server->AcceptAsync(this))
-      return;
   } else {
     service_->OnError(error);
+    DeleteServer(server);
+  }
+}
+
+void TcpServer::DeleteServer(AsyncServerSocket* server) {
+  ServerSocketPair* pair = new ServerSocketPair(this, server);
+  if (pair != nullptr &&
+      TrySubmitThreadpoolCallback(DeleteServerImpl, pair, nullptr))
+    return;
+
+  delete pair;
+  DeleteServerImpl(server);
+}
+
+void CALLBACK TcpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
+                                          void* param) {
+  ServerSocketPair* pair = static_cast<ServerSocketPair*>(param);
+  pair->first->DeleteServerImpl(pair->second);
+  delete pair;
+}
+
+void TcpServer::DeleteServerImpl(AsyncServerSocket* server) {
+  madoka::concurrent::LockGuard guard(&lock_);
+
+  server->Close();
+
+  for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
+    if (i->get() == server) {
+      servers_.erase(i);
+      break;
+    }
   }
 
-  if (::InterlockedDecrement(&count_) == 0)
-    ::SetEvent(event_);
+  if (servers_.empty())
+    empty_.WakeAll();
 }

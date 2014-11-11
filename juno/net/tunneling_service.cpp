@@ -88,20 +88,23 @@ TunnelingService::Session::~Session() {
 }
 
 bool TunnelingService::Session::Start() {
-  return from_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this);
+  from_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this);
+  return true;
 }
 
 void TunnelingService::Session::OnReceived(AsyncSocket* socket, DWORD error,
                                            void* buffer, int length) {
-  if (error != 0 || length == 0 ||
-      !to_->SendAsync(buffer_.get(), length, 0, this))
+  if (error == 0 && length > 0)
+    to_->SendAsync(buffer_.get(), length, 0, this);
+  else
     ::TrySubmitThreadpoolCallback(EndSession, this, nullptr);
 }
 
 void TunnelingService::Session::OnSent(AsyncSocket* socket, DWORD error,
                                        void* buffer, int length) {
-  if (error != 0 || length == 0 ||
-      !from_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this))
+  if (error == 0 && length > 0)
+    from_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this);
+  else
     ::TrySubmitThreadpoolCallback(EndSession, this, nullptr);
 }
 

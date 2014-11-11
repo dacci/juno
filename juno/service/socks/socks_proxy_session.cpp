@@ -66,11 +66,7 @@ SocksProxySession::~SocksProxySession() {
 
 bool SocksProxySession::Start(const Service::AsyncSocketPtr& client) {
   client_ = client;
-
-  if (!client_->ReceiveAsync(request_buffer_.get(), kBufferSize, 0, this)) {
-    client_ = nullptr;
-    return false;
-  }
+  client_->ReceiveAsync(request_buffer_.get(), kBufferSize, 0, this);
 
   return true;
 }
@@ -104,8 +100,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     if (error == 0 && TunnelingService::Bind(client_, remote_))
         response->code = SOCKS4::GRANTED;
 
-    if (client_->SendAsync(response, sizeof(*response), 0, this))
-      return;
+    client_->SendAsync(response, sizeof(*response), 0, this);
   } else if (request_buffer_[0] == 5) {
     SOCKS5::REQUEST* request =
         reinterpret_cast<SOCKS5::REQUEST*>(request_buffer_.get());
@@ -158,13 +153,11 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
         response->code = SOCKS5::SUCCEEDED;
     }
 
-    if (client_->SendAsync(response, response_length, 0, this))
-      return;
+    client_->SendAsync(response, response_length, 0, this);
   } else {
     assert(false);
+    DELETE_THIS();
   }
-
-  DELETE_THIS();
 }
 
 void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
@@ -203,8 +196,7 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
 
           end_point_ = resolver;
 
-          if (!remote_->ConnectAsync(*resolver->begin(), this))
-            break;
+          remote_->ConnectAsync(*resolver->begin(), this);
         } else {
           auto address = new SocketAddress4();
           if (address == nullptr)
@@ -215,16 +207,15 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
           address->sin_addr = request->address;
           end_point_ = address;
 
-          if (!remote_->ConnectAsync(address, this))
-            break;
+          remote_->ConnectAsync(address, this);
         }
 
         return;
       } while (false);
     }
 
-    if (client_->SendAsync(response, sizeof(*response), 0, this))
-      return;
+    client_->SendAsync(response, sizeof(*response), 0, this);
+    return;
   } else if (request_buffer_[0] == 5) {
     if (phase_ == 0) {
       SOCKS5::METHOD_REQUEST* request =
@@ -242,8 +233,8 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
         }
       }
 
-      if (client_->SendAsync(response, sizeof(*response), 0, this))
-        return;
+      client_->SendAsync(response, sizeof(*response), 0, this);
+      return;
     } else if (phase_ == 1) {
       SOCKS5::REQUEST* request =
           reinterpret_cast<SOCKS5::REQUEST*>(request_buffer_.get());
@@ -275,8 +266,8 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
           return;
       }
 
-      if (client_->SendAsync(response, 10, 0, this))
-        return;
+      client_->SendAsync(response, 10, 0, this);
+      return;
     }
   }
 
@@ -300,8 +291,8 @@ void SocksProxySession::OnSent(AsyncSocket* socket, DWORD error, void* buffer,
   } else if (request_buffer_[0] == 5) {
     if (phase_ == 0) {
       ++phase_;
-      if (client_->ReceiveAsync(request_buffer_.get(), kBufferSize, 0, this))
-        return;
+      client_->ReceiveAsync(request_buffer_.get(), kBufferSize, 0, this);
+      return;
     } else if (phase_ == 1) {
       SOCKS5::RESPONSE* response =
           reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_.get());
@@ -318,32 +309,23 @@ void SocksProxySession::OnSent(AsyncSocket* socket, DWORD error, void* buffer,
 }
 
 bool SocksProxySession::ConnectIPv4(const SOCKS5::ADDRESS& address) {
-  SocketAddress4* end_point = nullptr;
+  auto end_point = std::unique_ptr<SocketAddress4>(new SocketAddress4());
+  if (end_point == nullptr)
+    return false;
 
-  do {
-    end_point = new SocketAddress4;
-    if (end_point == nullptr)
-      break;
+  remote_.reset(new AsyncSocket());
+  if (remote_ == nullptr)
+    return false;
 
-    remote_.reset(new AsyncSocket());
-    if (remote_ == nullptr)
-      break;
+  end_point->ai_socktype = SOCK_STREAM;
+  end_point->sin_port = address.ipv4.ipv4_port;
+  end_point->sin_addr = address.ipv4.ipv4_addr;
 
-    end_point->ai_socktype = SOCK_STREAM;
-    end_point->sin_port = address.ipv4.ipv4_port;
-    end_point->sin_addr = address.ipv4.ipv4_addr;
+  end_point_ = end_point.get();
 
-    end_point_ = end_point;
+  remote_->ConnectAsync(end_point.release(), this);
 
-    if (!remote_->ConnectAsync(end_point, this))
-      break;
-
-    return true;
-  } while (false);
-
-  delete end_point;
-
-  return false;
+  return true;
 }
 
 bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
@@ -353,60 +335,43 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
       address.domain.domain_name +
       address.domain.domain_len);
 
-  madoka::net::Resolver* resolver = nullptr;
+  auto resolver = std::unique_ptr<madoka::net::Resolver>(
+    new madoka::net::Resolver());
+  if (resolver == nullptr)
+    return false;
 
-  do {
-    resolver = new madoka::net::Resolver();
-    if (resolver == nullptr)
-      break;
+  remote_.reset(new AsyncSocket());
+  if (remote_ == nullptr)
+    return false;
 
-    remote_.reset(new AsyncSocket());
-    if (remote_ == nullptr)
-      break;
+  if (!resolver->Resolve(domain_name.c_str(), ::htons(port)))
+    return false;
 
-    if (!resolver->Resolve(domain_name.c_str(), ::htons(port)))
-      break;
+  end_point_ = resolver.release();
 
-    end_point_ = resolver;
+  remote_->ConnectAsync(*resolver->begin(), this);
 
-    if (!remote_->ConnectAsync(*resolver->begin(), this))
-      break;
-
-    return true;
-  } while (false);
-
-  delete resolver;
-
-  return false;
+  return true;
 }
 
 bool SocksProxySession::ConnectIPv6(const SOCKS5::ADDRESS& address) {
-  SocketAddress6* end_point = nullptr;
+  auto end_point = std::unique_ptr<SocketAddress6>(new SocketAddress6());
+  if (end_point == nullptr)
+    return false;
 
-  do {
-    end_point = new SocketAddress6;
-    if (end_point == nullptr)
-      break;
+  remote_.reset(new AsyncSocket());
+  if (remote_ == nullptr)
+    return false;
 
-    remote_.reset(new AsyncSocket());
-    if (remote_ == nullptr)
-      break;
+  end_point->ai_socktype = SOCK_STREAM;
+  end_point->sin6_port = address.ipv6.ipv6_port;
+  end_point->sin6_addr = address.ipv6.ipv6_addr;
 
-    end_point->ai_socktype = SOCK_STREAM;
-    end_point->sin6_port = address.ipv6.ipv6_port;
-    end_point->sin6_addr = address.ipv6.ipv6_addr;
+  end_point_ = end_point.get();
 
-    end_point_ = end_point;
+  remote_->ConnectAsync(end_point.release(), this);
 
-    if (!remote_->ConnectAsync(end_point, this))
-      break;
-
-    return true;
-  } while (false);
-
-  delete end_point;
-
-  return false;
+  return true;
 }
 
 void CALLBACK SocksProxySession::DeleteThis(PTP_CALLBACK_INSTANCE instance,
