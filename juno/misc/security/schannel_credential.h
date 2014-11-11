@@ -1,7 +1,7 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_MISC_SCHANNEL_SCHANNEL_CREDENTIAL_H_
-#define JUNO_MISC_SCHANNEL_SCHANNEL_CREDENTIAL_H_
+#ifndef JUNO_MISC_SECURITY_SCHANNEL_CREDENTIAL_H_
+#define JUNO_MISC_SECURITY_SCHANNEL_CREDENTIAL_H_
 
 #include <windows.h>
 #include <schnlsp.h>
@@ -18,6 +18,9 @@ class SchannelCredential {
   }
 
   virtual ~SchannelCredential() {
+    for (auto& certificate : certificates_)
+      CertFreeCertificateContext(certificate);
+
     if (SecIsValidHandle(&handle_)) {
       ::FreeCredentialHandle(&handle_);
       SecInvalidateHandle(&handle_);
@@ -34,7 +37,7 @@ class SchannelCredential {
   }
 
   void AddCertificate(const CERT_CONTEXT* certificate) {
-    certificates_.push_back(certificate);
+    certificates_.push_back(CertDuplicateCertificateContext(certificate));
     auth_data_.cCreds = certificates_.size();
     auth_data_.paCred = certificates_.data();
   }
@@ -75,4 +78,4 @@ class SchannelCredential {
   SchannelCredential& operator=(const SchannelCredential&);
 };
 
-#endif  // JUNO_MISC_SCHANNEL_SCHANNEL_CREDENTIAL_H_
+#endif  // JUNO_MISC_SECURITY_SCHANNEL_CREDENTIAL_H_

@@ -6,7 +6,7 @@
 
 #include <memory>
 
-#include "misc/schannel/schannel_context.h"
+#include "misc/security/schannel_context.h"
 #include "misc/string_util.h"
 #include "net/tunneling_service.h"
 #include "service/scissors/scissors_config.h"

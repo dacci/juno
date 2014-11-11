@@ -5,7 +5,7 @@
 #include <madoka/concurrent/lock_guard.h>
 
 #include "misc/registry_key.h"
-#include "misc/schannel/schannel_credential.h"
+#include "misc/security/schannel_credential.h"
 #include "service/scissors/scissors_config.h"
 #include "service/scissors/scissors_tcp_session.h"
 #include "service/scissors/scissors_udp_session.h"

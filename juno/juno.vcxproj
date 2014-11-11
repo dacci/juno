@@ -207,6 +207,8 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="misc\registry_key.cpp" />
+    <ClCompile Include="net\secure_socket_channel.cpp" />
+    <ClCompile Include="net\socket_channel.cpp" />
     <ClCompile Include="service\http\http_digest.cpp" />
     <ClCompile Include="service\http\http_headers.cpp" />
     <ClCompile Include="service\http\http_proxy.cpp" />
@@ -241,6 +243,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app\juno.h" />
+    <ClInclude Include="misc\security\certificate_store.h" />
+    <ClInclude Include="misc\security\schannel_context.h" />
+    <ClInclude Include="misc\security\schannel_credential.h" />
+    <ClInclude Include="misc\security\security_buffer.h" />
+    <ClInclude Include="net\channel.h" />
+    <ClInclude Include="net\secure_socket_channel.h" />
+    <ClInclude Include="net\socket_channel.h" />
     <ClInclude Include="service\service.h" />
     <ClInclude Include="service\service_config.h" />
     <ClInclude Include="app\service_manager.h" />

@@ -1,7 +1,7 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_MISC_SCHANNEL_SECURITY_BUFFER_H_
-#define JUNO_MISC_SCHANNEL_SECURITY_BUFFER_H_
+#ifndef JUNO_MISC_SECURITY_SECURITY_BUFFER_H_
+#define JUNO_MISC_SECURITY_SECURITY_BUFFER_H_
 
 #include <windows.h>
 #include <security.h>
@@ -67,4 +67,4 @@ class SecurityBufferBundle : public SecBufferDesc {
   std::vector<SecurityBuffer> buffers_;
 };
 
-#endif  // JUNO_MISC_SCHANNEL_SECURITY_BUFFER_H_
+#endif  // JUNO_MISC_SECURITY_SECURITY_BUFFER_H_

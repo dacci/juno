@@ -9,7 +9,7 @@
 #include <memory>
 #include <vector>
 
-#include "misc/schannel/security_buffer.h"
+#include "misc/security/security_buffer.h"
 #include "service/scissors/scissors.h"
 
 class SchannelContext;

@@ -1,21 +1,19 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_
-#define JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_
+#ifndef JUNO_MISC_SECURITY_SCHANNEL_CONTEXT_H_
+#define JUNO_MISC_SECURITY_SCHANNEL_CONTEXT_H_
 
 #include <string.h>
 #include <tchar.h>
 
 #include <string>
 
-#include "misc/schannel/schannel_credential.h"
+#include "misc/security/schannel_credential.h"
 
 class SchannelContext {
  public:
-  SchannelContext(SchannelCredential* credential,
-                  const std::string& target_name)
+  explicit SchannelContext(SchannelCredential* credential)
       : credential_(credential),
-        target_name_(target_name),
         attributes_(),
         expiry_() {
     SecInvalidateHandle(&handle_);
@@ -36,9 +34,13 @@ class SchannelContext {
     else
       out_handle = &handle_;
 
+    char* target_name = nullptr;
+    if (!target_name_.empty())
+      target_name = &target_name_[0];
+
     return ::InitializeSecurityContextA(&credential_->handle_,
                                         in_handle,
-                                        &target_name_[0],
+                                        target_name,
                                         request,
                                         0,     // reserved
                                         0,     // unused
@@ -94,12 +96,28 @@ class SchannelContext {
     return ::DecryptMessage(&handle_, message, 0, nullptr);
   }
 
+  const std::string& target_name() const {
+    return target_name_;
+  }
+
+  void set_target_name(const std::string& target_name) {
+    target_name_ = target_name;
+  }
+
   ULONG attributes() const {
     return attributes_;
   }
 
   const TimeStamp& expiry() const {
     return expiry_;
+  }
+
+  bool IsValid() const {
+    return SecIsValidHandle(&handle_);
+  }
+
+  operator bool() const {
+    return IsValid();
   }
 
  private:
@@ -113,4 +131,4 @@ class SchannelContext {
   SchannelContext& operator=(const SchannelContext&);
 };
 
-#endif  // JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_
+#endif  // JUNO_MISC_SECURITY_SCHANNEL_CONTEXT_H_
