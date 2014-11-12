@@ -6,57 +6,67 @@
 #include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
 #include <madoka/net/async_socket.h>
-#include <madoka/net/socket_event_listener.h>
 
-#include <list>
 #include <memory>
+#include <utility>
+#include <vector>
+
+#include "net/channel.h"
 
 typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
 
 class TunnelingService {
  public:
+  typedef std::shared_ptr<Channel> ChannelPtr;
+
   static bool Init();
   static void Term();
+  static bool Bind(const ChannelPtr& a, const ChannelPtr& b);
+  // __declspec(deprecated)
   static bool Bind(const AsyncSocketPtr& a, const AsyncSocketPtr& b);
 
  private:
-  class Session : public madoka::net::SocketEventAdapter {
+  class Session : public Channel::Listener {
    public:
-    static const size_t kBufferSize = 8192;
-
-    Session(TunnelingService* service, const AsyncSocketPtr& from,
-            const AsyncSocketPtr& to);
+    Session(TunnelingService* service, const ChannelPtr& from,
+            const ChannelPtr& to);
     ~Session();
 
-    bool Start();
+    void Start();
 
-    void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
-                    int length) override;
-    void OnSent(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
+    void OnRead(Channel* channel, DWORD error, void* buffer,
                 int length) override;
+    void OnWritten(Channel* channel, DWORD error, void* buffer,
+                   int length) override;
 
     static void CALLBACK EndSession(PTP_CALLBACK_INSTANCE instance,
                                     void* param);
 
     TunnelingService* service_;
-    AsyncSocketPtr from_;
-    AsyncSocketPtr to_;
-    std::unique_ptr<char[]> buffer_;
+    ChannelPtr from_;
+    ChannelPtr to_;
+    char buffer_[8192];
   };
+
+  typedef std::pair<TunnelingService*, Session*> ServiceSessionPair;
 
   TunnelingService();
   ~TunnelingService();
 
-  bool BindSocket(const AsyncSocketPtr& from, const AsyncSocketPtr& to);
+  bool BindSocket(const ChannelPtr& from, const ChannelPtr& to);
+
   void EndSession(Session* session);
+  static void CALLBACK EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
+                                      void* param);
+  void EndSessionImpl(Session* session);
 
   static TunnelingService* instance_;
 
+  madoka::concurrent::CriticalSection lock_;
   madoka::concurrent::ConditionVariable empty_;
-  madoka::concurrent::CriticalSection critical_section_;
   bool stopped_;
 
-  std::list<Session*> sessions_;
+  std::vector<std::unique_ptr<Session>> sessions_;
 };
 
 #endif  // JUNO_NET_TUNNELING_SERVICE_H_

@@ -2,11 +2,9 @@
 
 #include "net/tunneling_service.h"
 
-#include <assert.h>
-
 #include <madoka/concurrent/lock_guard.h>
 
-using ::madoka::net::AsyncSocket;
+#include "net/socket_channel.h"
 
 TunnelingService* TunnelingService::instance_ = nullptr;
 
@@ -24,88 +22,111 @@ void TunnelingService::Term() {
   }
 }
 
-bool TunnelingService::Bind(const AsyncSocketPtr& a, const AsyncSocketPtr& b) {
-  if (instance_ == nullptr)
+bool TunnelingService::Bind(const ChannelPtr& a, const ChannelPtr& b) {
+  if (instance_ == nullptr || instance_->stopped_)
     return false;
 
+  madoka::concurrent::LockGuard guard(&instance_->lock_);
+
   return instance_->BindSocket(a, b) && instance_->BindSocket(b, a);
+}
+
+bool TunnelingService::Bind(const AsyncSocketPtr& a, const AsyncSocketPtr& b) {
+  return Bind(std::make_shared<SocketChannel>(a),
+              std::make_shared<SocketChannel>(b));
 }
 
 TunnelingService::TunnelingService() : stopped_() {
 }
 
 TunnelingService::~TunnelingService() {
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  madoka::concurrent::LockGuard guard(&lock_);
 
   stopped_ = true;
 
   for (auto& session : sessions_)
-    session->from_->Shutdown(SD_BOTH);
+    session->from_->Close();
 
   while (!sessions_.empty())
-    empty_.Sleep(&critical_section_);
+    empty_.Sleep(&lock_);
 }
 
-bool TunnelingService::BindSocket(const AsyncSocketPtr& from,
-                                  const AsyncSocketPtr& to) {
-  madoka::concurrent::LockGuard lock(&critical_section_);
+bool TunnelingService::BindSocket(const ChannelPtr& from,
+                                  const ChannelPtr& to) {
+  madoka::concurrent::LockGuard guard(&lock_);
 
   if (stopped_)
     return false;
 
-  Session* pair = new Session(this, from, to);
-  if (pair == nullptr)
+  auto session = std::unique_ptr<Session>(new Session(this, from, to));
+  if (session == nullptr)
     return false;
 
-  bool started = pair->Start();
-  if (started)
-    sessions_.push_back(pair);
-  else
-    delete pair;
+  session->Start();
+  sessions_.push_back(std::move(session));
 
-  return started;
-}
-
-void TunnelingService::EndSession(Session* session) {
-  madoka::concurrent::LockGuard lock(&critical_section_);
-
-  sessions_.remove(session);
-  if (sessions_.empty())
-    empty_.WakeAll();
-
-  delete session;
-}
-
-TunnelingService::Session::Session(TunnelingService* service,
-                                   const AsyncSocketPtr& from,
-                                   const AsyncSocketPtr& to)
-    : service_(service), from_(from), to_(to), buffer_(new char[kBufferSize]) {
-}
-
-TunnelingService::Session::~Session() {
-  from_->Shutdown(SD_BOTH);
-  to_->Shutdown(SD_BOTH);
-}
-
-bool TunnelingService::Session::Start() {
-  from_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this);
   return true;
 }
 
-void TunnelingService::Session::OnReceived(AsyncSocket* socket, DWORD error,
-                                           void* buffer, int length) {
-  if (error == 0 && length > 0)
-    to_->SendAsync(buffer_.get(), length, 0, this);
-  else
-    ::TrySubmitThreadpoolCallback(EndSession, this, nullptr);
+void TunnelingService::EndSession(Session* session) {
+  ServiceSessionPair* pair = new ServiceSessionPair(this, session);
+  if (pair == nullptr ||
+      !TrySubmitThreadpoolCallback(EndSessionImpl, pair, nullptr)) {
+    delete pair;
+    EndSessionImpl(session);
+  }
 }
 
-void TunnelingService::Session::OnSent(AsyncSocket* socket, DWORD error,
+void CALLBACK TunnelingService::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
+                                               void* param) {
+  ServiceSessionPair* pair = static_cast<ServiceSessionPair*>(param);
+  pair->first->EndSessionImpl(pair->second);
+  delete param;
+}
+
+void TunnelingService::EndSessionImpl(Session* session) {
+  madoka::concurrent::LockGuard guard(&lock_);
+
+  for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
+    if (i->get() == session) {
+      sessions_.erase(i);
+      break;
+    }
+  }
+
+  if (sessions_.empty())
+    empty_.WakeAll();
+}
+
+TunnelingService::Session::Session(TunnelingService* service,
+                                   const ChannelPtr& from,
+                                   const ChannelPtr& to)
+    : service_(service), from_(from), to_(to) {
+}
+
+TunnelingService::Session::~Session() {
+  from_->Close();
+  to_->Close();
+}
+
+void TunnelingService::Session::Start() {
+  from_->ReadAsync(buffer_, sizeof(buffer_), this);
+}
+
+void TunnelingService::Session::OnRead(Channel* channel, DWORD error,
                                        void* buffer, int length) {
   if (error == 0 && length > 0)
-    from_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this);
+    to_->WriteAsync(buffer, length, this);
   else
-    ::TrySubmitThreadpoolCallback(EndSession, this, nullptr);
+    service_->EndSession(this);
+}
+
+void TunnelingService::Session::OnWritten(Channel* channel, DWORD error,
+                                          void* buffer, int length) {
+  if (error == 0 && length > 0)
+    from_->ReadAsync(buffer_, sizeof(buffer_), this);
+  else
+    service_->EndSession(this);
 }
 
 void CALLBACK TunnelingService::Session::EndSession(

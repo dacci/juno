@@ -12,7 +12,9 @@
 
 class SocketChannel : public Channel {
  public:
-  explicit SocketChannel(madoka::net::AsyncSocket* socket);
+  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
+
+  explicit SocketChannel(const AsyncSocketPtr& socket);
   virtual ~SocketChannel();
 
   void Close() override;
@@ -32,7 +34,7 @@ class SocketChannel : public Channel {
     void* extra;
   };
 
-  std::unique_ptr<madoka::net::AsyncSocket> socket_;
+  AsyncSocketPtr socket_;
 };
 
 #endif  // JUNO_NET_SOCKET_CHANNEL_H_

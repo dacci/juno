@@ -4,7 +4,7 @@
 
 using ::madoka::net::AsyncSocket;
 
-SocketChannel::SocketChannel(AsyncSocket* socket) : socket_(socket) {
+SocketChannel::SocketChannel(const AsyncSocketPtr& socket) : socket_(socket) {
 }
 
 SocketChannel::~SocketChannel() {
