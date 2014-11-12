@@ -234,12 +234,12 @@ void SecureSocketChannel::ReadRequest::Run() {
     return;
   }
 
-  std::string message;
+  auto& message = channel_->message_;
 
   for (bool loop = true; loop;) {
     char buffer[4096];
     int length = channel_->socket_->Receive(buffer, sizeof(buffer), 0);
-    if (length <= 0) {
+    if (length <= 0 && message.empty()) {
       FireReadError(WSAGetLastError());
       return;
     }
@@ -269,21 +269,15 @@ void SecureSocketChannel::ReadRequest::Run() {
         channel_->decrypted_.append(
             static_cast<const char*>(inputs[1].pvBuffer), inputs[1].cbBuffer);
 
-      switch (status) {
-        case SEC_E_OK:
-          message.erase(0, inputs[0].cbBuffer + inputs[1].cbBuffer +
-                        inputs[2].cbBuffer);
-          break;
+      message.erase(0, message.size() - inputs[3].cbBuffer);
 
+      switch (status) {
         case SEC_I_CONTEXT_EXPIRED:
-          message.clear();
           channel_->Shutdown();
           break;
 
         case SEC_I_RENEGOTIATE:
           loop = true;
-          channel_->message_ = message;
-          message.clear();
           channel_->Negotiate();
           break;
       }
