@@ -75,10 +75,9 @@ class SecureSocketChannel : public Channel {
                                         void** context);
   BOOL InitializeInbound(void** context);
   BOOL InitializeOutbound(void** context);
-  SECURITY_STATUS EnsureNegotiated();
-  SECURITY_STATUS Negotiate();
-  SECURITY_STATUS DecryptMessage(PSecBufferDesc message);
-  SECURITY_STATUS EncryptMessage(PSecBufferDesc message);
+  HRESULT EnsureNegotiated();
+  HRESULT Negotiate();
+  HRESULT DecryptMessage(PSecBufferDesc message);
   void Shutdown();
 
   SchannelContext context_;

@@ -26,8 +26,8 @@ class SchannelContext {
     }
   }
 
-  SECURITY_STATUS InitializeContext(ULONG request, SecBufferDesc* input,
-                                    SecBufferDesc* output) {
+  HRESULT InitializeContext(ULONG request, SecBufferDesc* input,
+                            SecBufferDesc* output) {
     PCtxtHandle in_handle = nullptr, out_handle = nullptr;
     if (SecIsValidHandle(&handle_))
       in_handle = &handle_;
@@ -52,8 +52,8 @@ class SchannelContext {
                                         &expiry_);
   }
 
-  SECURITY_STATUS AcceptContext(ULONG request, SecBufferDesc* input,
-                                SecBufferDesc* output) {
+  HRESULT AcceptContext(ULONG request, SecBufferDesc* input,
+                        SecBufferDesc* output) {
     PCtxtHandle in_handle = nullptr, out_handle = nullptr;
     if (SecIsValidHandle(&handle_))
       in_handle = &handle_;
@@ -71,25 +71,25 @@ class SchannelContext {
                                    &expiry_);
   }
 
-  SECURITY_STATUS ApplyControlToken(ULONG token) {
+  HRESULT ApplyControlToken(ULONG token) {
     SecBuffer buffer = { sizeof(token), SECBUFFER_TOKEN, &token };
     SecBufferDesc buffers = { SECBUFFER_VERSION, 1, &buffer };
 
     return ::ApplyControlToken(&handle_, &buffers);
   }
 
-  SECURITY_STATUS QueryAttributes(ULONG attribute, void* buffer) {
+  HRESULT QueryAttributes(ULONG attribute, void* buffer) {
     return ::QueryContextAttributesA(&handle_, attribute, buffer);
   }
 
-  SECURITY_STATUS EncryptMessage(ULONG qop, SecBufferDesc* message) {
+  HRESULT EncryptMessage(ULONG qop, SecBufferDesc* message) {
     if (!SecIsValidHandle(&handle_))
       return SEC_E_INVALID_HANDLE;
 
     return ::EncryptMessage(&handle_, qop, message, 0);
   }
 
-  SECURITY_STATUS DecryptMessage(SecBufferDesc* message) {
+  HRESULT DecryptMessage(SecBufferDesc* message) {
     if (!SecIsValidHandle(&handle_))
       return SEC_E_INVALID_HANDLE;
 

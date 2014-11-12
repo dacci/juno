@@ -27,7 +27,7 @@ class SchannelCredential {
     }
   }
 
-  SECURITY_STATUS AcquireHandle(ULONG usage) {
+  HRESULT AcquireHandle(ULONG usage) {
     if (SecIsValidHandle(&handle_))
       return SEC_E_INTERNAL_ERROR;
 

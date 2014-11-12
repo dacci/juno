@@ -2,6 +2,9 @@
 
 #include "net/secure_socket_channel.h"
 
+#include <stdint.h>
+#include <stdlib.h>
+
 #include <madoka/concurrent/lock_guard.h>
 #include <madoka/net/socket.h>
 
@@ -11,6 +14,29 @@
 #ifdef min
 #undef min
 #endif
+
+namespace {
+
+enum RecordType : uint8_t {
+  kChangeCipherSpec = 20,
+  kAlert = 21,
+  kHandshake = 22,
+  kApplicationData = 23,
+  kHeartbeat = 24,
+};
+
+#include <pshpack1.h>
+
+typedef struct {
+  RecordType type;
+  uint8_t major_version;
+  uint8_t minor_version;
+  uint16_t length;
+} SSL_RECORD;
+
+#include <poppack.h>
+
+}  // namespace
 
 SecureSocketChannel::SecureSocketChannel(SchannelCredential* credential,
                                          madoka::net::Socket* socket,
@@ -106,7 +132,7 @@ BOOL SecureSocketChannel::InitializeOutbound(void** /*context*/) {
   return Negotiate() == SEC_E_OK;
 }
 
-SECURITY_STATUS SecureSocketChannel::EnsureNegotiated() {
+HRESULT SecureSocketChannel::EnsureNegotiated() {
   if (!InitOnceExecuteOnce(&init_once_, InitOnceCallback, this, nullptr))
     return HRESULT_FROM_WIN32(GetLastError());
 
@@ -116,7 +142,7 @@ SECURITY_STATUS SecureSocketChannel::EnsureNegotiated() {
   return SEC_E_OK;
 }
 
-SECURITY_STATUS SecureSocketChannel::Negotiate() {
+HRESULT SecureSocketChannel::Negotiate() {
   madoka::concurrent::LockGuard guard(&lock_);
 
   while (true) {
@@ -197,22 +223,26 @@ SECURITY_STATUS SecureSocketChannel::Negotiate() {
   return last_error_;
 }
 
-SECURITY_STATUS SecureSocketChannel::DecryptMessage(PSecBufferDesc message) {
-  madoka::concurrent::LockGuard guard(&lock_);
+HRESULT SecureSocketChannel::DecryptMessage(PSecBufferDesc message) {
+  SSL_RECORD* record =
+      reinterpret_cast<SSL_RECORD*>(message->pBuffers[0].pvBuffer);
 
-  if (EnsureNegotiated() != SEC_E_OK)
-    return last_error_;
+  switch (record->type) {
+    case kChangeCipherSpec:
+    case kAlert:
+    case kHandshake:
+    case kApplicationData:
+    case kHeartbeat:
+      break;
+
+    default:
+      return SEC_E_ILLEGAL_MESSAGE;
+  }
+
+  if (_byteswap_ushort(record->length) > sizes_.cbMaximumMessage)
+    return SEC_E_ILLEGAL_MESSAGE;
 
   return context_.DecryptMessage(message);
-}
-
-SECURITY_STATUS SecureSocketChannel::EncryptMessage(PSecBufferDesc message) {
-  madoka::concurrent::LockGuard guard(&lock_);
-
-  if (EnsureNegotiated() != SEC_E_OK)
-    return last_error_;
-
-  return context_.EncryptMessage(0, message);
 }
 
 void SecureSocketChannel::Shutdown() {
@@ -254,7 +284,7 @@ void SecureSocketChannel::ReadRequest::Run() {
         { 0, SECBUFFER_EMPTY, nullptr },
       };
       SecBufferDesc input = { SECBUFFER_VERSION, _countof(inputs), inputs };
-      SECURITY_STATUS status = channel_->DecryptMessage(&input);
+      HRESULT status = channel_->DecryptMessage(&input);
       if (status == SEC_E_INCOMPLETE_MESSAGE)
         break;
 
@@ -312,7 +342,7 @@ void SecureSocketChannel::WriteRequest::Run() {
   SecBuffer buffers[3];
   SecBufferDesc buffer = { SECBUFFER_VERSION, _countof(buffers), buffers };
 
-  SECURITY_STATUS status = SEC_E_OK;
+  HRESULT status = SEC_E_OK;
 
   do {
     char* output = message.get();
@@ -337,7 +367,7 @@ void SecureSocketChannel::WriteRequest::Run() {
     buffers[2].BufferType = SECBUFFER_STREAM_TRAILER;
     buffers[2].pvBuffer = output;
 
-    status = channel_->EncryptMessage(&buffer);
+    status = channel_->context_.EncryptMessage(0, &buffer);
     if (FAILED(status))
       break;
 
