@@ -59,30 +59,45 @@ void Scissors::Stop() {
 }
 
 void Scissors::EndSession(Session* session) {
+  if (!TrySubmitThreadpoolCallback(EndSessionImpl, session, nullptr))
+    EndSessionImpl(session);
+}
+
+void CALLBACK Scissors::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
+                                       void* param) {
+  Session* session = static_cast<Session*>(param);
+  session->service_->EndSessionImpl(session);
+}
+
+void Scissors::EndSessionImpl(Session* session) {
   madoka::concurrent::LockGuard lock(&critical_section_);
 
-  sessions_.remove(session);
+  for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
+    if (i->get() == session) {
+      sessions_.erase(i);
+      break;
+    }
+  }
 
   if (sessions_.empty())
     empty_.WakeAll();
 }
 
-bool Scissors::OnAccepted(const AsyncSocketPtr& client) {
+bool Scissors::OnAccepted(const ChannelPtr& client) {
   madoka::concurrent::LockGuard lock(&critical_section_);
 
   if (stopped_)
     return false;
 
-  ScissorsTcpSession* session = new ScissorsTcpSession(this);
+  std::unique_ptr<ScissorsTcpSession> session(
+      new ScissorsTcpSession(this, client));
   if (session == nullptr)
     return false;
 
-  sessions_.push_back(session);
-
-  if (!session->Start(client)) {
-    delete session;
+  if (!session->Start())
     return false;
-  }
+
+  sessions_.push_back(std::move(session));
 
   return true;
 }
@@ -93,16 +108,15 @@ bool Scissors::OnReceivedFrom(Datagram* datagram) {
   if (stopped_)
     return false;
 
-  ScissorsUdpSession* session = new ScissorsUdpSession(this, datagram);
+  std::unique_ptr<ScissorsUdpSession> session(
+      new ScissorsUdpSession(this, datagram));
   if (session == nullptr)
     return false;
 
-  sessions_.push_back(session);
-
-  if (!session->Start()) {
-    delete session;
+  if (!session->Start())
     return false;
-  }
+
+  sessions_.push_back(std::move(session));
 
   return true;
 }

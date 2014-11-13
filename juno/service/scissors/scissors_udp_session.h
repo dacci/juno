@@ -33,11 +33,9 @@ class ScissorsUdpSession
 
   static void CALLBACK OnTimeout(PTP_CALLBACK_INSTANCE instance, PVOID param,
                                  PTP_TIMER timer);
-  static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
 
   static FILETIME kTimerDueTime;
 
-  Scissors* const service_;
   madoka::net::Resolver resolver_;
   Service::Datagram* datagram_;
   std::unique_ptr<madoka::net::AsyncDatagramSocket> remote_;

@@ -6,9 +6,6 @@
 
 #include "service/scissors/scissors_config.h"
 
-#define DELETE_THIS() \
-  ::TrySubmitThreadpoolCallback(DeleteThis, this, nullptr)
-
 using ::madoka::net::AsyncDatagramSocket;
 
 FILETIME ScissorsUdpSession::kTimerDueTime = {
@@ -18,7 +15,11 @@ FILETIME ScissorsUdpSession::kTimerDueTime = {
 
 ScissorsUdpSession::ScissorsUdpSession(Scissors* service,
                                        Service::Datagram* datagram)
-    : service_(service), datagram_(datagram), remote_(), buffer_(), timer_() {
+    : Session(service),
+      datagram_(datagram),
+      remote_(new AsyncDatagramSocket()),
+      buffer_(new char[kBufferSize]),
+      timer_() {
   resolver_.SetType(SOCK_DGRAM);
   timer_ = ::CreateThreadpoolTimer(OnTimeout, this, nullptr);
 }
@@ -35,21 +36,17 @@ ScissorsUdpSession::~ScissorsUdpSession() {
     ::CloseThreadpoolTimer(timer_);
     timer_ = nullptr;
   }
-
-  service_->EndSession(this);
 }
 
 bool ScissorsUdpSession::Start() {
-  if (!resolver_.Resolve(service_->config_->remote_address().c_str(),
-                         service_->config_->remote_port()))
-    return false;
-
-  remote_.reset(new AsyncDatagramSocket());
   if (remote_ == nullptr)
     return false;
 
-  buffer_.reset(new char[kBufferSize]);
   if (buffer_ == nullptr)
+    return false;
+
+  if (!resolver_.Resolve(service_->config_->remote_address().c_str(),
+                         service_->config_->remote_port()))
     return false;
 
   if (!remote_->Connect(*resolver_.begin()))
@@ -73,13 +70,13 @@ void ScissorsUdpSession::OnReceived(AsyncDatagramSocket* socket, DWORD error,
     datagram_->socket->SendToAsync(buffer_.get(), length, 0, datagram_->from,
                                    datagram_->from_length, this);
   else
-    DELETE_THIS();
+    service_->EndSession(this);
 }
 
 void ScissorsUdpSession::OnSent(AsyncDatagramSocket* socket, DWORD error,
                                 void* buffer, int length) {
   if (error != 0) {
-    DELETE_THIS();
+    service_->EndSession(this);
     return;
   }
 
@@ -91,16 +88,11 @@ void ScissorsUdpSession::OnSent(AsyncDatagramSocket* socket, DWORD error,
 void ScissorsUdpSession::OnSentTo(AsyncDatagramSocket* socket, DWORD error,
                                   void* buffer, int length, sockaddr* to,
                                   int to_length) {
-  DELETE_THIS();
+  service_->EndSession(this);
 }
 
 void CALLBACK ScissorsUdpSession::OnTimeout(PTP_CALLBACK_INSTANCE instance,
                                             PVOID param, PTP_TIMER timer) {
   ScissorsUdpSession* session = static_cast<ScissorsUdpSession*>(param);
   session->Stop();
-}
-
-void CALLBACK ScissorsUdpSession::DeleteThis(PTP_CALLBACK_INSTANCE instance,
-                                             void* param) {
-  delete static_cast<ScissorsUdpSession*>(param);
 }
