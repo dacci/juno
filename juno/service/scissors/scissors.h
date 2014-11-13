@@ -33,7 +33,11 @@ class Scissors : public Service {
   bool UpdateConfig(const ServiceConfigPtr& config) override;
   void Stop() override;
 
-  bool OnAccepted(const AsyncSocketPtr& client) override;
+  bool OnAccepted(const ChannelPtr& client) override {
+    return false;
+  }
+
+  bool OnAccepted(const AsyncSocketPtr& client);
   bool OnReceivedFrom(Datagram* datagram) override;
   void OnError(DWORD error) override;
 

@@ -4,6 +4,7 @@
 
 #include <madoka/concurrent/lock_guard.h>
 
+#include "net/socket_channel.h"
 #include "service/service.h"
 
 using ::madoka::net::AsyncServerSocket;
@@ -71,7 +72,8 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
   if (error == 0) {
     server->AcceptAsync(this);
 
-    Service::AsyncSocketPtr peer(client);
+    auto peer = std::make_shared<SocketChannel>(
+        SocketChannel::AsyncSocketPtr(client));
     if (service_->OnAccepted(peer))
       peer.reset();
   } else {

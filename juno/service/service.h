@@ -8,11 +8,13 @@
 
 #include <memory>
 
+#include "net/channel.h"
 #include "service/service_config.h"
 
 class Service {
  public:
   typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
+  typedef std::shared_ptr<Channel> ChannelPtr;
 
   struct Datagram {
     Service* service;
@@ -29,7 +31,7 @@ class Service {
   virtual bool UpdateConfig(const ServiceConfigPtr& config) = 0;
   virtual void Stop() = 0;
 
-  virtual bool OnAccepted(const AsyncSocketPtr& client) = 0;
+  virtual bool OnAccepted(const ChannelPtr& client) = 0;
   virtual bool OnReceivedFrom(Datagram* datagram) = 0;
   virtual void OnError(DWORD error) = 0;
 };

@@ -40,7 +40,11 @@ class HttpProxy : public Service {
 
   void EndSession(HttpProxySession* session);
 
-  bool OnAccepted(const AsyncSocketPtr& client) override;
+  bool OnAccepted(const ChannelPtr& client) override {
+    return false;
+  }
+
+  bool OnAccepted(const AsyncSocketPtr& client);
   bool OnReceivedFrom(Datagram* datagram) override;
   void OnError(DWORD error) override;
 
