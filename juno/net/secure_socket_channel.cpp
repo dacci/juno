@@ -58,13 +58,24 @@ void SecureSocketChannel::Close() {
 
 void SecureSocketChannel::ReadAsync(void* buffer, int length,
                                     Listener* listener) {
+  if (buffer == nullptr && length != 0 || length < 0) {
+    listener->OnRead(this, E_INVALIDARG, buffer, 0);
+    return;
+  } else if (listener == nullptr) {
+    listener->OnRead(this, E_POINTER, buffer, 0);
+    return;
+  }
+
   {
     madoka::concurrent::LockGuard guard(&lock_);
     if (!decrypted_.empty()) {
       int size = std::min(static_cast<int>(decrypted_.size()), length);
-      memmove(buffer, decrypted_.data(), size);
-      decrypted_.erase(0, size);
-      listener->OnRead(this, 0, buffer, length);
+      if (size > 0) {
+        memmove(buffer, decrypted_.data(), size);
+        decrypted_.erase(0, size);
+      }
+      listener->OnRead(this, 0, buffer, size);
+      return;
     }
   }
 
@@ -84,7 +95,13 @@ void SecureSocketChannel::ReadAsync(void* buffer, int length,
 
 void SecureSocketChannel::WriteAsync(const void* buffer, int length,
                                      Listener* listener) {
-  if (closed_) {
+  if (buffer == nullptr && length != 0 || length < 0) {
+    listener->OnWritten(this, E_INVALIDARG, const_cast<void*>(buffer), 0);
+    return;
+  } else if (listener == nullptr) {
+    listener->OnWritten(this, E_POINTER, const_cast<void*>(buffer), 0);
+    return;
+  } else if (closed_) {
     listener->OnWritten(this, E_HANDLE, const_cast<void*>(buffer), 0);
     return;
   }
@@ -314,8 +331,10 @@ void SecureSocketChannel::ReadRequest::Run() {
   }
 
   int size = std::min(static_cast<int>(channel_->decrypted_.size()), length_);
-  memmove(buffer_, channel_->decrypted_.data(), size);
-  channel_->decrypted_.erase(0, size);
+  if (size > 0) {
+    memmove(buffer_, channel_->decrypted_.data(), size);
+    channel_->decrypted_.erase(0, size);
+  }
   listener_->OnRead(channel_, 0, buffer_, size);
 }
 
