@@ -12,19 +12,20 @@
 #include "service/socks/socks5.h"
 #include "service/socks/socks_proxy.h"
 
-class SocksProxySession : public madoka::net::SocketEventAdapter {
+class SocksProxySession
+    : public madoka::net::SocketEventAdapter, public Channel::Listener {
  public:
-  explicit SocksProxySession(SocksProxy* proxy);
+  explicit SocksProxySession(SocksProxy* proxy,
+                             const Service::ChannelPtr& client);
   virtual ~SocksProxySession();
 
-  bool Start(const Service::AsyncSocketPtr& client);
+  bool Start();
   void Stop();
 
   void OnConnected(madoka::net::AsyncSocket* socket, DWORD error) override;
-  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
-                  int length) override;
-  void OnSent(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
-              int length) override;
+  void OnRead(Channel* channel, DWORD error, void* buffer, int length) override;
+  void OnWritten(Channel* channel, DWORD error, void* buffer,
+                 int length) override;
 
  private:
   static const size_t kBufferSize = 1024;
@@ -36,10 +37,10 @@ class SocksProxySession : public madoka::net::SocketEventAdapter {
   static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
 
   SocksProxy* const proxy_;
-  Service::AsyncSocketPtr client_;
+  Service::ChannelPtr client_;
   Service::AsyncSocketPtr remote_;
-  std::unique_ptr<char[]> request_buffer_;
-  std::unique_ptr<char[]> response_buffer_;
+  char request_buffer_[kBufferSize];
+  char response_buffer_[kBufferSize];
 
   int phase_;
   void* end_point_;

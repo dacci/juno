@@ -6,7 +6,9 @@
 #include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
 
-#include <list>
+#include <memory>
+#include <utility>
+#include <vector>
 
 #include "service/service.h"
 
@@ -23,18 +25,20 @@ class SocksProxy : public Service {
   void Stop() override;
   void EndSession(SocksProxySession* session);
 
-  bool OnAccepted(const ChannelPtr& client) override {
-    return false;
-  }
-
-  bool OnAccepted(const AsyncSocketPtr& client);
+  bool OnAccepted(const ChannelPtr& client) override;
   bool OnReceivedFrom(Datagram* datagram) override;
   void OnError(DWORD error) override;
 
  private:
+  typedef std::pair<SocksProxy*, SocksProxySession*> ServiceSessionPair;
+
+  static void CALLBACK EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
+                                      void* param);
+  void EndSessionImpl(SocksProxySession* session);
+
   madoka::concurrent::ConditionVariable empty_;
   madoka::concurrent::CriticalSection critical_section_;
-  std::list<SocksProxySession*> sessions_;
+  std::vector<std::unique_ptr<SocksProxySession>> sessions_;
   bool stopped_;
 
   // disallow copy and assign

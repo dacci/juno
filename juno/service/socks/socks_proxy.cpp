@@ -35,30 +35,29 @@ void SocksProxy::Stop() {
 }
 
 void SocksProxy::EndSession(SocksProxySession* session) {
-  madoka::concurrent::LockGuard lock(&critical_section_);
-
-  sessions_.remove(session);
-
-  if (sessions_.empty())
-    empty_.WakeAll();
+  auto pair = new ServiceSessionPair(this, session);
+  if (pair == nullptr ||
+      !TrySubmitThreadpoolCallback(EndSessionImpl, pair, nullptr)) {
+    delete pair;
+    EndSessionImpl(session);
+  }
 }
 
-bool SocksProxy::OnAccepted(const AsyncSocketPtr& client) {
+bool SocksProxy::OnAccepted(const ChannelPtr& client) {
   madoka::concurrent::LockGuard lock(&critical_section_);
 
   if (stopped_)
     return false;
 
-  SocksProxySession* session = new SocksProxySession(this);
+  std::unique_ptr<SocksProxySession> session(
+      new SocksProxySession(this, client));
   if (session == nullptr)
     return false;
 
-  sessions_.push_back(session);
-
-  if (!session->Start(client)) {
-    delete session;
+  if (!session->Start())
     return false;
-  }
+
+  sessions_.push_back(std::move(session));
 
   return true;
 }
@@ -68,4 +67,25 @@ bool SocksProxy::OnReceivedFrom(Datagram* datagram) {
 }
 
 void SocksProxy::OnError(DWORD error) {
+}
+
+void CALLBACK SocksProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
+                                         void* param) {
+  auto pair = static_cast<ServiceSessionPair*>(param);
+  pair->first->EndSessionImpl(pair->second);
+  delete pair;
+}
+
+void SocksProxy::EndSessionImpl(SocksProxySession* session) {
+  madoka::concurrent::LockGuard lock(&critical_section_);
+
+  for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
+    if (i->get() == session) {
+      sessions_.erase(i);
+      break;
+    }
+  }
+
+  if (sessions_.empty())
+    empty_.WakeAll();
 }

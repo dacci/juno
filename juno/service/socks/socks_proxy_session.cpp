@@ -8,6 +8,7 @@
 
 #include <string>
 
+#include "net/socket_channel.h"
 #include "net/tunneling_service.h"
 #include "service/socks/socks_proxy.h"
 
@@ -45,35 +46,31 @@ struct SocketAddress6 : addrinfo, sockaddr_in6 {
 
 }  // namespace
 
-#define DELETE_THIS() \
-  ::TrySubmitThreadpoolCallback(DeleteThis, this, nullptr)
-
-SocksProxySession::SocksProxySession(SocksProxy* proxy)
+SocksProxySession::SocksProxySession(SocksProxy* proxy,
+                                     const Service::ChannelPtr& client)
     : proxy_(proxy),
-      client_(),
-      remote_(),
-      request_buffer_(new char[kBufferSize]),
-      response_buffer_(new char[kBufferSize]),
+      client_(client),
+      remote_(new AsyncSocket()),
       phase_(),
       end_point_() {
 }
 
 SocksProxySession::~SocksProxySession() {
   Stop();
-
-  proxy_->EndSession(this);
 }
 
-bool SocksProxySession::Start(const Service::AsyncSocketPtr& client) {
-  client_ = client;
-  client_->ReceiveAsync(request_buffer_.get(), kBufferSize, 0, this);
+bool SocksProxySession::Start() {
+  if (remote_ == nullptr)
+    return false;
+
+  client_->ReadAsync(request_buffer_, kBufferSize, this);
 
   return true;
 }
 
 void SocksProxySession::Stop() {
   if (client_ != nullptr)
-    client_->Shutdown(SD_BOTH);
+    client_->Close();
 
   if (remote_ != nullptr) {
     if (remote_->connected())
@@ -86,7 +83,7 @@ void SocksProxySession::Stop() {
 void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
   if (request_buffer_[0] == 4) {
     SOCKS4::REQUEST* request =
-        reinterpret_cast<SOCKS4::REQUEST*>(request_buffer_.get());
+        reinterpret_cast<SOCKS4::REQUEST*>(request_buffer_);
 
     if (request->address.s_addr != 0 &&
         ::htonl(request->address.s_addr) <= 0x000000FF)
@@ -95,18 +92,20 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
       delete static_cast<SocketAddress4*>(end_point_);
 
     SOCKS4::RESPONSE* response =
-        reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_.get());
+        reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_);
 
-    if (error == 0 && TunnelingService::Bind(client_, remote_))
-        response->code = SOCKS4::GRANTED;
+    if (error == 0 &&
+        TunnelingService::Bind(client_,
+                               std::make_shared<SocketChannel>(remote_)))
+      response->code = SOCKS4::GRANTED;
 
-    client_->SendAsync(response, sizeof(*response), 0, this);
+    client_->WriteAsync(response, sizeof(*response), this);
   } else if (request_buffer_[0] == 5) {
     SOCKS5::REQUEST* request =
-        reinterpret_cast<SOCKS5::REQUEST*>(request_buffer_.get());
+        reinterpret_cast<SOCKS5::REQUEST*>(request_buffer_);
 
     SOCKS5::RESPONSE* response =
-        reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_.get());
+        reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_);
     int response_length = 10;
 
     switch (request->type) {
@@ -149,39 +148,36 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
         }
       }
 
-      if (TunnelingService::Bind(client_, remote_))
+      if (TunnelingService::Bind(client_,
+                                 std::make_shared<SocketChannel>(remote_)))
         response->code = SOCKS5::SUCCEEDED;
     }
 
-    client_->SendAsync(response, response_length, 0, this);
+    client_->WriteAsync(response, response_length, this);
   } else {
     assert(false);
-    DELETE_THIS();
+    proxy_->EndSession(this);
   }
 }
 
-void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
-                                   void* buffer, int length) {
+void SocksProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
+                               int length) {
   if (error != 0 || length == 0) {
-    DELETE_THIS();
+    proxy_->EndSession(this);
     return;
   }
 
   if (request_buffer_[0] == 4) {
     SOCKS4::REQUEST* request =
-        reinterpret_cast<SOCKS4::REQUEST*>(request_buffer_.get());
+        reinterpret_cast<SOCKS4::REQUEST*>(request_buffer_);
 
     SOCKS4::RESPONSE* response =
-        reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_.get());
+        reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_);
     ::memset(response, 0, sizeof(*response));
     response->code = SOCKS4::FAILED;
 
     if (request->command == SOCKS4::CONNECT) {
       do {
-        remote_.reset(new AsyncSocket());
-        if (remote_ == nullptr)
-          break;
-
         if (request->address.s_addr != 0 &&
             ::htonl(request->address.s_addr) <= 0x000000FF) {
           // SOCKS4a extension
@@ -214,15 +210,15 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
       } while (false);
     }
 
-    client_->SendAsync(response, sizeof(*response), 0, this);
+    client_->WriteAsync(response, sizeof(*response), this);
     return;
   } else if (request_buffer_[0] == 5) {
     if (phase_ == 0) {
       SOCKS5::METHOD_REQUEST* request =
-          reinterpret_cast<SOCKS5::METHOD_REQUEST*>(request_buffer_.get());
+          reinterpret_cast<SOCKS5::METHOD_REQUEST*>(request_buffer_);
 
       SOCKS5::METHOD_RESPONSE* response =
-          reinterpret_cast<SOCKS5::METHOD_RESPONSE*>(response_buffer_.get());
+          reinterpret_cast<SOCKS5::METHOD_RESPONSE*>(response_buffer_);
       response->version = 5;
       response->method = SOCKS5::UNSUPPORTED;
 
@@ -233,14 +229,14 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
         }
       }
 
-      client_->SendAsync(response, sizeof(*response), 0, this);
+      client_->WriteAsync(response, sizeof(*response), this);
       return;
     } else if (phase_ == 1) {
       SOCKS5::REQUEST* request =
-          reinterpret_cast<SOCKS5::REQUEST*>(request_buffer_.get());
+          reinterpret_cast<SOCKS5::REQUEST*>(request_buffer_);
 
       SOCKS5::RESPONSE* response =
-          reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_.get());
+          reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_);
       ::memset(response, 0, sizeof(*response));
       response->version = 5;
       response->code = SOCKS5::GENERAL_FAILURE;
@@ -266,55 +262,51 @@ void SocksProxySession::OnReceived(AsyncSocket* socket, DWORD error,
           return;
       }
 
-      client_->SendAsync(response, 10, 0, this);
+      client_->WriteAsync(response, 10, this);
       return;
     }
   }
 
-  DELETE_THIS();
+  proxy_->EndSession(this);
 }
 
-void SocksProxySession::OnSent(AsyncSocket* socket, DWORD error, void* buffer,
-                               int length) {
+void SocksProxySession::OnWritten(Channel* channel, DWORD error, void* buffer,
+                                  int length) {
   if (error != 0 || length == 0) {
-    DELETE_THIS();
+    proxy_->EndSession(this);
     return;
   }
 
   if (request_buffer_[0] == 4) {
     SOCKS4::RESPONSE* response =
-        reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_.get());
+        reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_);
     if (response->code == SOCKS4::GRANTED) {
-      client_ = nullptr;
-      remote_ = nullptr;
+      client_.reset();
+      remote_.reset();
     }
   } else if (request_buffer_[0] == 5) {
     if (phase_ == 0) {
       ++phase_;
-      client_->ReceiveAsync(request_buffer_.get(), kBufferSize, 0, this);
+      client_->ReadAsync(request_buffer_, kBufferSize, this);
       return;
     } else if (phase_ == 1) {
       SOCKS5::RESPONSE* response =
-          reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_.get());
+          reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_);
       if (response->code == SOCKS5::SUCCEEDED) {
-        client_ = nullptr;
-        remote_ = nullptr;
+        client_.reset();
+        remote_.reset();
       }
     }
   } else {
     assert(false);
   }
 
-  DELETE_THIS();
+  proxy_->EndSession(this);
 }
 
 bool SocksProxySession::ConnectIPv4(const SOCKS5::ADDRESS& address) {
   auto end_point = std::unique_ptr<SocketAddress4>(new SocketAddress4());
   if (end_point == nullptr)
-    return false;
-
-  remote_.reset(new AsyncSocket());
-  if (remote_ == nullptr)
     return false;
 
   end_point->ai_socktype = SOCK_STREAM;
@@ -340,10 +332,6 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
   if (resolver == nullptr)
     return false;
 
-  remote_.reset(new AsyncSocket());
-  if (remote_ == nullptr)
-    return false;
-
   if (!resolver->Resolve(domain_name.c_str(), ::htons(port)))
     return false;
 
@@ -357,10 +345,6 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
 bool SocksProxySession::ConnectIPv6(const SOCKS5::ADDRESS& address) {
   auto end_point = std::unique_ptr<SocketAddress6>(new SocketAddress6());
   if (end_point == nullptr)
-    return false;
-
-  remote_.reset(new AsyncSocket());
-  if (remote_ == nullptr)
     return false;
 
   end_point->ai_socktype = SOCK_STREAM;
