@@ -8,11 +8,12 @@ SocketChannel::SocketChannel(const AsyncSocketPtr& socket) : socket_(socket) {
 }
 
 SocketChannel::~SocketChannel() {
+  Close();
+  socket_->Close();
 }
 
 void SocketChannel::Close() {
   socket_->Shutdown(SD_BOTH);
-  socket_->Close();
 }
 
 void SocketChannel::ReadAsync(void* buffer, int length, Listener* listener) {

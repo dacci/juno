@@ -45,6 +45,7 @@ SecureSocketChannel::SecureSocketChannel(SchannelCredential* credential,
 }
 
 SecureSocketChannel::~SecureSocketChannel() {
+  Close();
   socket_->Close();
 }
 
@@ -52,7 +53,6 @@ void SecureSocketChannel::Close() {
   if (!closed_) {
     closed_ = true;
     Shutdown();
-    socket_->Close();
   }
 }
 
