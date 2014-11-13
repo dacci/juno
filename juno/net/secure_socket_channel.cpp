@@ -39,8 +39,7 @@ typedef struct {
 }  // namespace
 
 SecureSocketChannel::SecureSocketChannel(SchannelCredential* credential,
-                                         madoka::net::Socket* socket,
-                                         bool inbound)
+                                         const SocketPtr& socket, bool inbound)
     : context_(credential), socket_(socket), inbound_(inbound), closed_() {
   InitOnceInitialize(&init_once_);
 }

@@ -14,8 +14,10 @@
 
 class SecureSocketChannel : public Channel {
  public:
-  SecureSocketChannel(SchannelCredential* credential,
-                      madoka::net::Socket* socket, bool inbound);
+  typedef std::shared_ptr<madoka::net::Socket> SocketPtr;
+
+  SecureSocketChannel(SchannelCredential* credential, const SocketPtr& socket,
+                      bool inbound);
   virtual ~SecureSocketChannel();
 
   void Close() override;
@@ -81,7 +83,7 @@ class SecureSocketChannel : public Channel {
   void Shutdown();
 
   SchannelContext context_;
-  std::unique_ptr<madoka::net::Socket> socket_;
+  SocketPtr socket_;
   const bool inbound_;
   bool closed_;
   INIT_ONCE init_once_;
