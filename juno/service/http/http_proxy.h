@@ -6,8 +6,9 @@
 #include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/read_write_lock.h>
 
-#include <list>
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "app/service_manager.h"
@@ -40,15 +41,13 @@ class HttpProxy : public Service {
 
   void EndSession(HttpProxySession* session);
 
-  bool OnAccepted(const ChannelPtr& client) override {
-    return false;
-  }
-
-  bool OnAccepted(const AsyncSocketPtr& client);
+  bool OnAccepted(const ChannelPtr& client) override;
   bool OnReceivedFrom(Datagram* datagram) override;
   void OnError(DWORD error) override;
 
  private:
+  typedef std::pair<HttpProxy*, HttpProxySession*> ServiceSessionPair;
+
   static const std::string kProxyAuthenticate;
   static const std::string kProxyAuthorization;
 
@@ -56,12 +55,16 @@ class HttpProxy : public Service {
   void DoProcessAuthorization(HttpRequest* request);
   void SetBasicCredential();
 
+  static void CALLBACK EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
+                                      void* param);
+  void EndSessionImpl(HttpProxySession* session);
+
   std::shared_ptr<HttpProxyConfig> config_;
 
   madoka::concurrent::ConditionVariable empty_;
   madoka::concurrent::ReadWriteLock lock_;
   bool stopped_;
-  std::list<HttpProxySession*> sessions_;
+  std::vector<std::unique_ptr<HttpProxySession>> sessions_;
   bool auth_digest_;
   bool auth_basic_;
   HttpDigest digest_;

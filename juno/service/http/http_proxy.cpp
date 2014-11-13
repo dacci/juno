@@ -142,31 +142,27 @@ int HttpProxy::auth_remote_proxy() {
 }
 
 void HttpProxy::EndSession(HttpProxySession* session) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
-
-  sessions_.remove(session);
-  if (sessions_.empty())
-    empty_.WakeAll();
+  auto pair = new ServiceSessionPair(this, session);
+  if (pair == nullptr ||
+      !TrySubmitThreadpoolCallback(EndSessionImpl, pair, nullptr)) {
+    delete pair;
+    EndSessionImpl(session);
+  }
 }
 
-bool HttpProxy::OnAccepted(const AsyncSocketPtr& client) {
+bool HttpProxy::OnAccepted(const ChannelPtr& client) {
   madoka::concurrent::WriteLock write_lock(&lock_);
   madoka::concurrent::LockGuard guard(&write_lock);
 
   if (stopped_)
     return false;
 
-  HttpProxySession* session = new HttpProxySession(this, client);
+  std::unique_ptr<HttpProxySession> session(new HttpProxySession(this, client));
   if (session == nullptr)
     return false;
 
-  sessions_.push_back(session);
-
-  if (!session->Start()) {
-    delete session;
-    return false;
-  }
+  session->Start();
+  sessions_.push_back(std::move(session));
 
   return true;
 }
@@ -225,4 +221,26 @@ void HttpProxy::SetBasicCredential() {
                          &basic_credential_[0], &buffer_size);
 
   basic_credential_.insert(0, "Basic ");
+}
+
+void CALLBACK HttpProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
+                                        void* param) {
+  auto pair = static_cast<ServiceSessionPair*>(param);
+  pair->first->EndSessionImpl(pair->second);
+  delete pair;
+}
+
+void HttpProxy::EndSessionImpl(HttpProxySession* session) {
+  madoka::concurrent::WriteLock write_lock(&lock_);
+  madoka::concurrent::LockGuard guard(&write_lock);
+
+  for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
+    if (i->get() == session) {
+      sessions_.erase(i);
+      break;
+    }
+  }
+
+  if (sessions_.empty())
+    empty_.WakeAll();
 }

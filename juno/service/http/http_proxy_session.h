@@ -11,17 +11,19 @@
 #include <string>
 
 #include "net/tunneling_service.h"
+#include "service/service.h"
 #include "service/http/http_request.h"
 #include "service/http/http_response.h"
 
 class HttpProxy;
 
-class HttpProxySession : public madoka::net::SocketEventAdapter {
+class HttpProxySession
+    : public madoka::net::SocketEventAdapter, public Channel::Listener {
  public:
-  HttpProxySession(HttpProxy* proxy, const AsyncSocketPtr& socket);
+  HttpProxySession(HttpProxy* proxy, const Service::ChannelPtr& client);
   ~HttpProxySession();
 
-  bool Start();
+  void Start();
   void Stop();
 
  private:
@@ -36,7 +38,7 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
   struct EventData {
     HttpProxySession* session;
     Event event;
-    madoka::net::AsyncSocket* socket;
+    Channel* channel;
     DWORD error;
     void* buffer;
     int length;
@@ -47,14 +49,13 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
 
   LONG AddRef();
   void Release();
-  static void CALLBACK Delete(PTP_CALLBACK_INSTANCE instance, void* context);
 
   static void CALLBACK TimerCallback(PTP_CALLBACK_INSTANCE instance,
                                      void* context, PTP_TIMER timer);
   void ClientReceiveAsync();
 
-  bool FireEvent(Event event, madoka::net::AsyncSocket* socket, DWORD error,
-                 void* buffer, int length);
+  bool FireEvent(Event event, Channel* channel, DWORD error, void* buffer,
+                 int length);
   static void CALLBACK FireEvent(PTP_CALLBACK_INSTANCE instance, void* context);
 
   static int64_t ProcessMessageLength(HttpHeaders* headers);
@@ -72,10 +73,9 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
   bool EndResponse();
 
   void OnConnected(madoka::net::AsyncSocket* socket, DWORD error) override;
-  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
-                  int length) override;
-  void OnSent(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
-              int length) override;
+  void OnRead(Channel* channel, DWORD error, void* buffer, int length) override;
+  void OnWritten(Channel* channel, DWORD error, void* buffer,
+                 int length) override;
 
   bool OnRequestReceived(int length);
   bool OnRequestSent(DWORD error, int length);
@@ -100,7 +100,7 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
   std::string last_host_;
   int last_port_;
 
-  AsyncSocketPtr client_;
+  Service::ChannelPtr client_;
   State client_state_;
   std::unique_ptr<char[]> client_buffer_;
   std::string request_buffer_;
@@ -111,7 +111,8 @@ class HttpProxySession : public madoka::net::SocketEventAdapter {
   int proxy_retry_;
   bool expect_continue_;
 
-  AsyncSocketPtr remote_;
+  AsyncSocketPtr remote_socket_;
+  Service::ChannelPtr remote_;
   bool remote_connected_;
   State remote_state_;
   std::unique_ptr<char[]> remote_buffer_;
