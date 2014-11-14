@@ -26,7 +26,8 @@ class ServerConfig {
         listen_(other.listen_),
         type_(other.type_),
         service_name_(other.service_name_),
-        enabled_(other.enabled_) {
+        enabled_(other.enabled_),
+        cert_hash_(other.cert_hash_) {
   }
 
   std::string name_;
