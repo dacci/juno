@@ -6,6 +6,7 @@
 
 #include <madoka/concurrent/lock_guard.h>
 
+#include <string>
 #include <utility>
 
 #include "misc/registry_key-inl.h"

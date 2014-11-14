@@ -2,6 +2,8 @@
 
 #include "misc/registry_key.h"
 
+#include <string>
+
 RegistryKey::RegistryKey() : key_() {
 }
 

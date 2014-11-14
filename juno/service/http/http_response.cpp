@@ -4,6 +4,8 @@
 
 #include <picohttpparser/picohttpparser.h>
 
+#include <string>
+
 HttpResponse::HttpResponse() {
 }
 

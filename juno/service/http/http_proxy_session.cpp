@@ -9,6 +9,9 @@
 
 #include <url/gurl.h>
 
+#include <algorithm>
+#include <string>
+
 #include "misc/string_util.h"
 #include "net/socket_channel.h"
 #include "service/http/http_proxy.h"
@@ -19,6 +22,10 @@
 #else
 #define ASSERT_FALSE __assume(0)
 #endif  // _DEBUG
+
+#ifdef min
+#undef min
+#endif
 
 using ::madoka::net::AsyncSocket;
 
@@ -633,7 +640,8 @@ void HttpProxySession::OnRequestSent(DWORD error, int length) {
     if (request_buffer_.empty()) {
       ClientReceiveAsync();
     } else {
-      size_t size = min(request_buffer_.size(), request_length_);
+      size_t size = std::min(request_buffer_.size(),
+                             static_cast<size_t>(request_length_));
       ::memmove(client_buffer_, request_buffer_.data(), size);
       request_buffer_.erase(0, size);
 

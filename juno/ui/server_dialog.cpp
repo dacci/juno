@@ -6,6 +6,8 @@
 
 #include <iphlpapi.h>
 
+#include <string>
+
 #include "app/server_config.h"
 #include "misc/security/certificate_store.h"
 #include "misc/string_util.h"

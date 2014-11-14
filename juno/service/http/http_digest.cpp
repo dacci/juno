@@ -6,6 +6,7 @@
 #include <wincrypt.h>
 
 #include <memory>
+#include <string>
 
 namespace {
 

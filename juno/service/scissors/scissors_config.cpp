@@ -4,6 +4,8 @@
 
 #include <madoka/concurrent/lock_guard.h>
 
+#include <string>
+
 namespace {
 const char kRemoteAddress[] = "RemoteAddress";
 const char kRemotePort[] = "RemotePort";

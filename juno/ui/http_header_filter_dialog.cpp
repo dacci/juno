@@ -3,6 +3,7 @@
 #include "ui/http_header_filter_dialog.h"
 
 #include <regex>
+#include <string>
 
 HttpHeaderFilterDialog::HttpHeaderFilterDialog(
     HttpProxyConfig::HeaderFilter* filter) : filter_(filter) {

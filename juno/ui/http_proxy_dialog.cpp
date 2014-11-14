@@ -2,6 +2,7 @@
 
 #include "ui/http_proxy_dialog.h"
 
+#include <string>
 #include <utility>
 
 #include "misc/string_util.h"

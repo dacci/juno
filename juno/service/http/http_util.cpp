@@ -4,6 +4,8 @@
 
 #include <stdlib.h>
 
+#include <string>
+
 namespace http_util {
 
 int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size) {

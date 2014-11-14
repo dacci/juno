@@ -5,6 +5,7 @@
 #include <assert.h>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "misc/registry_key-inl.h"

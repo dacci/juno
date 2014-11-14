@@ -2,6 +2,8 @@
 
 #include "ui/provider_dialog.h"
 
+#include <string>
+
 #include "app/service_manager.h"
 #include "misc/string_util.h"
 

@@ -2,6 +2,8 @@
 
 #include "ui/scissors_dialog.h"
 
+#include <string>
+
 #include "service/scissors/scissors_config.h"
 
 ScissorsDialog::ScissorsDialog(ServiceConfig* config)

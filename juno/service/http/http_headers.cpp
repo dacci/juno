@@ -7,6 +7,7 @@
 #include <picohttpparser/picohttpparser.h>
 
 #include <regex>
+#include <string>
 #include <utility>
 
 const std::string HttpHeaders::kNotFound;

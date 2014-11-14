@@ -5,6 +5,8 @@
 
 #include <madoka/concurrent/read_write_lock.h>
 
+#include <string>
+
 #include "misc/registry_key.h"
 #include "service/service_config.h"
 

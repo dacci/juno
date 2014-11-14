@@ -5,6 +5,8 @@
 
 #include "misc/registry_key.h"
 
+#include <string>
+
 inline bool RegistryKey::Create(HKEY parent, const std::string& name) {
   return Create(parent, name.c_str());
 }
