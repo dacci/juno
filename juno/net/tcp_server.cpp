@@ -74,8 +74,7 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
 
     auto peer = std::make_shared<SocketChannel>(
         SocketChannel::AsyncSocketPtr(client));
-    if (service_->OnAccepted(peer))
-      peer.reset();
+    service_->OnAccepted(peer);
   } else {
     service_->OnError(error);
     DeleteServer(server);
@@ -84,12 +83,11 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
 
 void TcpServer::DeleteServer(AsyncServerSocket* server) {
   ServerSocketPair* pair = new ServerSocketPair(this, server);
-  if (pair != nullptr &&
-      TrySubmitThreadpoolCallback(DeleteServerImpl, pair, nullptr))
-    return;
-
-  delete pair;
-  DeleteServerImpl(server);
+  if (pair == nullptr ||
+      !TrySubmitThreadpoolCallback(DeleteServerImpl, pair, nullptr)) {
+    delete pair;
+    DeleteServerImpl(server);
+  }
 }
 
 void CALLBACK TcpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,

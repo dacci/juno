@@ -13,7 +13,6 @@
 
 class Service {
  public:
-  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
   typedef std::shared_ptr<Channel> ChannelPtr;
 
   struct Datagram {
@@ -25,13 +24,12 @@ class Service {
     sockaddr* from;
   };
 
-  virtual ~Service() {
-  }
+  virtual ~Service() {}
 
   virtual bool UpdateConfig(const ServiceConfigPtr& config) = 0;
   virtual void Stop() = 0;
 
-  virtual bool OnAccepted(const ChannelPtr& client) = 0;
+  virtual void OnAccepted(const ChannelPtr& client) = 0;
   virtual bool OnReceivedFrom(Datagram* datagram) = 0;
   virtual void OnError(DWORD error) = 0;
 };

@@ -83,23 +83,19 @@ void Scissors::EndSessionImpl(Session* session) {
     empty_.WakeAll();
 }
 
-bool Scissors::OnAccepted(const ChannelPtr& client) {
+void Scissors::OnAccepted(const ChannelPtr& client) {
   madoka::concurrent::LockGuard lock(&critical_section_);
 
   if (stopped_)
-    return false;
+    return;
 
   std::unique_ptr<ScissorsTcpSession> session(
       new ScissorsTcpSession(this, client));
   if (session == nullptr)
-    return false;
+    return;
 
-  if (!session->Start())
-    return false;
-
-  sessions_.push_back(std::move(session));
-
-  return true;
+  if (session->Start())
+    sessions_.push_back(std::move(session));
 }
 
 bool Scissors::OnReceivedFrom(Datagram* datagram) {

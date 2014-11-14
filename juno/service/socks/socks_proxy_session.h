@@ -28,6 +28,8 @@ class SocksProxySession
                  int length) override;
 
  private:
+  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
+
   static const size_t kBufferSize = 1024;
 
   bool ConnectIPv4(const SOCKS5::ADDRESS& address);
@@ -38,7 +40,7 @@ class SocksProxySession
 
   SocksProxy* const proxy_;
   Service::ChannelPtr client_;
-  Service::AsyncSocketPtr remote_;
+  AsyncSocketPtr remote_;
   char request_buffer_[kBufferSize];
   char response_buffer_[kBufferSize];
 

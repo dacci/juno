@@ -150,21 +150,19 @@ void HttpProxy::EndSession(HttpProxySession* session) {
   }
 }
 
-bool HttpProxy::OnAccepted(const ChannelPtr& client) {
+void HttpProxy::OnAccepted(const ChannelPtr& client) {
   madoka::concurrent::WriteLock write_lock(&lock_);
   madoka::concurrent::LockGuard guard(&write_lock);
 
   if (stopped_)
-    return false;
+    return;
 
   std::unique_ptr<HttpProxySession> session(new HttpProxySession(this, client));
   if (session == nullptr)
-    return false;
+    return;
 
-  session->Start();
-  sessions_.push_back(std::move(session));
-
-  return true;
+  if (session->Start())
+    sessions_.push_back(std::move(session));
 }
 
 bool HttpProxy::OnReceivedFrom(Datagram* datagram) {

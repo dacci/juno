@@ -41,7 +41,7 @@ class HttpProxy : public Service {
 
   void EndSession(HttpProxySession* session);
 
-  bool OnAccepted(const ChannelPtr& client) override;
+  void OnAccepted(const ChannelPtr& client) override;
   bool OnReceivedFrom(Datagram* datagram) override;
   void OnError(DWORD error) override;
 

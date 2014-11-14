@@ -43,23 +43,19 @@ void SocksProxy::EndSession(SocksProxySession* session) {
   }
 }
 
-bool SocksProxy::OnAccepted(const ChannelPtr& client) {
+void SocksProxy::OnAccepted(const ChannelPtr& client) {
   madoka::concurrent::LockGuard lock(&critical_section_);
 
   if (stopped_)
-    return false;
+    return;
 
   std::unique_ptr<SocksProxySession> session(
       new SocksProxySession(this, client));
   if (session == nullptr)
-    return false;
+    return;
 
-  if (!session->Start())
-    return false;
-
-  sessions_.push_back(std::move(session));
-
-  return true;
+  if (session->Start())
+    sessions_.push_back(std::move(session));
 }
 
 bool SocksProxy::OnReceivedFrom(Datagram* datagram) {
