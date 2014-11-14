@@ -3,11 +3,20 @@
 #ifndef JUNO_APP_SERVER_CONFIG_H_
 #define JUNO_APP_SERVER_CONFIG_H_
 
+#include <stdint.h>
+
 #include <memory>
 #include <string>
+#include <vector>
 
 class ServerConfig {
  public:
+  enum Protocol {
+    TCP = 1,
+    UDP,
+    TLS,
+  };
+
   ServerConfig() : listen_(), type_(), enabled_(1) {
   }
 
@@ -26,6 +35,7 @@ class ServerConfig {
   int type_;
   std::string service_name_;
   int enabled_;
+  std::vector<uint8_t> cert_hash_;
 
  private:
   ServerConfig& operator=(const ServerConfig&);

@@ -5,8 +5,11 @@
 #include <assert.h>
 
 #include <memory>
+#include <vector>
 
 #include "misc/registry_key-inl.h"
+#include "misc/security/certificate_store.h"
+#include "net/secure_socket_channel.h"
 #include "net/tcp_server.h"
 #include "net/udp_server.h"
 #include "service/service.h"
@@ -26,6 +29,21 @@ const char kServiceValueName[] = "Service";
 const char kListenValueName[] = "Listen";
 const char kBindValueName[] = "Bind";
 const char kTypeValueName[] = "Type";
+const char kCertificateValueName[] = "Certificate";
+
+class SecureChannelFactory : public TcpServer::ChannelFactory {
+ public:
+  Service::ChannelPtr CreateChannel(
+      const std::shared_ptr<madoka::net::AsyncSocket>& socket) {
+    return std::make_shared<SecureSocketChannel>(&credential_, socket, true);
+  }
+
+  SchannelCredential credential_;
+};
+
+CertificateStore certificate_store(L"MY");
+std::vector<std::unique_ptr<SecureChannelFactory>> channel_factories;
+
 }  // namespace
 
 ServiceManager::ServiceManager() {
@@ -124,6 +142,8 @@ void ServiceManager::StopServers() {
   for (auto& pair : servers_)
     pair.second->Stop();
   servers_.clear();
+
+  channel_factories.clear();
 }
 
 ServiceProviderPtr ServiceManager::GetProvider(const std::string& name) const {
@@ -320,6 +340,12 @@ bool ServiceManager::LoadServer(const RegistryKey& parent,
   reg_key.QueryString(kServiceValueName, &config->service_name_);
   reg_key.QueryInteger(kEnabledValueName, &config->enabled_);
 
+  int length = 20;
+  config->cert_hash_.resize(length);
+  reg_key.QueryBinary(kCertificateValueName, config->cert_hash_.data(),
+                      &length);
+  config->cert_hash_.resize(length);
+
   server_configs_.insert(std::make_pair(key_name, config));
 
   return CreateServer(key_name);
@@ -336,6 +362,8 @@ bool ServiceManager::SaveServer(const RegistryKey& parent,
   key.SetInteger(kTypeValueName, config->type_);
   key.SetString(kServiceValueName, config->service_name_);
   key.SetInteger(kEnabledValueName, config->enabled_);
+  key.SetBinary(kCertificateValueName, config->cert_hash_.data(),
+                config->cert_hash_.size());
 
   return true;
 }
@@ -355,13 +383,51 @@ bool ServiceManager::CreateServer(const std::string& name) {
 
   ServerPtr server;
   switch (config->type_) {
-    case SOCK_STREAM:
+    case ServerConfig::TCP:
       server.reset(new TcpServer());
       break;
 
-    case SOCK_DGRAM:
+    case ServerConfig::UDP:
       server.reset(new UdpServer());
       break;
+
+    case ServerConfig::TLS: {
+      std::unique_ptr<SecureChannelFactory> factory(new SecureChannelFactory());
+      if (factory == nullptr)
+        break;
+
+      auto& credential = factory->credential_;
+      credential.SetEnabledProtocols(SP_PROT_SSL3TLS1_X_SERVERS);
+      credential.SetFlags(SCH_CRED_MANUAL_CRED_VALIDATION);
+
+      CRYPT_HASH_BLOB hash_blob = {
+        config->cert_hash_.size(),
+        config->cert_hash_.data()
+      };
+      PCCERT_CONTEXT cert = certificate_store.FindCertificate(
+          X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, 0, CERT_FIND_HASH,
+          &hash_blob, nullptr);
+      if (cert == nullptr)
+        break;
+
+      credential.AddCertificate(cert);
+      CertFreeCertificateContext(cert);
+      cert = nullptr;
+
+      if (FAILED(credential.AcquireHandle(SECPKG_CRED_INBOUND)))
+        break;
+
+      server.reset(new TcpServer());
+      if (server == nullptr)
+        break;
+
+      TcpServer* tcp_server = static_cast<TcpServer*>(server.get());
+      tcp_server->SetChannelFactory(factory.get());
+
+      channel_factories.push_back(std::move(factory));
+
+      break;
+    }
 
     default:
       return false;
