@@ -32,6 +32,7 @@ class ServerDialog
     DDX_CONTROL_HANDLE(IDC_LISTEN, listen_edit_)
     DDX_CONTROL_HANDLE(IDC_LISTEN_SPIN, listen_spin_)
     DDX_CONTROL_HANDLE(IDC_PROTOCOL, type_combo_)
+    DDX_CONTROL_HANDLE(ID_FILE_PAGE_SETUP, detail_button_)
     DDX_CONTROL_HANDLE(IDC_SERVICE, service_combo_)
     DDX_CONTROL_HANDLE(IDC_ENABLE, enable_check_)
   END_DDX_MAP()
@@ -39,6 +40,8 @@ class ServerDialog
   BEGIN_MSG_MAP(ServerDialog)
     MSG_WM_INITDIALOG(OnInitDialog)
 
+    COMMAND_HANDLER_EX(IDC_PROTOCOL, CBN_SELCHANGE, OnTypeChange)
+    COMMAND_ID_HANDLER_EX(ID_FILE_PAGE_SETUP, OnDetailSetting)
     COMMAND_ID_HANDLER_EX(IDOK, OnOk)
     COMMAND_ID_HANDLER_EX(IDCANCEL, OnCancel)
   END_MSG_MAP()
@@ -49,6 +52,8 @@ class ServerDialog
 
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
+  void OnTypeChange(UINT notify_code, int id, CWindow control);
+  void OnDetailSetting(UINT notify_code, int id, CWindow control);
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
 
@@ -61,6 +66,7 @@ class ServerDialog
   CEdit listen_edit_;
   CUpDownCtrl listen_spin_;
   CComboBox type_combo_;
+  CButton detail_button_;
   CComboBox service_combo_;
   CButton enable_check_;
 };

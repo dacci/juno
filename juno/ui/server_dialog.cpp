@@ -2,9 +2,12 @@
 
 #include "ui/server_dialog.h"
 
+#include <assert.h>
+
 #include <iphlpapi.h>
 
 #include "app/server_config.h"
+#include "misc/security/certificate_store.h"
 #include "misc/string_util.h"
 
 ServerDialog::ServerDialog(PreferenceDialog* parent, ServerConfig* entry)
@@ -69,16 +72,70 @@ BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
 
   type_combo_.AddString(_T("TCP"));
   type_combo_.AddString(_T("UDP"));
+  type_combo_.AddString(_T("SSL/TLS"));
+  detail_button_.EnableWindow(FALSE);
 
   FillServiceCombo();
 
   bind_combo_.SetWindowText(CString(entry_->bind_.c_str()));
   listen_spin_.SetRange32(0, 65535);
-  type_combo_.SetCurSel(entry_->type_ - SOCK_STREAM);
+  type_combo_.SetCurSel(entry_->type_ - 1);
+
+  switch (entry_->type_) {
+    case ServerConfig::TCP:
+    case ServerConfig::UDP:
+      detail_button_.EnableWindow(FALSE);
+      break;
+
+    case ServerConfig::TLS:
+      detail_button_.EnableWindow(TRUE);
+      break;
+  }
+
   service_combo_.SelectString(0, CString(entry_->service_name_.c_str()));
   enable_check_.SetCheck(entry_->enabled_);
 
   return TRUE;
+}
+
+void ServerDialog::OnTypeChange(UINT notify_code, int id, CWindow control) {
+  switch (type_combo_.GetCurSel() + 1) {
+    case ServerConfig::TCP:
+    case ServerConfig::UDP:
+      detail_button_.EnableWindow(FALSE);
+      break;
+
+    case ServerConfig::TLS:
+      detail_button_.EnableWindow();
+      break;
+  }
+}
+
+void ServerDialog::OnDetailSetting(UINT notify_code, int id, CWindow control) {
+  switch (type_combo_.GetCurSel() + 1) {
+    case ServerConfig::TLS: {
+      CertificateStore store(L"MY");
+      PCCERT_CONTEXT cert =
+          store.SelectCertificate(m_hWnd, nullptr, nullptr, 0);
+      if (cert == nullptr)
+        break;
+
+      DWORD length = 20;
+      entry_->cert_hash_.resize(length);
+      if (CertGetCertificateContextProperty(cert, CERT_HASH_PROP_ID,
+                                            entry_->cert_hash_.data(), &length))
+        entry_->cert_hash_.resize(length);
+      else
+        entry_->cert_hash_.clear();
+
+      CertFreeCertificateContext(cert);
+
+      break;
+    }
+
+    default:
+      assert(false);
+  }
 }
 
 void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
@@ -116,7 +173,7 @@ void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
   entry_->service_name_ = temp;
 
   entry_->listen_ = listen_;
-  entry_->type_ = type_combo_.GetCurSel() + SOCK_STREAM;
+  entry_->type_ = type_combo_.GetCurSel() + 1;
   entry_->enabled_ = enable_check_.GetCheck();
 
   EndDialog(IDOK);
