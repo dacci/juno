@@ -150,7 +150,7 @@ BOOL SecureSocketChannel::InitializeOutbound(void** /*context*/) {
 
 HRESULT SecureSocketChannel::EnsureNegotiated() {
   if (!InitOnceExecuteOnce(&init_once_, InitOnceCallback, this, nullptr))
-    return HRESULT_FROM_WIN32(GetLastError());
+    return last_error_;
 
   if (!context_.IsValid())
     return last_error_;
