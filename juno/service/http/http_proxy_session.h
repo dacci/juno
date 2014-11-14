@@ -23,7 +23,7 @@ class HttpProxySession
   HttpProxySession(HttpProxy* proxy, const Service::ChannelPtr& client);
   ~HttpProxySession();
 
-  void Start();
+  bool Start();
   void Stop();
 
  private:
@@ -78,9 +78,9 @@ class HttpProxySession
                  int length) override;
 
   bool OnRequestReceived(int length);
-  bool OnRequestSent(DWORD error, int length);
-  bool OnRequestBodyReceived(int length);
-  bool OnRequestBodySent(DWORD error, int length);
+  void OnRequestSent(DWORD error, int length);
+  void OnRequestBodyReceived(int length);
+  void OnRequestBodySent(DWORD error, int length);
 
   bool OnResponseReceived(DWORD error, int length);
   bool OnResponseSent(DWORD error, int length);
@@ -102,7 +102,7 @@ class HttpProxySession
 
   Service::ChannelPtr client_;
   State client_state_;
-  std::unique_ptr<char[]> client_buffer_;
+  char client_buffer_[kBufferSize];
   std::string request_buffer_;
   HttpRequest request_;
   int64_t request_length_;
@@ -115,7 +115,7 @@ class HttpProxySession
   Service::ChannelPtr remote_;
   bool remote_connected_;
   State remote_state_;
-  std::unique_ptr<char[]> remote_buffer_;
+  char remote_buffer_[kBufferSize];
   std::string response_buffer_;
   HttpResponse response_;
   int64_t response_length_;

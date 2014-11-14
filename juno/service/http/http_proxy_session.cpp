@@ -47,7 +47,6 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy,
       last_port_(-1),
       client_(client),
       client_state_(Idle),
-      client_buffer_(new char[kBufferSize]),
       request_length_(0),
       request_chunked_(false),
       request_chunk_size_(0),
@@ -57,7 +56,6 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy,
       remote_(new SocketChannel(remote_socket_)),
       remote_connected_(false),
       remote_state_(Idle),
-      remote_buffer_(new char[kBufferSize]),
       response_length_(0),
       response_chunked_(false),
       response_chunk_size_(0) {
@@ -75,8 +73,13 @@ HttpProxySession::~HttpProxySession() {
   }
 }
 
-void HttpProxySession::Start() {
+bool HttpProxySession::Start() {
+  if (remote_socket_ == nullptr || remote_ == nullptr)
+    return false;
+
   ClientReceiveAsync();
+
+  return true;
 }
 
 void HttpProxySession::Stop() {
@@ -109,7 +112,7 @@ void CALLBACK HttpProxySession::TimerCallback(PTP_CALLBACK_INSTANCE instance,
 
 void HttpProxySession::ClientReceiveAsync() {
   ::SetThreadpoolTimer(timer_, &kTimerDueTime, 0, 0);
-  client_->ReadAsync(client_buffer_.get(), kBufferSize, this);
+  client_->ReadAsync(client_buffer_, kBufferSize, this);
 }
 
 bool HttpProxySession::FireEvent(Event event, Channel* channel, DWORD error,
@@ -247,7 +250,7 @@ bool HttpProxySession::ProcessResponseChunk() {
                                              &response_chunk_size_);
 
     if (response_length_ == -2) {
-      remote_->ReadAsync(remote_buffer_.get(), kBufferSize, this);
+      remote_->ReadAsync(remote_buffer_, kBufferSize, this);
       return true;
     } else if (response_length_ > 0) {
       if (proxy_retry_ != 1) {
@@ -268,21 +271,21 @@ bool HttpProxySession::ProcessResponseChunk() {
 void HttpProxySession::SendRequest() {
   std::string message;
   request_.Serialize(&message);
-  ::memmove(remote_buffer_.get(), message.data(), message.size());
+  ::memmove(remote_buffer_, message.data(), message.size());
 
   client_state_ = Header;
 
-  remote_->WriteAsync(remote_buffer_.get(), message.size(), this);
+  remote_->WriteAsync(remote_buffer_, message.size(), this);
 }
 
 void HttpProxySession::SendResponse() {
   std::string message;
   response_.Serialize(&message);
-  ::memmove(client_buffer_.get(), message.data(), message.size());
+  ::memmove(client_buffer_, message.data(), message.size());
 
   remote_state_ = Header;
 
-  client_->WriteAsync(client_buffer_.get(), message.size(), this);
+  client_->WriteAsync(client_buffer_, message.size(), this);
 }
 
 void HttpProxySession::SendError(HTTP::StatusCode status) {
@@ -350,17 +353,16 @@ bool HttpProxySession::EndResponse() {
     return true;
   } else if (request_buffer_.size() <= kBufferSize) {
     size_t size = request_buffer_.size();
-    ::memmove(client_buffer_.get(), request_buffer_.data(), size);
+    ::memmove(client_buffer_, request_buffer_.data(), size);
     request_buffer_.erase();
 
-    return FireEvent(Received, client_.get(), 0, client_buffer_.get(), size);
+    return FireEvent(Received, client_.get(), 0, client_buffer_, size);
   }
 
   return false;
 }
 
-void HttpProxySession::OnConnected(madoka::net::AsyncSocket* socket,
-                                   DWORD error) {
+void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
   madoka::concurrent::LockGuard guard(&lock_);
 
   remote_state_ = Idle;
@@ -426,8 +428,7 @@ void HttpProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
           break;
 
         case Body:
-          if (!OnRequestBodyReceived(length))
-            error = __LINE__;
+          OnRequestBodyReceived(length);
           break;
 
         default:
@@ -442,7 +443,7 @@ void HttpProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
     }
   } else if (channel == remote_.get()) {
     if (buffer == nullptr && length == 0) {
-      remote_->ReadAsync(remote_buffer_.get(), kBufferSize, this);
+      remote_->ReadAsync(remote_buffer_, kBufferSize, this);
       return;
     }
 
@@ -491,13 +492,11 @@ void HttpProxySession::OnWritten(Channel* channel, DWORD error, void* buffer,
     if (error == 0) {
       switch (client_state_) {
         case Header:
-          if (!OnRequestSent(error, length))
-            error = __LINE__;
+          OnRequestSent(error, length);
           break;
 
         case Body:
-          if (!OnRequestBodySent(error, length))
-            error = __LINE__;
+          OnRequestBodySent(error, length);
           break;
 
         default:
@@ -535,7 +534,7 @@ void HttpProxySession::OnWritten(Channel* channel, DWORD error, void* buffer,
 // TODO(dacci): consider return value
 bool HttpProxySession::OnRequestReceived(int length) {
   client_state_ = Header;
-  request_buffer_.append(client_buffer_.get(), length);
+  request_buffer_.append(client_buffer_, length);
 
   int result = request_.Parse(request_buffer_);
   if (result > 0) {
@@ -613,6 +612,7 @@ bool HttpProxySession::OnRequestReceived(int length) {
 
   lock_.Unlock();
   remote_->Close();
+  remote_socket_->Close();
   lock_.Lock();
 
   remote_state_ = Connecting;
@@ -621,79 +621,63 @@ bool HttpProxySession::OnRequestReceived(int length) {
   return true;
 }
 
-// TODO(dacci): consider return value
-bool HttpProxySession::OnRequestSent(DWORD error, int length) {
+void HttpProxySession::OnRequestSent(DWORD error, int length) {
   client_state_ = Body;
 
   if (tunnel_) {
     client_state_ = Idle;
     Release();
-    return true;
   } else if (request_chunked_) {
     ProcessRequestChunk();
-    return true;
   } else if (request_length_ > 0) {
     if (request_buffer_.empty()) {
       ClientReceiveAsync();
-      return true;
     } else {
       size_t size = min(request_buffer_.size(), request_length_);
-      ::memmove(client_buffer_.get(), request_buffer_.data(), size);
+      ::memmove(client_buffer_, request_buffer_.data(), size);
       request_buffer_.erase(0, size);
 
-      remote_->WriteAsync(client_buffer_.get(), size, this);
-      return true;
+      remote_->WriteAsync(client_buffer_, size, this);
     }
   } else {
     EndRequest();
-    return true;
   }
 }
 
-// TODO(dacci): consider return value
-bool HttpProxySession::OnRequestBodyReceived(int length) {
+void HttpProxySession::OnRequestBodyReceived(int length) {
   if (request_chunked_) {
-    request_buffer_.append(client_buffer_.get(), length);
+    request_buffer_.append(client_buffer_, length);
     ProcessRequestChunk();
-    return true;
   } else {
-    remote_->WriteAsync(client_buffer_.get(), length, this);
-    return true;
+    remote_->WriteAsync(client_buffer_, length, this);
   }
 }
 
-// TODO(dacci): consider return value
-bool HttpProxySession::OnRequestBodySent(DWORD error, int length) {
+void HttpProxySession::OnRequestBodySent(DWORD error, int length) {
   if (request_chunked_) {
     request_buffer_.erase(0, length);
 
-    if (request_chunk_size_ == 0) {
+    if (request_chunk_size_ == 0)
       EndRequest();
-      return true;
-    } else {
+    else
       ProcessRequestChunk();
-      return true;
-    }
   } else if (request_length_ > length) {
     request_length_ -= length;
-
     ClientReceiveAsync();
-    return true;
   } else {
     EndRequest();
-    return true;
   }
 }
 
 bool HttpProxySession::OnResponseReceived(DWORD error, int length) {
   remote_state_ = Header;
-  response_buffer_.append(remote_buffer_.get(), length);
+  response_buffer_.append(remote_buffer_, length);
 
   int result = response_.Parse(response_buffer_);
   if (result > 0) {
     response_buffer_.erase(0, result);
   } else if (result == HttpResponse::kPartial) {
-    remote_->ReadAsync(remote_buffer_.get(), kBufferSize, this);
+    remote_->ReadAsync(remote_buffer_, kBufferSize, this);
     return true;
   } else if (result == HttpResponse::kError) {
     return false;
@@ -717,11 +701,11 @@ bool HttpProxySession::OnResponseReceived(DWORD error, int length) {
 
     if (response_chunked_ || response_length_ > 0) {
       if (response_buffer_.empty()) {
-        remote_->ReadAsync(remote_buffer_.get(), kBufferSize, this);
+        remote_->ReadAsync(remote_buffer_, kBufferSize, this);
         return true;
       } else {
         int length = response_buffer_.size();
-        ::memmove(remote_buffer_.get(), response_buffer_.data(), length);
+        ::memmove(remote_buffer_, response_buffer_.data(), length);
         response_buffer_.clear();
         return OnResponseBodyReceived(0, length);
       }
@@ -765,17 +749,17 @@ bool HttpProxySession::OnResponseSent(DWORD error, int length) {
     return ProcessResponseChunk();
   } else if (response_length_ > 0 || response_length_ == -2) {
     if (response_buffer_.empty()) {
-      remote_->ReadAsync(remote_buffer_.get(), kBufferSize, this);
+      remote_->ReadAsync(remote_buffer_, kBufferSize, this);
       return true;
     } else {
       size_t size = response_buffer_.size();
       if (response_length_ != -2 && size > response_length_)
         size = response_length_;
 
-      ::memmove(remote_buffer_.get(), response_buffer_.data(), size);
+      ::memmove(remote_buffer_, response_buffer_.data(), size);
       response_buffer_.erase(0, size);
 
-      client_->WriteAsync(remote_buffer_.get(), size, this);
+      client_->WriteAsync(remote_buffer_, size, this);
       return true;
     }
   } else {
@@ -785,14 +769,14 @@ bool HttpProxySession::OnResponseSent(DWORD error, int length) {
 
 bool HttpProxySession::OnResponseBodyReceived(DWORD error, int length) {
   if (response_chunked_) {
-    response_buffer_.append(remote_buffer_.get(), length);
+    response_buffer_.append(remote_buffer_, length);
 
     return ProcessResponseChunk();
   } else {
     if (proxy_retry_ == 1) {
       return OnResponseBodySent(error, length);
     } else {
-      client_->WriteAsync(remote_buffer_.get(), length, this);
+      client_->WriteAsync(remote_buffer_, length, this);
       return true;
     }
   }
@@ -810,7 +794,7 @@ bool HttpProxySession::OnResponseBodySent(DWORD error, int length) {
     if (response_length_ > length)
       response_length_ -= length;
 
-    remote_->ReadAsync(remote_buffer_.get(), kBufferSize, this);
+    remote_->ReadAsync(remote_buffer_, kBufferSize, this);
     return true;
   } else {
     return EndResponse();
