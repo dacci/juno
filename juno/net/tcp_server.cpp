@@ -10,7 +10,22 @@
 using ::madoka::net::AsyncServerSocket;
 using ::madoka::net::AsyncSocket;
 
-TcpServer::TcpServer() : service_() {
+namespace {
+
+class SocketChannelFactory : public TcpServer::ChannelFactory {
+ public:
+  Service::ChannelPtr CreateChannel(
+      const std::shared_ptr<madoka::net::AsyncSocket>& socket) override {
+    return std::make_shared<SocketChannel>(socket);
+  }
+};
+
+SocketChannelFactory socket_channel_factory;
+
+}  // namespace
+
+TcpServer::TcpServer()
+    : channel_factory_(&socket_channel_factory), service_() {
 }
 
 TcpServer::~TcpServer() {
@@ -67,14 +82,20 @@ void TcpServer::Stop() {
     empty_.Sleep(&lock_);
 }
 
+void TcpServer::SetChannelFactory(ChannelFactory* channel_factory) {
+  if (channel_factory == nullptr)
+    channel_factory_ = &socket_channel_factory;
+  else
+    channel_factory_ = channel_factory;
+}
+
 void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
                            DWORD error) {
+  std::shared_ptr<AsyncSocket> peer(client);
+
   if (error == 0) {
     server->AcceptAsync(this);
-
-    auto peer = std::make_shared<SocketChannel>(
-        SocketChannel::AsyncSocketPtr(client));
-    service_->OnAccepted(peer);
+    service_->OnAccepted(channel_factory_->CreateChannel(peer));
   } else {
     service_->OnError(error);
     DeleteServer(server);
