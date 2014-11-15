@@ -44,17 +44,17 @@ bool TcpServer::Setup(const char* address, int port) {
   if (!resolver_.Resolve(address, port))
     return false;
 
-  bool succeeded = true;
+  bool succeeded = false;
 
   for (const auto& end_point : resolver_) {
     auto server = std::unique_ptr<AsyncServerSocket>(new AsyncServerSocket());
     if (server == nullptr)
       break;
 
-    if (server->Bind(end_point) && server->Listen(SOMAXCONN))
+    if (server->Bind(end_point) && server->Listen(SOMAXCONN)) {
       servers_.push_back(std::move(server));
-    else
-      succeeded = false;
+      succeeded = true;
+    }
   }
 
   return succeeded;

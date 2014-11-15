@@ -31,7 +31,7 @@ bool UdpServer::Setup(const char* address, int port) {
   if (!resolver_.Resolve(address, port))
     return false;
 
-  bool succeeded = true;
+  bool succeeded = false;
 
   for (const auto& end_point : resolver_) {
     std::unique_ptr<char[]> buffer(new char[kBufferSize]);
@@ -44,10 +44,8 @@ bool UdpServer::Setup(const char* address, int port) {
 
     if (server->Bind(end_point)) {
       succeeded = true;
-      servers_.push_back(std::move(server));
       buffers_.insert(std::make_pair(server.get(), std::move(buffer)));
-    } else {
-      succeeded = false;
+      servers_.push_back(std::move(server));
     }
   }
 
@@ -55,10 +53,10 @@ bool UdpServer::Setup(const char* address, int port) {
 }
 
 bool UdpServer::Start() {
-  madoka::concurrent::LockGuard guard(&lock_);
-
   if (service_ == nullptr || servers_.empty())
     return false;
+
+  madoka::concurrent::LockGuard guard(&lock_);
 
   for (auto& server : servers_)
     server->ReceiveFromAsync(buffers_.at(server.get()).get(), kBufferSize, 0,
