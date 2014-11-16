@@ -3,14 +3,20 @@
 #include "service/scissors/scissors.h"
 
 #include <madoka/concurrent/lock_guard.h>
+#include <madoka/net/async_datagram_socket.h>
+#include <madoka/net/resolver.h>
 
 #include "misc/registry_key.h"
 #include "misc/security/schannel_credential.h"
+#include "net/datagram_channel.h"
+#include "net/tunneling_service.h"
 #include "service/scissors/scissors_config.h"
 #include "service/scissors/scissors_tcp_session.h"
 #include "service/scissors/scissors_udp_session.h"
 
-using madoka::net::AsyncSocket;
+using ::madoka::net::AsyncDatagramSocket;
+using ::madoka::net::AsyncSocket;
+using ::madoka::net::Resolver;
 
 Scissors::Scissors(const std::shared_ptr<ServiceConfig>& config)
     : config_(std::static_pointer_cast<ScissorsConfig>(config)),
@@ -89,19 +95,52 @@ void Scissors::OnAccepted(const ChannelPtr& client) {
   if (stopped_)
     return;
 
-  std::unique_ptr<ScissorsTcpSession> session(
-      new ScissorsTcpSession(this, client));
-  if (session == nullptr)
-    return;
+  if (config_->remote_udp()) {
+    Resolver resolver;
+    resolver.SetType(SOCK_DGRAM);
+    if (!resolver.Resolve(config_->remote_address().c_str(),
+                          config_->remote_port()))
+      return;
 
-  if (session->Start())
-    sessions_.push_back(std::move(session));
+    auto socket = std::make_shared<AsyncDatagramSocket>();
+    if (socket == nullptr)
+      return;
+
+    for (const addrinfo* end_point : resolver) {
+      if (socket->Connect(end_point))
+        break;
+
+      socket->Close();
+    }
+    if (!socket->connected())
+      return;
+
+    auto remote = std::make_shared<DatagramChannel>(socket);
+    if (remote == nullptr)
+      return;
+
+    if (!TunnelingService::Bind(client, remote)) {
+      client->Close();
+      remote->Close();
+    }
+  } else {
+    std::unique_ptr<ScissorsTcpSession> session(
+        new ScissorsTcpSession(this, client));
+    if (session == nullptr)
+      return;
+
+    if (session->Start())
+      sessions_.push_back(std::move(session));
+  }
 }
 
 bool Scissors::OnReceivedFrom(Datagram* datagram) {
   madoka::concurrent::LockGuard lock(&critical_section_);
 
   if (stopped_)
+    return false;
+
+  if (!config_->remote_udp())
     return false;
 
   std::unique_ptr<ScissorsUdpSession> session(
