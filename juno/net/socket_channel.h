@@ -3,7 +3,6 @@
 #ifndef JUNO_NET_SOCKET_CHANNEL_H_
 #define JUNO_NET_SOCKET_CHANNEL_H_
 
-#include <madoka/net/async_socket.h>
 #include <madoka/net/socket_event_listener.h>
 
 #include <memory>
@@ -22,16 +21,17 @@ class SocketChannel : public Channel {
   void WriteAsync(const void* buffer, int length, Listener* listener) override;
 
  private:
-  class EventArgs : public madoka::net::SocketEventAdapter {
+  class Request : public madoka::net::SocketEventAdapter {
    public:
+    Request(SocketChannel* channel, Listener* listener);
+
     void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
                     int length) override;
     void OnSent(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
                 int length) override;
 
-    SocketChannel* channel;
-    Listener* listener;
-    void* extra;
+    SocketChannel* const channel_;
+    Listener* const listener_;
   };
 
   AsyncSocketPtr socket_;

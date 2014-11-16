@@ -58,11 +58,14 @@ void SecureSocketChannel::Close() {
 
 void SecureSocketChannel::ReadAsync(void* buffer, int length,
                                     Listener* listener) {
-  if (buffer == nullptr && length != 0 || length < 0) {
+  if (listener == nullptr) {
+    listener->OnRead(this, E_POINTER, buffer, 0);
+    return;
+  } else if (buffer == nullptr && length != 0 || length < 0) {
     listener->OnRead(this, E_INVALIDARG, buffer, 0);
     return;
-  } else if (listener == nullptr) {
-    listener->OnRead(this, E_POINTER, buffer, 0);
+  } else if (socket_ == nullptr) {
+    listener->OnRead(this, E_HANDLE, buffer, 0);
     return;
   }
 
@@ -95,13 +98,13 @@ void SecureSocketChannel::ReadAsync(void* buffer, int length,
 
 void SecureSocketChannel::WriteAsync(const void* buffer, int length,
                                      Listener* listener) {
-  if (buffer == nullptr && length != 0 || length < 0) {
-    listener->OnWritten(this, E_INVALIDARG, const_cast<void*>(buffer), 0);
-    return;
-  } else if (listener == nullptr) {
+  if (listener == nullptr) {
     listener->OnWritten(this, E_POINTER, const_cast<void*>(buffer), 0);
     return;
-  } else if (closed_) {
+  } else if (buffer == nullptr && length != 0 || length < 0) {
+    listener->OnWritten(this, E_INVALIDARG, const_cast<void*>(buffer), 0);
+    return;
+  } else if (socket_ == nullptr || !socket_->IsValid() || closed_) {
     listener->OnWritten(this, E_HANDLE, const_cast<void*>(buffer), 0);
     return;
   }
