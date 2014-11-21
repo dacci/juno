@@ -94,7 +94,7 @@ void HttpProxySession::Stop() {
     if (remote_socket_->connected())
       remote_->Close();
     else if (remote_state_ == Connecting)
-      remote_socket_->CancelAsyncConnect();
+      remote_socket_->Close();
   }
 
   if (client_ != nullptr)

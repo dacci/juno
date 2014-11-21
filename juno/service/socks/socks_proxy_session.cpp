@@ -76,7 +76,7 @@ void SocksProxySession::Stop() {
     if (remote_->connected())
       remote_->Shutdown(SD_BOTH);
     else
-      remote_->CancelAsyncConnect();
+      remote_->Close();
   }
 }
 

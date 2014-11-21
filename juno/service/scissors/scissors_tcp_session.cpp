@@ -38,9 +38,9 @@ void ScissorsTcpSession::Stop() {
 
   if (remote_ != nullptr) {
     if (remote_->connected())
-      remote_->Close();
+      remote_->Shutdown(SD_BOTH);
     else
-      remote_->CancelAsyncConnect();
+      remote_->Close();
   }
 }
 
