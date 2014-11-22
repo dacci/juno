@@ -48,7 +48,6 @@ FILETIME HttpProxySession::kTimerDueTime = {
 HttpProxySession::HttpProxySession(HttpProxy* proxy,
                                    const Service::ChannelPtr& client)
     : proxy_(proxy),
-      ref_count_(1),
       close_client_(false),
       send_error_(false),
       last_port_(-1),
@@ -71,6 +70,8 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy,
 
 HttpProxySession::~HttpProxySession() {
   Stop();
+
+  madoka::concurrent::LockGuard guard(&lock_);
 
   if (timer_ != nullptr) {
     ::SetThreadpoolTimer(timer_, nullptr, 0, 0);
@@ -99,17 +100,8 @@ void HttpProxySession::Stop() {
 
   if (client_ != nullptr)
     client_->Close();
-}
 
-LONG HttpProxySession::AddRef() {
-  return ::InterlockedIncrement(&ref_count_);
-}
-
-void HttpProxySession::Release() {
-  LONG remaining = ::InterlockedDecrement(&ref_count_);
-  assert(remaining >= 0);
-  if (remaining <= 0)
-    proxy_->EndSession(this);
+  madoka::concurrent::LockGuard guard(&lock_);
 }
 
 void CALLBACK HttpProxySession::TimerCallback(PTP_CALLBACK_INSTANCE instance,
@@ -301,6 +293,8 @@ void HttpProxySession::SendError(HTTP::StatusCode status) {
     remote_->Close();
   }
 
+  tunnel_ = false;
+
   response_.Clear();
   response_.set_minor_version(1);
   response_.SetStatus(status);
@@ -308,10 +302,10 @@ void HttpProxySession::SendError(HTTP::StatusCode status) {
 
   request_length_ = 0;
 
-  if (client_state_ == Idle)
-    SendResponse();
-  else
+  if (client_state_ != Idle)
     EndRequest();
+
+  SendResponse();
 }
 
 void HttpProxySession::EndRequest() {
@@ -331,8 +325,7 @@ void HttpProxySession::EndRequest() {
 
 bool HttpProxySession::EndResponse() {
   if (close_client_ && proxy_retry_ != 1) {
-    client_->Close();
-    Release();
+    proxy_->EndSession(this);
     return true;
   }
 
@@ -344,9 +337,6 @@ bool HttpProxySession::EndResponse() {
   remote_->ReadAsync(nullptr, 0, this);
 
   if (proxy_retry_ == 1) {
-    if (tunnel_)
-      AddRef();
-
     SendRequest();
     return true;
   }
@@ -401,7 +391,6 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 
   if (!remote_connected_) {
     remote_->ReadAsync(nullptr, 0, this);
-    AddRef();
     remote_connected_ = true;
   }
 
@@ -430,8 +419,7 @@ void HttpProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
       switch (client_state_) {
         case Idle:
         case Header:
-          if (!OnRequestReceived(length))
-            error = __LINE__;
+          OnRequestReceived(length);
           break;
 
         case Body:
@@ -441,12 +429,8 @@ void HttpProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
         default:
           ASSERT_FALSE;
       }
-    }
-
-    if (error != 0) {
-      remote_->Close();
-
-      Release();
+    } else {
+      proxy_->EndSession(this);
     }
   } else if (channel == remote_.get()) {
     if (buffer == nullptr && length == 0) {
@@ -479,8 +463,6 @@ void HttpProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
         send_error_ = false;
       else if (client_state_ == Idle)
         client_->Close();
-
-      Release();
     }
   }
 }
@@ -509,9 +491,7 @@ void HttpProxySession::OnWritten(Channel* channel, DWORD error, void* buffer,
         default:
           ASSERT_FALSE;
       }
-    }
-
-    if (error != 0) {
+    } else {
       remote_connected_ = false;
       SendError(HTTP::BAD_GATEWAY);
     }
@@ -534,12 +514,11 @@ void HttpProxySession::OnWritten(Channel* channel, DWORD error, void* buffer,
     }
 
     if (error != 0)
-      Release();
+      proxy_->EndSession(this);
   }
 }
 
-// TODO(dacci): consider return value
-bool HttpProxySession::OnRequestReceived(int length) {
+void HttpProxySession::OnRequestReceived(int length) {
   client_state_ = Header;
   request_buffer_.append(client_buffer_, length);
 
@@ -548,10 +527,11 @@ bool HttpProxySession::OnRequestReceived(int length) {
     request_buffer_.erase(0, result);
   } else if (result == HttpRequest::kPartial) {
     ClientReceiveAsync();
-    return true;
+    return;
   } else if (result == HttpRequest::kError) {
+    request_buffer_.clear();
     SendError(HTTP::BAD_REQUEST);
-    return true;
+    return;
   } else {
     ASSERT_FALSE;
   }
@@ -563,7 +543,7 @@ bool HttpProxySession::OnRequestReceived(int length) {
     expect_continue_ = request_.GetHeader(kExpect).compare("100-continue") == 0;
     if (!expect_continue_) {
       SendError(HTTP::EXPECTATION_FAILED);
-      return true;
+      return;
     }
   }
 
@@ -574,19 +554,19 @@ bool HttpProxySession::OnRequestReceived(int length) {
     url = GURL("http://" + request_.path());
     if (url.EffectiveIntPort() == url::PORT_UNSPECIFIED) {
       SendError(HTTP::BAD_REQUEST);
-      return true;
+      return;
     }
   } else {
     url = GURL(request_.path());
     if (!url.is_valid()) {
       SendError(HTTP::BAD_REQUEST);
-      return true;
+      return;
     }
 
     // I can handle only HTTP, for now.
     if (!proxy_->use_remote_proxy() && !url.SchemeIs("http")) {
       SendError(HTTP::NOT_IMPLEMENTED);
-      return true;
+      return;
     }
 
     if (!proxy_->use_remote_proxy())
@@ -606,26 +586,23 @@ bool HttpProxySession::OnRequestReceived(int length) {
   if (remote_socket_->connected() &&
       last_host_ == new_host && last_port_ == new_port) {
     SendRequest();
-    return true;
+    return;
   }
 
   last_host_ = std::move(new_host);
   last_port_ = new_port;
 
   if (!resolver_.Resolve(last_host_.c_str(), new_port)) {
-    SendError(HTTP::BAD_REQUEST);
-    return true;
+    SendError(HTTP::BAD_GATEWAY);
+    return;
   }
 
   lock_.Unlock();
-  remote_->Close();
   remote_socket_->Close();
   lock_.Lock();
 
   remote_state_ = Connecting;
   remote_socket_->ConnectAsync(*resolver_.begin(), this);
-
-  return true;
 }
 
 void HttpProxySession::OnRequestSent(DWORD error, int length) {
@@ -633,7 +610,6 @@ void HttpProxySession::OnRequestSent(DWORD error, int length) {
 
   if (tunnel_) {
     client_state_ = Idle;
-    Release();
   } else if (request_chunked_) {
     ProcessRequestChunk();
   } else if (request_length_ > 0) {
@@ -688,6 +664,7 @@ bool HttpProxySession::OnResponseReceived(DWORD error, int length) {
     remote_->ReadAsync(remote_buffer_, kBufferSize, this);
     return true;
   } else if (result == HttpResponse::kError) {
+    response_buffer_.clear();
     return false;
   } else {
     ASSERT_FALSE;
@@ -718,7 +695,6 @@ bool HttpProxySession::OnResponseReceived(DWORD error, int length) {
         return OnResponseBodyReceived(0, length);
       }
     } else {
-      AddRef();
       return EndResponse();
     }
   }
@@ -732,13 +708,11 @@ bool HttpProxySession::OnResponseReceived(DWORD error, int length) {
         remote_socket_.reset();
       } else {
         EndRequest();
-        AddRef();
         SendError(HTTP::INTERNAL_SERVER_ERROR);
         return true;
       }
     } else {
       EndRequest();
-      AddRef();
     }
   }
 
@@ -751,7 +725,7 @@ bool HttpProxySession::OnResponseSent(DWORD error, int length) {
 
   if (tunnel_) {
     client_.reset();
-    Release();
+    proxy_->EndSession(this);
     return true;
   } else if (response_chunked_) {
     return ProcessResponseChunk();

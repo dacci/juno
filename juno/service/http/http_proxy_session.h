@@ -47,9 +47,6 @@ class HttpProxySession
   static const size_t kBufferSize = 8 * 1024;   // 8 KiB
   static const int kTimeout = 15 * 1000;        // 15 sec
 
-  LONG AddRef();
-  void Release();
-
   static void CALLBACK TimerCallback(PTP_CALLBACK_INSTANCE instance,
                                      void* context, PTP_TIMER timer);
   void ClientReceiveAsync();
@@ -77,7 +74,7 @@ class HttpProxySession
   void OnWritten(Channel* channel, DWORD error, void* buffer,
                  int length) override;
 
-  bool OnRequestReceived(int length);
+  void OnRequestReceived(int length);
   void OnRequestSent(DWORD error, int length);
   void OnRequestBodyReceived(int length);
   void OnRequestBodySent(DWORD error, int length);
@@ -90,7 +87,6 @@ class HttpProxySession
   static FILETIME kTimerDueTime;
 
   HttpProxy* const proxy_;
-  LONG ref_count_;
   madoka::concurrent::CriticalSection lock_;
   PTP_TIMER timer_;
   madoka::net::Resolver resolver_;
