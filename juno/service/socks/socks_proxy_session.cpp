@@ -187,8 +187,10 @@ void SocksProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
           if (resolver == nullptr)
             break;
 
-          if (!resolver->Resolve(host, ::htons(request->port)))
+          if (!resolver->Resolve(host, ::htons(request->port))) {
+            delete resolver;
             break;
+          }
 
           end_point_ = resolver;
 
