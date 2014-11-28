@@ -47,6 +47,10 @@ SecureSocketChannel::SecureSocketChannel(SchannelCredential* credential,
 SecureSocketChannel::~SecureSocketChannel() {
   Close();
   socket_->Close();
+
+  madoka::concurrent::LockGuard guard(&lock_);
+  while (!requests_.empty())
+    empty_.Sleep(&lock_);
 }
 
 void SecureSocketChannel::Close() {
@@ -64,7 +68,7 @@ void SecureSocketChannel::ReadAsync(void* buffer, int length,
   } else if (buffer == nullptr && length != 0 || length < 0) {
     listener->OnRead(this, E_INVALIDARG, buffer, 0);
     return;
-  } else if (socket_ == nullptr) {
+  } else if (socket_ == nullptr || !socket_->IsValid() || closed_) {
     listener->OnRead(this, E_HANDLE, buffer, 0);
     return;
   }
@@ -123,7 +127,21 @@ void CALLBACK SecureSocketChannel::BeginRequest(PTP_CALLBACK_INSTANCE instance,
                                                 void* param) {
   Request* request = static_cast<Request*>(param);
   request->Run();
-  delete request;
+  request->channel_->EndRequest(request);
+}
+
+void SecureSocketChannel::EndRequest(Request* request) {
+  madoka::concurrent::LockGuard guard(&lock_);
+
+  for (auto i = requests_.begin(), l = requests_.end(); i != l; ++i) {
+    if (i->get() == request) {
+      requests_.erase(i);
+      break;
+    }
+  }
+
+  if (requests_.empty())
+    empty_.WakeAll();
 }
 
 BOOL CALLBACK SecureSocketChannel::InitOnceCallback(PINIT_ONCE init_once,

@@ -3,11 +3,13 @@
 #ifndef JUNO_NET_SECURE_SOCKET_CHANNEL_H_
 #define JUNO_NET_SECURE_SOCKET_CHANNEL_H_
 
+#include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
 #include <madoka/net/socket.h>
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "misc/security/schannel_context.h"
 #include "net/channel.h"
@@ -29,8 +31,6 @@ class SecureSocketChannel : public Channel {
   }
 
  private:
-  friend class Request;
-
   class Request {
    public:
     Request(SecureSocketChannel* channel, void* buffer, int length,
@@ -73,6 +73,8 @@ class SecureSocketChannel : public Channel {
 
   static void CALLBACK BeginRequest(PTP_CALLBACK_INSTANCE instance,
                                     void* param);
+  void EndRequest(Request* request);
+
   static BOOL CALLBACK InitOnceCallback(PINIT_ONCE init_once, void* parameter,
                                         void** context);
   BOOL InitializeInbound(void** context);
@@ -86,9 +88,13 @@ class SecureSocketChannel : public Channel {
   SocketPtr socket_;
   const bool inbound_;
   bool closed_;
+
+  std::vector<std::unique_ptr<Request>> requests_;
+  madoka::concurrent::CriticalSection lock_;
+  madoka::concurrent::ConditionVariable empty_;
+
   INIT_ONCE init_once_;
   SecPkgContext_StreamSizes sizes_;
-  madoka::concurrent::CriticalSection lock_;
   HRESULT last_error_;
   std::string message_;
   std::string decrypted_;

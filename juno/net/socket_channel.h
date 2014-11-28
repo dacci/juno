@@ -3,9 +3,12 @@
 #ifndef JUNO_NET_SOCKET_CHANNEL_H_
 #define JUNO_NET_SOCKET_CHANNEL_H_
 
+#include <madoka/concurrent/condition_variable.h>
+#include <madoka/concurrent/critical_section.h>
 #include <madoka/net/socket_event_listener.h>
 
 #include <memory>
+#include <vector>
 
 #include "net/channel.h"
 
@@ -34,7 +37,13 @@ class SocketChannel : public Channel {
     Listener* const listener_;
   };
 
+  void EndRequest(Request* request);
+
   AsyncSocketPtr socket_;
+  bool closed_;
+  std::vector<std::unique_ptr<Request>> requests_;
+  madoka::concurrent::CriticalSection lock_;
+  madoka::concurrent::ConditionVariable empty_;
 };
 
 #endif  // JUNO_NET_SOCKET_CHANNEL_H_
