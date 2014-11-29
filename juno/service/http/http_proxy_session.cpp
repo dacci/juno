@@ -59,7 +59,6 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy,
       proxy_retry_(0),
       expect_continue_(false),
       remote_socket_(new AsyncSocket()),
-      remote_(new SocketChannel(remote_socket_)),
       remote_connected_(false),
       remote_state_(Idle),
       response_length_(0),
@@ -71,9 +70,9 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy,
 HttpProxySession::~HttpProxySession() {
   Stop();
 
-  madoka::concurrent::LockGuard guard(&lock_);
-
   if (timer_ != nullptr) {
+    madoka::concurrent::LockGuard guard(&lock_);
+
     ::SetThreadpoolTimer(timer_, nullptr, 0, 0);
     ::WaitForThreadpoolTimerCallbacks(timer_, TRUE);
     ::CloseThreadpoolTimer(timer_);
@@ -82,7 +81,7 @@ HttpProxySession::~HttpProxySession() {
 }
 
 bool HttpProxySession::Start() {
-  if (remote_socket_ == nullptr || remote_ == nullptr)
+  if (remote_socket_ == nullptr)
     return false;
 
   ClientReceiveAsync();
@@ -100,8 +99,6 @@ void HttpProxySession::Stop() {
 
   if (client_ != nullptr)
     client_->Close();
-
-  madoka::concurrent::LockGuard guard(&lock_);
 }
 
 void CALLBACK HttpProxySession::TimerCallback(PTP_CALLBACK_INSTANCE instance,
@@ -110,8 +107,10 @@ void CALLBACK HttpProxySession::TimerCallback(PTP_CALLBACK_INSTANCE instance,
 }
 
 void HttpProxySession::ClientReceiveAsync() {
-  ::SetThreadpoolTimer(timer_, &kTimerDueTime, 0, 0);
-  client_->ReadAsync(client_buffer_, kBufferSize, this);
+  if (timer_ != nullptr) {
+    ::SetThreadpoolTimer(timer_, &kTimerDueTime, 0, 0);
+    client_->ReadAsync(client_buffer_, kBufferSize, this);
+  }
 }
 
 bool HttpProxySession::FireEvent(Event event, Channel* channel, DWORD error,
@@ -324,7 +323,10 @@ void HttpProxySession::EndRequest() {
 }
 
 bool HttpProxySession::EndResponse() {
-  if (close_client_ && proxy_retry_ != 1) {
+  if (tunnel_)
+    client_.reset();
+
+  if (tunnel_ || close_client_ && proxy_retry_ != 1) {
     proxy_->EndSession(this);
     return true;
   }
@@ -408,14 +410,14 @@ void HttpProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
     channel->Close();
 
   if (channel == client_.get()) {
-    ::SetThreadpoolTimer(timer_, nullptr, 0, 0);
-
     if (buffer == nullptr && length == 0) {
       ClientReceiveAsync();
       return;
     }
 
     if (error == 0) {
+      ::SetThreadpoolTimer(timer_, nullptr, 0, 0);
+
       switch (client_state_) {
         case Idle:
         case Header:
@@ -601,6 +603,12 @@ void HttpProxySession::OnRequestReceived(int length) {
   remote_socket_->Close();
   lock_.Lock();
 
+  remote_.reset(new SocketChannel(remote_socket_));
+  if (remote_ == nullptr) {
+    SendError(HTTP::INTERNAL_SERVER_ERROR);
+    return;
+  }
+
   remote_state_ = Connecting;
   remote_socket_->ConnectAsync(*resolver_.begin(), this);
 }
@@ -723,11 +731,7 @@ bool HttpProxySession::OnResponseReceived(DWORD error, int length) {
 bool HttpProxySession::OnResponseSent(DWORD error, int length) {
   remote_state_ = Body;
 
-  if (tunnel_) {
-    client_.reset();
-    proxy_->EndSession(this);
-    return true;
-  } else if (response_chunked_) {
+  if (response_chunked_) {
     return ProcessResponseChunk();
   } else if (response_length_ > 0 || response_length_ == -2) {
     if (response_buffer_.empty()) {
