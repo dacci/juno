@@ -230,16 +230,23 @@ void CALLBACK HttpProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
 }
 
 void HttpProxy::EndSessionImpl(HttpProxySession* session) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
+  HttpProxySession* removed = nullptr;
+
+  lock_.AcquireWriteLock();
 
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
     if (i->get() == session) {
+      removed = i->release();
       sessions_.erase(i);
+
+      if (sessions_.empty())
+        empty_.WakeAll();
+
       break;
     }
   }
 
-  if (sessions_.empty())
-    empty_.WakeAll();
+  lock_.ReleaseWriteLock();
+
+  delete removed;
 }
