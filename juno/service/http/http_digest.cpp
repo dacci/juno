@@ -52,7 +52,7 @@ class CryptHash {
       if (!succeeded)
         break;
 
-      std::unique_ptr<BYTE[]> hash_data(new BYTE[hash_length]);
+      auto hash_data = std::make_unique<BYTE[]>(hash_length);
       if (hash_data == nullptr)
         break;
 
@@ -122,7 +122,7 @@ class CryptProvider {
   }
 
   std::unique_ptr<BYTE[]> GenerateRandom(DWORD length) {
-    std::unique_ptr<BYTE[]> random(new BYTE[length]);
+    auto random = std::make_unique<BYTE[]>(length);
     if (random) {
       BOOL succeeded = ::CryptGenRandom(handle_, length, random.get());
       if (!succeeded)

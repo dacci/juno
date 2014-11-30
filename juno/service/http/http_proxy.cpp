@@ -158,7 +158,7 @@ void HttpProxy::OnAccepted(const ChannelPtr& client) {
   if (stopped_)
     return;
 
-  std::unique_ptr<HttpProxySession> session(new HttpProxySession(this, client));
+  auto session = std::make_unique<HttpProxySession>(this, client);
   if (session == nullptr)
     return;
 

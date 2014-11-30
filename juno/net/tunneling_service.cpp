@@ -55,7 +55,7 @@ bool TunnelingService::BindSocket(const ChannelPtr& from,
   if (stopped_)
     return false;
 
-  auto session = std::unique_ptr<Session>(new Session(this, from, to));
+  auto session = std::make_unique<Session>(this, from, to);
   if (session == nullptr)
     return false;
 

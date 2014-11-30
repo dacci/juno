@@ -307,7 +307,7 @@ void SocksProxySession::OnWritten(Channel* channel, DWORD error, void* buffer,
 }
 
 bool SocksProxySession::ConnectIPv4(const SOCKS5::ADDRESS& address) {
-  auto end_point = std::unique_ptr<SocketAddress4>(new SocketAddress4());
+  auto end_point = std::make_unique<SocketAddress4>();
   if (end_point == nullptr)
     return false;
 
@@ -329,8 +329,7 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
       address.domain.domain_name +
       address.domain.domain_len);
 
-  auto resolver = std::unique_ptr<madoka::net::Resolver>(
-    new madoka::net::Resolver());
+  auto resolver = std::make_unique<madoka::net::Resolver>();
   if (resolver == nullptr)
     return false;
 
@@ -345,7 +344,7 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
 }
 
 bool SocksProxySession::ConnectIPv6(const SOCKS5::ADDRESS& address) {
-  auto end_point = std::unique_ptr<SocketAddress6>(new SocketAddress6());
+  auto end_point = std::make_unique<SocketAddress6>();
   if (end_point == nullptr)
     return false;
 

@@ -393,7 +393,7 @@ bool ServiceManager::CreateServer(const std::string& name) {
       break;
 
     case ServerConfig::TLS: {
-      std::unique_ptr<SecureChannelFactory> factory(new SecureChannelFactory());
+      auto factory = std::make_unique<SecureChannelFactory>();
       if (factory == nullptr)
         break;
 

@@ -127,8 +127,7 @@ void Scissors::OnAccepted(const ChannelPtr& client) {
       remote->Close();
     }
   } else {
-    std::unique_ptr<ScissorsTcpSession> session(
-        new ScissorsTcpSession(this, client));
+    auto session = std::make_unique<ScissorsTcpSession>(this, client);
     if (session == nullptr)
       return;
 
@@ -146,8 +145,7 @@ bool Scissors::OnReceivedFrom(Datagram* datagram) {
   if (!config_->remote_udp())
     return false;
 
-  std::unique_ptr<ScissorsUdpSession> session(
-      new ScissorsUdpSession(this, datagram));
+  auto session = std::make_unique<ScissorsUdpSession>(this, datagram);
   if (session == nullptr)
     return false;
 

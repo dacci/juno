@@ -115,7 +115,7 @@ void HttpProxySession::ClientReceiveAsync() {
 
 bool HttpProxySession::FireEvent(Event event, Channel* channel, DWORD error,
                                  void* buffer, int length) {
-  std::unique_ptr<EventData> data(new EventData());
+  auto data = std::make_unique<EventData>();
   if (data == nullptr)
     return false;
 

@@ -34,11 +34,11 @@ bool UdpServer::Setup(const char* address, int port) {
   bool succeeded = false;
 
   for (const auto& end_point : resolver_) {
-    std::unique_ptr<char[]> buffer(new char[kBufferSize]);
+    auto buffer = std::make_unique<char[]>(kBufferSize);
     if (buffer == nullptr)
       break;
 
-    std::unique_ptr<AsyncDatagramSocket> server(new AsyncDatagramSocket());
+    auto server = std::make_unique<AsyncDatagramSocket>();
     if (server == nullptr)
       break;
 
@@ -85,8 +85,8 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
                                int from_length) {
   if (error == 0) {
     do {
-      std::unique_ptr<char[]> received(
-          new char[sizeof(Service::Datagram) + length + from_length]);
+      auto received = std::make_unique<char[]>(
+          sizeof(Service::Datagram) + length + from_length);
       if (received == nullptr) {
         error = E_OUTOFMEMORY;
         break;

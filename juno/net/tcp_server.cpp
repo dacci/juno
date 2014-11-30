@@ -47,7 +47,7 @@ bool TcpServer::Setup(const char* address, int port) {
   bool succeeded = false;
 
   for (const auto& end_point : resolver_) {
-    auto server = std::unique_ptr<AsyncServerSocket>(new AsyncServerSocket());
+    auto server = std::make_unique<AsyncServerSocket>();
     if (server == nullptr)
       break;
 

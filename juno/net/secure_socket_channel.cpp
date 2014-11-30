@@ -378,9 +378,9 @@ void SecureSocketChannel::WriteRequest::Run() {
   int remaining = length_;
   int sent = 0;
 
-  std::unique_ptr<char[]> message(new char[channel_->sizes_.cbHeader +
-                                           channel_->sizes_.cbTrailer +
-                                           channel_->sizes_.cbMaximumMessage]);
+  auto message = std::make_unique<char[]>(channel_->sizes_.cbHeader +
+                                          channel_->sizes_.cbTrailer +
+                                          channel_->sizes_.cbMaximumMessage);
   SecBuffer buffers[3];
   SecBufferDesc buffer = { SECBUFFER_VERSION, _countof(buffers), buffers };
 

@@ -49,8 +49,7 @@ void SocksProxy::OnAccepted(const ChannelPtr& client) {
   if (stopped_)
     return;
 
-  std::unique_ptr<SocksProxySession> session(
-      new SocksProxySession(this, client));
+  auto session = std::make_unique<SocksProxySession>(this, client);
   if (session == nullptr)
     return;
 

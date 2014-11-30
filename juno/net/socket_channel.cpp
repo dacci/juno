@@ -37,7 +37,7 @@ void SocketChannel::ReadAsync(void* buffer, int length, Listener* listener) {
     return;
   }
 
-  std::unique_ptr<Request> request(new Request(this, listener));
+  auto request = std::make_unique<Request>(this, listener);
   if (request == nullptr) {
     listener->OnRead(this, E_OUTOFMEMORY, buffer, 0);
     return;
@@ -61,7 +61,7 @@ void SocketChannel::WriteAsync(const void* buffer, int length,
     return;
   }
 
-  std::unique_ptr<Request> request(new Request(this, listener));
+  auto request = std::make_unique<Request>(this, listener);
   if (request == nullptr) {
     listener->OnWritten(this, E_OUTOFMEMORY, const_cast<void*>(buffer), 0);
     return;
