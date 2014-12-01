@@ -731,6 +731,9 @@ bool HttpProxySession::OnResponseReceived(DWORD error, int length) {
 bool HttpProxySession::OnResponseSent(DWORD error, int length) {
   remote_state_ = Body;
 
+  if (tunnel_)
+    return EndResponse();
+
   if (response_chunked_) {
     return ProcessResponseChunk();
   } else if (response_length_ > 0 || response_length_ == -2) {
