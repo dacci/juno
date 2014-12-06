@@ -22,8 +22,6 @@ class TunnelingService {
   static bool Init();
   static void Term();
   static bool Bind(const ChannelPtr& a, const ChannelPtr& b);
-  // __declspec(deprecated)
-  static bool Bind(const AsyncSocketPtr& a, const AsyncSocketPtr& b);
 
  private:
   class Session : public Channel::Listener {
@@ -38,9 +36,6 @@ class TunnelingService {
                 int length) override;
     void OnWritten(Channel* channel, DWORD error, void* buffer,
                    int length) override;
-
-    static void CALLBACK EndSession(PTP_CALLBACK_INSTANCE instance,
-                                    void* param);
 
     TunnelingService* service_;
     ChannelPtr from_;

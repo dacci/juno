@@ -31,11 +31,6 @@ bool TunnelingService::Bind(const ChannelPtr& a, const ChannelPtr& b) {
   return instance_->BindSocket(a, b) && instance_->BindSocket(b, a);
 }
 
-bool TunnelingService::Bind(const AsyncSocketPtr& a, const AsyncSocketPtr& b) {
-  return Bind(std::make_shared<SocketChannel>(a),
-              std::make_shared<SocketChannel>(b));
-}
-
 TunnelingService::TunnelingService() : stopped_() {
 }
 
@@ -132,10 +127,4 @@ void TunnelingService::Session::OnWritten(Channel* channel, DWORD error,
     from_->ReadAsync(buffer_, sizeof(buffer_), this);
   else
     service_->EndSession(this);
-}
-
-void CALLBACK TunnelingService::Session::EndSession(
-    PTP_CALLBACK_INSTANCE instance, void* param) {
-  Session* session = static_cast<Session*>(param);
-  session->service_->EndSession(session);
 }
