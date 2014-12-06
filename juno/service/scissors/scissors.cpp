@@ -76,17 +76,20 @@ void CALLBACK Scissors::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
 }
 
 void Scissors::EndSessionImpl(Session* session) {
+  std::unique_ptr<Session> removed;
   madoka::concurrent::LockGuard lock(&critical_section_);
 
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
     if (i->get() == session) {
+      removed = std::move(*i);
       sessions_.erase(i);
+
+      if (sessions_.empty())
+        empty_.WakeAll();
+
       break;
     }
   }
-
-  if (sessions_.empty())
-    empty_.WakeAll();
 }
 
 void Scissors::OnAccepted(const ChannelPtr& client) {

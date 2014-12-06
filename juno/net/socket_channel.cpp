@@ -73,17 +73,20 @@ void SocketChannel::WriteAsync(const void* buffer, int length,
 }
 
 void SocketChannel::EndRequest(Request* request) {
+  std::unique_ptr<Request> removed;
   madoka::concurrent::LockGuard guard(&lock_);
 
   for (auto i = requests_.begin(), l = requests_.end(); i != l; ++i) {
     if (i->get() == request) {
+      removed = std::move(*i);
       requests_.erase(i);
+
+      if (requests_.empty())
+        empty_.WakeAll();
+
       break;
     }
   }
-
-  if (requests_.empty())
-    empty_.WakeAll();
 }
 
 SocketChannel::Request::Request(SocketChannel* channel, Listener* listener)

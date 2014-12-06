@@ -119,17 +119,18 @@ void CALLBACK TcpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
 }
 
 void TcpServer::DeleteServerImpl(AsyncServerSocket* server) {
+  std::unique_ptr<AsyncServerSocket> removed;
   madoka::concurrent::LockGuard guard(&lock_);
-
-  server->Close();
 
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
     if (i->get() == server) {
+      removed = std::move(*i);
       servers_.erase(i);
+
+      if (servers_.empty())
+        empty_.WakeAll();
+
       break;
     }
   }
-
-  if (servers_.empty())
-    empty_.WakeAll();
 }

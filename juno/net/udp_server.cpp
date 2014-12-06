@@ -93,6 +93,10 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
       }
 
       const auto& buffer = buffers_.at(socket);
+      if (buffer == nullptr) {
+        error = E_ABORT;
+        break;
+      }
 
       Service::Datagram* datagram =
           reinterpret_cast<Service::Datagram*>(received.get());
@@ -136,12 +140,11 @@ void CALLBACK UdpServer::Dispatch(PTP_CALLBACK_INSTANCE instance,
 
 void UdpServer::DeleteServer(AsyncDatagramSocket* server) {
   ServerSocketPair* pair = new ServerSocketPair(this, server);
-  if (pair != nullptr &&
-      TrySubmitThreadpoolCallback(DeleteServerImpl, pair, nullptr))
-    return;
-
-  delete pair;
-  DeleteServerImpl(server);
+  if (pair == nullptr ||
+      !TrySubmitThreadpoolCallback(DeleteServerImpl, pair, nullptr)) {
+    delete pair;
+    DeleteServerImpl(server);
+  }
 }
 
 void CALLBACK UdpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
@@ -152,18 +155,22 @@ void CALLBACK UdpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
 }
 
 void UdpServer::DeleteServerImpl(AsyncDatagramSocket* server) {
+  std::unique_ptr<char[]> removed_buffer;
+  std::unique_ptr<AsyncDatagramSocket> removed_server;
   madoka::concurrent::LockGuard guard(&lock_);
-
-  server->Close();
 
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
     if (i->get() == server) {
+      removed_buffer = std::move(buffers_.at(server));
       buffers_.erase(server);
+
+      removed_server = std::move(*i);
       servers_.erase(i);
+
+      if (servers_.empty())
+        empty_.WakeAll();
+
       break;
     }
   }
-
-  if (servers_.empty())
-    empty_.WakeAll();
 }
