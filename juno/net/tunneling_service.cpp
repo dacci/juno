@@ -44,8 +44,10 @@ TunnelingService::~TunnelingService() {
 
   stopped_ = true;
 
-  for (auto& session : sessions_)
+  for (auto& session : sessions_) {
     session->from_->Close();
+    session->to_->Close();
+  }
 
   while (!sessions_.empty())
     empty_.Sleep(&lock_);
@@ -85,17 +87,20 @@ void CALLBACK TunnelingService::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
 }
 
 void TunnelingService::EndSessionImpl(Session* session) {
+  std::unique_ptr<Session> removed;
   madoka::concurrent::LockGuard guard(&lock_);
 
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
     if (i->get() == session) {
+      removed = std::move(*i);
       sessions_.erase(i);
+
+      if (sessions_.empty())
+        empty_.WakeAll();
+
       break;
     }
   }
-
-  if (sessions_.empty())
-    empty_.WakeAll();
 }
 
 TunnelingService::Session::Session(TunnelingService* service,
