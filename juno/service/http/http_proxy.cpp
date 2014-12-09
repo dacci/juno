@@ -34,8 +34,7 @@ bool HttpProxy::Init() {
 }
 
 bool HttpProxy::UpdateConfig(const ServiceConfigPtr& config) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
+  madoka::concurrent::LockGuard guard(&lock_, true);
 
   config_ = std::static_pointer_cast<HttpProxyConfig>(config);
 
@@ -47,8 +46,7 @@ bool HttpProxy::UpdateConfig(const ServiceConfigPtr& config) {
 }
 
 void HttpProxy::Stop() {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
+  madoka::concurrent::LockGuard guard(&lock_, true);
 
   stopped_ = true;
 
@@ -60,8 +58,7 @@ void HttpProxy::Stop() {
 }
 
 void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
+  madoka::concurrent::LockGuard guard(&lock_);
 
   for (auto& filter : config_->header_filters()) {
     if (request && filter.request || !request && filter.response) {
@@ -100,44 +97,38 @@ void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
 
 void HttpProxy::ProcessAuthenticate(HttpResponse* response,
                                     HttpRequest* request) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
+  madoka::concurrent::LockGuard guard(&lock_, true);
 
   DoProcessAuthenticate(response);
   DoProcessAuthorization(request);
 }
 
 void HttpProxy::ProcessAuthorization(HttpRequest* request) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
+  madoka::concurrent::LockGuard guard(&lock_, true);
 
   DoProcessAuthorization(request);
 }
 
 bool HttpProxy::use_remote_proxy() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
+  madoka::concurrent::LockGuard guard(&lock_);
 
   return config_->use_remote_proxy() != 0;
 }
 
 const char* HttpProxy::remote_proxy_host() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
+  madoka::concurrent::LockGuard guard(&lock_);
 
   return config_->remote_proxy_host().c_str();
 }
 
 int HttpProxy::remote_proxy_port() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
+  madoka::concurrent::LockGuard guard(&lock_);
 
   return config_->remote_proxy_port();
 }
 
 int HttpProxy::auth_remote_proxy() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
+  madoka::concurrent::LockGuard guard(&lock_);
 
   return config_->auth_remote_proxy();
 }
@@ -152,8 +143,7 @@ void HttpProxy::EndSession(HttpProxySession* session) {
 }
 
 void HttpProxy::OnAccepted(const ChannelPtr& client) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
+  madoka::concurrent::LockGuard guard(&lock_, true);
 
   if (stopped_)
     return;
@@ -231,8 +221,7 @@ void CALLBACK HttpProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
 
 void HttpProxy::EndSessionImpl(HttpProxySession* session) {
   std::unique_ptr<HttpProxySession> removed;
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
+  madoka::concurrent::LockGuard guard(&lock_, true);
 
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
     if (i->get() == session) {

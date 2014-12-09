@@ -30,8 +30,7 @@ ScissorsConfig::~ScissorsConfig() {
 
 ScissorsConfig& ScissorsConfig::operator=(const ScissorsConfig& other) {
   if (&other != this) {
-    madoka::concurrent::WriteLock write_lock(&lock_);
-    madoka::concurrent::LockGuard guard(&write_lock);
+    madoka::concurrent::LockGuard guard(&lock_, true);
 
     remote_address_ = other.remote_address_;
     remote_port_ = other.remote_port_;
@@ -43,8 +42,7 @@ ScissorsConfig& ScissorsConfig::operator=(const ScissorsConfig& other) {
 }
 
 bool ScissorsConfig::Load(const RegistryKey& key) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
+  madoka::concurrent::LockGuard guard(&lock_, true);
 
   if (!key.QueryString(kRemoteAddress, &remote_address_))
     return false;
@@ -59,8 +57,7 @@ bool ScissorsConfig::Load(const RegistryKey& key) {
 }
 
 bool ScissorsConfig::Save(RegistryKey* key) {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
+  madoka::concurrent::LockGuard guard(&lock_);
 
   key->SetString(kRemoteAddress, remote_address_);
   key->SetInteger(kRemotePort, remote_port_);
@@ -71,57 +68,49 @@ bool ScissorsConfig::Save(RegistryKey* key) {
 }
 
 std::string ScissorsConfig::remote_address() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
+  madoka::concurrent::LockGuard guard(&lock_);
 
   return remote_address_;
 }
 
 void ScissorsConfig::set_remote_address(const std::string& remote_address) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
+  madoka::concurrent::LockGuard guard(&lock_, true);
 
   remote_address_ = remote_address;
 }
 
 int ScissorsConfig::remote_port() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
+  madoka::concurrent::LockGuard guard(&lock_);
 
   return remote_port_;
 }
 
 void ScissorsConfig::set_remote_port(int remote_port) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
+  madoka::concurrent::LockGuard guard(&lock_, true);
 
   remote_port_ = remote_port;
 }
 
 int ScissorsConfig::remote_ssl() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
+  madoka::concurrent::LockGuard guard(&lock_);
 
   return remote_ssl_;
 }
 
 void ScissorsConfig::set_remote_ssl(int remote_ssl) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
+  madoka::concurrent::LockGuard guard(&lock_, true);
 
   remote_ssl_ = remote_ssl;
 }
 
 int ScissorsConfig::remote_udp() {
-  madoka::concurrent::ReadLock read_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&read_lock);
+  madoka::concurrent::LockGuard guard(&lock_);
 
   return remote_udp_;
 }
 
 void ScissorsConfig::set_remote_udp(int remote_udp) {
-  madoka::concurrent::WriteLock write_lock(&lock_);
-  madoka::concurrent::LockGuard guard(&write_lock);
+  madoka::concurrent::LockGuard guard(&lock_, true);
 
   remote_udp_ = remote_udp;
 }
