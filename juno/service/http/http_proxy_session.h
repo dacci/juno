@@ -55,7 +55,6 @@ class HttpProxySession
                  int length);
   static void CALLBACK FireEvent(PTP_CALLBACK_INSTANCE instance, void* context);
 
-  void ProcessHopByHopHeaders(HttpHeaders* headers);
   void ProcessRequest();
   void ProcessRequestChunk();
   void ProcessResponse();

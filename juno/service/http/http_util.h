@@ -20,6 +20,8 @@ int64_t GetContentLength(const HttpHeaders& headers);
 // -2 if the chunk is partial or -1 on error.
 int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size);
 
+bool ProcessHopByHopHeaders(HttpHeaders* headers);
+
 }  // namespace http_util
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_UTIL_H_

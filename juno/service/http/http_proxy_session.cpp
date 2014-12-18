@@ -36,7 +36,6 @@ const std::string kExpect("Expect");
 const std::string kKeepAlive("Keep-Alive");
 const std::string kProxyAuthenticate("Proxy-Authenticate");
 const std::string kProxyAuthorization("Proxy-Authorization");
-const std::string kProxyConnection("Proxy-Connection");
 }  // namespace
 
 FILETIME HttpProxySession::kTimerDueTime = {
@@ -153,40 +152,6 @@ void CALLBACK HttpProxySession::FireEvent(PTP_CALLBACK_INSTANCE instance,
   }
 }
 
-void HttpProxySession::ProcessHopByHopHeaders(HttpHeaders* headers) {
-  if (headers->HeaderExists(kConnection)) {
-    const std::string& connection = headers->GetHeader(kConnection);
-    size_t start = 0;
-
-    while (true) {
-      size_t end = connection.find_first_of(',', start);
-      size_t length = std::string::npos;
-      if (end != std::string::npos)
-        length = end - start;
-
-      std::string token = connection.substr(start, length);
-      if (::_stricmp(token.c_str(), "close") == 0)
-        close_client_ = true;
-      else
-        headers->RemoveHeader(token);
-
-      if (end == std::string::npos)
-        break;
-
-      start = connection.find_first_not_of(" \t", end + 1);
-    }
-
-    headers->RemoveHeader(kConnection);
-  }
-
-  // remove other hop-by-hop headers
-  headers->RemoveHeader(kKeepAlive);
-  // Let the client process unsupported proxy auth methods.
-  // headers->RemoveHeader(kProxyAuthenticate);
-  // headers->RemoveHeader(kProxyAuthorization);
-  headers->RemoveHeader(kProxyConnection);
-}
-
 void HttpProxySession::ProcessRequest() {
   request_length_ = http_util::GetContentLength(request_);
   request_chunked_ = request_length_ == -2;
@@ -194,7 +159,8 @@ void HttpProxySession::ProcessRequest() {
   if (request_.minor_version() < 1)
     close_client_ = true;
 
-  ProcessHopByHopHeaders(&request_);
+  if (http_util::ProcessHopByHopHeaders(&request_))
+    close_client_ = true;
 
   if (request_.minor_version() == 0)
     request_.AddHeader(kConnection, kKeepAlive);
@@ -222,7 +188,8 @@ void HttpProxySession::ProcessResponse() {
   if (response_.minor_version() < 1)
     close_client_ = true;
 
-  ProcessHopByHopHeaders(&response_);
+  if (http_util::ProcessHopByHopHeaders(&response_))
+    close_client_ = true;
 
   proxy_->FilterHeaders(&response_, false);
 
