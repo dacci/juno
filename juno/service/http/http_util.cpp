@@ -6,7 +6,23 @@
 
 #include <string>
 
+namespace {
+const std::string kContentLength("Content-Length");
+const std::string kTransferEncoding("Transfer-Encoding");
+}  // namespace
+
 namespace http_util {
+
+int64_t GetContentLength(const HttpHeaders& headers) {
+  // RFC 2616 - 4.4 Message Length
+  if (headers.HeaderExists(kTransferEncoding) &&
+      _stricmp(headers.GetHeader(kTransferEncoding).c_str(), "identity") != 0)
+    return -2;
+  else if (headers.HeaderExists(kContentLength))
+    return std::stoll(headers.GetHeader(kContentLength));
+  else
+    return -1;
+}
 
 int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size) {
   char* start = const_cast<char*>(buffer.c_str());

@@ -37,7 +37,6 @@ const std::string kKeepAlive("Keep-Alive");
 const std::string kProxyAuthenticate("Proxy-Authenticate");
 const std::string kProxyAuthorization("Proxy-Authorization");
 const std::string kProxyConnection("Proxy-Connection");
-const std::string kTransferEncoding("Transfer-Encoding");
 }  // namespace
 
 FILETIME HttpProxySession::kTimerDueTime = {
@@ -154,17 +153,6 @@ void CALLBACK HttpProxySession::FireEvent(PTP_CALLBACK_INSTANCE instance,
   }
 }
 
-int64_t HttpProxySession::ProcessMessageLength(HttpHeaders* headers) {
-  // RFC 2616 - 4.4 Message Length
-  if (headers->HeaderExists(kTransferEncoding) &&
-      ::_stricmp(headers->GetHeader(kTransferEncoding), "identity") != 0)
-    return -1;
-  else if (headers->HeaderExists(kContentLength))
-    return std::stoll(headers->GetHeader(kContentLength));
-  else
-    return -2;
-}
-
 void HttpProxySession::ProcessHopByHopHeaders(HttpHeaders* headers) {
   if (headers->HeaderExists(kConnection)) {
     const std::string& connection = headers->GetHeader(kConnection);
@@ -200,8 +188,8 @@ void HttpProxySession::ProcessHopByHopHeaders(HttpHeaders* headers) {
 }
 
 void HttpProxySession::ProcessRequest() {
-  request_length_ = ProcessMessageLength(&request_);
-  request_chunked_ = request_length_ == -1;
+  request_length_ = http_util::GetContentLength(request_);
+  request_chunked_ = request_length_ == -2;
 
   if (request_.minor_version() < 1)
     close_client_ = true;
@@ -228,8 +216,8 @@ void HttpProxySession::ProcessRequestChunk() {
 }
 
 void HttpProxySession::ProcessResponse() {
-  response_length_ = ProcessMessageLength(&response_);
-  response_chunked_ = response_length_ == -1;
+  response_length_ = http_util::GetContentLength(response_);
+  response_chunked_ = response_length_ == -2;
 
   if (response_.minor_version() < 1)
     close_client_ = true;
@@ -736,7 +724,7 @@ bool HttpProxySession::OnResponseSent(DWORD error, int length) {
 
   if (response_chunked_) {
     return ProcessResponseChunk();
-  } else if (response_length_ > 0 || response_length_ == -2) {
+  } else if (response_length_ > 0 || response_length_ == -1) {
     if (response_buffer_.empty()) {
       remote_->ReadAsync(remote_buffer_, kBufferSize, this);
       return true;
@@ -779,7 +767,7 @@ bool HttpProxySession::OnResponseBodySent(DWORD error, int length) {
       return EndResponse();
     else
       return ProcessResponseChunk();
-  } else if (response_length_ > length || response_length_ == -2) {
+  } else if (response_length_ > length || response_length_ == -1) {
     if (response_length_ > length)
       response_length_ -= length;
 
