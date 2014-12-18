@@ -63,16 +63,16 @@ class HttpHeaders {
     list_.clear();
   }
 
-  bool HeaderExists(const std::string& name);
+  bool HeaderExists(const std::string& name) const;
 
-  const std::string& GetHeader(const std::string& name, size_t position);
-  const std::string& GetHeader(const std::string& name) {
+  const std::string& GetHeader(const std::string& name, size_t position) const;
+  const std::string& GetHeader(const std::string& name) const {
     return GetHeader(name, 0);
   }
 
-  ValueList GetAllHeaders(const std::string& name);
+  ValueList GetAllHeaders(const std::string& name) const;
 
-  void SerializeHeaders(std::string* buffer);
+  void SerializeHeaders(std::string* buffer) const;
 
   Iterator begin() const {
     return list_.begin();

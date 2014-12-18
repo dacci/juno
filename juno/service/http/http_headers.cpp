@@ -146,7 +146,7 @@ void HttpHeaders::RemoveHeader(const std::string& name) {
   }
 }
 
-bool HttpHeaders::HeaderExists(const std::string& name) {
+bool HttpHeaders::HeaderExists(const std::string& name) const {
   for (auto& pair : *this) {
     if (::_stricmp(pair.first.c_str(), name.c_str()) == 0)
       return true;
@@ -156,7 +156,7 @@ bool HttpHeaders::HeaderExists(const std::string& name) {
 }
 
 const std::string& HttpHeaders::GetHeader(const std::string& name,
-                                          size_t position) {
+                                          size_t position) const {
   size_t index = 0;
 
   for (auto& pair : *this) {
@@ -170,7 +170,8 @@ const std::string& HttpHeaders::GetHeader(const std::string& name,
   return kNotFound;
 }
 
-HttpHeaders::ValueList HttpHeaders::GetAllHeaders(const std::string& name) {
+HttpHeaders::ValueList HttpHeaders::GetAllHeaders(
+    const std::string& name) const {
   ValueList list;
 
   for (auto& pair : *this) {
@@ -181,7 +182,7 @@ HttpHeaders::ValueList HttpHeaders::GetAllHeaders(const std::string& name) {
   return list;
 }
 
-void HttpHeaders::SerializeHeaders(std::string* buffer) {
+void HttpHeaders::SerializeHeaders(std::string* buffer) const {
   for (auto& pair : *this) {
     buffer->append(pair.first);
     buffer->append(": ");
