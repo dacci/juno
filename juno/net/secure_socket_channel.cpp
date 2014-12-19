@@ -56,7 +56,11 @@ SecureSocketChannel::~SecureSocketChannel() {
 void SecureSocketChannel::Close() {
   if (!closed_) {
     closed_ = true;
-    Shutdown();
+
+    if (socket_->connected())
+      Shutdown();
+    else
+      socket_->Close();
   }
 }
 

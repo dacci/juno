@@ -22,7 +22,11 @@ SocketChannel::~SocketChannel() {
 
 void SocketChannel::Close() {
   closed_ = true;
-  socket_->Shutdown(SD_BOTH);
+
+  if (socket_->connected())
+    socket_->Shutdown(SD_BOTH);
+  else
+    socket_->Close();
 }
 
 void SocketChannel::ReadAsync(void* buffer, int length, Listener* listener) {
