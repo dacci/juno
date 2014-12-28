@@ -202,7 +202,7 @@ void HttpHeaders::AddHeaders(const phr_header* headers, size_t count) {
         break;
 
       const char* start = next.value;
-      const char* end = start + next.value_len;
+      const char* end = start + next.value_len - 1;  // value_len includes CR
       for (; start < end; ++start) {
         if (*start != '\t' && *start != ' ')
           break;
