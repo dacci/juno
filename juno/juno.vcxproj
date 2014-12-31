@@ -207,6 +207,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="misc\registry_key.cpp" />
+    <ClCompile Include="net\channel_util.cpp" />
     <ClCompile Include="net\datagram_channel.cpp" />
     <ClCompile Include="net\secure_socket_channel.cpp" />
     <ClCompile Include="net\socket_channel.cpp" />
@@ -249,6 +250,7 @@
     <ClInclude Include="misc\security\schannel_credential.h" />
     <ClInclude Include="misc\security\security_buffer.h" />
     <ClInclude Include="net\channel.h" />
+    <ClInclude Include="net\channel_util.h" />
     <ClInclude Include="net\datagram_channel.h" />
     <ClInclude Include="net\secure_socket_channel.h" />
     <ClInclude Include="net\socket_channel.h" />
