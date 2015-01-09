@@ -9,7 +9,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "madoka", "madoka\madoka.vcx
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "picohttpparser", "third_party\picohttpparser\picohttpparser.vcxproj", "{BFBC2B65-BC8C-4C05-B6EA-A4FA571D7F09}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "googleurl", "third_party\googleurl\googleurl.vcxproj", "{91887F13-BACA-45FE-BE93-6098B768685B}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "google-url", "third_party\google-url\google-url.vcxproj", "{91887F13-BACA-45FE-BE93-6098B768685B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libchromium", "third_party\libchromium\libchromium.vcxproj", "{1829AF5E-EBFB-461D-A756-C84D6EAD19A5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,14 @@ Global
 		{91887F13-BACA-45FE-BE93-6098B768685B}.Release|Win32.Build.0 = Release|Win32
 		{91887F13-BACA-45FE-BE93-6098B768685B}.Release|x64.ActiveCfg = Release|x64
 		{91887F13-BACA-45FE-BE93-6098B768685B}.Release|x64.Build.0 = Release|x64
+		{1829AF5E-EBFB-461D-A756-C84D6EAD19A5}.Debug|Win32.ActiveCfg = DebugStatic|Win32
+		{1829AF5E-EBFB-461D-A756-C84D6EAD19A5}.Debug|Win32.Build.0 = DebugStatic|Win32
+		{1829AF5E-EBFB-461D-A756-C84D6EAD19A5}.Debug|x64.ActiveCfg = DebugStatic|x64
+		{1829AF5E-EBFB-461D-A756-C84D6EAD19A5}.Debug|x64.Build.0 = DebugStatic|x64
+		{1829AF5E-EBFB-461D-A756-C84D6EAD19A5}.Release|Win32.ActiveCfg = ReleaseStatic|Win32
+		{1829AF5E-EBFB-461D-A756-C84D6EAD19A5}.Release|Win32.Build.0 = ReleaseStatic|Win32
+		{1829AF5E-EBFB-461D-A756-C84D6EAD19A5}.Release|x64.ActiveCfg = ReleaseStatic|x64
+		{1829AF5E-EBFB-461D-A756-C84D6EAD19A5}.Release|x64.Build.0 = ReleaseStatic|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

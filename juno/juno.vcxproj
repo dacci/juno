@@ -72,25 +72,25 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(SolutionDir)madoka\include;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\chromium\src;$(SolutionDir)third_party\googleurl;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)madoka\include;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\libchromium\src;$(SolutionDir)third_party\google-url;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(SolutionDir)madoka\include;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\chromium\src;$(SolutionDir)third_party\googleurl;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)madoka\include;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\libchromium\src;$(SolutionDir)third_party\google-url;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(SolutionDir)madoka\include;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\chromium\src;$(SolutionDir)third_party\googleurl;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)madoka\include;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\libchromium\src;$(SolutionDir)third_party\google-url;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir);$(SolutionDir)madoka\include;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\chromium\src;$(SolutionDir)third_party\googleurl;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir);$(SolutionDir)madoka\include;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\libchromium\src;$(SolutionDir)third_party\google-url;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;SECURITY_WIN32;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>4018;4244;4267</DisableSpecificWarnings>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -117,7 +117,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;SECURITY_WIN32;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>4018;4244;4267</DisableSpecificWarnings>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -146,7 +146,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;SECURITY_WIN32;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>4018;4244;4267</DisableSpecificWarnings>
     </ClCompile>
@@ -170,7 +170,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;SECURITY_WIN32;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>4018;4244;4267</DisableSpecificWarnings>
     </ClCompile>
@@ -192,8 +192,11 @@
     <ProjectReference Include="..\madoka\madoka.vcxproj">
       <Project>{849cc6cc-460e-45de-8ea5-4dda0f25837d}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\third_party\googleurl\googleurl.vcxproj">
+    <ProjectReference Include="..\third_party\google-url\google-url.vcxproj">
       <Project>{91887f13-baca-45fe-be93-6098b768685b}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\third_party\libchromium\libchromium.vcxproj">
+      <Project>{1829af5e-ebfb-461d-a756-c84d6ead19a5}</Project>
     </ProjectReference>
     <ProjectReference Include="..\third_party\picohttpparser\picohttpparser.vcxproj">
       <Project>{bfbc2b65-bc8c-4c05-b6ea-a4fa571d7f09}</Project>
