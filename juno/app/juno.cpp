@@ -7,6 +7,11 @@
 
 #include <madoka/net/winsock.h>
 
+#include <base/at_exit.h>
+#include <base/command_line.h>
+#include <base/logging.h>
+#include <base/logging_win.h>
+
 #include <url/url_util.h>
 
 #include "app/service_manager.h"
@@ -65,6 +70,15 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
   if (!winsock.Initialized())
     return __LINE__;
 
+  base::AtExitManager atexit_manager;
+  base::CommandLine::Init(0, nullptr);
+
+  logging::LoggingSettings logging_settings;
+  logging_settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
+  logging::InitLogging(logging_settings);
+
+  logging::LogEventProvider::Initialize(GUID_JUNO_APPLICATION);
+
   url::Initialize();
 
   if (!TunnelingService::Init()) {
@@ -98,6 +112,8 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
   delete service_manager;
   TunnelingService::Term();
   url::Shutdown();
+  logging::LogEventProvider::Uninitialize();
+  base::CommandLine::Reset();
   ::CoUninitialize();
 
   return 0;

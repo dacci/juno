@@ -7,6 +7,8 @@
 #include <madoka/concurrent/lock_guard.h>
 #include <madoka/net/async_socket.h>
 
+#include <base/logging.h>
+
 #include <url/gurl.h>
 
 #include <algorithm>
@@ -48,6 +50,7 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy,
       client_(client),
       close_remote_() {
   timer_ = CreateThreadpoolTimer(TimerCallback, this, nullptr);
+  DLOG(INFO) << this << " session created";
 }
 
 HttpProxySession::~HttpProxySession() {
@@ -60,6 +63,8 @@ HttpProxySession::~HttpProxySession() {
   WaitForThreadpoolTimerCallbacks(timer_, TRUE);
   CloseThreadpoolTimer(timer_);
   timer_ = nullptr;
+
+  DLOG(INFO) << this << " session destroyed";
 }
 
 bool HttpProxySession::Start() {
@@ -67,6 +72,8 @@ bool HttpProxySession::Start() {
 
   if (proxy_ == nullptr || client_ == nullptr)
     return false;
+
+  DLOG(INFO) << this << " session started";
 
   EndResponse();
 
@@ -80,6 +87,8 @@ void HttpProxySession::Stop() {
     remote_->Close();
 
   client_->Close();
+
+  DLOG(INFO) << this << " session stopped";
 }
 
 void HttpProxySession::ReceiveRequest() {
@@ -101,6 +110,8 @@ void HttpProxySession::ProcessRequest() {
     SendError(HTTP::BAD_REQUEST);
     return;
   }
+
+  DLOG(INFO) << this << " " << request_.method() << " " << request_.path();
 
   request_length_ = http_util::GetContentLength(request_);
   if (request_length_ == -2) {
@@ -214,15 +225,19 @@ void HttpProxySession::SendRequest() {
 
 void HttpProxySession::ProcessRequestChunk() {
   request_length_ = http_util::ParseChunk(client_buffer_, &last_chunk_size_);
-  if (request_length_ > 0)
+  if (request_length_ > 0) {
     SendToRemote(client_buffer_.data(), request_length_);
-  else if (request_length_ == -2)
+  } else if (request_length_ == -2) {
     ReceiveRequest();
-  else
+  } else {
+    LOG(ERROR) << this << " invalid request chunk";
     SetError(HTTP::BAD_REQUEST);
+  }
 }
 
 void HttpProxySession::EndRequest() {
+  DLOG(INFO) << this << " request completed";
+
   if (status_code_ == 0) {
     state_ = ResponseHeader;
 
@@ -254,6 +269,8 @@ void HttpProxySession::ProcessResponse() {
     SendError(HTTP::BAD_GATEWAY);
     return;
   }
+
+  DLOG(INFO) << this << " " << response_.status() << " " << response_.message();
 
   response_length_ = http_util::GetContentLength(response_);
   if (response_length_ == -2) {
@@ -335,6 +352,7 @@ void HttpProxySession::ProcessResponseChunk() {
   } else if (response_length_ == -2) {
     ReceiveResponse();
   } else {
+    LOG(ERROR) << this << " invalid response chunk";
     proxy_->EndSession(this);
   }
 }
@@ -350,6 +368,8 @@ void HttpProxySession::SendResponse() {
 }
 
 void HttpProxySession::EndResponse() {
+  DLOG(INFO) << this << " response completed";
+
   if (close_remote_) {
     if (remote_ != nullptr) {
       remote_->Close();
@@ -397,6 +417,8 @@ void HttpProxySession::EndResponse() {
 }
 
 void HttpProxySession::SetError(HTTP::StatusCode status) {
+  DLOG(INFO) << this << " setting error: " << status;
+
   status_code_ = status;
 
   if (request_chunked_) {
@@ -424,6 +446,8 @@ void HttpProxySession::SetError(HTTP::StatusCode status) {
 }
 
 void HttpProxySession::SendError(HTTP::StatusCode status) {
+  DLOG(INFO) << this << " sending error: " << status;
+
   tunnel_ = false;
   retry_ = false;
 
@@ -448,6 +472,8 @@ void HttpProxySession::SendToRemote(const void* buffer, int length) {
 
 void CALLBACK HttpProxySession::TimerCallback(PTP_CALLBACK_INSTANCE instance,
                                               void* context, PTP_TIMER timer) {
+  LOG(WARNING) << context << " request timed-out";
+
   SetThreadpoolTimer(timer, nullptr, 0, 0);
   static_cast<HttpProxySession*>(context)->client_->Close();
 }
@@ -511,6 +537,8 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
   madoka::concurrent::LockGuard guard(&lock_);
 
   if (error != 0 || length == 0) {
+    LOG(WARNING) << this << " socket disconnected";
+
     socket->Shutdown(SD_BOTH);
     last_host_.clear();
     last_port_ = -1;
@@ -524,6 +552,8 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
     SetThreadpoolTimer(timer_, nullptr, 0, 0);
 
   if (error != 0 || length == 0) {
+    LOG_IF(ERROR, error != 0) << this
+        << " failed to receive request: " << error;
     proxy_->EndSession(this);
     return;
   }
@@ -536,6 +566,7 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
   madoka::concurrent::LockGuard guard(&lock_);
 
   if (error != 0) {
+    LOG(ERROR) << this << " failed to connect: " << error;
     SendError(HTTP::BAD_GATEWAY);
     return;
   }
@@ -559,6 +590,7 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
 
 void HttpProxySession::OnRequestSent(DWORD error, int length) {
   if (error != 0 || length == 0) {
+    LOG_IF(ERROR, error != 0) << " failed to send request: " << error;
     SendError(HTTP::BAD_GATEWAY);
     return;
   }
@@ -589,6 +621,8 @@ void HttpProxySession::OnRequestBodyReceived(DWORD error, int length) {
     SetThreadpoolTimer(timer_, nullptr, 0, 0);
 
   if (error != 0 || length == 0) {
+    LOG_IF(ERROR, error != 0) << this
+        << " failed to receive request body: " << error;
     proxy_->EndSession(this);
     return;
   }
@@ -603,6 +637,8 @@ void HttpProxySession::OnRequestBodyReceived(DWORD error, int length) {
 
 void HttpProxySession::OnRequestBodySent(DWORD error, int length) {
   if (error != 0 || length == 0) {
+    LOG_IF(ERROR, error != 0) << this
+        << " failed to send request body: " << error;
     SendError(HTTP::BAD_GATEWAY);
     return;
   }
@@ -624,6 +660,8 @@ void HttpProxySession::OnRequestBodySent(DWORD error, int length) {
 
 void HttpProxySession::OnResponseReceived(DWORD error, int length) {
   if (error != 0 || length == 0) {
+    LOG_IF(ERROR, error != 0) << this
+        << " failed to receive response: " << error;
     SendError(HTTP::BAD_GATEWAY);
     return;
   }
@@ -634,6 +672,7 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
 
 void HttpProxySession::OnResponseSent(DWORD error, int length) {
   if (error != 0 || length == 0) {
+    LOG_IF(ERROR, error != 0) << this << " failed to send request: " << error;
     proxy_->EndSession(this);
     return;
   }
@@ -675,6 +714,8 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
 
 void HttpProxySession::OnResponseBodyReceived(DWORD error, int length) {
   if (error != 0 || length == 0) {
+    LOG_IF(ERROR, error != 0) << this
+        << " failed to receive response body: " << error;
     proxy_->EndSession(this);
     return;
   }
@@ -692,6 +733,8 @@ void HttpProxySession::OnResponseBodyReceived(DWORD error, int length) {
 
 void HttpProxySession::OnResponseBodySent(DWORD error, int length) {
   if (error != 0 || length == 0) {
+    LOG_IF(ERROR, error != 0) << this
+        << " failed to send response body: " << error;
     proxy_->EndSession(this);
     return;
   }
