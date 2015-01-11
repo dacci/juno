@@ -5,6 +5,7 @@
 
 #include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
+#include <madoka/net/async_datagram_socket.h>
 
 #include <map>
 #include <memory>
@@ -25,6 +26,7 @@ class Scissors : public Service {
     explicit Session(Scissors* service) : service_(service) {}
     virtual ~Session() {}
 
+    virtual bool Start() = 0;
     virtual void Stop() = 0;
 
     Scissors* const service_;
@@ -38,7 +40,7 @@ class Scissors : public Service {
   void Stop() override;
 
   void OnAccepted(const ChannelPtr& client) override;
-  bool OnReceivedFrom(Datagram* datagram) override;
+  void OnReceivedFrom(const DatagramPtr& datagram) override;
   void OnError(DWORD error) override;
 
  private:

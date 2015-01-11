@@ -26,7 +26,7 @@ class SocksProxy : public Service {
   void EndSession(SocksProxySession* session);
 
   void OnAccepted(const ChannelPtr& client) override;
-  bool OnReceivedFrom(Datagram* datagram) override;
+  void OnReceivedFrom(const DatagramPtr& datagram) override;
   void OnError(DWORD error) override;
 
  private:

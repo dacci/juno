@@ -8,6 +8,7 @@
 
 #include <memory>
 
+#include "net/channel.h"
 #include "service/socks/socks4.h"
 #include "service/socks/socks5.h"
 #include "service/socks/socks_proxy.h"

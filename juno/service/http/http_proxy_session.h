@@ -12,6 +12,7 @@
 #include <memory>
 #include <string>
 
+#include "net/channel.h"
 #include "service/service.h"
 #include "service/http/http_request.h"
 #include "service/http/http_response.h"

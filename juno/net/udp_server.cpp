@@ -8,6 +8,7 @@
 
 #include <memory>
 
+#include "net/datagram.h"
 #include "service/service.h"
 
 using ::madoka::net::AsyncDatagramSocket;
@@ -44,7 +45,7 @@ bool UdpServer::Setup(const char* address, int port) {
 
     if (server->Bind(end_point)) {
       succeeded = true;
-      buffers_.insert(std::make_pair(server.get(), std::move(buffer)));
+      buffers_.insert({ server.get(), std::move(buffer) });
       servers_.push_back(std::move(server));
     }
   }
@@ -58,9 +59,8 @@ bool UdpServer::Start() {
 
   madoka::concurrent::LockGuard guard(&lock_);
 
-  for (auto& server : servers_)
-    server->ReceiveFromAsync(buffers_.at(server.get()).get(), kBufferSize, 0,
-                             this);
+  for (auto& pair : buffers_)
+    pair.first->ReceiveFromAsync(pair.second.get(), kBufferSize, 0, this);
 
   return true;
 }
@@ -85,41 +85,27 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
                                int from_length) {
   if (error == 0) {
     do {
-      auto received = std::make_unique<char[]>(
-          sizeof(Service::Datagram) + length + from_length);
-      if (received == nullptr) {
+      auto datagram = std::make_shared<Datagram>();
+      if (datagram == nullptr) {
         error = E_OUTOFMEMORY;
         break;
       }
 
-      const auto& buffer = buffers_.at(socket);
-      if (buffer == nullptr) {
-        error = E_ABORT;
+      datagram->data.reset(new char[length]);
+      if (datagram->data == nullptr) {
+        error = E_OUTOFMEMORY;
         break;
       }
 
-      Service::Datagram* datagram =
-          reinterpret_cast<Service::Datagram*>(received.get());
-      datagram->service = service_;
       datagram->socket = socket;
-
       datagram->data_length = length;
-      datagram->data = received.get() + sizeof(Service::Datagram);
-      ::memmove(datagram->data, buffer.get(), length);
-
+      memmove(datagram->data.get(), buffer, length);
       datagram->from_length = from_length;
-      datagram->from = reinterpret_cast<sockaddr*>(
-          received.get() + sizeof(Service::Datagram) + length);
-      ::memmove(datagram->from, from, from_length);
+      memmove(&datagram->from, from, from_length);
 
-      BOOL succeeded = ::TrySubmitThreadpoolCallback(Dispatch, datagram,
-                                                     nullptr);
-      if (!succeeded) {
-        error = ::GetLastError();
-        break;
-      }
+      socket->ReceiveFromAsync(buffer, kBufferSize, 0, this);
 
-      socket->ReceiveFromAsync(buffer.get(), kBufferSize, 0, this);
+      service_->OnReceivedFrom(datagram);
     } while (false);
   }
 
@@ -127,15 +113,6 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
     service_->OnError(error);
     DeleteServer(socket);
   }
-}
-
-void CALLBACK UdpServer::Dispatch(PTP_CALLBACK_INSTANCE instance,
-                                  void* context) {
-  Service::Datagram* datagram = static_cast<Service::Datagram*>(context);
-
-  bool succeeded = datagram->service->OnReceivedFrom(datagram);
-  if (!succeeded)
-    delete[] static_cast<char*>(context);
 }
 
 void UdpServer::DeleteServer(AsyncDatagramSocket* server) {

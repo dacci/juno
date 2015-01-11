@@ -11,10 +11,12 @@
 #include "service/service.h"
 #include "service/scissors/scissors.h"
 
+struct Datagram;
+
 class ScissorsUdpSession
     : public Scissors::Session, public madoka::net::SocketEventAdapter {
  public:
-  ScissorsUdpSession(Scissors* service, Service::Datagram* datagram);
+  ScissorsUdpSession(Scissors* service, const Service::DatagramPtr& datagram);
   virtual ~ScissorsUdpSession();
 
   bool Start();
@@ -37,7 +39,7 @@ class ScissorsUdpSession
   static FILETIME kTimerDueTime;
 
   madoka::net::Resolver resolver_;
-  Service::Datagram* datagram_;
+  Service::DatagramPtr datagram_;
   std::unique_ptr<madoka::net::AsyncDatagramSocket> remote_;
   std::unique_ptr<char[]> buffer_;
   PTP_TIMER timer_;

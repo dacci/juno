@@ -57,8 +57,8 @@ void SocksProxy::OnAccepted(const ChannelPtr& client) {
     sessions_.push_back(std::move(session));
 }
 
-bool SocksProxy::OnReceivedFrom(Datagram* datagram) {
-  return false;
+void SocksProxy::OnReceivedFrom(const DatagramPtr& datagram) {
+  // Do nothing
 }
 
 void SocksProxy::OnError(DWORD error) {

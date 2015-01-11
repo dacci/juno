@@ -3,11 +3,11 @@
 #include "service/scissors/scissors.h"
 
 #include <madoka/concurrent/lock_guard.h>
-#include <madoka/net/async_datagram_socket.h>
 #include <madoka/net/resolver.h>
 
 #include "misc/registry_key.h"
 #include "misc/security/schannel_credential.h"
+#include "net/datagram.h"
 #include "net/datagram_channel.h"
 #include "net/tunneling_service.h"
 #include "service/scissors/scissors_config.h"
@@ -136,25 +136,24 @@ void Scissors::OnAccepted(const ChannelPtr& client) {
   }
 }
 
-bool Scissors::OnReceivedFrom(Datagram* datagram) {
+void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
   madoka::concurrent::LockGuard lock(&critical_section_);
 
   if (stopped_)
-    return false;
+    return;
 
-  if (!config_->remote_udp())
-    return false;
+  std::unique_ptr<Session> session;
 
-  auto session = std::make_unique<ScissorsUdpSession>(this, datagram);
-  if (session == nullptr)
-    return false;
+  if (config_->remote_udp()) {
+    session.reset(new ScissorsUdpSession(this, datagram));
+    if (session == nullptr)
+      return;
+  } else {
+    return;
+  }
 
-  if (!session->Start())
-    return false;
-
-  sessions_.push_back(std::move(session));
-
-  return true;
+  if (session->Start())
+    sessions_.push_back(std::move(session));
 }
 
 void Scissors::OnError(DWORD error) {

@@ -42,7 +42,7 @@ class HttpProxy : public Service {
   void EndSession(HttpProxySession* session);
 
   void OnAccepted(const ChannelPtr& client) override;
-  bool OnReceivedFrom(Datagram* datagram) override;
+  void OnReceivedFrom(const DatagramPtr& datagram) override;
   void OnError(DWORD error) override;
 
  private:

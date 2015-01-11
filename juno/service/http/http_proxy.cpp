@@ -156,8 +156,8 @@ void HttpProxy::OnAccepted(const ChannelPtr& client) {
     sessions_.push_back(std::move(session));
 }
 
-bool HttpProxy::OnReceivedFrom(Datagram* datagram) {
-  return false;
+void HttpProxy::OnReceivedFrom(const DatagramPtr& datagram) {
+  // Do nothing
 }
 
 void HttpProxy::OnError(DWORD error) {

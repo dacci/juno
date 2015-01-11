@@ -4,6 +4,7 @@
 
 #include <assert.h>
 
+#include "net/datagram.h"
 #include "service/scissors/scissors_config.h"
 
 using ::madoka::net::AsyncDatagramSocket;
@@ -14,7 +15,7 @@ FILETIME ScissorsUdpSession::kTimerDueTime = {
 };
 
 ScissorsUdpSession::ScissorsUdpSession(Scissors* service,
-                                       Service::Datagram* datagram)
+                                       const Service::DatagramPtr& datagram)
     : Session(service),
       datagram_(datagram),
       remote_(new AsyncDatagramSocket()),
@@ -25,11 +26,6 @@ ScissorsUdpSession::ScissorsUdpSession(Scissors* service,
 }
 
 ScissorsUdpSession::~ScissorsUdpSession() {
-  if (datagram_ != nullptr) {
-    delete[] reinterpret_cast<char*>(datagram_);
-    datagram_ = nullptr;
-  }
-
   if (timer_ != nullptr) {
     ::SetThreadpoolTimer(timer_, nullptr, 0, 0);
     ::WaitForThreadpoolTimerCallbacks(timer_, TRUE);
@@ -52,7 +48,7 @@ bool ScissorsUdpSession::Start() {
   if (!remote_->Connect(*resolver_.begin()))
     return false;
 
-  remote_->SendAsync(datagram_->data, datagram_->data_length, 0, this);
+  remote_->SendAsync(datagram_->data.get(), datagram_->data_length, 0, this);
 
   return true;
 }
@@ -67,8 +63,9 @@ void ScissorsUdpSession::OnReceived(AsyncDatagramSocket* socket, DWORD error,
   ::SetThreadpoolTimer(timer_, nullptr, 0, 0);
 
   if (error == 0)
-    datagram_->socket->SendToAsync(buffer_.get(), length, 0, datagram_->from,
-                                   datagram_->from_length, this);
+    datagram_->socket->SendToAsync(
+        buffer_.get(), length, 0, reinterpret_cast<sockaddr*>(&datagram_->from),
+        datagram_->from_length, this);
   else
     service_->EndSession(this);
 }

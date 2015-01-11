@@ -254,6 +254,7 @@
     <ClInclude Include="misc\security\security_buffer.h" />
     <ClInclude Include="net\channel.h" />
     <ClInclude Include="net\channel_util.h" />
+    <ClInclude Include="net\datagram.h" />
     <ClInclude Include="net\datagram_channel.h" />
     <ClInclude Include="net\secure_socket_channel.h" />
     <ClInclude Include="net\socket_channel.h" />

@@ -15,6 +15,7 @@
 
 #include "net/server.h"
 
+struct Datagram;
 class Service;
 
 class UdpServer : public Server, public madoka::net::SocketEventAdapter {
@@ -41,8 +42,6 @@ class UdpServer : public Server, public madoka::net::SocketEventAdapter {
       ServerSocketPair;
 
   static const int kBufferSize = 65536;
-
-  static void CALLBACK Dispatch(PTP_CALLBACK_INSTANCE instance, void* context);
 
   void DeleteServer(madoka::net::AsyncDatagramSocket* server);
   static void CALLBACK DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,

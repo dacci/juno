@@ -3,26 +3,19 @@
 #ifndef JUNO_SERVICE_SERVICE_H_
 #define JUNO_SERVICE_SERVICE_H_
 
-#include <madoka/net/async_datagram_socket.h>
 #include <madoka/net/async_socket.h>
 
 #include <memory>
 
-#include "net/channel.h"
 #include "service/service_config.h"
+
+class Channel;
+struct Datagram;
 
 class Service {
  public:
   typedef std::shared_ptr<Channel> ChannelPtr;
-
-  struct Datagram {
-    Service* service;
-    madoka::net::AsyncDatagramSocket* socket;
-    int data_length;
-    void* data;
-    int from_length;
-    sockaddr* from;
-  };
+  typedef std::shared_ptr<Datagram> DatagramPtr;
 
   virtual ~Service() {}
 
@@ -30,7 +23,7 @@ class Service {
   virtual void Stop() = 0;
 
   virtual void OnAccepted(const ChannelPtr& client) = 0;
-  virtual bool OnReceivedFrom(Datagram* datagram) = 0;
+  virtual void OnReceivedFrom(const DatagramPtr& datagram) = 0;
   virtual void OnError(DWORD error) = 0;
 };
 
