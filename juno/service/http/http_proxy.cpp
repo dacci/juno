@@ -54,7 +54,7 @@ void HttpProxy::Stop() {
     session->Stop();
 
   while (!sessions_.empty())
-    empty_.Sleep(&lock_, false);
+    empty_.Sleep(&lock_, true);
 }
 
 void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
