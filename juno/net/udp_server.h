@@ -49,7 +49,7 @@ class UdpServer : public Server, public madoka::net::SocketEventAdapter {
   void DeleteServerImpl(madoka::net::AsyncDatagramSocket* server);
 
   madoka::net::Resolver resolver_;
-  std::vector<std::unique_ptr<madoka::net::AsyncDatagramSocket>> servers_;
+  std::vector<std::shared_ptr<madoka::net::AsyncDatagramSocket>> servers_;
   std::map<madoka::net::AsyncDatagramSocket*, std::unique_ptr<char[]>> buffers_;
   Service* service_;
 

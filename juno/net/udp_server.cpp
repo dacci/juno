@@ -97,7 +97,13 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
         break;
       }
 
-      datagram->socket = socket;
+      for (auto& server : servers_) {
+        if (server.get() == socket) {
+          datagram->socket = server;
+          break;
+        }
+      }
+
       datagram->data_length = length;
       memmove(datagram->data.get(), buffer, length);
       datagram->from_length = from_length;
@@ -133,8 +139,9 @@ void CALLBACK UdpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
 
 void UdpServer::DeleteServerImpl(AsyncDatagramSocket* server) {
   std::unique_ptr<char[]> removed_buffer;
-  std::unique_ptr<AsyncDatagramSocket> removed_server;
-  madoka::concurrent::LockGuard guard(&lock_);
+  std::shared_ptr<AsyncDatagramSocket> removed_server;
+
+  lock_.Lock();
 
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
     if (i->get() == server) {
@@ -150,4 +157,9 @@ void UdpServer::DeleteServerImpl(AsyncDatagramSocket* server) {
       break;
     }
   }
+
+  lock_.Unlock();
+
+  if (removed_server != nullptr)
+    removed_server->Close();
 }

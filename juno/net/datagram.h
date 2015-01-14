@@ -8,7 +8,7 @@
 #include <memory>
 
 struct Datagram {
-  madoka::net::AsyncDatagramSocket* socket;
+  std::shared_ptr<madoka::net::AsyncDatagramSocket> socket;
   int data_length;
   std::unique_ptr<char[]> data;
   int from_length;
