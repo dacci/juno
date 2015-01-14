@@ -12,6 +12,7 @@
 #include <memory>
 #include <string>
 
+#include "misc/timer_service.h"
 #include "net/channel.h"
 #include "service/service.h"
 #include "service/http/http_request.h"
@@ -20,7 +21,9 @@
 class HttpProxy;
 
 class HttpProxySession
-    : private Channel::Listener, private madoka::net::SocketEventAdapter {
+    : private Channel::Listener,
+      private madoka::net::SocketEventAdapter,
+      private TimerService::Callback {
  public:
   HttpProxySession(HttpProxy* proxy, const Service::ChannelPtr& client);
   ~HttpProxySession();
@@ -55,8 +58,7 @@ class HttpProxySession
   void SendError(HTTP::StatusCode status);
   void SendToRemote(const void* buffer, int length);
 
-  static void CALLBACK TimerCallback(PTP_CALLBACK_INSTANCE instance,
-                                     void* context, PTP_TIMER timer);
+  void OnTimeout() override;
 
   void OnRead(Channel* channel, DWORD error, void* buffer, int length) override;
   void OnWritten(Channel* channel, DWORD error, void* buffer,
@@ -76,11 +78,8 @@ class HttpProxySession
   void OnResponseBodyReceived(DWORD error, int length);
   void OnResponseBodySent(DWORD error, int length);
 
-  static FILETIME kTimerDueTime;
-
   HttpProxy* const proxy_;
   madoka::concurrent::CriticalSection lock_;
-  PTP_TIMER timer_;
   char buffer_[kBufferSize];
   State state_;
   int64_t last_chunk_size_;
@@ -106,6 +105,7 @@ class HttpProxySession
   bool close_remote_;
 
   char peek_buffer_[16];
+  TimerService::TimerObject timer_;
 };
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_PROXY_SESSION_H_

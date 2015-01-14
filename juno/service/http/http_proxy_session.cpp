@@ -35,11 +35,6 @@ const std::string kProxyAuthenticate("Proxy-Authenticate");
 const std::string kProxyAuthorization("Proxy-Authorization");
 }  // namespace
 
-FILETIME HttpProxySession::kTimerDueTime = {
-  -kTimeout * 1000 * 10,    // in 100-nanoseconds
-  -1
-};
-
 HttpProxySession::HttpProxySession(HttpProxy* proxy,
                                    const Service::ChannelPtr& client)
     : proxy_(proxy),
@@ -48,21 +43,19 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy,
       last_port_(-1),
       retry_(),
       client_(client),
-      close_remote_() {
-  timer_ = CreateThreadpoolTimer(TimerCallback, this, nullptr);
+      close_remote_(),
+      timer_(TimerService::GetDefault()->Create(this)) {
   DLOG(INFO) << this << " session created";
 }
 
 HttpProxySession::~HttpProxySession() {
-  remote_.reset();
-  client_.reset();
-
   madoka::concurrent::LockGuard guard(&lock_);
 
-  SetThreadpoolTimer(timer_, nullptr, 0, 0);
-  WaitForThreadpoolTimerCallbacks(timer_, TRUE);
-  CloseThreadpoolTimer(timer_);
-  timer_ = nullptr;
+  if (timer_ != nullptr)
+    timer_->Stop();
+
+  remote_.reset();
+  client_.reset();
 
   DLOG(INFO) << this << " session destroyed";
 }
@@ -70,7 +63,7 @@ HttpProxySession::~HttpProxySession() {
 bool HttpProxySession::Start() {
   madoka::concurrent::LockGuard guard(&lock_);
 
-  if (proxy_ == nullptr || client_ == nullptr)
+  if (proxy_ == nullptr || client_ == nullptr || timer_ == nullptr)
     return false;
 
   DLOG(INFO) << this << " session started";
@@ -93,7 +86,7 @@ void HttpProxySession::Stop() {
 
 void HttpProxySession::ReceiveRequest() {
   if (timer_ != nullptr) {
-    SetThreadpoolTimer(timer_, &kTimerDueTime, 0, 1000);
+    timer_->Start(kTimeout, 0);
     client_->ReadAsync(buffer_, kBufferSize, this);
   }
 }
@@ -470,12 +463,10 @@ void HttpProxySession::SendToRemote(const void* buffer, int length) {
     remote_->WriteAsync(buffer, length, this);
 }
 
-void CALLBACK HttpProxySession::TimerCallback(PTP_CALLBACK_INSTANCE instance,
-                                              void* context, PTP_TIMER timer) {
-  LOG(WARNING) << context << " request timed-out";
-
-  SetThreadpoolTimer(timer, nullptr, 0, 0);
-  static_cast<HttpProxySession*>(context)->client_->Close();
+void HttpProxySession::OnTimeout() {
+  madoka::concurrent::LockGuard guard(&lock_);
+  LOG(WARNING) << this << " request timed-out";
+  client_->Close();
 }
 
 void HttpProxySession::OnRead(Channel* /*channel*/, DWORD error,
@@ -549,7 +540,7 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
 
 void HttpProxySession::OnRequestReceived(DWORD error, int length) {
   if (timer_ != nullptr)
-    SetThreadpoolTimer(timer_, nullptr, 0, 0);
+    timer_->Stop();
 
   if (error != 0 || length == 0) {
     LOG_IF(ERROR, error != 0) << this
@@ -618,7 +609,7 @@ void HttpProxySession::OnRequestSent(DWORD error, int length) {
 
 void HttpProxySession::OnRequestBodyReceived(DWORD error, int length) {
   if (timer_ != nullptr)
-    SetThreadpoolTimer(timer_, nullptr, 0, 0);
+    timer_->Stop();
 
   if (error != 0 || length == 0) {
     LOG_IF(ERROR, error != 0) << this
