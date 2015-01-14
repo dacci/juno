@@ -4,8 +4,14 @@
 
 #include <madoka/concurrent/lock_guard.h>
 #include <madoka/net/async_datagram_socket.h>
+#include <madoka/net/resolver.h>
+
+#include <string>
 
 using ::madoka::net::AsyncDatagramSocket;
+
+DatagramChannel::DatagramChannel() : closed_() {
+}
 
 DatagramChannel::DatagramChannel(const AsyncDatagramSocketPtr& socket)
     : socket_(socket), closed_() {
@@ -69,6 +75,34 @@ void DatagramChannel::WriteAsync(const void* buffer, int length,
   madoka::concurrent::LockGuard guard(&lock_);
   socket_->SendAsync(buffer, length, 0, request.get());
   requests_.push_back(std::move(request));
+}
+
+bool DatagramChannel::Connect(const std::string& address, int port) {
+  socket_.reset(new AsyncDatagramSocket());
+  if (socket_ == nullptr)
+    return false;
+
+  madoka::net::Resolver resolver;
+  resolver.SetType(SOCK_DGRAM);
+  if (!resolver.Resolve(address.c_str(), port))
+    return false;
+
+  for (auto end_point : resolver) {
+    if (socket_->Connect(end_point))
+      break;
+  }
+  if (!socket_->connected())
+    return false;
+
+  return true;
+}
+
+int DatagramChannel::Read(void* buffer, int length) {
+  return socket_->Receive(buffer, length, 0);
+}
+
+int DatagramChannel::Write(const void* buffer, int length) {
+  return socket_->Send(buffer, length, 0);
 }
 
 void DatagramChannel::EndRequest(Request* request) {

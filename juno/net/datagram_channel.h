@@ -8,6 +8,7 @@
 #include <madoka/net/socket_event_listener.h>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 #include "net/channel.h"
@@ -17,12 +18,17 @@ class DatagramChannel : public Channel {
   typedef std::shared_ptr<madoka::net::AsyncDatagramSocket>
       AsyncDatagramSocketPtr;
 
+  DatagramChannel();
   explicit DatagramChannel(const AsyncDatagramSocketPtr& socket);
   ~DatagramChannel();
 
   void Close() override;
   void ReadAsync(void* buffer, int length, Listener* listener) override;
   void WriteAsync(const void* buffer, int length, Listener* listener) override;
+
+  bool Connect(const std::string& address, int port);
+  int Read(void* buffer, int length);
+  int Write(const void* buffer, int length);
 
  private:
   class Request : public madoka::net::SocketEventAdapter {
