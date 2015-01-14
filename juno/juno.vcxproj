@@ -210,10 +210,14 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="misc\registry_key.cpp" />
+    <ClCompile Include="misc\timer_service.cpp" />
     <ClCompile Include="net\channel_util.cpp" />
     <ClCompile Include="net\datagram_channel.cpp" />
     <ClCompile Include="net\secure_socket_channel.cpp" />
     <ClCompile Include="net\socket_channel.cpp" />
+    <ClCompile Include="net\tcp_server.cpp" />
+    <ClCompile Include="net\tunneling_service.cpp" />
+    <ClCompile Include="net\udp_server.cpp" />
     <ClCompile Include="service\http\http_digest.cpp" />
     <ClCompile Include="service\http\http_headers.cpp" />
     <ClCompile Include="service\http\http_proxy.cpp" />
@@ -232,9 +236,6 @@
     <ClCompile Include="service\socks\socks_proxy.cpp" />
     <ClCompile Include="service\socks\socks_proxy_provider.cpp" />
     <ClCompile Include="service\socks\socks_proxy_session.cpp" />
-    <ClCompile Include="net\tcp_server.cpp" />
-    <ClCompile Include="net\tunneling_service.cpp" />
-    <ClCompile Include="net\udp_server.cpp" />
     <ClCompile Include="ui\http_header_filter_dialog.cpp" />
     <ClCompile Include="ui\http_proxy_dialog.cpp" />
     <ClCompile Include="ui\main_frame.cpp" />
@@ -248,27 +249,28 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app\juno.h" />
+    <ClInclude Include="app\server_config.h" />
+    <ClInclude Include="app\service_manager.h" />
+    <ClInclude Include="build\precompile.h" />
+    <ClInclude Include="misc\registry_key-inl.h" />
+    <ClInclude Include="misc\registry_key.h" />
     <ClInclude Include="misc\security\certificate_store.h" />
     <ClInclude Include="misc\security\schannel_context.h" />
     <ClInclude Include="misc\security\schannel_credential.h" />
     <ClInclude Include="misc\security\security_buffer.h" />
+    <ClInclude Include="misc\string_util.h" />
+    <ClInclude Include="misc\timer_service.h" />
     <ClInclude Include="net\channel.h" />
     <ClInclude Include="net\channel_util.h" />
     <ClInclude Include="net\datagram.h" />
     <ClInclude Include="net\datagram_channel.h" />
     <ClInclude Include="net\secure_socket_channel.h" />
+    <ClInclude Include="net\server.h" />
     <ClInclude Include="net\socket_channel.h" />
-    <ClInclude Include="service\service.h" />
-    <ClInclude Include="service\service_config.h" />
-    <ClInclude Include="app\service_manager.h" />
-    <ClInclude Include="service\service_provider.h" />
-    <ClInclude Include="build\precompile.h" />
-    <ClInclude Include="misc\registry_key-inl.h" />
-    <ClInclude Include="misc\registry_key.h" />
-    <ClInclude Include="misc\schannel\schannel_context.h" />
-    <ClInclude Include="misc\schannel\schannel_credential.h" />
-    <ClInclude Include="misc\schannel\security_buffer.h" />
-    <ClInclude Include="misc\string_util.h" />
+    <ClInclude Include="net\tcp_server.h" />
+    <ClInclude Include="net\tunneling_service.h" />
+    <ClInclude Include="net\udp_server.h" />
+    <ClInclude Include="res\resource.h" />
     <ClInclude Include="service\http\http_digest.h" />
     <ClInclude Include="service\http\http_headers.h" />
     <ClInclude Include="service\http\http_proxy.h" />
@@ -284,17 +286,14 @@
     <ClInclude Include="service\scissors\scissors_provider.h" />
     <ClInclude Include="service\scissors\scissors_tcp_session.h" />
     <ClInclude Include="service\scissors\scissors_udp_session.h" />
-    <ClInclude Include="net\server.h" />
+    <ClInclude Include="service\service.h" />
+    <ClInclude Include="service\service_config.h" />
+    <ClInclude Include="service\service_provider.h" />
     <ClInclude Include="service\socks\socks4.h" />
     <ClInclude Include="service\socks\socks5.h" />
     <ClInclude Include="service\socks\socks_proxy.h" />
     <ClInclude Include="service\socks\socks_proxy_provider.h" />
     <ClInclude Include="service\socks\socks_proxy_session.h" />
-    <ClInclude Include="net\tcp_server.h" />
-    <ClInclude Include="net\tunneling_service.h" />
-    <ClInclude Include="net\udp_server.h" />
-    <ClInclude Include="res\resource.h" />
-    <ClInclude Include="app\server_config.h" />
     <ClInclude Include="ui\http_header_filter_dialog.h" />
     <ClInclude Include="ui\http_proxy_dialog.h" />
     <ClInclude Include="ui\main_frame.h" />
