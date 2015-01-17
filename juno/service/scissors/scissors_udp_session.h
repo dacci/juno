@@ -3,46 +3,43 @@
 #ifndef JUNO_SERVICE_SCISSORS_SCISSORS_UDP_SESSION_H_
 #define JUNO_SERVICE_SCISSORS_SCISSORS_UDP_SESSION_H_
 
-#include <madoka/net/resolver.h>
+#include <madoka/net/async_datagram_socket.h>
 #include <madoka/net/socket_event_listener.h>
 
 #include <memory>
 
+#include "misc/timer_service.h"
+#include "net/datagram_channel.h"
 #include "service/service.h"
 #include "service/scissors/scissors.h"
 
-struct Datagram;
-
 class ScissorsUdpSession
-    : public Scissors::Session, public madoka::net::SocketEventAdapter {
+    : public Scissors::UdpSession,
+      private madoka::net::SocketEventAdapter,
+      private TimerService::Callback {
  public:
-  ScissorsUdpSession(Scissors* service, const Service::DatagramPtr& datagram);
+  ScissorsUdpSession(Scissors* service,
+                     const Scissors::AsyncDatagramSocketPtr& source);
   virtual ~ScissorsUdpSession();
 
-  bool Start();
+  bool Start() override;
   void Stop() override;
-
-  void OnReceived(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-                  void* buffer, int length) override;
-  void OnSent(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-              void* buffer, int length) override;
-  void OnSentTo(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-                void* buffer, int length, sockaddr* to, int to_length) override;
 
  private:
   static const size_t kBufferSize = 64 * 1024;  // 64 KiB
   static const int kTimeout = 15 * 1000;        // 15 sec
 
-  static void CALLBACK OnTimeout(PTP_CALLBACK_INSTANCE instance, PVOID param,
-                                 PTP_TIMER timer);
+  void OnReceived(const Service::DatagramPtr& datagram) override;
 
-  static FILETIME kTimerDueTime;
+  void OnReceived(madoka::net::AsyncDatagramSocket* socket, DWORD error,
+                  void* buffer, int length) override;
 
-  madoka::net::Resolver resolver_;
-  Service::DatagramPtr datagram_;
-  std::unique_ptr<madoka::net::AsyncDatagramSocket> remote_;
-  std::unique_ptr<char[]> buffer_;
-  PTP_TIMER timer_;
+  void OnTimeout() override;
+
+  Scissors::AsyncDatagramSocketPtr source_;
+  Scissors::AsyncDatagramSocketPtr sink_;
+  char buffer_[kBufferSize];
+  TimerService::TimerObject timer_;
 };
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_UDP_SESSION_H_

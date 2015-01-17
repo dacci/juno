@@ -3,31 +3,57 @@
 #include "service/scissors/scissors.h"
 
 #include <madoka/concurrent/lock_guard.h>
-#include <madoka/net/resolver.h>
+
+#include <base/logging.h>
 
 #include "misc/registry_key.h"
 #include "misc/security/schannel_credential.h"
 #include "net/datagram.h"
 #include "net/datagram_channel.h"
+#include "net/secure_socket_channel.h"
+#include "net/socket_channel.h"
 #include "net/tunneling_service.h"
 #include "service/scissors/scissors_config.h"
 #include "service/scissors/scissors_tcp_session.h"
 #include "service/scissors/scissors_udp_session.h"
+#include "service/scissors/scissors_unwrapping_session.h"
+#include "service/scissors/scissors_wrapping_session.h"
 
 using ::madoka::net::AsyncDatagramSocket;
 using ::madoka::net::AsyncSocket;
 using ::madoka::net::Resolver;
 
-Scissors::Scissors(const std::shared_ptr<ServiceConfig>& config)
-    : config_(std::static_pointer_cast<ScissorsConfig>(config)),
-      stopped_(),
-      credential_() {
+Scissors::Scissors() : stopped_() {
+  stream_resolver_.SetType(SOCK_STREAM);
+  dgram_resolver_.SetType(SOCK_DGRAM);
 }
 
 Scissors::~Scissors() {
+  Stop();
 }
 
-bool Scissors::Init() {
+bool Scissors::UpdateConfig(const ServiceConfigPtr& config) {
+  madoka::concurrent::LockGuard lock(&lock_);
+
+  while (!connecting_.empty())
+    not_connecting_.Sleep(&lock_);
+
+  config_ = std::static_pointer_cast<ScissorsConfig>(config);
+
+  if (!stream_resolver_.Resolve(config_->remote_address().c_str(),
+                                config_->remote_port())) {
+    LOG(ERROR) << "failed to resolve "
+               << config_->remote_address() << ":" << config_->remote_port();
+    return false;
+  }
+
+  if (!dgram_resolver_.Resolve(config_->remote_address().c_str(),
+                               config_->remote_port())) {
+    LOG(ERROR) << "failed to resolve "
+               << config_->remote_address() << ":" << config_->remote_port();
+    return false;
+  }
+
   if (config_->remote_ssl() && credential_ == nullptr) {
     credential_.reset(new SchannelCredential());
     if (credential_ == nullptr)
@@ -37,23 +63,17 @@ bool Scissors::Init() {
     credential_->SetFlags(SCH_CRED_MANUAL_CRED_VALIDATION);
 
     SECURITY_STATUS status = credential_->AcquireHandle(SECPKG_CRED_OUTBOUND);
-    if (FAILED(status))
+    if (FAILED(status)) {
+      LOG(ERROR) << "failed to initialize credential: " << status;
       return false;
+    }
   }
 
   return true;
 }
 
-bool Scissors::UpdateConfig(const ServiceConfigPtr& config) {
-  madoka::concurrent::LockGuard lock(&critical_section_);
-
-  config_ = std::static_pointer_cast<ScissorsConfig>(config);
-
-  return Init();
-}
-
 void Scissors::Stop() {
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  madoka::concurrent::LockGuard lock(&lock_);
 
   stopped_ = true;
 
@@ -61,12 +81,69 @@ void Scissors::Stop() {
     session->Stop();
 
   while (!sessions_.empty())
-    empty_.Sleep(&critical_section_);
+    empty_.Sleep(&lock_);
+}
+
+bool Scissors::StartSession(std::unique_ptr<Session>&& session) {
+  if (session == nullptr)
+    return false;
+
+  madoka::concurrent::LockGuard lock(&lock_);
+
+  if (!session->Start())
+    return false;
+
+  sessions_.push_back(std::move(session));
+
+  return true;
 }
 
 void Scissors::EndSession(Session* session) {
+  DLOG(INFO) << session << " " __FUNCTION__;
+
   if (!TrySubmitThreadpoolCallback(EndSessionImpl, session, nullptr))
     EndSessionImpl(session);
+}
+
+Scissors::AsyncDatagramSocketPtr Scissors::CreateSocket() {
+  auto socket = std::make_shared<AsyncDatagramSocket>();
+  if (socket == nullptr)
+    return nullptr;
+
+  for (auto end_point : dgram_resolver_) {
+    if (socket->Connect(end_point))
+      break;
+  }
+  if (!socket->connected()) {
+    LOG(ERROR) << "failed to connect to "
+               << config_->remote_address() << ":" << config_->remote_port();
+    return nullptr;
+  }
+
+  return socket;
+}
+
+Service::ChannelPtr Scissors::CreateChannel(
+    const std::shared_ptr<AsyncSocket>& socket) {
+  madoka::concurrent::LockGuard lock(&lock_);
+
+  if (config_->remote_ssl()) {
+    auto channel =
+        std::make_shared<SecureSocketChannel>(credential_.get(), socket, false);
+    if (channel != nullptr)
+      channel->context()->set_target_name(config_->remote_address());
+    return channel;
+  } else {
+    return std::make_shared<SocketChannel>(socket);
+  }
+}
+
+void Scissors::ConnectSocket(AsyncSocket* socket,
+                             SocketEventListener* listener) {
+  madoka::concurrent::LockGuard lock(&lock_);
+
+  connecting_.insert({ socket, listener });
+  socket->ConnectAsync(*stream_resolver_.begin(), this);
 }
 
 void CALLBACK Scissors::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
@@ -77,7 +154,7 @@ void CALLBACK Scissors::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
 
 void Scissors::EndSessionImpl(Session* session) {
   std::unique_ptr<Session> removed;
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  madoka::concurrent::LockGuard lock(&lock_);
 
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
     if (i->get() == session) {
@@ -90,71 +167,97 @@ void Scissors::EndSessionImpl(Session* session) {
       break;
     }
   }
+
+  for (auto i = udp_sessions_.begin(), l = udp_sessions_.end(); i != l; ++i) {
+    if (i->second == session) {
+      udp_sessions_.erase(i);
+      break;
+    }
+  }
 }
 
 void Scissors::OnAccepted(const ChannelPtr& client) {
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  madoka::concurrent::LockGuard lock(&lock_);
 
   if (stopped_)
     return;
 
   if (config_->remote_udp()) {
-    Resolver resolver;
-    resolver.SetType(SOCK_DGRAM);
-    if (!resolver.Resolve(config_->remote_address().c_str(),
-                          config_->remote_port()))
-      return;
-
-    auto socket = std::make_shared<AsyncDatagramSocket>();
-    if (socket == nullptr)
-      return;
-
-    for (const addrinfo* end_point : resolver) {
-      if (socket->Connect(end_point))
-        break;
-
-      socket->Close();
-    }
-    if (!socket->connected())
-      return;
-
-    auto remote = std::make_shared<DatagramChannel>(socket);
-    if (remote == nullptr)
-      return;
-
-    if (!TunnelingService::Bind(client, remote)) {
-      client->Close();
-      remote->Close();
-    }
-  } else {
-    auto session = std::make_unique<ScissorsTcpSession>(this, client);
+    auto session = std::make_unique<ScissorsUnwrappingSession>(this);
     if (session == nullptr)
       return;
 
-    if (session->Start())
-      sessions_.push_back(std::move(session));
+    session->SetSource(client);
+
+    StartSession(std::move(session));
+  } else {
+    StartSession(std::make_unique<ScissorsTcpSession>(this, client));
   }
 }
 
 void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  madoka::concurrent::LockGuard lock(&lock_);
 
   if (stopped_)
     return;
 
-  std::unique_ptr<Session> session;
+  UdpSession* udp_session = nullptr;
 
-  if (config_->remote_udp()) {
-    session.reset(new ScissorsUdpSession(this, datagram));
-    if (session == nullptr)
-      return;
+  sockaddr_storage key;
+  memset(&key, 0, sizeof(key));
+  memmove(&key, &datagram->from, datagram->from_length);
+
+  auto found = udp_sessions_.find(key);
+  if (found == udp_sessions_.end()) {
+    LOG(INFO) << this << " session not found, creating new one";
+
+    std::unique_ptr<UdpSession> session;
+
+    if (config_->remote_udp()) {
+      session.reset(new ScissorsUdpSession(this, datagram->socket));
+    } else {
+      auto wrapper = std::make_unique<ScissorsWrappingSession>(this);
+      if (wrapper == nullptr)
+        return;
+
+      wrapper->SetSource(datagram->socket);
+      wrapper->SetSourceAddress(datagram->from, datagram->from_length);
+
+      session = std::move(wrapper);
+    }
+
+    udp_session = session.get();
+    if (StartSession(std::move(session)))
+      udp_sessions_.insert({ key, udp_session });
+    else
+      udp_session = nullptr;
   } else {
-    return;
+    DLOG(INFO) << this << " session found";
+
+    udp_session = found->second;
   }
 
-  if (session->Start())
-    sessions_.push_back(std::move(session));
+  if (udp_session != nullptr)
+    udp_session->OnReceived(datagram);
 }
 
 void Scissors::OnError(DWORD error) {
+}
+
+void Scissors::OnConnected(AsyncSocket* socket, DWORD error) {
+  if (error != 0)
+    LOG(ERROR) << "failed to connect to "
+               << config_->remote_address() << ":" << config_->remote_port()
+               << " (erro: " << error << ")";
+
+  lock_.Lock();
+
+  auto listener = connecting_[socket];
+  connecting_.erase(socket);
+  if (connecting_.empty())
+    not_connecting_.WakeAll();
+
+  lock_.Unlock();
+
+  listener->OnConnected(socket, error);
 }

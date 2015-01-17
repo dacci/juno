@@ -233,6 +233,8 @@
     <ClCompile Include="service\scissors\scissors_provider.cpp" />
     <ClCompile Include="service\scissors\scissors_tcp_session.cpp" />
     <ClCompile Include="service\scissors\scissors_udp_session.cpp" />
+    <ClCompile Include="service\scissors\scissors_unwrapping_session.cpp" />
+    <ClCompile Include="service\scissors\scissors_wrapping_session.cpp" />
     <ClCompile Include="service\socks\socks_proxy.cpp" />
     <ClCompile Include="service\socks\socks_proxy_provider.cpp" />
     <ClCompile Include="service\socks\socks_proxy_session.cpp" />
@@ -286,6 +288,8 @@
     <ClInclude Include="service\scissors\scissors_provider.h" />
     <ClInclude Include="service\scissors\scissors_tcp_session.h" />
     <ClInclude Include="service\scissors\scissors_udp_session.h" />
+    <ClInclude Include="service\scissors\scissors_unwrapping_session.h" />
+    <ClInclude Include="service\scissors\scissors_wrapping_session.h" />
     <ClInclude Include="service\service.h" />
     <ClInclude Include="service\service_config.h" />
     <ClInclude Include="service\service_provider.h" />

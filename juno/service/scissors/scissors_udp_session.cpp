@@ -4,92 +4,91 @@
 
 #include <assert.h>
 
+#include <base/logging.h>
+
 #include "net/datagram.h"
 #include "service/scissors/scissors_config.h"
 
 using ::madoka::net::AsyncDatagramSocket;
 
-FILETIME ScissorsUdpSession::kTimerDueTime = {
-  -kTimeout * 1000 * 10,   // in 100-nanoseconds
-  -1
-};
-
-ScissorsUdpSession::ScissorsUdpSession(Scissors* service,
-                                       const Service::DatagramPtr& datagram)
-    : Session(service),
-      datagram_(datagram),
-      remote_(new AsyncDatagramSocket()),
-      buffer_(new char[kBufferSize]),
-      timer_() {
-  resolver_.SetType(SOCK_DGRAM);
-  timer_ = ::CreateThreadpoolTimer(OnTimeout, this, nullptr);
+ScissorsUdpSession::ScissorsUdpSession(
+    Scissors* service, const Scissors::AsyncDatagramSocketPtr& source)
+    : UdpSession(service), source_(source) {
+  DLOG(INFO) << this << "session created";
 }
 
 ScissorsUdpSession::~ScissorsUdpSession() {
-  if (timer_ != nullptr) {
-    ::SetThreadpoolTimer(timer_, nullptr, 0, 0);
-    ::WaitForThreadpoolTimerCallbacks(timer_, TRUE);
-    ::CloseThreadpoolTimer(timer_);
-    timer_ = nullptr;
-  }
+  DLOG(INFO) << this << "session destroyed";
 }
 
 bool ScissorsUdpSession::Start() {
-  if (remote_ == nullptr)
+  timer_ = TimerService::GetDefault()->Create(this);
+  if (timer_ == nullptr) {
+    LOG(ERROR) << this << " failed to create timer";
     return false;
+  }
 
-  if (buffer_ == nullptr)
+  sink_ = service_->CreateSocket();
+  if (sink_ == nullptr) {
+    LOG(ERROR) << this << " failed to create sink";
     return false;
+  }
 
-  if (!resolver_.Resolve(service_->config_->remote_address().c_str(),
-                         service_->config_->remote_port()))
-    return false;
+  timer_->Start(kTimeout, 0);
+  sink_->ReceiveAsync(buffer_, sizeof(buffer_), 0, this);
 
-  if (!remote_->Connect(*resolver_.begin()))
-    return false;
-
-  remote_->SendAsync(datagram_->data.get(), datagram_->data_length, 0, this);
+  DLOG(INFO) << this << " session started";
 
   return true;
 }
 
 void ScissorsUdpSession::Stop() {
-  remote_->Close();
+  DLOG(INFO) << this << " stop requested";
+
+  timer_->Stop();
+  service_->EndSession(this);
+}
+
+void ScissorsUdpSession::OnReceived(const Service::DatagramPtr& datagram) {
+  DLOG(INFO) << this << " "
+             << datagram->data_length << " bytes receved from the source";
+
+  timer_->Stop();
+
+  int sent = sink_->Send(datagram->data.get(), datagram->data_length, 0);
+  if (sent == datagram->data_length) {
+    DLOG(INFO) << this << " " << sent << " bytes sent to the sink";
+    timer_->Start(kTimeout, 0);
+  } else {
+    LOG(ERROR) << this << " failed to send to the sink";
+    Stop();
+  }
 }
 
 void ScissorsUdpSession::OnReceived(AsyncDatagramSocket* socket, DWORD error,
                                     void* buffer, int length) {
-  assert(timer_ != nullptr);
-  ::SetThreadpoolTimer(timer_, nullptr, 0, 0);
+  timer_->Stop();
 
-  if (error == 0)
-    datagram_->socket->SendToAsync(
-        buffer_.get(), length, 0, reinterpret_cast<sockaddr*>(&datagram_->from),
-        datagram_->from_length, this);
-  else
-    service_->EndSession(this);
-}
+  if (error == 0) {
+    DLOG(INFO) << this << " " << length << " bytes received from the sink";
 
-void ScissorsUdpSession::OnSent(AsyncDatagramSocket* socket, DWORD error,
-                                void* buffer, int length) {
-  if (error != 0) {
-    service_->EndSession(this);
-    return;
+    int sent = source_->Send(buffer, length, 0);
+    if (sent == length) {
+      DLOG(INFO) << this << " " << sent << " bytes sent to the source";
+      timer_->Start(kTimeout, 0);
+      source_->ReceiveAsync(buffer_, sizeof(buffer_), 0, this);
+    } else {
+      LOG(ERROR) << this << " failed to send to the source";
+      Stop();
+    }
+  } else {
+    LOG(ERROR) << this << " failed to received from the sink: " << error;
+    Stop();
   }
-
-  assert(timer_ != nullptr);
-  ::SetThreadpoolTimer(timer_, &kTimerDueTime, 0, 0);
-  remote_->ReceiveAsync(buffer_.get(), kBufferSize, 0, this);
 }
 
-void ScissorsUdpSession::OnSentTo(AsyncDatagramSocket* socket, DWORD error,
-                                  void* buffer, int length, sockaddr* to,
-                                  int to_length) {
-  service_->EndSession(this);
-}
+void ScissorsUdpSession::OnTimeout() {
+  LOG(WARNING) << this << " timeout";
 
-void CALLBACK ScissorsUdpSession::OnTimeout(PTP_CALLBACK_INSTANCE instance,
-                                            PVOID param, PTP_TIMER timer) {
-  ScissorsUdpSession* session = static_cast<ScissorsUdpSession*>(param);
-  session->Stop();
+  sink_->Close();
 }

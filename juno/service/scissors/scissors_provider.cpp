@@ -37,11 +37,11 @@ ServiceConfigPtr ScissorsProvider::CopyConfig(const ServiceConfigPtr& config) {
 }
 
 ServicePtr ScissorsProvider::CreateService(const ServiceConfigPtr& config) {
-  auto service = std::make_unique<Scissors>(config);
+  auto service = std::make_unique<Scissors>();
   if (service == nullptr)
     return nullptr;
 
-  if (!service->Init())
+  if (!service->UpdateConfig(config))
     return nullptr;
 
   return std::move(service);

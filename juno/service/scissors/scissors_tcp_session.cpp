@@ -2,69 +2,66 @@
 
 #include "service/scissors/scissors_tcp_session.h"
 
-#include "net/secure_socket_channel.h"
-#include "net/socket_channel.h"
+#include <base/logging.h>
+
+#include <memory>
+
 #include "net/tunneling_service.h"
-#include "service/scissors/scissors_config.h"
 
 using ::madoka::net::AsyncSocket;
 
 ScissorsTcpSession::ScissorsTcpSession(Scissors* service,
-                                       const Service::ChannelPtr& client)
-    : Session(service), client_(client), remote_(new AsyncSocket()) {
-  resolver_.SetType(SOCK_STREAM);
+                                       const Service::ChannelPtr& source)
+    : Session(service), source_(source) {
+  DLOG(INFO) << this << " session created";
 }
 
 ScissorsTcpSession::~ScissorsTcpSession() {
   Stop();
+
+  DLOG(INFO) << this << " session destroyed";
 }
 
 bool ScissorsTcpSession::Start() {
-  if (remote_ == nullptr)
+  auto socket = std::make_shared<AsyncSocket>();
+  if (socket == nullptr) {
+    LOG(ERROR) << this << " failed to create socket";
     return false;
+  }
 
-  if (!resolver_.Resolve(service_->config_->remote_address().c_str(),
-                         service_->config_->remote_port()))
+  sink_ = service_->CreateChannel(socket);
+  if (sink_ == nullptr) {
+    LOG(ERROR) << this << " failed to create sink";
     return false;
+  }
 
-  remote_->ConnectAsync(*resolver_.begin(), this);
+  service_->ConnectSocket(socket.get(), this);
+
+  DLOG(INFO) << this << " session started";
 
   return true;
 }
 
 void ScissorsTcpSession::Stop() {
-  if (client_ != nullptr)
-    client_->Close();
+  DLOG(INFO) << this << " stop requested";
 
-  if (remote_ != nullptr) {
-    if (remote_->connected())
-      remote_->Shutdown(SD_BOTH);
-    else
-      remote_->Close();
-  }
+  if (sink_ != nullptr)
+    sink_->Close();
+
+  if (source_ != nullptr)
+    source_->Close();
 }
 
 void ScissorsTcpSession::OnConnected(AsyncSocket* socket, DWORD error) {
   if (error == 0) {
-    TunnelingService::ChannelPtr remote_channel;
-
-    if (service_->config_->remote_ssl()) {
-      auto channel = std::make_shared<SecureSocketChannel>(
-          service_->credential_.get(), remote_, false);
-      if (channel != nullptr)
-        channel->context()->set_target_name(
-          service_->config_->remote_address());
-
-      remote_channel = std::move(channel);
+    if (TunnelingService::Bind(source_, sink_)) {
+      source_.reset();
+      sink_.reset();
     } else {
-      remote_channel = std::make_shared<SocketChannel>(remote_);
+      LOG(ERROR) << this << " failed to bind channels";
     }
-
-    if (remote_channel != nullptr &&
-        TunnelingService::Bind(client_, remote_channel)) {
-      client_.reset();
-      remote_.reset();
-    }
+  } else {
+    LOG(ERROR) << this << " failed to connect: " << error;
   }
 
   service_->EndSession(this);
