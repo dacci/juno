@@ -38,19 +38,17 @@ const std::string kProxyAuthorization("Proxy-Authorization");
 HttpProxySession::HttpProxySession(HttpProxy* proxy,
                                    const Service::ChannelPtr& client)
     : proxy_(proxy),
+      timer_(TimerService::GetDefault()->Create(this)),
       state_(Idle),
       tunnel_(),
       last_port_(-1),
       retry_(),
       client_(client),
-      close_remote_(),
-      timer_(TimerService::GetDefault()->Create(this)) {
+      close_remote_() {
   DLOG(INFO) << this << " session created";
 }
 
 HttpProxySession::~HttpProxySession() {
-  madoka::concurrent::LockGuard guard(&lock_);
-
   if (timer_ != nullptr)
     timer_->Stop();
 
@@ -76,12 +74,16 @@ bool HttpProxySession::Start() {
 void HttpProxySession::Stop() {
   madoka::concurrent::LockGuard guard(&lock_);
 
+  DLOG(INFO) << this << " stop requested";
+
+  if (timer_ != nullptr)
+    timer_->Stop();
+
   if (remote_ != nullptr)
     remote_->Close();
 
-  client_->Close();
-
-  DLOG(INFO) << this << " session stopped";
+  if (client_ != nullptr)
+    client_->Close();
 }
 
 void HttpProxySession::ReceiveRequest() {
@@ -464,9 +466,9 @@ void HttpProxySession::SendToRemote(const void* buffer, int length) {
 }
 
 void HttpProxySession::OnTimeout() {
-  madoka::concurrent::LockGuard guard(&lock_);
   LOG(WARNING) << this << " request timed-out";
-  client_->Close();
+  Stop();
+  proxy_->EndSession(this);
 }
 
 void HttpProxySession::OnRead(Channel* /*channel*/, DWORD error,
@@ -539,8 +541,7 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
 }
 
 void HttpProxySession::OnRequestReceived(DWORD error, int length) {
-  if (timer_ != nullptr)
-    timer_->Stop();
+  timer_->Stop();
 
   if (error != 0 || length == 0) {
     LOG_IF(ERROR, error != 0) << this
@@ -608,8 +609,7 @@ void HttpProxySession::OnRequestSent(DWORD error, int length) {
 }
 
 void HttpProxySession::OnRequestBodyReceived(DWORD error, int length) {
-  if (timer_ != nullptr)
-    timer_->Stop();
+  timer_->Stop();
 
   if (error != 0 || length == 0) {
     LOG_IF(ERROR, error != 0) << this
@@ -669,13 +669,8 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
   }
 
   if (tunnel_) {
-    if (remote_buffer_.empty()) {
-      EndResponse();
-    } else {
-      state_ = Idle;
-      client_->WriteAsync(remote_buffer_.data(), remote_buffer_.size(), this);
-    }
-
+    client_.reset();
+    EndResponse();
     return;
   }
 

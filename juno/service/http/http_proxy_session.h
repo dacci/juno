@@ -80,6 +80,7 @@ class HttpProxySession
 
   HttpProxy* const proxy_;
   madoka::concurrent::CriticalSection lock_;
+  TimerService::TimerObject timer_;
   char buffer_[kBufferSize];
   State state_;
   int64_t last_chunk_size_;
@@ -105,7 +106,6 @@ class HttpProxySession
   bool close_remote_;
 
   char peek_buffer_[16];
-  TimerService::TimerObject timer_;
 };
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_PROXY_SESSION_H_
