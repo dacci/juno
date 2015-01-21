@@ -12,10 +12,9 @@
 #include "ui/preference_dialog.h"
 
 const UINT MainFrame::WM_TASKBARCREATED =
-    ::RegisterWindowMessage(_T("TaskbarCreated"));
+    RegisterWindowMessage(_T("TaskbarCreated"));
 
-MainFrame::MainFrame()
-    : old_windows_(!RunTimeHelper::IsWin7()), notify_icon_(), configuring_() {
+MainFrame::MainFrame() : old_windows_(false), notify_icon_(), configuring_() {
 }
 
 MainFrame::~MainFrame() {
@@ -51,7 +50,7 @@ void MainFrame::TrackTrayMenu(int x, int y) {
   CMenuHandle popup_menu = menu.GetSubMenu(0);
   popup_menu.SetMenuDefaultItem(kDefaultTrayCommand);
 
-  ::SetForegroundWindow(m_hWnd);
+  SetForegroundWindow(m_hWnd);
   popup_menu.TrackPopupMenu(TPM_RIGHTBUTTON, x, y, m_hWnd);
   PostMessage(WM_NULL);
 }
@@ -64,18 +63,23 @@ int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
   notify_icon_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_GUID |
                         NIF_SHOWTIP;
   notify_icon_.uCallbackMessage = WM_TRAYNOTIFY;
-  notify_icon_.hIcon = ::AtlLoadIconImage(IDR_MAIN_FRAME, 0, 16, 16);
-  ::_stprintf_s(notify_icon_.szTip, _T("Juno"));
+  notify_icon_.hIcon = AtlLoadIconImage(IDR_MAIN_FRAME, 0, 16, 16);
+  _stprintf_s(notify_icon_.szTip, _T("Juno"));
   notify_icon_.uVersion = NOTIFYICON_VERSION_4;
   notify_icon_.guidItem = GUID_JUNO_APPLICATION;
 
-  ::Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
-  if (!::Shell_NotifyIcon(NIM_ADD, &notify_icon_) ||
-      !::Shell_NotifyIcon(NIM_SETVERSION, &notify_icon_)) {
+  Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
+  if (!Shell_NotifyIcon(NIM_ADD, &notify_icon_)) {
     LOG(ERROR) << "Shell_NotifyIcon failed";
     message.LoadString(IDS_ERR_INIT_FAILED);
     MessageBox(message, nullptr, MB_ICONERROR);
     return -1;
+  }
+
+  if (RunTimeHelper::IsWin7() &&
+      !Shell_NotifyIcon(NIM_SETVERSION, &notify_icon_)) {
+    old_windows_ = true;
+    LOG(WARNING) << "NIM_SETVERSION failed.";
   }
 
   if (!TunnelingService::Init()) {
@@ -104,9 +108,12 @@ int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
 void MainFrame::OnDestroy() {
   SetMsgHandled(FALSE);
 
+  notify_icon_.hIcon = AtlLoadIconImage(IDR_TRAY_MENU, 0, 16, 16);
+  Shell_NotifyIcon(NIM_MODIFY, &notify_icon_);
+
   StopAndUnload();
   TunnelingService::Term();
-  ::Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
+  Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
 }
 
 void MainFrame::OnEndSession(BOOL ending, UINT log_off) {
@@ -139,7 +146,7 @@ LRESULT MainFrame::OnOldTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
 
     case WM_RBUTTONUP: {
       POINT point;
-      ::GetCursorPos(&point);
+      GetCursorPos(&point);
       TrackTrayMenu(point.x, point.y);
       break;
     }
@@ -150,8 +157,8 @@ LRESULT MainFrame::OnOldTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
 
 LRESULT MainFrame::OnTaskbarCreated(UINT message, WPARAM wParam,
                                     LPARAM lParam) {
-  ::Shell_NotifyIcon(NIM_ADD, &notify_icon_);
-  ::Shell_NotifyIcon(NIM_SETVERSION, &notify_icon_);
+  Shell_NotifyIcon(NIM_ADD, &notify_icon_);
+  old_windows_ = Shell_NotifyIcon(NIM_SETVERSION, &notify_icon_) == FALSE;
 
   return 0;
 }
