@@ -668,13 +668,8 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
     return;
   }
 
-  if (tunnel_) {
-    client_.reset();
-    EndResponse();
-    return;
-  }
-
-  if (request_.method().compare("HEAD") == 0 || response_length_ == 0) {
+  if (request_.method().compare("HEAD") == 0 || response_length_ == 0 ||
+      tunnel_) {
     EndResponse();
     return;
   }
