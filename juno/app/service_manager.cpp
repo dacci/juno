@@ -4,6 +4,8 @@
 
 #include <assert.h>
 
+#include <base/logging.h>
+
 #include <memory>
 #include <string>
 #include <vector>
@@ -17,8 +19,6 @@
 #include "service/http/http_proxy_provider.h"
 #include "service/scissors/scissors_provider.h"
 #include "service/socks/socks_proxy_provider.h"
-
-ServiceManager* service_manager = nullptr;
 
 namespace {
 const char kConfigKeyName[] = "Software\\dacci.org\\Juno";
@@ -47,7 +47,12 @@ std::vector<std::unique_ptr<SecureChannelFactory>> channel_factories;
 
 }  // namespace
 
+ServiceManager* ServiceManager::instance_ = nullptr;
+
 ServiceManager::ServiceManager() {
+  DCHECK(instance_ == nullptr);
+  instance_ = this;
+
 #define PROVIDER_ENTRY(key) \
   providers_.insert(std::make_pair(#key, std::make_shared<key##Provider>()))
 

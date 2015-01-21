@@ -62,8 +62,8 @@ void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
   if (provider_dialog.DoModal(m_hWnd) != IDOK)
     return;
 
-  ServiceProviderPtr provider =
-      service_manager->GetProvider(provider_dialog.GetProviderName());
+  ServiceProviderPtr provider = ServiceManager::GetInstance()->
+      GetProvider(provider_dialog.GetProviderName());
   if (provider == nullptr)
     return;
 
@@ -91,7 +91,8 @@ void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
   CStringA name(name_unicode);
   auto& config = configs_->at(name.GetString());
 
-  auto& provider = service_manager->GetProvider(config->provider_name_);
+  auto& provider = ServiceManager::GetInstance()->
+      GetProvider(config->provider_name_);
   if (provider->Configure(config, *parent_) != IDOK)
     return;
 

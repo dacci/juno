@@ -419,6 +419,9 @@ BEGIN
     IDS_DUPLICATE_NAME      "この名前はすでに使われています"
     IDS_NOT_SPECIFIED       "入力されていません"
     IDS_INVALID_PORT        "ポート番号が正しくありません"
+    IDS_ERR_ALREADY_RUNNING "別のインスタンスがすでに起動しています。"
+    IDS_ERR_OUT_OF_MEMORY   "メモリが不足しています。"
+    IDS_ERR_INIT_FAILED     "機能の初期化に失敗しました。"
 END
 
 STRINGTABLE

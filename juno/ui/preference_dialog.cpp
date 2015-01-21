@@ -14,6 +14,7 @@ PreferenceDialog::PreferenceDialog()
     : CPropertySheetImpl(ID_FILE_NEW), centered_() {
   m_psh.dwFlags |= PSH_NOAPPLYNOW | PSH_NOCONTEXTHELP;
 
+  auto service_manager = ServiceManager::GetInstance();
   service_manager->CopyServiceConfigs(&service_configs_);
   service_manager->CopyServerConfigs(&server_configs_);
 

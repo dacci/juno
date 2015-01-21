@@ -9,7 +9,11 @@
 #include <atlcrack.h>
 #include <atlframe.h>
 
+#include <memory>
+
 #include "res/resource.h"
+
+class ServiceManager;
 
 class MainFrame : public CFrameWindowImpl<MainFrame> {
  public:
@@ -53,6 +57,8 @@ class MainFrame : public CFrameWindowImpl<MainFrame> {
   bool old_windows_;
   NOTIFYICONDATA notify_icon_;
   bool configuring_;
+
+  std::unique_ptr<ServiceManager> service_manager_;
 };
 
 #endif  // JUNO_UI_MAIN_FRAME_H_

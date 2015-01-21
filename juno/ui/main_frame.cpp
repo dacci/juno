@@ -2,8 +2,13 @@
 
 #include "ui/main_frame.h"
 
+#include <atlstr.h>
+
+#include <base/logging.h>
+
 #include "app/juno.h"
 #include "app/service_manager.h"
+#include "net/tunneling_service.h"
 #include "ui/preference_dialog.h"
 
 const UINT MainFrame::WM_TASKBARCREATED =
@@ -17,13 +22,13 @@ MainFrame::~MainFrame() {
 }
 
 bool MainFrame::LoadAndStart() {
-  if (!service_manager->LoadServices())
+  if (!service_manager_->LoadServices())
     return false;
 
-  if (!service_manager->LoadServers())
+  if (!service_manager_->LoadServers())
     return false;
 
-  if (!service_manager->StartServers()) {
+  if (!service_manager_->StartServers()) {
     CString message;
     message.LoadString(IDS_ERR_START_FAILED);
     MessageBox(message, nullptr, MB_ICONEXCLAMATION);
@@ -33,8 +38,8 @@ bool MainFrame::LoadAndStart() {
 }
 
 void MainFrame::StopAndUnload() {
-  service_manager->StopServers();
-  service_manager->StopServices();
+  service_manager_->StopServers();
+  service_manager_->StopServices();
 }
 
 void MainFrame::TrackTrayMenu(int x, int y) {
@@ -52,6 +57,8 @@ void MainFrame::TrackTrayMenu(int x, int y) {
 }
 
 int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
+  CString message;
+
   notify_icon_.cbSize = sizeof(notify_icon_);
   notify_icon_.hWnd = m_hWnd;
   notify_icon_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_GUID |
@@ -64,8 +71,29 @@ int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
 
   ::Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
   if (!::Shell_NotifyIcon(NIM_ADD, &notify_icon_) ||
-      !::Shell_NotifyIcon(NIM_SETVERSION, &notify_icon_))
+      !::Shell_NotifyIcon(NIM_SETVERSION, &notify_icon_)) {
+    LOG(ERROR) << "Shell_NotifyIcon failed";
+    message.LoadString(IDS_ERR_INIT_FAILED);
+    MessageBox(message, nullptr, MB_ICONERROR);
     return -1;
+  }
+
+  if (!TunnelingService::Init()) {
+    ATLASSERT(false);
+    LOG(ERROR) << "TunnelingService::Init failed";
+    message.LoadString(IDS_ERR_INIT_FAILED);
+    MessageBox(message, nullptr, MB_ICONERROR);
+    return -1;
+  }
+
+  service_manager_.reset(new ServiceManager());
+  ATLASSERT(service_manager_ != nullptr);
+  if (service_manager_ == nullptr) {
+    LOG(ERROR) << "ServiceManager cannot be allocated";
+    message.LoadString(IDS_ERR_OUT_OF_MEMORY);
+    MessageBox(message, nullptr, MB_ICONERROR);
+    return -1;
+  }
 
   if (!LoadAndStart())
     return -1;
@@ -77,6 +105,7 @@ void MainFrame::OnDestroy() {
   SetMsgHandled(FALSE);
 
   StopAndUnload();
+  TunnelingService::Term();
   ::Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
 }
 
@@ -140,7 +169,7 @@ void MainFrame::OnFileNew(UINT notify_code, int id, CWindow control) {
   if (result != IDOK)
     return;
 
-  bool succeeded = service_manager->UpdateConfiguration(
+  bool succeeded = service_manager_->UpdateConfiguration(
       std::move(dialog.service_configs_), std::move(dialog.server_configs_));
   if (!succeeded) {
     CString message;

@@ -5,6 +5,8 @@
 #include <crtdbg.h>
 #include <stdint.h>
 
+#include <atlstr.h>
+
 #include <madoka/net/winsock.h>
 
 #include <base/at_exit.h>
@@ -14,8 +16,6 @@
 
 #include <url/url_util.h>
 
-#include "app/service_manager.h"
-#include "net/tunneling_service.h"
 #include "ui/main_frame.h"
 
 // {303373E4-6763-4780-B199-5325DFAFEFDD}
@@ -34,41 +34,57 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
   }
 #endif  // _DEBUG
 
-  ::SetDllDirectory(_T(""));
-  ::SetSearchPathMode(BASE_SEARCH_PATH_ENABLE_SAFE_SEARCHMODE |
-                      BASE_SEARCH_PATH_PERMANENT);
+  SetDllDirectory(_T(""));
+  SetSearchPathMode(BASE_SEARCH_PATH_ENABLE_SAFE_SEARCHMODE |
+                    BASE_SEARCH_PATH_PERMANENT);
 
-  ::HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, nullptr, 0);
+  HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, nullptr, 0);
+
+  CString message;
 
   CString guid;
-  int length = ::StringFromGUID2(GUID_JUNO_APPLICATION, guid.GetBuffer(40), 40);
+  int length = StringFromGUID2(GUID_JUNO_APPLICATION, guid.GetBuffer(40), 40);
   guid.ReleaseBuffer(length);
 
-  HANDLE mutex = ::CreateMutex(nullptr, TRUE, guid);
-  DWORD error = ::GetLastError();
+  HANDLE mutex = CreateMutex(nullptr, TRUE, guid);
+  DWORD error = GetLastError();
   if (mutex == NULL)
     return __LINE__;
   if (error != ERROR_SUCCESS) {
-    ::CloseHandle(mutex);
+    CloseHandle(mutex);
+
+    message.LoadString(IDS_ERR_ALREADY_RUNNING);
+    MessageBox(NULL, message, nullptr, MB_ICONERROR);
     return __LINE__;
   }
 
+  message.LoadString(IDS_ERR_INIT_FAILED);
+
   HRESULT result = S_OK;
 
-  result = ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+  result = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
   ATLASSERT(SUCCEEDED(result));
-  if (FAILED(result))
+  if (FAILED(result)) {
+    LOG(ERROR) << "CoInitializeEx failed: 0x" << std::hex << result;
+    MessageBox(NULL, message, nullptr, MB_ICONERROR);
     return __LINE__;
+  }
 
-  result = ::AtlInitCommonControls(0xFFFF);  // all classes
+  result = AtlInitCommonControls(0xFFFF);  // all classes
   ATLASSERT(result != FALSE);
-  if (!result)
+  if (!result) {
+    LOG(ERROR) << "AtlInitCommonControls failed";
+    MessageBox(NULL, message, nullptr, MB_ICONERROR);
     return __LINE__;
+  }
 
   madoka::net::WinSock winsock(WINSOCK_VERSION);
   ATLASSERT(winsock.Initialized());
-  if (!winsock.Initialized())
+  if (!winsock.Initialized()) {
+    LOG(ERROR) << "WinSock startup failed: " << winsock.error();
+    MessageBox(NULL, message, nullptr, MB_ICONERROR);
     return __LINE__;
+  }
 
   base::AtExitManager atexit_manager;
   base::CommandLine::Init(0, nullptr);
@@ -81,20 +97,13 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
 
   url::Initialize();
 
-  if (!TunnelingService::Init()) {
-    ATLASSERT(false);
-    return __LINE__;
-  }
-
-  service_manager = new ServiceManager();
-  ATLASSERT(service_manager != nullptr);
-  if (service_manager == nullptr)
-    return __LINE__;
-
   result = _Module.Init(nullptr, hInstance);
   ATLASSERT(SUCCEEDED(result));
-  if (FAILED(result))
+  if (FAILED(result)) {
+    LOG(ERROR) << "CAppModule::Init failed: 0x" << std::hex << result;
+    MessageBox(NULL, message, nullptr, MB_ICONERROR);
     return __LINE__;
+  }
 
   {
     CMessageLoop message_loop;
@@ -107,14 +116,12 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
     _Module.RemoveMessageLoop();
   }
 
-  ::CloseHandle(mutex);
+  CloseHandle(mutex);
   _Module.Term();
-  delete service_manager;
-  TunnelingService::Term();
   url::Shutdown();
   logging::LogEventProvider::Uninitialize();
   base::CommandLine::Reset();
-  ::CoUninitialize();
+  CoUninitialize();
 
   return 0;
 }

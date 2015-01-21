@@ -24,6 +24,9 @@
 #define IDS_DUPLICATE_NAME              204
 #define IDS_NOT_SPECIFIED               205
 #define IDS_INVALID_PORT                206
+#define IDS_ERR_ALREADY_RUNNING         207
+#define IDS_ERR_OUT_OF_MEMORY           208
+#define IDS_ERR_INIT_FAILED             209
 #define IDS_COLUMN_NAME                 301
 #define IDS_COLUMN_PROVIDER             302
 #define IDS_COLUMN_BIND                 303

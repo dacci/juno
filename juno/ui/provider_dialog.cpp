@@ -28,7 +28,7 @@ const std::string& ProviderDialog::GetProviderName() const {
 BOOL ProviderDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   DoDataExchange();
 
-  for (auto& provider : service_manager->providers()) {
+  for (auto& provider : ServiceManager::GetInstance()->providers()) {
     provider_names_.push_back(provider.first);
     provider_combo_.AddString(CString(provider.first.c_str()));
   }
@@ -52,7 +52,7 @@ void ProviderDialog::OnOk(UINT notify_code, int id, CWindow control) {
   name_.resize(::GetWindowTextLengthA(name_edit_));
   ::GetWindowTextA(name_edit_, &name_[0], name_.size() + 1);
 
-  if (service_manager->GetServiceConfig(name_)) {
+  if (ServiceManager::GetInstance()->GetServiceConfig(name_)) {
     message.LoadString(IDS_DUPLICATE_NAME);
     balloon.pszText = message;
     name_edit_.ShowBalloonTip(&balloon);

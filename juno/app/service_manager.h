@@ -22,6 +22,10 @@ class ServiceManager {
   ServiceManager();
   virtual ~ServiceManager();
 
+  static ServiceManager* GetInstance() {
+    return instance_;
+  }
+
   bool LoadServices();
   void StopServices();
 
@@ -56,13 +60,13 @@ class ServiceManager {
   bool SaveServer(const RegistryKey& parent, const ServerConfigPtr& config);
   bool CreateServer(const std::string& name);
 
+  static ServiceManager* instance_;
+
   ProviderMap providers_;
   ServiceConfigMap service_configs_;
   ServerConfigMap server_configs_;
   ServiceMap services_;
   ServerMap servers_;
 };
-
-extern ServiceManager* service_manager;
 
 #endif  // JUNO_APP_SERVICE_MANAGER_H_
