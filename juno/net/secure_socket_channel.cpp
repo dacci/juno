@@ -38,6 +38,46 @@ typedef struct {
 
 }  // namespace
 
+class SecureSocketChannel::Request {
+ public:
+  Request(SecureSocketChannel* channel, void* buffer, int length,
+          Listener* listener)
+      : channel_(channel), buffer_(buffer), length_(length),
+        listener_(listener) {
+  }
+
+  virtual void Run() = 0;
+
+  inline void FireReadError(DWORD error) {
+    listener_->OnRead(channel_, error, buffer_, 0);
+  }
+
+  inline void FireWriteError(DWORD error) {
+    listener_->OnWritten(channel_, error, buffer_, 0);
+  }
+
+  SecureSocketChannel* const channel_;
+  void* const buffer_;
+  const int length_;
+  Listener* const listener_;
+};
+
+class SecureSocketChannel::ReadRequest : public Request {
+ public:
+  ReadRequest(SecureSocketChannel* channel, void* buffer, int length,
+              Listener* listener);
+
+  void Run() override;
+};
+
+class SecureSocketChannel::WriteRequest : public Request {
+ public:
+  WriteRequest(SecureSocketChannel* channel, void* buffer, int length,
+               Listener* listener);
+
+  void Run() override;
+};
+
 SecureSocketChannel::SecureSocketChannel(SchannelCredential* credential,
                                          const SocketPtr& socket, bool inbound)
     : context_(credential), socket_(socket), inbound_(inbound), closed_() {

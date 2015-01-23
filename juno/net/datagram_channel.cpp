@@ -3,12 +3,25 @@
 #include "net/datagram_channel.h"
 
 #include <madoka/concurrent/lock_guard.h>
-#include <madoka/net/async_datagram_socket.h>
 #include <madoka/net/resolver.h>
+#include <madoka/net/socket_event_listener.h>
 
 #include <string>
 
 using ::madoka::net::AsyncDatagramSocket;
+
+class DatagramChannel::Request : public madoka::net::SocketEventAdapter {
+ public:
+  Request(DatagramChannel* channel, Listener* listener);
+
+  void OnReceived(AsyncDatagramSocket* socket, DWORD error, void* buffer,
+                  int length) override;
+  void OnSent(AsyncDatagramSocket* socket, DWORD error, void* buffer,
+              int length) override;
+
+  DatagramChannel* const channel_;
+  Listener* const listener_;
+};
 
 DatagramChannel::DatagramChannel() : closed_() {
 }

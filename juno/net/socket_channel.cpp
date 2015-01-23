@@ -3,9 +3,22 @@
 #include "net/socket_channel.h"
 
 #include <madoka/concurrent/lock_guard.h>
-#include <madoka/net/async_socket.h>
+#include <madoka/net/socket_event_listener.h>
 
 using ::madoka::net::AsyncSocket;
+
+class SocketChannel::Request : public madoka::net::SocketEventAdapter {
+ public:
+  Request(SocketChannel* channel, Listener* listener);
+
+  void OnReceived(AsyncSocket* socket, DWORD error, void* buffer,
+                  int length) override;
+  void OnSent(AsyncSocket* socket, DWORD error, void* buffer,
+              int length) override;
+
+  SocketChannel* const channel_;
+  Listener* const listener_;
+};
 
 SocketChannel::SocketChannel(const AsyncSocketPtr& socket)
     : socket_(socket), closed_() {

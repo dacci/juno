@@ -31,45 +31,9 @@ class SecureSocketChannel : public Channel {
   }
 
  private:
-  class Request {
-   public:
-    Request(SecureSocketChannel* channel, void* buffer, int length,
-            Listener* listener)
-        : channel_(channel), buffer_(buffer), length_(length),
-          listener_(listener) {
-    }
-
-    virtual void Run() = 0;
-
-    inline void FireReadError(DWORD error) {
-      listener_->OnRead(channel_, error, buffer_, 0);
-    }
-
-    inline void FireWriteError(DWORD error) {
-      listener_->OnWritten(channel_, error, buffer_, 0);
-    }
-
-    SecureSocketChannel* const channel_;
-    void* const buffer_;
-    const int length_;
-    Listener* const listener_;
-  };
-
-  class ReadRequest : public Request {
-   public:
-    ReadRequest(SecureSocketChannel* channel, void* buffer, int length,
-                Listener* listener);
-
-    void Run() override;
-  };
-
-  class WriteRequest : public Request {
-   public:
-    WriteRequest(SecureSocketChannel* channel, void* buffer, int length,
-                 Listener* listener);
-
-    void Run() override;
-  };
+  class Request;
+  class ReadRequest;
+  class WriteRequest;
 
   static void CALLBACK BeginRequest(PTP_CALLBACK_INSTANCE instance,
                                     void* param);

@@ -5,7 +5,7 @@
 
 #include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
-#include <madoka/net/socket_event_listener.h>
+#include <madoka/net/async_datagram_socket.h>
 
 #include <memory>
 #include <string>
@@ -31,18 +31,7 @@ class DatagramChannel : public Channel {
   int Write(const void* buffer, int length);
 
  private:
-  class Request : public madoka::net::SocketEventAdapter {
-   public:
-    Request(DatagramChannel* channel, Listener* listener);
-
-    void OnReceived(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-                    void* buffer, int length) override;
-    void OnSent(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-                void* buffer, int length) override;
-
-    DatagramChannel* const channel_;
-    Listener* const listener_;
-  };
+  class Request;
 
   void EndRequest(Request* request);
 

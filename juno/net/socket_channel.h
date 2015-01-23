@@ -5,7 +5,7 @@
 
 #include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
-#include <madoka/net/socket_event_listener.h>
+#include <madoka/net/async_socket.h>
 
 #include <memory>
 #include <vector>
@@ -24,18 +24,7 @@ class SocketChannel : public Channel {
   void WriteAsync(const void* buffer, int length, Listener* listener) override;
 
  private:
-  class Request : public madoka::net::SocketEventAdapter {
-   public:
-    Request(SocketChannel* channel, Listener* listener);
-
-    void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
-                    int length) override;
-    void OnSent(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
-                int length) override;
-
-    SocketChannel* const channel_;
-    Listener* const listener_;
-  };
+  class Request;
 
   void EndRequest(Request* request);
 
