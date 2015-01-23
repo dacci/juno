@@ -44,6 +44,7 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy,
       last_port_(-1),
       retry_(),
       client_(client),
+      remote_socket_(),
       close_remote_() {
   DLOG(INFO) << this << " session created";
 }
@@ -93,6 +94,7 @@ void HttpProxySession::ReceiveRequest() {
   }
 }
 
+// not safe to call from remote_'s event handler.
 void HttpProxySession::ProcessRequest() {
   int result = request_.Parse(client_buffer_);
   if (result > 0) {
@@ -135,6 +137,7 @@ void HttpProxySession::ProcessRequest() {
   DispatchRequest();
 }
 
+// not safe to call from remote_'s event handler.
 void HttpProxySession::DispatchRequest() {
   GURL url;
   if (tunnel_) {
@@ -176,14 +179,6 @@ void HttpProxySession::DispatchRequest() {
     return;
   }
 
-  if (remote_ != nullptr) {
-    remote_->Close();
-
-    lock_.Unlock();
-    remote_.reset();
-    lock_.Lock();
-  }
-
   last_host_ = std::move(new_host);
   last_port_ = new_port;
 
@@ -198,7 +193,11 @@ void HttpProxySession::DispatchRequest() {
     return;
   }
 
+  remote_socket_ = remote_socket.get();
+
+  lock_.Unlock();
   remote_ = std::make_shared<SocketChannel>(remote_socket);
+  lock_.Lock();
   if (remote_ == nullptr) {
     SetError(HTTP::INTERNAL_SERVER_ERROR);
     return;
@@ -362,17 +361,13 @@ void HttpProxySession::SendResponse() {
   client_->WriteAsync(buffer_, message.size(), this);
 }
 
+// not safe to call from remote_'s event handler.
 void HttpProxySession::EndResponse() {
   DLOG(INFO) << this << " response completed";
 
   if (close_remote_) {
-    if (remote_ != nullptr) {
+    if (remote_ != nullptr)
       remote_->Close();
-
-      lock_.Unlock();
-      remote_.reset();
-      lock_.Lock();
-    }
 
     last_host_.clear();
     last_port_ = -1;
@@ -529,10 +524,15 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
                                   void* buffer, int length) {
   madoka::concurrent::LockGuard guard(&lock_);
 
+  if (socket != remote_socket_)
+    return;
+
   if (error != 0 || length == 0) {
     LOG(WARNING) << this << " socket disconnected";
 
-    socket->Shutdown(SD_BOTH);
+    if (remote_ != nullptr)
+      remote_->Close();
+
     last_host_.clear();
     last_port_ = -1;
   } else {

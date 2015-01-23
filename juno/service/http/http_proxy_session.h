@@ -98,6 +98,7 @@ class HttpProxySession
   bool request_chunked_;
   bool close_client_;
 
+  madoka::net::AsyncSocket* remote_socket_;
   Service::ChannelPtr remote_;
   std::string remote_buffer_;
   HttpResponse response_;
