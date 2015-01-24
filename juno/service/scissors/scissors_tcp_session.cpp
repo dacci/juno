@@ -6,6 +6,7 @@
 
 #include <memory>
 
+#include "net/channel.h"
 #include "net/tunneling_service.h"
 
 using ::madoka::net::AsyncSocket;

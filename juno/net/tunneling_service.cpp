@@ -4,9 +4,27 @@
 
 #include <madoka/concurrent/lock_guard.h>
 
-#include "net/socket_channel.h"
+#include "net/channel.h"
 
 TunnelingService* TunnelingService::instance_ = nullptr;
+
+class TunnelingService::Session : public Channel::Listener {
+ public:
+  Session(TunnelingService* service, const ChannelPtr& from,
+          const ChannelPtr& to);
+  ~Session();
+
+  void Start();
+
+  void OnRead(Channel* channel, DWORD error, void* buffer, int length) override;
+  void OnWritten(Channel* channel, DWORD error, void* buffer,
+                 int length) override;
+
+  TunnelingService* service_;
+  ChannelPtr from_;
+  ChannelPtr to_;
+  char buffer_[65535];
+};
 
 bool TunnelingService::Init() {
   Term();

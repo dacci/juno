@@ -3,17 +3,16 @@
 #ifndef JUNO_NET_TUNNELING_SERVICE_H_
 #define JUNO_NET_TUNNELING_SERVICE_H_
 
+#include <windows.h>
+
 #include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
-#include <madoka/net/async_socket.h>
 
 #include <memory>
 #include <utility>
 #include <vector>
 
-#include "net/channel.h"
-
-typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
+class Channel;
 
 class TunnelingService {
  public:
@@ -24,24 +23,7 @@ class TunnelingService {
   static bool Bind(const ChannelPtr& a, const ChannelPtr& b);
 
  private:
-  class Session : public Channel::Listener {
-   public:
-    Session(TunnelingService* service, const ChannelPtr& from,
-            const ChannelPtr& to);
-    ~Session();
-
-    void Start();
-
-    void OnRead(Channel* channel, DWORD error, void* buffer,
-                int length) override;
-    void OnWritten(Channel* channel, DWORD error, void* buffer,
-                   int length) override;
-
-    TunnelingService* service_;
-    ChannelPtr from_;
-    ChannelPtr to_;
-    char buffer_[8192];
-  };
+  class Session;
 
   typedef std::pair<TunnelingService*, Session*> ServiceSessionPair;
 
