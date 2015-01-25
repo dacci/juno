@@ -3,8 +3,6 @@
 #ifndef JUNO_SERVICE_HTTP_HTTP_HEADERS_H_
 #define JUNO_SERVICE_HTTP_HTTP_HEADERS_H_
 
-#include <string.h>
-
 #include <list>
 #include <string>
 #include <utility>

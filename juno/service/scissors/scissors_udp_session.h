@@ -9,7 +9,6 @@
 #include <memory>
 
 #include "misc/timer_service.h"
-#include "net/datagram_channel.h"
 #include "service/service.h"
 #include "service/scissors/scissors.h"
 

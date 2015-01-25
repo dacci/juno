@@ -37,11 +37,11 @@ ServiceConfigPtr HttpProxyProvider::CopyConfig(const ServiceConfigPtr& config) {
 }
 
 ServicePtr HttpProxyProvider::CreateService(const ServiceConfigPtr& config) {
-  auto service = std::make_unique<HttpProxy>(config);
+  auto service = std::make_unique<HttpProxy>();
   if (service == nullptr)
     return nullptr;
 
-  if (!service->Init())
+  if (!service->UpdateConfig(config))
     return nullptr;
 
   return std::move(service);

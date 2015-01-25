@@ -11,7 +11,6 @@
 #include <utility>
 #include <vector>
 
-#include "app/service_manager.h"
 #include "service/service.h"
 #include "service/http/http_digest.h"
 
@@ -23,10 +22,9 @@ class HttpResponse;
 
 class HttpProxy : public Service {
  public:
-  explicit HttpProxy(const ServiceConfigPtr& config);
+  HttpProxy();
   ~HttpProxy();
 
-  bool Init();
   bool UpdateConfig(const ServiceConfigPtr& config) override;
   void Stop() override;
 

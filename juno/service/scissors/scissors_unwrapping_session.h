@@ -13,8 +13,6 @@
 #include "net/channel.h"
 #include "service/scissors/scissors.h"
 
-class ScissorsWrappingSession;
-
 class ScissorsUnwrappingSession
     : public Scissors::Session,
       private Channel::Listener,

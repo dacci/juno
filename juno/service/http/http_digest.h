@@ -7,7 +7,7 @@
 
 class HttpDigest {
  public:
-  HttpDigest(const std::string& username, const std::string& password);
+  HttpDigest();
 
   bool Input(const std::string& input);
   bool Output(const std::string& method, const std::string& path,

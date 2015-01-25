@@ -202,8 +202,7 @@ bool GetPair(const char* input, std::string* name, std::string* value,
 
 static CryptProvider crypt_provider;
 
-HttpDigest::HttpDigest(const std::string& username, const std::string& password)
-    : username_(username), password_(password) {
+HttpDigest::HttpDigest() {
   Reset();
 }
 

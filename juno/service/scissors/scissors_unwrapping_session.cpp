@@ -8,7 +8,6 @@
 
 #include <memory>
 
-#include "net/datagram_channel.h"
 #include "service/scissors/scissors_wrapping_session.h"
 
 using ::madoka::net::AsyncDatagramSocket;

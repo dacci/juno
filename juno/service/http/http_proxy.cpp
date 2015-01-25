@@ -16,21 +16,11 @@
 const std::string HttpProxy::kProxyAuthenticate("Proxy-Authenticate");
 const std::string HttpProxy::kProxyAuthorization("Proxy-Authorization");
 
-HttpProxy::HttpProxy(const ServiceConfigPtr& config)
-    : config_(std::static_pointer_cast<HttpProxyConfig>(config)),
-      stopped_(),
-      auth_digest_(),
-      auth_basic_(),
-      digest_(config_->remote_proxy_user(), config_->remote_proxy_password()) {
-  SetBasicCredential();
+HttpProxy::HttpProxy() : stopped_(), auth_digest_(), auth_basic_() {
 }
 
 HttpProxy::~HttpProxy() {
   Stop();
-}
-
-bool HttpProxy::Init() {
-  return true;
 }
 
 bool HttpProxy::UpdateConfig(const ServiceConfigPtr& config) {
@@ -38,6 +28,8 @@ bool HttpProxy::UpdateConfig(const ServiceConfigPtr& config) {
 
   config_ = std::static_pointer_cast<HttpProxyConfig>(config);
 
+  auth_basic_ = false;
+  auth_digest_ = false;
   digest_.SetCredential(config_->remote_proxy_user(),
                         config_->remote_proxy_password());
   SetBasicCredential();
