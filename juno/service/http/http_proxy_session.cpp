@@ -264,17 +264,27 @@ void HttpProxySession::ProcessResponse() {
     return;
   }
 
-  DLOG(INFO) << this << " " << response_.status() << " " << response_.message();
+  int status = response_.status();
 
-  response_length_ = http_util::GetContentLength(response_);
-  if (response_length_ == -2) {
-    response_chunked_ = true;
-    response_length_ = http_util::ParseChunk(remote_buffer_, &last_chunk_size_);
+  DLOG(INFO) << this << " " << status << " " << response_.message();
+
+  if (status / 100 == 1 ||
+      status == HTTP::NO_CONTENT ||
+      status == HTTP::NOT_MODIFIED ||
+      request_.method().compare("HEAD") == 0) {
+    response_length_ = 0;
   } else {
-    response_chunked_ = false;
+    response_length_ = http_util::GetContentLength(response_);
+    if (response_length_ == -2) {
+      response_chunked_ = true;
+      response_length_ = http_util::ParseChunk(remote_buffer_,
+                                               &last_chunk_size_);
+    } else {
+      response_chunked_ = false;
+    }
   }
 
-  if (tunnel_ && response_.status() == HTTP::OK &&
+  if (tunnel_ && status == HTTP::OK &&
       (response_chunked_ || response_length_ > 0)) {
     SendError(HTTP::BAD_GATEWAY);
     return;
@@ -283,7 +293,7 @@ void HttpProxySession::ProcessResponse() {
   if (http_util::ProcessHopByHopHeaders(&response_))
     close_remote_ = true;
 
-  switch (response_.status()) {
+  switch (status) {
     case HTTP::PROXY_AUTHENTICATION_REQUIRED:
       retry_ = !retry_;
       break;
@@ -319,7 +329,7 @@ void HttpProxySession::ProcessResponse() {
     return;
   }
 
-  if (tunnel_ && response_.status() == HTTP::OK) {
+  if (tunnel_ && status == HTTP::OK) {
     if (!TunnelingService::Bind(client_, remote_)) {
       SendError(HTTP::INTERNAL_SERVER_ERROR);
       return;
@@ -668,8 +678,7 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
     return;
   }
 
-  if (request_.method().compare("HEAD") == 0 || response_length_ == 0 ||
-      tunnel_) {
+  if (response_length_ == 0 || tunnel_) {
     EndResponse();
     return;
   }
