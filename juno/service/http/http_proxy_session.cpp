@@ -53,9 +53,6 @@ HttpProxySession::~HttpProxySession() {
   if (timer_ != nullptr)
     timer_->Stop();
 
-  remote_.reset();
-  client_.reset();
-
   DLOG(INFO) << this << " session destroyed";
 }
 
@@ -539,9 +536,6 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
 
   if (error != 0 || length == 0) {
     LOG(WARNING) << this << " socket disconnected";
-
-    if (remote_ != nullptr)
-      remote_->Close();
 
     last_host_.clear();
     last_port_ = -1;
