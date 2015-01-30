@@ -40,8 +40,6 @@ class MainFrame : public CFrameWindowImpl<MainFrame> {
   static const UINT WM_TASKBARCREATED;
   static const UINT kDefaultTrayCommand = ID_FILE_NEW;
 
-  bool LoadAndStart();
-  void StopAndUnload();
   void TrackTrayMenu(int x, int y);
 
   int OnCreate(CREATESTRUCT* create_struct);

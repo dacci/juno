@@ -122,15 +122,18 @@ bool ServiceManager::LoadServers() {
   if (!servers_key.Create(app_key, kServersKeyName))
     return false;
 
+  bool all_succeeded = true;
+
   for (DWORD i = 0; ; ++i) {
     std::string name;
     if (!servers_key.EnumerateKey(i, &name))
       break;
 
-    LoadServer(servers_key, name);
+    if (!LoadServer(servers_key, name))
+      all_succeeded = false;
   }
 
-  return true;
+  return all_succeeded;
 }
 
 bool ServiceManager::StartServers() {

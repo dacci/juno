@@ -20,27 +20,6 @@ MainFrame::MainFrame() : old_windows_(false), notify_icon_(), configuring_() {
 MainFrame::~MainFrame() {
 }
 
-bool MainFrame::LoadAndStart() {
-  if (!service_manager_->LoadServices())
-    return false;
-
-  if (!service_manager_->LoadServers())
-    return false;
-
-  if (!service_manager_->StartServers()) {
-    CString message;
-    message.LoadString(IDS_ERR_START_FAILED);
-    MessageBox(message, nullptr, MB_ICONEXCLAMATION);
-  }
-
-  return true;
-}
-
-void MainFrame::StopAndUnload() {
-  service_manager_->StopServers();
-  service_manager_->StopServices();
-}
-
 void MainFrame::TrackTrayMenu(int x, int y) {
   if (configuring_)
     return;
@@ -99,8 +78,24 @@ int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
     return -1;
   }
 
-  if (!LoadAndStart())
+  if (!service_manager_->LoadServices()) {
+    message.LoadString(IDS_ERR_INIT_FAILED);
+    MessageBox(message, nullptr, MB_ICONERROR);
     return -1;
+  }
+
+  bool some_failed = false;
+
+  if (!service_manager_->LoadServers())
+    some_failed = true;
+
+  if (!service_manager_->StartServers())
+    some_failed = true;
+
+  if (some_failed) {
+    message.LoadString(IDS_ERR_START_FAILED);
+    MessageBox(message, nullptr, MB_ICONEXCLAMATION);
+  }
 
   return 0;
 }
@@ -111,8 +106,10 @@ void MainFrame::OnDestroy() {
   notify_icon_.hIcon = AtlLoadIconImage(IDR_TRAY_MENU, 0, 16, 16);
   Shell_NotifyIcon(NIM_MODIFY, &notify_icon_);
 
-  StopAndUnload();
+  service_manager_->StopServers();
+  service_manager_->StopServices();
   TunnelingService::Term();
+
   Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
 }
 
