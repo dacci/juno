@@ -7,7 +7,6 @@
 #include <madoka/concurrent/critical_section.h>
 #include <madoka/net/resolver.h>
 #include <madoka/net/async_server_socket.h>
-#include <madoka/net/socket_event_listener.h>
 
 #include <memory>
 #include <utility>
@@ -17,7 +16,8 @@
 #include "net/server.h"
 #include "service/service.h"
 
-class TcpServer : public Server, public madoka::net::SocketEventAdapter {
+class TcpServer
+    : public Server, private madoka::net::AsyncServerSocket::Listener {
  public:
   class ChannelFactory {
    public:
@@ -34,9 +34,6 @@ class TcpServer : public Server, public madoka::net::SocketEventAdapter {
 
   void SetChannelFactory(ChannelFactory* channel_factory);
 
-  void OnAccepted(madoka::net::AsyncServerSocket* server,
-                  madoka::net::AsyncSocket* client, DWORD error) override;
-
   void SetService(Service* service) override {
     service_ = service;
   }
@@ -49,6 +46,10 @@ class TcpServer : public Server, public madoka::net::SocketEventAdapter {
   static void CALLBACK DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
                                         void* param);
   void DeleteServerImpl(madoka::net::AsyncServerSocket* server);
+
+  void OnAccepted(
+    madoka::net::AsyncServerSocket* server, HRESULT result,
+    madoka::net::AsyncServerSocket::AsyncContext* context) override;
 
   ChannelFactory* channel_factory_;
   madoka::net::Resolver resolver_;

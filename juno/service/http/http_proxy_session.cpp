@@ -179,7 +179,7 @@ void HttpProxySession::DispatchRequest() {
   last_host_ = std::move(new_host);
   last_port_ = new_port;
 
-  if (!resolver_.Resolve(last_host_.c_str(), last_port_)) {
+  if (!resolver_.Resolve(last_host_, last_port_)) {
     SetError(HTTP::BAD_GATEWAY);
     return;
   }

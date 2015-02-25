@@ -10,7 +10,7 @@
 
 #include "service/scissors/scissors_wrapping_session.h"
 
-using ::madoka::net::AsyncDatagramSocket;
+using ::madoka::net::AsyncSocket;
 
 ScissorsUnwrappingSession::ScissorsUnwrappingSession(Scissors* service)
     : Session(service), packet_length_(-1) {
@@ -105,7 +105,7 @@ void ScissorsUnwrappingSession::OnWritten(Channel* channel, DWORD error,
   DCHECK(false);
 }
 
-void ScissorsUnwrappingSession::OnSent(AsyncDatagramSocket* socket, DWORD error,
+void ScissorsUnwrappingSession::OnSent(AsyncSocket* socket, DWORD error,
                                        void* buffer, int length) {
   if (error != 0 || length == 0) {
     LOG_IF(ERROR, error != 0)
@@ -125,8 +125,8 @@ void ScissorsUnwrappingSession::OnSent(AsyncDatagramSocket* socket, DWORD error,
   }
 }
 
-void ScissorsUnwrappingSession::OnSentTo(AsyncDatagramSocket* socket,
-                                         DWORD error, void* buffer, int length,
-                                         sockaddr* to, int to_length) {
+void ScissorsUnwrappingSession::OnSentTo(AsyncSocket* socket, DWORD error,
+                                         void* buffer, int length, sockaddr* to,
+                                         int to_length) {
   OnSent(socket, error, buffer, length);
 }

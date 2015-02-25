@@ -19,8 +19,7 @@ class ScissorsWrappingSession
       private madoka::net::SocketEventAdapter,
       private TimerService::Callback {
  public:
-  typedef std::shared_ptr<madoka::net::AsyncDatagramSocket>
-      AsyncDatagramSocketPtr;
+  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
 
   explicit ScissorsWrappingSession(Scissors* service);
   virtual ~ScissorsWrappingSession();
@@ -28,7 +27,7 @@ class ScissorsWrappingSession
   bool Start() override;
   void Stop() override;
 
-  void SetSource(const AsyncDatagramSocketPtr& source) {
+  void SetSource(const AsyncSocketPtr& source) {
     source_ = source;
   }
 
@@ -49,8 +48,8 @@ class ScissorsWrappingSession
   void OnReceived(const Service::DatagramPtr& datagram) override;
 
   void OnConnected(madoka::net::AsyncSocket* socket, DWORD error) override;
-  void OnReceived(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-                  void* buffer, int length) override;
+  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
+                  int length) override;
 
   void OnRead(Channel* channel, DWORD error, void* buffer, int length) override;
   void OnWritten(Channel* channel, DWORD error, void* buffer,
@@ -59,7 +58,7 @@ class ScissorsWrappingSession
   void OnTimeout() override;
 
   TimerService::TimerObject timer_;
-  AsyncDatagramSocketPtr source_;
+  AsyncSocketPtr source_;
   Service::ChannelPtr sink_;
   sockaddr_storage source_address_;
   int source_address_length_;

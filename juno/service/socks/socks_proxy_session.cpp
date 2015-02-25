@@ -333,7 +333,7 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
   if (resolver == nullptr)
     return false;
 
-  if (!resolver->Resolve(domain_name.c_str(), ::htons(port)))
+  if (!resolver->Resolve(domain_name, ::htons(port)))
     return false;
 
   end_point_ = resolver.release();

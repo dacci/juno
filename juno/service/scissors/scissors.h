@@ -5,7 +5,6 @@
 
 #include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
-#include <madoka/net/async_datagram_socket.h>
 #include <madoka/net/async_socket.h>
 #include <madoka/net/resolver.h>
 #include <madoka/net/socket_event_listener.h>
@@ -21,15 +20,13 @@
 
 #include "service/service.h"
 
-class DatagramChannel;
 class SchannelCredential;
 class ScissorsConfig;
 class ServiceConfig;
 
 class Scissors : public Service, private madoka::net::SocketEventAdapter {
  public:
-  typedef std::shared_ptr<madoka::net::AsyncDatagramSocket>
-      AsyncDatagramSocketPtr;
+  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
 
   class Session {
    public:
@@ -44,8 +41,6 @@ class Scissors : public Service, private madoka::net::SocketEventAdapter {
 
   class UdpSession : public Session {
    public:
-    typedef std::shared_ptr<DatagramChannel> DatagramChannelPtr;
-
     explicit UdpSession(Scissors* service) : Session(service) {}
     virtual ~UdpSession() {}
 
@@ -61,7 +56,7 @@ class Scissors : public Service, private madoka::net::SocketEventAdapter {
   bool StartSession(std::unique_ptr<Session>&& session);
   void EndSession(Session* session);
 
-  AsyncDatagramSocketPtr CreateSocket();
+  AsyncSocketPtr CreateSocket();
 
   ChannelPtr CreateChannel(
       const std::shared_ptr<madoka::net::AsyncSocket>& socket);
@@ -106,8 +101,7 @@ class Scissors : public Service, private madoka::net::SocketEventAdapter {
   std::unique_ptr<SchannelCredential> credential_;
   madoka::concurrent::CriticalSection lock_;
 
-  madoka::net::Resolver stream_resolver_;
-  madoka::net::Resolver dgram_resolver_;
+  madoka::net::Resolver resolver_;
   std::map<madoka::net::AsyncSocket*, madoka::net::SocketEventListener*>
       connecting_;
   madoka::concurrent::ConditionVariable not_connecting_;

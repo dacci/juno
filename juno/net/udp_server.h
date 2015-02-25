@@ -29,7 +29,7 @@ class UdpServer : public Server, public madoka::net::SocketEventAdapter {
 
   void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
                   int length) override;
-  void OnReceivedFrom(madoka::net::AsyncDatagramSocket* socket, DWORD error,
+  void OnReceivedFrom(madoka::net::AsyncSocket* socket, DWORD error,
                       void* buffer, int length, sockaddr* from,
                       int from_length) override;
 
@@ -38,19 +38,19 @@ class UdpServer : public Server, public madoka::net::SocketEventAdapter {
   }
 
  private:
-  typedef std::pair<UdpServer*, madoka::net::AsyncDatagramSocket*>
+  typedef std::pair<UdpServer*, madoka::net::AsyncSocket*>
       ServerSocketPair;
 
   static const int kBufferSize = 65536;
 
-  void DeleteServer(madoka::net::AsyncDatagramSocket* server);
+  void DeleteServer(madoka::net::AsyncSocket* server);
   static void CALLBACK DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
                                         void* context);
-  void DeleteServerImpl(madoka::net::AsyncDatagramSocket* server);
+  void DeleteServerImpl(madoka::net::AsyncSocket* server);
 
   madoka::net::Resolver resolver_;
-  std::vector<std::shared_ptr<madoka::net::AsyncDatagramSocket>> servers_;
-  std::map<madoka::net::AsyncDatagramSocket*, std::unique_ptr<char[]>> buffers_;
+  std::vector<std::shared_ptr<madoka::net::AsyncSocket>> servers_;
+  std::map<madoka::net::AsyncSocket*, std::unique_ptr<char[]>> buffers_;
   Service* service_;
 
   madoka::concurrent::CriticalSection lock_;

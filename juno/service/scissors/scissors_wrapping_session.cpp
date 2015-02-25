@@ -12,7 +12,6 @@
 #include "service/scissors/scissors_config.h"
 #include "service/scissors/scissors_unwrapping_session.h"
 
-using ::madoka::net::AsyncDatagramSocket;
 using ::madoka::net::AsyncSocket;
 
 ScissorsWrappingSession::ScissorsWrappingSession(Scissors* service)
@@ -107,9 +106,8 @@ void ScissorsWrappingSession::OnConnected(AsyncSocket* socket, DWORD error) {
   service_->StartSession(std::move(pair));
 }
 
-void ScissorsWrappingSession::OnReceived(AsyncDatagramSocket* /*socket*/,
-                                         DWORD error, void* buffer,
-                                         int length) {
+void ScissorsWrappingSession::OnReceived(AsyncSocket* /*socket*/, DWORD error,
+                                         void* buffer, int length) {
   timer_->Stop();
 
   if (error != 0) {

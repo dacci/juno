@@ -3,12 +3,12 @@
 #ifndef JUNO_NET_DATAGRAM_H_
 #define JUNO_NET_DATAGRAM_H_
 
-#include <madoka/net/async_datagram_socket.h>
+#include <madoka/net/async_socket.h>
 
 #include <memory>
 
 struct Datagram {
-  std::shared_ptr<madoka::net::AsyncDatagramSocket> socket;
+  std::shared_ptr<madoka::net::AsyncSocket> socket;
   int data_length;
   std::unique_ptr<char[]> data;
   int from_length;

@@ -11,7 +11,7 @@
 #include "net/datagram.h"
 #include "service/service.h"
 
-using ::madoka::net::AsyncDatagramSocket;
+using ::madoka::net::AsyncSocket;
 
 UdpServer::UdpServer() : service_() {
 }
@@ -39,7 +39,7 @@ bool UdpServer::Setup(const char* address, int port) {
     if (buffer == nullptr)
       break;
 
-    auto server = std::make_unique<AsyncDatagramSocket>();
+    auto server = std::make_unique<AsyncSocket>();
     if (server == nullptr)
       break;
 
@@ -80,9 +80,8 @@ void UdpServer::OnReceived(madoka::net::AsyncSocket* socket, DWORD error,
   delete socket;
 }
 
-void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
-                               void* buffer, int length, sockaddr* from,
-                               int from_length) {
+void UdpServer::OnReceivedFrom(AsyncSocket* socket, DWORD error, void* buffer,
+                               int length, sockaddr* from, int from_length) {
   if (error == 0) {
     do {
       auto datagram = std::make_shared<Datagram>();
@@ -121,7 +120,7 @@ void UdpServer::OnReceivedFrom(AsyncDatagramSocket* socket, DWORD error,
   }
 }
 
-void UdpServer::DeleteServer(AsyncDatagramSocket* server) {
+void UdpServer::DeleteServer(AsyncSocket* server) {
   ServerSocketPair* pair = new ServerSocketPair(this, server);
   if (pair == nullptr ||
       !TrySubmitThreadpoolCallback(DeleteServerImpl, pair, nullptr)) {
@@ -137,9 +136,9 @@ void CALLBACK UdpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
   delete pair;
 }
 
-void UdpServer::DeleteServerImpl(AsyncDatagramSocket* server) {
+void UdpServer::DeleteServerImpl(AsyncSocket* server) {
   std::unique_ptr<char[]> removed_buffer;
-  std::shared_ptr<AsyncDatagramSocket> removed_server;
+  std::shared_ptr<AsyncSocket> removed_server;
 
   lock_.Lock();
 

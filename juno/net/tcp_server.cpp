@@ -89,19 +89,6 @@ void TcpServer::SetChannelFactory(ChannelFactory* channel_factory) {
     channel_factory_ = channel_factory;
 }
 
-void TcpServer::OnAccepted(AsyncServerSocket* server, AsyncSocket* client,
-                           DWORD error) {
-  std::shared_ptr<AsyncSocket> peer(client);
-
-  if (error == 0) {
-    server->AcceptAsync(this);
-    service_->OnAccepted(channel_factory_->CreateChannel(peer));
-  } else {
-    service_->OnError(error);
-    DeleteServer(server);
-  }
-}
-
 void TcpServer::DeleteServer(AsyncServerSocket* server) {
   ServerSocketPair* pair = new ServerSocketPair(this, server);
   if (pair == nullptr ||
@@ -132,5 +119,29 @@ void TcpServer::DeleteServerImpl(AsyncServerSocket* server) {
 
       break;
     }
+  }
+}
+
+void TcpServer::OnAccepted(AsyncServerSocket* server, HRESULT result,
+                           AsyncServerSocket::AsyncContext* context) {
+  do {
+    if (FAILED(result))
+      break;
+
+    server->AcceptAsync(this);
+
+    std::unique_ptr<AsyncSocket> peer;
+    result = server->EndAccept(context, &peer);
+    if (FAILED(result))
+      break;
+
+    service_->OnAccepted(
+        channel_factory_->CreateChannel(
+            std::shared_ptr<AsyncSocket>(std::move(peer))));
+  } while (false);
+
+  if (FAILED(result)) {
+    service_->OnError(HRESULT_CODE(result));
+    DeleteServer(server);
   }
 }

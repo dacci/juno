@@ -3,7 +3,6 @@
 #ifndef JUNO_SERVICE_SCISSORS_SCISSORS_UDP_SESSION_H_
 #define JUNO_SERVICE_SCISSORS_SCISSORS_UDP_SESSION_H_
 
-#include <madoka/net/async_datagram_socket.h>
 #include <madoka/net/socket_event_listener.h>
 
 #include <memory>
@@ -17,8 +16,7 @@ class ScissorsUdpSession
       private madoka::net::SocketEventAdapter,
       private TimerService::Callback {
  public:
-  ScissorsUdpSession(Scissors* service,
-                     const Scissors::AsyncDatagramSocketPtr& source);
+  ScissorsUdpSession(Scissors* service, const Scissors::AsyncSocketPtr& source);
   virtual ~ScissorsUdpSession();
 
   bool Start() override;
@@ -30,13 +28,15 @@ class ScissorsUdpSession
 
   void OnReceived(const Service::DatagramPtr& datagram) override;
 
-  void OnReceived(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-                  void* buffer, int length) override;
+  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
+                  int length) override;
 
   void OnTimeout() override;
 
-  Scissors::AsyncDatagramSocketPtr source_;
-  Scissors::AsyncDatagramSocketPtr sink_;
+  Scissors::AsyncSocketPtr source_;
+  Scissors::AsyncSocketPtr sink_;
+  sockaddr_storage address_;
+  int address_length_;
   char buffer_[kBufferSize];
   TimerService::TimerObject timer_;
 };

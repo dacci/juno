@@ -9,7 +9,6 @@
 #include "misc/registry_key.h"
 #include "misc/security/schannel_credential.h"
 #include "net/datagram.h"
-#include "net/datagram_channel.h"
 #include "net/secure_socket_channel.h"
 #include "net/socket_channel.h"
 #include "net/tunneling_service.h"
@@ -19,13 +18,10 @@
 #include "service/scissors/scissors_unwrapping_session.h"
 #include "service/scissors/scissors_wrapping_session.h"
 
-using ::madoka::net::AsyncDatagramSocket;
 using ::madoka::net::AsyncSocket;
 using ::madoka::net::Resolver;
 
 Scissors::Scissors() : stopped_() {
-  stream_resolver_.SetType(SOCK_STREAM);
-  dgram_resolver_.SetType(SOCK_DGRAM);
 }
 
 Scissors::~Scissors() {
@@ -40,15 +36,12 @@ bool Scissors::UpdateConfig(const ServiceConfigPtr& config) {
 
   config_ = std::static_pointer_cast<ScissorsConfig>(config);
 
-  if (!stream_resolver_.Resolve(config_->remote_address().c_str(),
-                                config_->remote_port())) {
-    LOG(ERROR) << "failed to resolve "
-               << config_->remote_address() << ":" << config_->remote_port();
-    return false;
-  }
+  if (config_->remote_udp())
+    resolver_.SetType(SOCK_DGRAM);
+  else
+    resolver_.SetType(SOCK_STREAM);
 
-  if (!dgram_resolver_.Resolve(config_->remote_address().c_str(),
-                               config_->remote_port())) {
+  if (!resolver_.Resolve(config_->remote_address(), config_->remote_port())) {
     LOG(ERROR) << "failed to resolve "
                << config_->remote_address() << ":" << config_->remote_port();
     return false;
@@ -105,12 +98,12 @@ void Scissors::EndSession(Session* session) {
     EndSessionImpl(session);
 }
 
-Scissors::AsyncDatagramSocketPtr Scissors::CreateSocket() {
-  auto socket = std::make_shared<AsyncDatagramSocket>();
+Scissors::AsyncSocketPtr Scissors::CreateSocket() {
+  auto socket = std::make_shared<AsyncSocket>();
   if (socket == nullptr)
     return nullptr;
 
-  for (auto end_point : dgram_resolver_) {
+  for (auto end_point : resolver_) {
     if (socket->Connect(end_point))
       break;
   }
@@ -143,7 +136,7 @@ void Scissors::ConnectSocket(AsyncSocket* socket,
   madoka::concurrent::LockGuard lock(&lock_);
 
   connecting_.insert({ socket, listener });
-  socket->ConnectAsync(*stream_resolver_.begin(), this);
+  socket->ConnectAsync(*resolver_.begin(), this);
 }
 
 void CALLBACK Scissors::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,

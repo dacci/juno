@@ -18,8 +18,7 @@ class ScissorsUnwrappingSession
       private Channel::Listener,
       private madoka::net::SocketEventAdapter {
  public:
-  typedef std::shared_ptr<madoka::net::AsyncDatagramSocket>
-      AsyncDatagramSocketPtr;
+  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
 
   explicit ScissorsUnwrappingSession(Scissors* service);
   virtual ~ScissorsUnwrappingSession();
@@ -31,7 +30,7 @@ class ScissorsUnwrappingSession
     source_ = source;
   }
 
-  void SetSink(const AsyncDatagramSocketPtr& sink) {
+  void SetSink(const AsyncSocketPtr& sink) {
     sink_ = sink;
   }
 
@@ -49,13 +48,13 @@ class ScissorsUnwrappingSession
               int length) override;
   void OnWritten(Channel* channel, DWORD error, void* buffer,
                  int length) override;
-  void OnSent(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-              void* buffer, int length) override;
-  void OnSentTo(madoka::net::AsyncDatagramSocket* socket, DWORD error,
-                void* buffer, int length, sockaddr* to, int to_length) override;
+  void OnSent(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
+              int length) override;
+  void OnSentTo(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
+                int length, sockaddr* to, int to_length) override;
 
   Service::ChannelPtr source_;
-  AsyncDatagramSocketPtr sink_;
+  AsyncSocketPtr sink_;
   sockaddr_storage sink_address_;
   int sink_address_length_;
   char buffer_[2 + kBufferSize];  // header + payload

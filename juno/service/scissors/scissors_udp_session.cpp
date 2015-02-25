@@ -9,10 +9,10 @@
 #include "net/datagram.h"
 #include "service/scissors/scissors_config.h"
 
-using ::madoka::net::AsyncDatagramSocket;
+using ::madoka::net::AsyncSocket;
 
-ScissorsUdpSession::ScissorsUdpSession(
-    Scissors* service, const Scissors::AsyncDatagramSocketPtr& source)
+ScissorsUdpSession::ScissorsUdpSession(Scissors* service,
+                                       const Scissors::AsyncSocketPtr& source)
     : UdpSession(service), source_(source) {
   DLOG(INFO) << this << "session created";
 }
@@ -55,6 +55,9 @@ void ScissorsUdpSession::OnReceived(const Service::DatagramPtr& datagram) {
 
   timer_->Stop();
 
+  memmove(&address_, &datagram->from, datagram->from_length);
+  address_length_ = datagram->from_length;
+
   int sent = sink_->Send(datagram->data.get(), datagram->data_length, 0);
   if (sent == datagram->data_length) {
     DLOG(INFO) << this << " " << sent << " bytes sent to the sink";
@@ -65,20 +68,21 @@ void ScissorsUdpSession::OnReceived(const Service::DatagramPtr& datagram) {
   }
 }
 
-void ScissorsUdpSession::OnReceived(AsyncDatagramSocket* socket, DWORD error,
+void ScissorsUdpSession::OnReceived(AsyncSocket* socket, DWORD error,
                                     void* buffer, int length) {
   timer_->Stop();
 
   if (error == 0) {
     DLOG(INFO) << this << " " << length << " bytes received from the sink";
 
-    int sent = source_->Send(buffer, length, 0);
+    int sent = source_->SendTo(buffer, length, 0, &address_, address_length_);
     if (sent == length) {
       DLOG(INFO) << this << " " << sent << " bytes sent to the source";
       timer_->Start(kTimeout, 0);
       source_->ReceiveAsync(buffer_, sizeof(buffer_), 0, this);
     } else {
-      LOG(ERROR) << this << " failed to send to the source";
+      LOG(ERROR) << this << " failed to send to the source: "
+                         << WSAGetLastError();
       Stop();
     }
   } else {
