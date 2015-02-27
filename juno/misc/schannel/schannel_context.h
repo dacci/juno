@@ -1,14 +1,14 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_MISC_SECURITY_SCHANNEL_CONTEXT_H_
-#define JUNO_MISC_SECURITY_SCHANNEL_CONTEXT_H_
+#ifndef JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_
+#define JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_
 
 #include <string.h>
 #include <tchar.h>
 
 #include <string>
 
-#include "misc/security/schannel_credential.h"
+#include "misc/schannel/schannel_credential.h"
 
 class SchannelContext {
  public:
@@ -131,4 +131,4 @@ class SchannelContext {
   SchannelContext& operator=(const SchannelContext&);
 };
 
-#endif  // JUNO_MISC_SECURITY_SCHANNEL_CONTEXT_H_
+#endif  // JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_

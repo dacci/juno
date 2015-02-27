@@ -253,12 +253,11 @@
     <ClInclude Include="app\server_config.h" />
     <ClInclude Include="app\service_manager.h" />
     <ClInclude Include="build\precompile.h" />
+    <ClInclude Include="misc\certificate_store.h" />
     <ClInclude Include="misc\registry_key-inl.h" />
     <ClInclude Include="misc\registry_key.h" />
-    <ClInclude Include="misc\security\certificate_store.h" />
-    <ClInclude Include="misc\security\schannel_context.h" />
-    <ClInclude Include="misc\security\schannel_credential.h" />
-    <ClInclude Include="misc\security\security_buffer.h" />
+    <ClInclude Include="misc\schannel\schannel_context.h" />
+    <ClInclude Include="misc\schannel\schannel_credential.h" />
     <ClInclude Include="misc\string_util.h" />
     <ClInclude Include="misc\timer_service.h" />
     <ClInclude Include="net\channel.h" />

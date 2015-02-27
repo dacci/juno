@@ -10,8 +10,8 @@
 #include <string>
 #include <vector>
 
+#include "misc/certificate_store.h"
 #include "misc/registry_key-inl.h"
-#include "misc/security/certificate_store.h"
 #include "net/secure_socket_channel.h"
 #include "net/tcp_server.h"
 #include "net/udp_server.h"

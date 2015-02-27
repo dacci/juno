@@ -11,7 +11,7 @@
 #include <string>
 #include <vector>
 
-#include "misc/security/schannel_context.h"
+#include "misc/schannel/schannel_context.h"
 #include "net/channel.h"
 
 class SecureSocketChannel : public Channel {

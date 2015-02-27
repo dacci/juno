@@ -1,7 +1,7 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_MISC_SECURITY_SCHANNEL_CREDENTIAL_H_
-#define JUNO_MISC_SECURITY_SCHANNEL_CREDENTIAL_H_
+#ifndef JUNO_MISC_SCHANNEL_SCHANNEL_CREDENTIAL_H_
+#define JUNO_MISC_SCHANNEL_SCHANNEL_CREDENTIAL_H_
 
 #include <windows.h>
 #include <schnlsp.h>
@@ -78,4 +78,4 @@ class SchannelCredential {
   SchannelCredential& operator=(const SchannelCredential&);
 };
 
-#endif  // JUNO_MISC_SECURITY_SCHANNEL_CREDENTIAL_H_
+#endif  // JUNO_MISC_SCHANNEL_SCHANNEL_CREDENTIAL_H_

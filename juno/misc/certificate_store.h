@@ -1,7 +1,7 @@
 // Copyright (c) 2014 dacci.org
 
-#ifndef JUNO_MISC_SECURITY_CERTIFICATE_STORE_H_
-#define JUNO_MISC_SECURITY_CERTIFICATE_STORE_H_
+#ifndef JUNO_MISC_CERTIFICATE_STORE_H_
+#define JUNO_MISC_CERTIFICATE_STORE_H_
 
 #include <windows.h>
 #include <cryptuiapi.h>
@@ -63,4 +63,4 @@ class CertificateStore {
   HCERTSTORE store_handle_;
 };
 
-#endif  // JUNO_MISC_SECURITY_CERTIFICATE_STORE_H_
+#endif  // JUNO_MISC_CERTIFICATE_STORE_H_
