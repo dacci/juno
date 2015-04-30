@@ -6,6 +6,7 @@
 
 #include <base/logging.h>
 
+#include "app/constants.h"
 #include "app/juno.h"
 #include "app/service_manager.h"
 #include "net/tunneling_service.h"
@@ -14,7 +15,8 @@
 const UINT MainFrame::WM_TASKBARCREATED =
     RegisterWindowMessage(_T("TaskbarCreated"));
 
-MainFrame::MainFrame() : old_windows_(false), notify_icon_(), configuring_() {
+MainFrame::MainFrame()
+    : mutex_(NULL), old_windows_(false), notify_icon_(), configuring_(false) {
 }
 
 MainFrame::~MainFrame() {
@@ -36,6 +38,23 @@ void MainFrame::TrackTrayMenu(int x, int y) {
 
 int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
   CString message;
+
+  wchar_t mutex_name[40];
+  StringFromGUID2(GUID_JUNO_APPLICATION, mutex_name, _countof(mutex_name));
+  mutex_ = CreateMutex(nullptr, TRUE, mutex_name);
+  DWORD error = GetLastError();
+
+  if (mutex_ == NULL) {
+    message.LoadString(IDS_ERR_INIT_FAILED);
+    MessageBox(message, nullptr, MB_ICONERROR);
+    return -1;
+  }
+
+  if (error != ERROR_SUCCESS) {
+    message.LoadString(IDS_ERR_ALREADY_RUNNING);
+    MessageBox(message, nullptr, MB_ICONERROR);
+    return -1;
+  }
 
   notify_icon_.cbSize = sizeof(notify_icon_);
   notify_icon_.hWnd = m_hWnd;
@@ -106,11 +125,20 @@ void MainFrame::OnDestroy() {
   notify_icon_.hIcon = AtlLoadIconImage(IDR_TRAY_MENU, 0, 16, 16);
   Shell_NotifyIcon(NIM_MODIFY, &notify_icon_);
 
-  service_manager_->StopServers();
-  service_manager_->StopServices();
-  TunnelingService::Term();
+  if (service_manager_)
+    service_manager_->StopServers();
 
   Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
+
+  if (mutex_ != NULL) {
+    CloseHandle(mutex_);
+    mutex_ = NULL;
+  }
+
+  if (service_manager_)
+    service_manager_->StopServices();
+
+  TunnelingService::Term();
 }
 
 void MainFrame::OnEndSession(BOOL ending, UINT log_off) {

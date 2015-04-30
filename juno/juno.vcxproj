@@ -249,6 +249,7 @@
     <ClCompile Include="ui\socks_proxy_dialog.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="app\constants.h" />
     <ClInclude Include="app\juno.h" />
     <ClInclude Include="app\server_config.h" />
     <ClInclude Include="app\service_manager.h" />

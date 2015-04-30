@@ -52,6 +52,7 @@ class MainFrame : public CFrameWindowImpl<MainFrame> {
   void OnFileNew(UINT notify_code, int id, CWindow control);
   void OnAppExit(UINT notify_code, int id, CWindow control);
 
+  HANDLE mutex_;
   bool old_windows_;
   NOTIFYICONDATA notify_icon_;
   bool configuring_;

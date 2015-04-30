@@ -7,6 +7,8 @@
 
 #include <atlstr.h>
 
+#include <initguid.h>
+
 #include <madoka/net/winsock.h>
 
 #include <base/at_exit.h>
@@ -16,12 +18,8 @@
 
 #include <url/url_util.h>
 
+#include "app/constants.h"
 #include "ui/main_frame.h"
-
-// {303373E4-6763-4780-B199-5325DFAFEFDD}
-const GUID GUID_JUNO_APPLICATION = {
-  0x303373e4, 0x6763, 0x4780, { 0xb1, 0x99, 0x53, 0x25, 0xdf, 0xaf, 0xef, 0xdd }
-};
 
 CAppModule _Module;
 
@@ -41,23 +39,6 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
   HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, nullptr, 0);
 
   CString message;
-
-  CString guid;
-  int length = StringFromGUID2(GUID_JUNO_APPLICATION, guid.GetBuffer(40), 40);
-  guid.ReleaseBuffer(length);
-
-  HANDLE mutex = CreateMutex(nullptr, TRUE, guid);
-  DWORD error = GetLastError();
-  if (mutex == NULL)
-    return __LINE__;
-  if (error != ERROR_SUCCESS) {
-    CloseHandle(mutex);
-
-    message.LoadString(IDS_ERR_ALREADY_RUNNING);
-    MessageBox(NULL, message, nullptr, MB_ICONERROR);
-    return __LINE__;
-  }
-
   message.LoadString(IDS_ERR_INIT_FAILED);
 
   HRESULT result = S_OK;
@@ -116,7 +97,6 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
     _Module.RemoveMessageLoop();
   }
 
-  CloseHandle(mutex);
   _Module.Term();
   url::Shutdown();
   logging::LogEventProvider::Uninitialize();
