@@ -38,6 +38,15 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
 
   HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, nullptr, 0);
 
+  base::AtExitManager atexit_manager;
+  base::CommandLine::Init(0, nullptr);
+
+  logging::LoggingSettings logging_settings;
+  logging_settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
+  logging::InitLogging(logging_settings);
+
+  logging::LogEventProvider::Initialize(GUID_JUNO_APPLICATION);
+
   CString message;
   message.LoadString(IDS_ERR_INIT_FAILED);
 
@@ -67,15 +76,6 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
     return __LINE__;
   }
 
-  base::AtExitManager atexit_manager;
-  base::CommandLine::Init(0, nullptr);
-
-  logging::LoggingSettings logging_settings;
-  logging_settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
-  logging::InitLogging(logging_settings);
-
-  logging::LogEventProvider::Initialize(GUID_JUNO_APPLICATION);
-
   url::Initialize();
 
   result = _Module.Init(nullptr, hInstance);
@@ -99,9 +99,9 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE, wchar_t*, int) {
 
   _Module.Term();
   url::Shutdown();
+  CoUninitialize();
   logging::LogEventProvider::Uninitialize();
   base::CommandLine::Reset();
-  CoUninitialize();
 
   return 0;
 }
