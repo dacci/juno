@@ -5,8 +5,8 @@
 
 #include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
+#include <madoka/net/async_socket.h>
 #include <madoka/net/resolver.h>
-#include <madoka/net/socket_event_listener.h>
 
 #include <map>
 #include <memory>
@@ -18,7 +18,7 @@
 struct Datagram;
 class Service;
 
-class UdpServer : public Server, public madoka::net::SocketEventAdapter {
+class UdpServer : public Server, public madoka::net::AsyncSocket::Listener {
  public:
   UdpServer();
   virtual ~UdpServer();
@@ -27,11 +27,19 @@ class UdpServer : public Server, public madoka::net::SocketEventAdapter {
   bool Start() override;
   void Stop() override;
 
-  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
-                  int length) override;
-  void OnReceivedFrom(madoka::net::AsyncSocket* socket, DWORD error,
-                      void* buffer, int length, sockaddr* from,
-                      int from_length) override;
+  void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
+                  void* buffer, int length, int flags) override;
+  void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
+                      void* buffer, int length, int flags,
+                      const sockaddr* address, int address_length) override;
+
+  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
+                   const addrinfo* end_point) override {}
+  void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
+              int length) override {}
+  void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
+                int length, const sockaddr* address,
+                int address_length) override {}
 
   void SetService(Service* service) override {
     service_ = service;

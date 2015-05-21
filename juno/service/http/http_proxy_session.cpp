@@ -5,7 +5,6 @@
 #include <assert.h>
 
 #include <madoka/concurrent/lock_guard.h>
-#include <madoka/net/async_socket.h>
 
 #include <base/logging.h>
 
@@ -527,14 +526,14 @@ void HttpProxySession::OnWritten(Channel* /*channel*/, DWORD error,
   }
 }
 
-void HttpProxySession::OnReceived(AsyncSocket* socket, DWORD error,
-                                  void* buffer, int length) {
+void HttpProxySession::OnReceived(AsyncSocket* socket, HRESULT result,
+                                  void* buffer, int length, int flags) {
   madoka::concurrent::LockGuard guard(&lock_);
 
   if (socket != remote_socket_)
     return;
 
-  if (error != 0 || length == 0) {
+  if (FAILED(result) || length == 0) {
     LOG(WARNING) << this << " socket disconnected";
 
     last_host_.clear();
@@ -558,12 +557,18 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
   ProcessRequest();
 }
 
-void HttpProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
+void HttpProxySession::OnConnected(AsyncSocket* socket, HRESULT result,
+                                   const addrinfo* end_point) {
   madoka::concurrent::LockGuard guard(&lock_);
 
-  if (error != 0) {
-    LOG(ERROR) << this << " failed to connect: " << error;
-    SendError(HTTP::BAD_GATEWAY);
+  if (FAILED(result)) {
+    if (result != E_ABORT && end_point->ai_next != nullptr) {
+      socket->ConnectAsync(end_point->ai_next, this);
+    } else {
+      LOG(ERROR) << this << " failed to connect: 0x" << std::hex << result;
+      SendError(HTTP::BAD_GATEWAY);
+    }
+
     return;
   }
 

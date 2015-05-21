@@ -3,21 +3,28 @@
 #include "net/socket_channel.h"
 
 #include <madoka/concurrent/lock_guard.h>
-#include <madoka/net/socket_event_listener.h>
 
 using ::madoka::net::AsyncSocket;
 
-class SocketChannel::Request : public madoka::net::SocketEventAdapter {
+class SocketChannel::Request : public madoka::net::AsyncSocket::Listener {
  public:
-  Request(SocketChannel* channel, Listener* listener);
+  Request(SocketChannel* channel, Channel::Listener* listener);
 
-  void OnReceived(AsyncSocket* socket, DWORD error, void* buffer,
-                  int length) override;
-  void OnSent(AsyncSocket* socket, DWORD error, void* buffer,
+  void OnReceived(AsyncSocket* socket, HRESULT result, void* buffer,
+                  int length, int flags) override;
+  void OnSent(AsyncSocket* socket, HRESULT result, void* buffer,
               int length) override;
 
+  void OnConnected(AsyncSocket* socket, HRESULT result,
+                   const addrinfo* end_point) override {}
+  void OnReceivedFrom(AsyncSocket* socket, HRESULT result, void* buffer,
+                      int length, int flags, const sockaddr* address,
+                      int address_length) override {}
+  void OnSentTo(AsyncSocket* socket, HRESULT result, void* buffer, int length,
+                const sockaddr* address, int address_length) override {}
+
   SocketChannel* const channel_;
-  Listener* const listener_;
+  Channel::Listener* const listener_;
 };
 
 SocketChannel::SocketChannel(const AsyncSocketPtr& socket)
@@ -106,18 +113,19 @@ void SocketChannel::EndRequest(Request* request) {
   }
 }
 
-SocketChannel::Request::Request(SocketChannel* channel, Listener* listener)
+SocketChannel::Request::Request(SocketChannel* channel,
+                                Channel::Listener* listener)
     : channel_(channel), listener_(listener) {
 }
 
-void SocketChannel::Request::OnReceived(AsyncSocket* socket, DWORD error,
-                                        void* buffer, int length) {
-  listener_->OnRead(channel_, error, buffer, length);
+void SocketChannel::Request::OnReceived(AsyncSocket* socket, HRESULT result,
+                                        void* buffer, int length, int flags) {
+  listener_->OnRead(channel_, HRESULT_CODE(result), buffer, length);
   channel_->EndRequest(this);
 }
 
-void SocketChannel::Request::OnSent(AsyncSocket* socket, DWORD error,
+void SocketChannel::Request::OnSent(AsyncSocket* socket, HRESULT result,
                                     void* buffer, int length) {
-  listener_->OnWritten(channel_, error, buffer, length);
+  listener_->OnWritten(channel_, HRESULT_CODE(result), buffer, length);
   channel_->EndRequest(this);
 }

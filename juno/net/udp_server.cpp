@@ -75,24 +75,25 @@ void UdpServer::Stop() {
     empty_.Sleep(&lock_);
 }
 
-void UdpServer::OnReceived(madoka::net::AsyncSocket* socket, DWORD error,
-                           void* buffer, int length) {
+void UdpServer::OnReceived(AsyncSocket* socket, HRESULT result,
+                           void* buffer, int length, int flags) {
   delete socket;
 }
 
-void UdpServer::OnReceivedFrom(AsyncSocket* socket, DWORD error, void* buffer,
-                               int length, sockaddr* from, int from_length) {
-  if (error == 0) {
+void UdpServer::OnReceivedFrom(AsyncSocket* socket, HRESULT result,
+                               void* buffer, int length, int flags,
+                               const sockaddr* address, int address_length) {
+  if (SUCCEEDED(result)) {
     do {
       auto datagram = std::make_shared<Datagram>();
       if (datagram == nullptr) {
-        error = E_OUTOFMEMORY;
+        result = E_OUTOFMEMORY;
         break;
       }
 
       datagram->data.reset(new char[length]);
       if (datagram->data == nullptr) {
-        error = E_OUTOFMEMORY;
+        result = E_OUTOFMEMORY;
         break;
       }
 
@@ -105,8 +106,8 @@ void UdpServer::OnReceivedFrom(AsyncSocket* socket, DWORD error, void* buffer,
 
       datagram->data_length = length;
       memmove(datagram->data.get(), buffer, length);
-      datagram->from_length = from_length;
-      memmove(&datagram->from, from, from_length);
+      datagram->from_length = address_length;
+      memmove(&datagram->from, address, address_length);
 
       socket->ReceiveFromAsync(buffer, kBufferSize, 0, this);
 
@@ -114,8 +115,8 @@ void UdpServer::OnReceivedFrom(AsyncSocket* socket, DWORD error, void* buffer,
     } while (false);
   }
 
-  if (error != 0) {
-    service_->OnError(error);
+  if (FAILED(result)) {
+    service_->OnError(HRESULT_CODE(result));
     DeleteServer(socket);
   }
 }

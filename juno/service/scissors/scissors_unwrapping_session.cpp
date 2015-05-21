@@ -105,11 +105,11 @@ void ScissorsUnwrappingSession::OnWritten(Channel* channel, DWORD error,
   DCHECK(false);
 }
 
-void ScissorsUnwrappingSession::OnSent(AsyncSocket* socket, DWORD error,
+void ScissorsUnwrappingSession::OnSent(AsyncSocket* socket, HRESULT result,
                                        void* buffer, int length) {
-  if (error != 0 || length == 0) {
-    LOG_IF(ERROR, error != 0)
-        << this << " failed to send to the sink: " << error;
+  if (FAILED(result) || length == 0) {
+    LOG_IF(ERROR, FAILED(result))
+        << this << " failed to send to the sink: 0x" << std::hex << result;
     service_->EndSession(this);
     return;
   }
@@ -125,8 +125,8 @@ void ScissorsUnwrappingSession::OnSent(AsyncSocket* socket, DWORD error,
   }
 }
 
-void ScissorsUnwrappingSession::OnSentTo(AsyncSocket* socket, DWORD error,
-                                         void* buffer, int length, sockaddr* to,
-                                         int to_length) {
-  OnSent(socket, error, buffer, length);
+void ScissorsUnwrappingSession::OnSentTo(
+    AsyncSocket* socket, HRESULT result, void* buffer, int length,
+    const sockaddr* address, int address_length) {
+  OnSent(socket, result, buffer, length);
 }

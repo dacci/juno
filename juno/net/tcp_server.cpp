@@ -123,21 +123,25 @@ void TcpServer::DeleteServerImpl(AsyncServerSocket* server) {
 }
 
 void TcpServer::OnAccepted(AsyncServerSocket* server, HRESULT result,
-                           AsyncServerSocket::AsyncContext* context) {
+                           AsyncServerSocket::Context* context) {
   do {
     if (FAILED(result))
       break;
 
-    server->AcceptAsync(this);
-
-    std::unique_ptr<AsyncSocket> peer;
-    result = server->EndAccept(context, &peer);
-    if (FAILED(result))
+    std::shared_ptr<AsyncSocket> peer =
+        server->EndAccept<AsyncSocket>(context, &result);
+    if (peer == nullptr)
       break;
 
-    service_->OnAccepted(
-        channel_factory_->CreateChannel(
-            std::shared_ptr<AsyncSocket>(std::move(peer))));
+    server->AcceptAsync(this);
+
+    auto channel = channel_factory_->CreateChannel(peer);
+    if (channel == nullptr) {
+      result = E_OUTOFMEMORY;
+      break;
+    }
+
+    service_->OnAccepted(channel);
   } while (false);
 
   if (FAILED(result)) {

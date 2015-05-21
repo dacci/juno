@@ -4,7 +4,6 @@
 #define JUNO_SERVICE_SOCKS_SOCKS_PROXY_SESSION_H_
 
 #include <madoka/net/async_socket.h>
-#include <madoka/net/socket_event_listener.h>
 
 #include <memory>
 
@@ -14,7 +13,7 @@
 #include "service/socks/socks_proxy.h"
 
 class SocksProxySession
-    : public madoka::net::SocketEventAdapter, public Channel::Listener {
+    : public madoka::net::AsyncSocket::Listener, public Channel::Listener {
  public:
   explicit SocksProxySession(SocksProxy* proxy,
                              const Service::ChannelPtr& client);
@@ -23,10 +22,22 @@ class SocksProxySession
   bool Start();
   void Stop();
 
-  void OnConnected(madoka::net::AsyncSocket* socket, DWORD error) override;
+  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
+                   const addrinfo* end_point) override;
   void OnRead(Channel* channel, DWORD error, void* buffer, int length) override;
   void OnWritten(Channel* channel, DWORD error, void* buffer,
                  int length) override;
+
+  void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
+                  void* buffer, int length, int flags) override {}
+  void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
+                      void* buffer, int length, int flags,
+                      const sockaddr* address, int address_length) override {}
+  void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
+              int length) override {}
+  void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result,
+                void* buffer, int length, const sockaddr* address,
+                int address_length) override {}
 
  private:
   typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;

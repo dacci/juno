@@ -79,12 +79,14 @@ void ScissorsWrappingSession::OnReceived(const Service::DatagramPtr& datagram) {
     return;
   }
 
-  OnReceived(source_.get(), 0, datagram->data.get(), datagram->data_length);
+  OnReceived(source_.get(), S_OK, datagram->data.get(), datagram->data_length,
+             0);
 }
 
-void ScissorsWrappingSession::OnConnected(AsyncSocket* socket, DWORD error) {
-  if (error != 0) {
-    LOG(ERROR) << this << " failed to connect: " << error;
+void ScissorsWrappingSession::OnConnected(AsyncSocket* socket, HRESULT result,
+                                          const addrinfo* end_point) {
+  if (FAILED(result)) {
+    LOG(ERROR) << this << " failed to connect: 0x" << std::hex << result;
     Stop();
     return;
   }
@@ -106,12 +108,13 @@ void ScissorsWrappingSession::OnConnected(AsyncSocket* socket, DWORD error) {
   service_->StartSession(std::move(pair));
 }
 
-void ScissorsWrappingSession::OnReceived(AsyncSocket* /*socket*/, DWORD error,
-                                         void* buffer, int length) {
+void ScissorsWrappingSession::OnReceived(AsyncSocket* socket, HRESULT result,
+                                         void* buffer, int length, int flags) {
   timer_->Stop();
 
-  if (error != 0) {
-    LOG(ERROR) << this << " failed to receive from the source: " << error;
+  if (FAILED(result)) {
+    LOG(ERROR) << this << " failed to receive from the source: 0x"
+                       << std::hex << result;
     Stop();
     return;
   }

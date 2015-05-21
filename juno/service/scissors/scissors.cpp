@@ -132,7 +132,7 @@ Service::ChannelPtr Scissors::CreateChannel(
 }
 
 void Scissors::ConnectSocket(AsyncSocket* socket,
-                             SocketEventListener* listener) {
+                             AsyncSocket::Listener* listener) {
   madoka::concurrent::LockGuard lock(&lock_);
 
   connecting_.insert({ socket, listener });
@@ -237,11 +237,18 @@ void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
 void Scissors::OnError(DWORD error) {
 }
 
-void Scissors::OnConnected(AsyncSocket* socket, DWORD error) {
-  if (error != 0)
+void Scissors::OnConnected(AsyncSocket* socket, HRESULT result,
+                           const addrinfo* end_point) {
+  if (FAILED(result)) {
+    if (result != E_ABORT && end_point->ai_next != nullptr) {
+      socket->ConnectAsync(end_point->ai_next, this);
+      return;
+    }
+
     LOG(ERROR) << "failed to connect to "
-               << config_->remote_address() << ":" << config_->remote_port()
-               << " (erro: " << error << ")";
+                << config_->remote_address() << ":" << config_->remote_port()
+                << " (error: 0x" << std::hex << result << ")";
+  }
 
   lock_.Lock();
 
@@ -252,5 +259,5 @@ void Scissors::OnConnected(AsyncSocket* socket, DWORD error) {
 
   lock_.Unlock();
 
-  listener->OnConnected(socket, error);
+  listener->OnConnected(socket, result, end_point);
 }

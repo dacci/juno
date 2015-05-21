@@ -53,8 +53,9 @@ void ScissorsTcpSession::Stop() {
     source_->Close();
 }
 
-void ScissorsTcpSession::OnConnected(AsyncSocket* socket, DWORD error) {
-  if (error == 0) {
+void ScissorsTcpSession::OnConnected(AsyncSocket* socket, HRESULT result,
+                                     const addrinfo* end_point) {
+  if (SUCCEEDED(result)) {
     if (TunnelingService::Bind(source_, sink_)) {
       source_.reset();
       sink_.reset();
@@ -62,7 +63,12 @@ void ScissorsTcpSession::OnConnected(AsyncSocket* socket, DWORD error) {
       LOG(ERROR) << this << " failed to bind channels";
     }
   } else {
-    LOG(ERROR) << this << " failed to connect: " << error;
+    if (result != E_ABORT && end_point->ai_next != nullptr) {
+      socket->ConnectAsync(end_point->ai_next, this);
+      return;
+    }
+
+    LOG(ERROR) << this << " failed to connect: 0x" << std::hex << result;
   }
 
   service_->EndSession(this);

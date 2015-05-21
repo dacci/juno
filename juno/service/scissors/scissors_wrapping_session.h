@@ -3,8 +3,6 @@
 #ifndef JUNO_SERVICE_SCISSORS_SCISSORS_WRAPPING_SESSION_H_
 #define JUNO_SERVICE_SCISSORS_SCISSORS_WRAPPING_SESSION_H_
 
-#include <madoka/net/socket_event_listener.h>
-
 #include <memory>
 
 #include "misc/timer_service.h"
@@ -16,7 +14,7 @@ class ScissorsUnwrappingSession;
 class ScissorsWrappingSession
     : public Scissors::UdpSession,
       private Channel::Listener,
-      private madoka::net::SocketEventAdapter,
+      private madoka::net::AsyncSocket::Listener,
       private TimerService::Callback {
  public:
   typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
@@ -47,13 +45,24 @@ class ScissorsWrappingSession
 
   void OnReceived(const Service::DatagramPtr& datagram) override;
 
-  void OnConnected(madoka::net::AsyncSocket* socket, DWORD error) override;
-  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
-                  int length) override;
+  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
+                   const addrinfo* end_point) override;
+  void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
+                  void* buffer, int length, int flags) override;
 
   void OnRead(Channel* channel, DWORD error, void* buffer, int length) override;
   void OnWritten(Channel* channel, DWORD error, void* buffer,
                  int length) override;
+
+  void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
+                      void* buffer, int length, int flags,
+                      const sockaddr* address,
+                      int address_length) override {}
+  void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
+              int length) override {}
+  void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
+                int length, const sockaddr* address,
+                int address_length) override {}
 
   void OnTimeout() override;
 

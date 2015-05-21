@@ -6,7 +6,6 @@
 #include <stdint.h>
 
 #include <madoka/concurrent/critical_section.h>
-#include <madoka/net/socket_event_listener.h>
 
 #include <string>
 
@@ -16,7 +15,7 @@
 class ScissorsUnwrappingSession
     : public Scissors::Session,
       private Channel::Listener,
-      private madoka::net::SocketEventAdapter {
+      private madoka::net::AsyncSocket::Listener {
  public:
   typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
 
@@ -48,10 +47,19 @@ class ScissorsUnwrappingSession
               int length) override;
   void OnWritten(Channel* channel, DWORD error, void* buffer,
                  int length) override;
-  void OnSent(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
+  void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
               int length) override;
-  void OnSentTo(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
-                int length, sockaddr* to, int to_length) override;
+  void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
+                int length, const sockaddr* address,
+                int address_length) override;
+
+  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
+                           const addrinfo* end_point) override {}
+  void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
+                  void* buffer, int length, int flags) override {}
+  void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
+                      void* buffer, int length, int flags,
+                      const sockaddr* address, int address_length) override {}
 
   Service::ChannelPtr source_;
   AsyncSocketPtr sink_;

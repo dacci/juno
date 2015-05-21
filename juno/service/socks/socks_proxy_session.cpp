@@ -80,7 +80,13 @@ void SocksProxySession::Stop() {
   }
 }
 
-void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
+void SocksProxySession::OnConnected(AsyncSocket* socket, HRESULT result,
+                                    const addrinfo* end_point) {
+  if (FAILED(result) && result != E_ABORT && end_point->ai_next != nullptr) {
+    socket->ConnectAsync(end_point->ai_next, this);
+    return;
+  }
+
   if (request_buffer_[0] == 4) {
     SOCKS4::REQUEST* request =
         reinterpret_cast<SOCKS4::REQUEST*>(request_buffer_);
@@ -94,7 +100,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
     SOCKS4::RESPONSE* response =
         reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_);
 
-    if (error == 0 &&
+    if (SUCCEEDED(result) &&
         TunnelingService::Bind(client_,
                                std::make_shared<SocketChannel>(remote_)))
       response->code = SOCKS4::GRANTED;
@@ -122,7 +128,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, DWORD error) {
         break;
     }
 
-    if (error == 0) {
+    if (SUCCEEDED(result)) {
       sockaddr_storage address;
       int length = sizeof(address);
 
@@ -336,9 +342,9 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
   if (!resolver->Resolve(domain_name, ::htons(port)))
     return false;
 
-  end_point_ = resolver.release();
-
   remote_->ConnectAsync(*resolver->begin(), this);
+
+  end_point_ = resolver.release();
 
   return true;
 }

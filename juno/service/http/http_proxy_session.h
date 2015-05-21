@@ -7,7 +7,7 @@
 
 #include <madoka/concurrent/critical_section.h>
 #include <madoka/net/resolver.h>
-#include <madoka/net/socket_event_listener.h>
+#include <madoka/net/async_socket.h>
 
 #include <memory>
 #include <string>
@@ -22,7 +22,7 @@ class HttpProxy;
 
 class HttpProxySession
     : private Channel::Listener,
-      private madoka::net::SocketEventAdapter,
+      private madoka::net::AsyncSocket::Listener,
       private TimerService::Callback {
  public:
   HttpProxySession(HttpProxy* proxy, const Service::ChannelPtr& client);
@@ -64,11 +64,12 @@ class HttpProxySession
   void OnWritten(Channel* channel, DWORD error, void* buffer,
                  int length) override;
 
-  void OnReceived(madoka::net::AsyncSocket* socket, DWORD error, void* buffer,
-                  int length) override;
+  void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
+                  void* buffer, int length, int flags) override;
 
   void OnRequestReceived(DWORD error, int length);
-  void OnConnected(madoka::net::AsyncSocket* socket, DWORD error) override;
+  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
+                   const addrinfo* end_point) override;
   void OnRequestSent(DWORD error, int length);
   void OnRequestBodyReceived(DWORD error, int length);
   void OnRequestBodySent(DWORD error, int length);
@@ -77,6 +78,15 @@ class HttpProxySession
   void OnResponseSent(DWORD error, int length);
   void OnResponseBodyReceived(DWORD error, int length);
   void OnResponseBodySent(DWORD error, int length);
+
+  void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
+                      void* buffer, int length, int flags,
+                      const sockaddr* address, int address_length) override {}
+  void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
+              int length) override {}
+  void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
+                int length, const sockaddr* address,
+                int address_length) override {}
 
   HttpProxy* const proxy_;
   madoka::concurrent::CriticalSection lock_;

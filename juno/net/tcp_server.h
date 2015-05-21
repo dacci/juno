@@ -5,8 +5,8 @@
 
 #include <madoka/concurrent/condition_variable.h>
 #include <madoka/concurrent/critical_section.h>
-#include <madoka/net/resolver.h>
 #include <madoka/net/async_server_socket.h>
+#include <madoka/net/resolver.h>
 
 #include <memory>
 #include <utility>
@@ -49,7 +49,7 @@ class TcpServer
 
   void OnAccepted(
     madoka::net::AsyncServerSocket* server, HRESULT result,
-    madoka::net::AsyncServerSocket::AsyncContext* context) override;
+    madoka::net::AsyncServerSocket::Context* context) override;
 
   ChannelFactory* channel_factory_;
   madoka::net::Resolver resolver_;

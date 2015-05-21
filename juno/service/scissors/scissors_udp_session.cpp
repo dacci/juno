@@ -68,11 +68,11 @@ void ScissorsUdpSession::OnReceived(const Service::DatagramPtr& datagram) {
   }
 }
 
-void ScissorsUdpSession::OnReceived(AsyncSocket* socket, DWORD error,
-                                    void* buffer, int length) {
+void ScissorsUdpSession::OnReceived(AsyncSocket* socket, HRESULT result,
+                                    void* buffer, int length, int flags) {
   timer_->Stop();
 
-  if (error == 0) {
+  if (SUCCEEDED(result)) {
     DLOG(INFO) << this << " " << length << " bytes received from the sink";
 
     int sent = source_->SendTo(buffer, length, 0, &address_, address_length_);
@@ -86,7 +86,8 @@ void ScissorsUdpSession::OnReceived(AsyncSocket* socket, DWORD error,
       Stop();
     }
   } else {
-    LOG(ERROR) << this << " failed to received from the sink: " << error;
+    LOG(ERROR) << this << " failed to received from the sink: 0x"
+                       << std::hex << result;
     Stop();
   }
 }
