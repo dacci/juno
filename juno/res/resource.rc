@@ -53,7 +53,7 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDR_MAIN_FRAME          ICON                    "juno.ico"
-IDR_TRAY_MENU           ICON                    "juno_16_g.ico"
+IDR_TRAY_MENU           ICON                    "juno_g.ico"
 
 /////////////////////////////////////////////////////////////////////////////
 //

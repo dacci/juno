@@ -61,7 +61,10 @@ int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
   notify_icon_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_GUID |
                         NIF_SHOWTIP;
   notify_icon_.uCallbackMessage = WM_TRAYNOTIFY;
-  notify_icon_.hIcon = AtlLoadIconImage(IDR_MAIN_FRAME, 0, 16, 16);
+  LoadIconMetric(ModuleHelper::GetResourceInstance(),
+                 MAKEINTRESOURCE(IDR_MAIN_FRAME),
+                 LIM_SMALL,
+                 &notify_icon_.hIcon);
   _stprintf_s(notify_icon_.szTip, _T("Juno"));
   notify_icon_.uVersion = NOTIFYICON_VERSION_4;
   notify_icon_.guidItem = GUID_JUNO_APPLICATION;
@@ -122,7 +125,10 @@ int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
 void MainFrame::OnDestroy() {
   SetMsgHandled(FALSE);
 
-  notify_icon_.hIcon = AtlLoadIconImage(IDR_TRAY_MENU, 0, 16, 16);
+  LoadIconMetric(ModuleHelper::GetResourceInstance(),
+                 MAKEINTRESOURCE(IDR_TRAY_MENU),
+                 LIM_SMALL,
+                 &notify_icon_.hIcon);
   Shell_NotifyIcon(NIM_MODIFY, &notify_icon_);
 
   if (service_manager_)
@@ -152,7 +158,8 @@ LRESULT MainFrame::OnTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
 
   switch (LOWORD(lParam)) {
     case WM_LBUTTONDBLCLK:
-      SendMessage(WM_COMMAND, MAKEWPARAM(kDefaultTrayCommand, 0));
+      SetForegroundWindow(m_hWnd);
+      PostMessage(WM_COMMAND, MAKEWPARAM(kDefaultTrayCommand, 0));
       break;
 
     case WM_CONTEXTMENU:
@@ -166,7 +173,8 @@ LRESULT MainFrame::OnTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
 LRESULT MainFrame::OnOldTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
   switch (lParam) {
     case WM_LBUTTONDBLCLK:
-      SendMessage(WM_COMMAND, MAKEWPARAM(kDefaultTrayCommand, 0));
+      SetForegroundWindow(m_hWnd);
+      PostMessage(WM_COMMAND, MAKEWPARAM(kDefaultTrayCommand, 0));
       break;
 
     case WM_RBUTTONUP: {

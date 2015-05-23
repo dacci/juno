@@ -320,7 +320,7 @@
     <Image Include="res\document-edit.bmp" />
     <Image Include="res\document-new.bmp" />
     <Image Include="res\juno.ico" />
-    <Image Include="res\juno_16_g.ico" />
+    <Image Include="res\juno_g.ico" />
     <Image Include="res\updown.bmp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
