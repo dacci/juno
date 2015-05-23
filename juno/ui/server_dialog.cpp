@@ -64,11 +64,12 @@ void ServerDialog::FillServiceCombo() {
 }
 
 BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
+  name_ = entry_->name_.c_str();
+  bind_ = entry_->bind_.c_str();
   listen_ = entry_->listen_;
+  enabled_ = entry_->enabled_;
 
   DoDataExchange();
-
-  name_edit_.SetWindowText(CString(entry_->name_.c_str()));
 
   FillBindCombo();
 
@@ -94,8 +95,7 @@ BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
       break;
   }
 
-  service_combo_.SelectString(0, CString(entry_->service_name_.c_str()));
-  enable_check_.SetCheck(entry_->enabled_);
+  service_combo_.SelectString(-1, CString(entry_->service_name_.c_str()));
 
   return TRUE;
 }
@@ -143,11 +143,21 @@ void ServerDialog::OnDetailSetting(UINT notify_code, int id, CWindow control) {
 void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
   EDITBALLOONTIP balloon = { sizeof(balloon) };
   CStringW message;
+  std::string temp;
 
   DoDataExchange(DDX_SAVE);
 
-  if (name_edit_.GetWindowTextLength() <= 0) {
+  if (name_.IsEmpty()) {
     message.LoadString(IDS_NAME_NOT_SPECIFIED);
+    balloon.pszText = message.GetString();
+    name_edit_.ShowBalloonTip(&balloon);
+    return;
+  }
+
+  temp = CStringA(name_);
+  auto& pair = parent_->server_configs_.find(temp);
+  if (pair != parent_->server_configs_.end() && pair->second.get() != entry_) {
+    message.LoadString(IDS_DUPLICATE_NAME);
     balloon.pszText = message.GetString();
     name_edit_.ShowBalloonTip(&balloon);
     return;
@@ -160,23 +170,16 @@ void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
     return;
   }
 
-  std::string temp;
+  entry_->name_ = CStringA(name_).GetString();
+  entry_->bind_ = CStringA(bind_);
 
-  temp.resize(::GetWindowTextLengthA(name_edit_));
-  ::GetWindowTextA(name_edit_, &temp[0], temp.size() + 1);
-  entry_->name_ = temp;
-
-  temp.resize(::GetWindowTextLengthA(bind_combo_));
-  ::GetWindowTextA(bind_combo_, &temp[0], temp.size() + 1);
-  entry_->bind_ = temp;
-
-  temp.resize(::GetWindowTextLengthA(service_combo_));
-  ::GetWindowTextA(service_combo_, &temp[0], temp.size() + 1);
+  temp.resize(service_combo_.GetWindowTextLength());
+  GetWindowTextA(service_combo_, &temp[0], temp.size() + 1);
   entry_->service_name_ = temp;
 
   entry_->listen_ = listen_;
   entry_->type_ = type_combo_.GetCurSel() + 1;
-  entry_->enabled_ = enable_check_.GetCheck();
+  entry_->enabled_ = enabled_;
 
   EndDialog(IDOK);
 }

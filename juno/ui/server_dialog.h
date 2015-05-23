@@ -26,7 +26,9 @@ class ServerDialog
   ~ServerDialog();
 
   BEGIN_DDX_MAP(ServerDialog)
+    DDX_TEXT(IDC_NAME, name_)
     DDX_CONTROL_HANDLE(IDC_NAME, name_edit_)
+    DDX_TEXT(IDC_BIND, bind_)
     DDX_CONTROL_HANDLE(IDC_BIND, bind_combo_)
     DDX_INT(IDC_LISTEN, listen_)
     DDX_CONTROL_HANDLE(IDC_LISTEN, listen_edit_)
@@ -34,7 +36,7 @@ class ServerDialog
     DDX_CONTROL_HANDLE(IDC_PROTOCOL, type_combo_)
     DDX_CONTROL_HANDLE(ID_FILE_PAGE_SETUP, detail_button_)
     DDX_CONTROL_HANDLE(IDC_SERVICE, service_combo_)
-    DDX_CONTROL_HANDLE(IDC_ENABLE, enable_check_)
+    DDX_CHECK(IDC_ENABLE, enabled_)
   END_DDX_MAP()
 
   BEGIN_MSG_MAP(ServerDialog)
@@ -60,7 +62,9 @@ class ServerDialog
   PreferenceDialog* const parent_;
   ServerConfig* const entry_;
 
+  CString name_;
   CEdit name_edit_;
+  CString bind_;
   CComboBox bind_combo_;
   int listen_;
   CEdit listen_edit_;
@@ -68,7 +72,7 @@ class ServerDialog
   CComboBox type_combo_;
   CButton detail_button_;
   CComboBox service_combo_;
-  CButton enable_check_;
+  BOOL enabled_;
 };
 
 #endif  // JUNO_UI_SERVER_DIALOG_H_

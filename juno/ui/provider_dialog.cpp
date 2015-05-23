@@ -52,7 +52,8 @@ void ProviderDialog::OnOk(UINT notify_code, int id, CWindow control) {
   name_.resize(::GetWindowTextLengthA(name_edit_));
   ::GetWindowTextA(name_edit_, &name_[0], name_.size() + 1);
 
-  if (ServiceManager::GetInstance()->GetServiceConfig(name_)) {
+  auto& pair = parent_->service_configs_.find(name_);
+  if (pair != parent_->service_configs_.end()) {
     message.LoadString(IDS_DUPLICATE_NAME);
     balloon.pszText = message;
     name_edit_.ShowBalloonTip(&balloon);
