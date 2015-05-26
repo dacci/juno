@@ -208,7 +208,9 @@ bool ServiceManager::UpdateConfiguration(ServiceConfigMap&& new_services,
   // removed services
   for (auto i = service_configs_.begin(), l = service_configs_.end(); i != l;) {
     auto& updated = new_services.find(i->first);
-    if (updated == new_services.end()) {
+    if (updated == new_services.end() ||
+        service_configs_[i->first]->provider_name_ !=
+            updated->second->provider_name_) {
       if (services_key.DeleteKey(i->first.c_str())) {
         services_.at(i->first)->Stop();
         services_.erase(i->first);
