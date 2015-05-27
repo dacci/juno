@@ -38,7 +38,7 @@ bool HttpProxy::UpdateConfig(const ServiceConfigPtr& config) {
 }
 
 void HttpProxy::Stop() {
-  madoka::concurrent::LockGuard guard(&lock_, true);
+  madoka::concurrent::LockGuard guard(&lock_);
 
   stopped_ = true;
 
@@ -46,7 +46,7 @@ void HttpProxy::Stop() {
     session->Stop();
 
   while (!sessions_.empty())
-    empty_.Sleep(&lock_, true);
+    empty_.Sleep(&lock_);
 }
 
 void HttpProxy::FilterHeaders(HttpHeaders* headers, bool request) {
@@ -135,13 +135,13 @@ void HttpProxy::EndSession(HttpProxySession* session) {
 }
 
 void HttpProxy::OnAccepted(const ChannelPtr& client) {
+  auto session = std::make_unique<HttpProxySession>(this, client);
+  if (session == nullptr)
+    return;
+
   madoka::concurrent::LockGuard guard(&lock_, true);
 
   if (stopped_)
-    return;
-
-  auto session = std::make_unique<HttpProxySession>(this, client);
-  if (session == nullptr)
     return;
 
   if (session->Start())
