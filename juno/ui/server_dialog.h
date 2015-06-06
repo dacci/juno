@@ -26,8 +26,6 @@ class ServerDialog
   ~ServerDialog();
 
   BEGIN_DDX_MAP(ServerDialog)
-    DDX_TEXT(IDC_NAME, name_)
-    DDX_CONTROL_HANDLE(IDC_NAME, name_edit_)
     DDX_TEXT(IDC_BIND, bind_)
     DDX_CONTROL_HANDLE(IDC_BIND, bind_combo_)
     DDX_INT(IDC_LISTEN, listen_)
@@ -62,8 +60,6 @@ class ServerDialog
   PreferenceDialog* const parent_;
   ServerConfig* const entry_;
 
-  CString name_;
-  CEdit name_edit_;
   CString bind_;
   CComboBox bind_combo_;
   int listen_;

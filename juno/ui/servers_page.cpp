@@ -10,6 +10,12 @@
 #include "app/server_config.h"
 #include "ui/server_dialog.h"
 
+const wchar_t* kTypeNames[] = {
+  L"TCP",
+  L"UDP",
+  L"SSL/TLS",
+};
+
 ServersPage::ServersPage(PreferenceDialog* parent, ServerConfigMap* configs)
     : parent_(parent), configs_(configs), initialized_() {
 }
@@ -32,11 +38,12 @@ void ServersPage::AddServerItem(const ServerConfigPtr& config, int index) {
   CString listen;
   listen.Format(_T("%u"), config->listen_);
 
-  server_list_.InsertItem(index, name);
-  server_list_.AddItem(index, 1, bind);
-  server_list_.AddItem(index, 2, listen);
+  server_list_.InsertItem(index, bind);
+  server_list_.AddItem(index, 1, listen);
+  server_list_.AddItem(index, 2, kTypeNames[config->type_ - 1]);
   server_list_.AddItem(index, 3, service_name);
   server_list_.SetCheckState(index, config->enabled_);
+  server_list_.SetItemData(index, reinterpret_cast<DWORD_PTR>(config.get()));
 }
 
 BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
@@ -47,17 +54,17 @@ BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
   server_list_.SetExtendedListViewStyle(LVS_EX_CHECKBOXES |
                                         LVS_EX_FULLROWSELECT);
 
-  caption.LoadString(IDS_COLUMN_NAME);
+  caption.LoadString(IDS_COLUMN_BIND);
   server_list_.AddColumn(caption, 0);
   server_list_.SetColumnWidth(0, 100);
 
-  caption.LoadString(IDS_COLUMN_BIND);
-  server_list_.AddColumn(caption, 1);
-  server_list_.SetColumnWidth(1, 80);
-
   caption.LoadString(IDS_COLUMN_LISTEN);
-  server_list_.AddColumn(caption, 2, -1, LVCF_FMT | LVCF_TEXT, LVCFMT_RIGHT);
-  server_list_.SetColumnWidth(2, 50);
+  server_list_.AddColumn(caption, 1, -1, LVCF_FMT | LVCF_TEXT, LVCFMT_RIGHT);
+  server_list_.SetColumnWidth(1, 50);
+
+  caption.LoadString(IDS_COLUMN_PROTOCOL);
+  server_list_.AddColumn(caption, 2);
+  server_list_.SetColumnWidth(2, 60);
 
   caption.LoadString(IDS_COLUMN_SERVICE);
   server_list_.AddColumn(caption, 3);
@@ -90,18 +97,17 @@ void ServersPage::OnEditServer(UINT notify_code, int id, CWindow control) {
   if (index == CB_ERR)
     return;
 
-  CString name_unicode;
-  server_list_.GetItemText(index, 0, name_unicode);
-
-  CStringA name(name_unicode);
-  auto& config = configs_->at(name.GetString());
-
-  ServerDialog dialog(parent_, config.get());
+  auto pointer =
+      reinterpret_cast<ServerConfig*>(server_list_.GetItemData(index));
+  ServerDialog dialog(parent_, pointer);
   if (dialog.DoModal(m_hWnd) != IDOK)
     return;
 
   server_list_.DeleteItem(index);
+
+  auto& config = configs_->at(pointer->name_);
   AddServerItem(config, index);
+
   server_list_.SelectItem(index);
 }
 
@@ -110,15 +116,11 @@ void ServersPage::OnDeleteServer(UINT notify_code, int id, CWindow control) {
   if (index == CB_ERR)
     return;
 
-  CString name_unicode;
-  server_list_.GetItemText(index, 0, name_unicode);
-
-  CStringA name(name_unicode);
-  auto& config = configs_->at(name.GetString());
-
-  server_list_.DeleteItem(index);
+  auto config =
+      reinterpret_cast<ServerConfig*>(server_list_.GetItemData(index));
   configs_->erase(config->name_);
 
+  server_list_.DeleteItem(index);
   server_list_.SelectItem(index);
 }
 
@@ -130,13 +132,11 @@ LRESULT ServersPage::OnServerListChanged(LPNMHDR header) {
 
   if (notify->uNewState & LVIS_STATEIMAGEMASK &&
       notify->uOldState & LVIS_STATEIMAGEMASK) {
-    CString name_unicode;
-    server_list_.GetItemText(notify->iItem, 0, name_unicode);
-
-    CStringA name(name_unicode);
-    auto& config = configs_->at(name.GetString());
-
-    config->enabled_ = (notify->uNewState >> 12) - 1;
+    auto config =
+        reinterpret_cast<ServerConfig*>(
+            server_list_.GetItemData(notify->iItem));
+    if (config != nullptr)
+      config->enabled_ = (notify->uNewState >> 12) - 1;
   }
 
   UINT count = server_list_.GetSelectedCount();

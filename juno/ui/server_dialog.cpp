@@ -64,7 +64,6 @@ void ServerDialog::FillServiceCombo() {
 }
 
 BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
-  name_ = entry_->name_.c_str();
   bind_ = entry_->bind_.c_str();
   listen_ = entry_->listen_;
   enabled_ = entry_->enabled_;
@@ -147,22 +146,6 @@ void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
 
   DoDataExchange(DDX_SAVE);
 
-  if (name_.IsEmpty()) {
-    message.LoadString(IDS_NAME_NOT_SPECIFIED);
-    balloon.pszText = message.GetString();
-    name_edit_.ShowBalloonTip(&balloon);
-    return;
-  }
-
-  temp = CStringA(name_);
-  auto& pair = parent_->server_configs_.find(temp);
-  if (pair != parent_->server_configs_.end() && pair->second.get() != entry_) {
-    message.LoadString(IDS_DUPLICATE_NAME);
-    balloon.pszText = message.GetString();
-    name_edit_.ShowBalloonTip(&balloon);
-    return;
-  }
-
   if (listen_ <= 0 || 65536 <= listen_) {
     message.LoadString(IDS_INVALID_PORT);
     balloon.pszText = message.GetString();
@@ -170,7 +153,15 @@ void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
     return;
   }
 
-  entry_->name_ = CStringA(name_).GetString();
+  if (entry_->name_.empty()) {
+    entry_->name_ = GenerateGUID();
+    if (entry_->name_.empty()) {
+      message.LoadString(IDS_ERR_UNEXPECTED);
+      MessageBox(message, nullptr, MB_ICONERROR);
+      return;
+    }
+  }
+
   entry_->bind_ = CStringA(bind_);
 
   temp.resize(service_combo_.GetWindowTextLength());

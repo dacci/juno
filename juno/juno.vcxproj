@@ -237,6 +237,7 @@
     <ClCompile Include="service\socks\socks_proxy.cpp" />
     <ClCompile Include="service\socks\socks_proxy_provider.cpp" />
     <ClCompile Include="service\socks\socks_proxy_session.cpp" />
+    <ClCompile Include="misc\string_util.cpp" />
     <ClCompile Include="ui\http_header_filter_dialog.cpp" />
     <ClCompile Include="ui\http_proxy_dialog.cpp" />
     <ClCompile Include="ui\main_frame.cpp" />

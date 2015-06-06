@@ -29,4 +29,6 @@ inline std::wstring to_wstring(const std::string& string) {
   return std::wstring(string.begin(), string.end());
 }
 
+std::string GenerateGUID();
+
 #endif  // JUNO_MISC_STRING_UTIL_H_
