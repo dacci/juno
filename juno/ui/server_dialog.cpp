@@ -80,6 +80,7 @@ BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   FillServiceCombo();
 
   bind_combo_.SetWindowText(CString(entry_->bind_.c_str()));
+  listen_edit_.SetLimitText(5);
   listen_spin_.SetRange32(0, 65535);
   type_combo_.SetCurSel(entry_->type_ - 1);
 
