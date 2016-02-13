@@ -4,8 +4,6 @@
 
 #include <assert.h>
 
-#include <madoka/concurrent/lock_guard.h>
-
 #include <base/logging.h>
 
 #include <url/gurl.h>
@@ -56,7 +54,7 @@ HttpProxySession::~HttpProxySession() {
 }
 
 bool HttpProxySession::Start() {
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   if (proxy_ == nullptr || client_ == nullptr || timer_ == nullptr)
     return false;
@@ -69,7 +67,7 @@ bool HttpProxySession::Start() {
 }
 
 void HttpProxySession::Stop() {
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   DLOG(INFO) << this << " stop requested";
 
@@ -191,9 +189,9 @@ void HttpProxySession::DispatchRequest() {
 
   remote_socket_ = remote_socket.get();
 
-  lock_.Unlock();
+  lock_.Release();
   remote_ = std::make_shared<SocketChannel>(remote_socket);
-  lock_.Lock();
+  lock_.Acquire();
   if (remote_ == nullptr) {
     SetError(HTTP::INTERNAL_SERVER_ERROR);
     return;
@@ -474,7 +472,7 @@ void HttpProxySession::OnTimeout() {
 
 void HttpProxySession::OnRead(Channel* /*channel*/, DWORD error,
                               void* /*buffer*/, int length) {
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   switch (state_) {
     case RequestHeader:
@@ -501,7 +499,7 @@ void HttpProxySession::OnRead(Channel* /*channel*/, DWORD error,
 
 void HttpProxySession::OnWritten(Channel* /*channel*/, DWORD error,
                                  void* /*buffer*/, int length) {
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   switch (state_) {
     case RequestHeader:
@@ -528,7 +526,7 @@ void HttpProxySession::OnWritten(Channel* /*channel*/, DWORD error,
 
 void HttpProxySession::OnReceived(AsyncSocket* socket, HRESULT result,
                                   void* buffer, int length, int flags) {
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   if (socket != remote_socket_)
     return;
@@ -559,7 +557,7 @@ void HttpProxySession::OnRequestReceived(DWORD error, int length) {
 
 void HttpProxySession::OnConnected(AsyncSocket* socket, HRESULT result,
                                    const addrinfo* end_point) {
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   if (FAILED(result)) {
     if (result != E_ABORT && end_point->ai_next != nullptr) {

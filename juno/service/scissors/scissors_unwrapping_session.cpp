@@ -2,8 +2,6 @@
 
 #include "service/scissors/scissors_unwrapping_session.h"
 
-#include <madoka/concurrent/lock_guard.h>
-
 #include <base/logging.h>
 
 #include <memory>

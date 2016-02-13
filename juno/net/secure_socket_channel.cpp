@@ -5,7 +5,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include <madoka/concurrent/lock_guard.h>
 #include <madoka/net/socket.h>
 
 #include <algorithm>
@@ -80,7 +79,11 @@ class SecureSocketChannel::WriteRequest : public Request {
 
 SecureSocketChannel::SecureSocketChannel(SchannelCredential* credential,
                                          const SocketPtr& socket, bool inbound)
-    : context_(credential), socket_(socket), inbound_(inbound), closed_() {
+    : context_(credential),
+      socket_(socket),
+      inbound_(inbound),
+      closed_(),
+      empty_(&lock_) {
   InitOnceInitialize(&init_once_);
 }
 
@@ -88,9 +91,9 @@ SecureSocketChannel::~SecureSocketChannel() {
   Close();
   socket_->Close();
 
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
   while (!requests_.empty())
-    empty_.Sleep(&lock_);
+    empty_.Wait();
 }
 
 void SecureSocketChannel::Close() {
@@ -118,7 +121,7 @@ void SecureSocketChannel::ReadAsync(void* buffer, int length,
   }
 
   {
-    madoka::concurrent::LockGuard guard(&lock_);
+    base::AutoLock guard(lock_);
     if (!decrypted_.empty()) {
       int size = std::min(static_cast<int>(decrypted_.size()), length);
       if (size > 0) {
@@ -176,7 +179,7 @@ void CALLBACK SecureSocketChannel::BeginRequest(PTP_CALLBACK_INSTANCE instance,
 
 void SecureSocketChannel::EndRequest(Request* request) {
   std::unique_ptr<Request> removed;
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   for (auto i = requests_.begin(), l = requests_.end(); i != l; ++i) {
     if (i->get() == request) {
@@ -184,7 +187,7 @@ void SecureSocketChannel::EndRequest(Request* request) {
       requests_.erase(i);
 
       if (requests_.empty())
-        empty_.WakeAll();
+        empty_.Broadcast();
 
       break;
     }
@@ -227,7 +230,7 @@ HRESULT SecureSocketChannel::EnsureNegotiated() {
 }
 
 HRESULT SecureSocketChannel::Negotiate() {
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   while (true) {
     while (true) {

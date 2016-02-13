@@ -3,12 +3,12 @@
 #ifndef JUNO_SERVICE_SCISSORS_SCISSORS_H_
 #define JUNO_SERVICE_SCISSORS_SCISSORS_H_
 
-#include <madoka/concurrent/condition_variable.h>
-#include <madoka/concurrent/critical_section.h>
 #include <madoka/net/async_socket.h>
 #include <madoka/net/resolver.h>
 
 #include <base/hash.h>
+#include <base/synchronization/condition_variable.h>
+#include <base/synchronization/lock.h>
 
 #include <map>
 #include <memory>
@@ -110,15 +110,15 @@ class Scissors : public Service, private madoka::net::AsyncSocket::Listener {
   bool stopped_;
   std::shared_ptr<ScissorsConfig> config_;
   std::unique_ptr<SchannelCredential> credential_;
-  madoka::concurrent::CriticalSection lock_;
+  base::Lock lock_;
 
   madoka::net::Resolver resolver_;
   std::map<madoka::net::AsyncSocket*, madoka::net::AsyncSocket::Listener*>
       connecting_;
-  madoka::concurrent::ConditionVariable not_connecting_;
+  base::ConditionVariable not_connecting_;
 
   std::vector<std::unique_ptr<Session>> sessions_;
-  madoka::concurrent::ConditionVariable empty_;
+  base::ConditionVariable empty_;
 
   UdpSessionMap udp_sessions_;
 };

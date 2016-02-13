@@ -5,8 +5,8 @@
 
 #include <windows.h>
 
-#include <madoka/concurrent/condition_variable.h>
-#include <madoka/concurrent/critical_section.h>
+#include <base/synchronization/condition_variable.h>
+#include <base/synchronization/lock.h>
 
 #include <memory>
 #include <utility>
@@ -39,8 +39,8 @@ class TunnelingService {
 
   static TunnelingService* instance_;
 
-  madoka::concurrent::CriticalSection lock_;
-  madoka::concurrent::ConditionVariable empty_;
+  base::Lock lock_;
+  base::ConditionVariable empty_;
   bool stopped_;
 
   std::vector<std::unique_ptr<Session>> sessions_;

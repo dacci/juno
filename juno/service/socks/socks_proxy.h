@@ -3,8 +3,8 @@
 #ifndef JUNO_SERVICE_SOCKS_SOCKS_PROXY_H_
 #define JUNO_SERVICE_SOCKS_SOCKS_PROXY_H_
 
-#include <madoka/concurrent/condition_variable.h>
-#include <madoka/concurrent/critical_section.h>
+#include <base/synchronization/condition_variable.h>
+#include <base/synchronization/lock.h>
 
 #include <memory>
 #include <utility>
@@ -36,8 +36,8 @@ class SocksProxy : public Service {
                                       void* param);
   void EndSessionImpl(SocksProxySession* session);
 
-  madoka::concurrent::ConditionVariable empty_;
-  madoka::concurrent::CriticalSection critical_section_;
+  base::Lock lock_;
+  base::ConditionVariable empty_;
   std::vector<std::unique_ptr<SocksProxySession>> sessions_;
   bool stopped_;
 

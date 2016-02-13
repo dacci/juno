@@ -2,7 +2,7 @@
 
 #include "net/tunneling_service.h"
 
-#include <madoka/concurrent/lock_guard.h>
+#include <base/logging.h>
 
 #include "net/channel.h"
 
@@ -41,19 +41,22 @@ void TunnelingService::Term() {
 }
 
 bool TunnelingService::Bind(const ChannelPtr& a, const ChannelPtr& b) {
-  if (instance_ == nullptr || instance_->stopped_)
+  if (instance_ == nullptr)
     return false;
 
-  madoka::concurrent::LockGuard guard(&instance_->lock_);
+  base::AutoLock guard(instance_->lock_);
+
+  if (instance_->stopped_)
+    return false;
 
   return instance_->BindSocket(a, b) && instance_->BindSocket(b, a);
 }
 
-TunnelingService::TunnelingService() : stopped_() {
+TunnelingService::TunnelingService() : empty_(&lock_), stopped_() {
 }
 
 TunnelingService::~TunnelingService() {
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   stopped_ = true;
 
@@ -63,15 +66,13 @@ TunnelingService::~TunnelingService() {
   }
 
   while (!sessions_.empty())
-    empty_.Sleep(&lock_);
+    empty_.Wait();
 }
 
 bool TunnelingService::BindSocket(const ChannelPtr& from,
                                   const ChannelPtr& to) {
-  madoka::concurrent::LockGuard guard(&lock_);
-
-  if (stopped_)
-    return false;
+  CHECK(!stopped_);
+  lock_.AssertAcquired();
 
   auto session = std::make_unique<Session>(this, from, to);
   if (session == nullptr)
@@ -101,7 +102,7 @@ void CALLBACK TunnelingService::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
 
 void TunnelingService::EndSessionImpl(Session* session) {
   std::unique_ptr<Session> removed;
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
     if (i->get() == session) {
@@ -109,7 +110,7 @@ void TunnelingService::EndSessionImpl(Session* session) {
       sessions_.erase(i);
 
       if (sessions_.empty())
-        empty_.WakeAll();
+        empty_.Broadcast();
 
       break;
     }

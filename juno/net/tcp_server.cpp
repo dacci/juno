@@ -2,8 +2,6 @@
 
 #include "net/tcp_server.h"
 
-#include <madoka/concurrent/lock_guard.h>
-
 #include "net/socket_channel.h"
 #include "service/service.h"
 
@@ -25,7 +23,7 @@ SocketChannelFactory socket_channel_factory;
 }  // namespace
 
 TcpServer::TcpServer()
-    : channel_factory_(&socket_channel_factory), service_() {
+    : channel_factory_(&socket_channel_factory), service_(), empty_(&lock_) {
 }
 
 TcpServer::~TcpServer() {
@@ -64,7 +62,7 @@ bool TcpServer::Start() {
   if (service_ == nullptr || servers_.empty())
     return false;
 
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   for (auto& server : servers_)
     server->AcceptAsync(this);
@@ -73,13 +71,13 @@ bool TcpServer::Start() {
 }
 
 void TcpServer::Stop() {
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   for (auto& server : servers_)
     server->Close();
 
   while (!servers_.empty())
-    empty_.Sleep(&lock_);
+    empty_.Wait();
 }
 
 void TcpServer::SetChannelFactory(ChannelFactory* channel_factory) {
@@ -107,7 +105,7 @@ void CALLBACK TcpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
 
 void TcpServer::DeleteServerImpl(AsyncServerSocket* server) {
   std::unique_ptr<AsyncServerSocket> removed;
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
     if (i->get() == server) {
@@ -115,7 +113,7 @@ void TcpServer::DeleteServerImpl(AsyncServerSocket* server) {
       servers_.erase(i);
 
       if (servers_.empty())
-        empty_.WakeAll();
+        empty_.Broadcast();
 
       break;
     }

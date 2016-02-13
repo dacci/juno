@@ -3,10 +3,6 @@
 #ifndef JUNO_SERVICE_SCISSORS_SCISSORS_UNWRAPPING_SESSION_H_
 #define JUNO_SERVICE_SCISSORS_SCISSORS_UNWRAPPING_SESSION_H_
 
-#include <stdint.h>
-
-#include <madoka/concurrent/critical_section.h>
-
 #include <string>
 
 #include "net/channel.h"

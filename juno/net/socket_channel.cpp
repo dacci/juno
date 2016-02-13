@@ -2,11 +2,9 @@
 
 #include "net/socket_channel.h"
 
-#include <madoka/concurrent/lock_guard.h>
-
 using ::madoka::net::AsyncSocket;
 
-class SocketChannel::Request : public madoka::net::AsyncSocket::Listener {
+class SocketChannel::Request : public AsyncSocket::Listener {
  public:
   Request(SocketChannel* channel, Channel::Listener* listener);
 
@@ -28,16 +26,16 @@ class SocketChannel::Request : public madoka::net::AsyncSocket::Listener {
 };
 
 SocketChannel::SocketChannel(const AsyncSocketPtr& socket)
-    : socket_(socket), closed_() {
+    : socket_(socket), closed_(), empty_(&lock_) {
 }
 
 SocketChannel::~SocketChannel() {
   Close();
   socket_->Close();
 
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
   while (!requests_.empty())
-    empty_.Sleep(&lock_);
+    empty_.Wait();
 }
 
 void SocketChannel::Close() {
@@ -67,7 +65,7 @@ void SocketChannel::ReadAsync(void* buffer, int length, Listener* listener) {
     return;
   }
 
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
   socket_->ReceiveAsync(buffer, length, 0, request.get());
   requests_.push_back(std::move(request));
 }
@@ -91,14 +89,14 @@ void SocketChannel::WriteAsync(const void* buffer, int length,
     return;
   }
 
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
   socket_->SendAsync(buffer, length, 0, request.get());
   requests_.push_back(std::move(request));
 }
 
 void SocketChannel::EndRequest(Request* request) {
   std::unique_ptr<Request> removed;
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   for (auto i = requests_.begin(), l = requests_.end(); i != l; ++i) {
     if (i->get() == request) {
@@ -106,7 +104,7 @@ void SocketChannel::EndRequest(Request* request) {
       requests_.erase(i);
 
       if (requests_.empty())
-        empty_.WakeAll();
+        empty_.Broadcast();
 
       break;
     }

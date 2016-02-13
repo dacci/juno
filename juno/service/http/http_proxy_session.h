@@ -5,9 +5,10 @@
 
 #include <stdint.h>
 
-#include <madoka/concurrent/critical_section.h>
 #include <madoka/net/resolver.h>
 #include <madoka/net/async_socket.h>
+
+#include <base/synchronization/lock.h>
 
 #include <memory>
 #include <string>
@@ -89,7 +90,7 @@ class HttpProxySession
                 int address_length) override {}
 
   HttpProxy* const proxy_;
-  madoka::concurrent::CriticalSection lock_;
+  base::Lock lock_;
   TimerService::TimerObject timer_;
   char buffer_[kBufferSize];
   State state_;

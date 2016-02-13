@@ -2,13 +2,11 @@
 
 #include "service/socks/socks_proxy.h"
 
-#include <madoka/concurrent/lock_guard.h>
-
 #include "service/socks/socks_proxy_session.h"
 
 using ::madoka::net::AsyncSocket;
 
-SocksProxy::SocksProxy() : stopped_() {
+SocksProxy::SocksProxy() : empty_(&lock_), stopped_() {
 }
 
 SocksProxy::~SocksProxy() {
@@ -23,7 +21,7 @@ bool SocksProxy::UpdateConfig(const ServiceConfigPtr& config) {
 }
 
 void SocksProxy::Stop() {
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  base::AutoLock guard(lock_);
 
   stopped_ = true;
 
@@ -31,7 +29,7 @@ void SocksProxy::Stop() {
     session->Stop();
 
   while (!sessions_.empty())
-    empty_.Sleep(&critical_section_);
+    empty_.Wait();
 }
 
 void SocksProxy::EndSession(SocksProxySession* session) {
@@ -44,7 +42,7 @@ void SocksProxy::EndSession(SocksProxySession* session) {
 }
 
 void SocksProxy::OnAccepted(const ChannelPtr& client) {
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  base::AutoLock guard(lock_);
 
   if (stopped_)
     return;
@@ -73,7 +71,7 @@ void CALLBACK SocksProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
 
 void SocksProxy::EndSessionImpl(SocksProxySession* session) {
   std::unique_ptr<SocksProxySession> removed;
-  madoka::concurrent::LockGuard lock(&critical_section_);
+  base::AutoLock guard(lock_);
 
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
     if (i->get() == session) {
@@ -81,7 +79,7 @@ void SocksProxy::EndSessionImpl(SocksProxySession* session) {
       sessions_.erase(i);
 
       if (sessions_.empty())
-        empty_.WakeAll();
+        empty_.Broadcast();
 
       break;
     }

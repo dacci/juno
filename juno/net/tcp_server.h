@@ -3,10 +3,11 @@
 #ifndef JUNO_NET_TCP_SERVER_H_
 #define JUNO_NET_TCP_SERVER_H_
 
-#include <madoka/concurrent/condition_variable.h>
-#include <madoka/concurrent/critical_section.h>
 #include <madoka/net/async_server_socket.h>
 #include <madoka/net/resolver.h>
+
+#include <base/synchronization/condition_variable.h>
+#include <base/synchronization/lock.h>
 
 #include <memory>
 #include <utility>
@@ -56,8 +57,8 @@ class TcpServer
   std::vector<std::unique_ptr<madoka::net::AsyncServerSocket>> servers_;
   Service* service_;
 
-  madoka::concurrent::CriticalSection lock_;
-  madoka::concurrent::ConditionVariable empty_;
+  base::Lock lock_;
+  base::ConditionVariable empty_;
 };
 
 #endif  // JUNO_NET_TCP_SERVER_H_

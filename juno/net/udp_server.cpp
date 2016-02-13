@@ -2,10 +2,6 @@
 
 #include "net/udp_server.h"
 
-#include <assert.h>
-
-#include <madoka/concurrent/lock_guard.h>
-
 #include <memory>
 
 #include "net/datagram.h"
@@ -13,7 +9,7 @@
 
 using ::madoka::net::AsyncSocket;
 
-UdpServer::UdpServer() : service_() {
+UdpServer::UdpServer() : service_(), empty_(&lock_) {
 }
 
 UdpServer::~UdpServer() {
@@ -57,7 +53,7 @@ bool UdpServer::Start() {
   if (service_ == nullptr || servers_.empty())
     return false;
 
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   for (auto& pair : buffers_)
     pair.first->ReceiveFromAsync(pair.second.get(), kBufferSize, 0, this);
@@ -66,13 +62,13 @@ bool UdpServer::Start() {
 }
 
 void UdpServer::Stop() {
-  madoka::concurrent::LockGuard guard(&lock_);
+  base::AutoLock guard(lock_);
 
   for (auto& server : servers_)
     server->Close();
 
   while (!servers_.empty())
-    empty_.Sleep(&lock_);
+    empty_.Wait();
 }
 
 void UdpServer::OnReceived(AsyncSocket* socket, HRESULT result,
@@ -141,7 +137,7 @@ void UdpServer::DeleteServerImpl(AsyncSocket* server) {
   std::unique_ptr<char[]> removed_buffer;
   std::shared_ptr<AsyncSocket> removed_server;
 
-  lock_.Lock();
+  lock_.Acquire();
 
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
     if (i->get() == server) {
@@ -152,13 +148,13 @@ void UdpServer::DeleteServerImpl(AsyncSocket* server) {
       servers_.erase(i);
 
       if (servers_.empty())
-        empty_.WakeAll();
+        empty_.Broadcast();
 
       break;
     }
   }
 
-  lock_.Unlock();
+  lock_.Release();
 
   if (removed_server != nullptr)
     removed_server->Close();

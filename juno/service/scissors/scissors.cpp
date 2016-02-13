@@ -2,8 +2,6 @@
 
 #include "service/scissors/scissors.h"
 
-#include <madoka/concurrent/lock_guard.h>
-
 #include <base/logging.h>
 
 #include "misc/registry_key.h"
@@ -21,7 +19,7 @@
 using ::madoka::net::AsyncSocket;
 using ::madoka::net::Resolver;
 
-Scissors::Scissors() : stopped_() {
+Scissors::Scissors() : stopped_(), not_connecting_(&lock_), empty_(&lock_) {
 }
 
 Scissors::~Scissors() {
@@ -29,10 +27,10 @@ Scissors::~Scissors() {
 }
 
 bool Scissors::UpdateConfig(const ServiceConfigPtr& config) {
-  madoka::concurrent::LockGuard lock(&lock_);
+  base::AutoLock guard(lock_);
 
   while (!connecting_.empty())
-    not_connecting_.Sleep(&lock_);
+    not_connecting_.Wait();
 
   config_ = std::static_pointer_cast<ScissorsConfig>(config);
 
@@ -66,7 +64,7 @@ bool Scissors::UpdateConfig(const ServiceConfigPtr& config) {
 }
 
 void Scissors::Stop() {
-  madoka::concurrent::LockGuard lock(&lock_);
+  base::AutoLock guard(lock_);
 
   stopped_ = true;
 
@@ -74,19 +72,19 @@ void Scissors::Stop() {
     session->Stop();
 
   while (!sessions_.empty())
-    empty_.Sleep(&lock_);
+    empty_.Wait();
 }
 
 bool Scissors::StartSession(std::unique_ptr<Session>&& session) {
   if (session == nullptr)
     return false;
 
-  madoka::concurrent::LockGuard lock(&lock_);
-
   if (!session->Start())
     return false;
 
+  lock_.Acquire();
   sessions_.push_back(std::move(session));
+  lock_.Release();
 
   return true;
 }
@@ -118,7 +116,7 @@ Scissors::AsyncSocketPtr Scissors::CreateSocket() {
 
 Service::ChannelPtr Scissors::CreateChannel(
     const std::shared_ptr<AsyncSocket>& socket) {
-  madoka::concurrent::LockGuard lock(&lock_);
+  base::AutoLock guard(lock_);
 
   if (config_->remote_ssl()) {
     auto channel =
@@ -133,7 +131,7 @@ Service::ChannelPtr Scissors::CreateChannel(
 
 void Scissors::ConnectSocket(AsyncSocket* socket,
                              AsyncSocket::Listener* listener) {
-  madoka::concurrent::LockGuard lock(&lock_);
+  base::AutoLock guard(lock_);
 
   connecting_.insert({ socket, listener });
   socket->ConnectAsync(*resolver_.begin(), this);
@@ -147,7 +145,7 @@ void CALLBACK Scissors::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
 
 void Scissors::EndSessionImpl(Session* session) {
   std::unique_ptr<Session> removed;
-  madoka::concurrent::LockGuard lock(&lock_);
+  base::AutoLock guard(lock_);
 
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
     if (i->get() == session) {
@@ -155,7 +153,7 @@ void Scissors::EndSessionImpl(Session* session) {
       sessions_.erase(i);
 
       if (sessions_.empty())
-        empty_.WakeAll();
+        empty_.Broadcast();
 
       break;
     }
@@ -170,8 +168,6 @@ void Scissors::EndSessionImpl(Session* session) {
 }
 
 void Scissors::OnAccepted(const ChannelPtr& client) {
-  madoka::concurrent::LockGuard lock(&lock_);
-
   if (stopped_)
     return;
 
@@ -189,8 +185,6 @@ void Scissors::OnAccepted(const ChannelPtr& client) {
 }
 
 void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
-  madoka::concurrent::LockGuard lock(&lock_);
-
   if (stopped_)
     return;
 
@@ -200,8 +194,12 @@ void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
   memset(&key, 0, sizeof(key));
   memmove(&key, &datagram->from, datagram->from_length);
 
+  lock_.Acquire();
   auto found = udp_sessions_.find(key);
-  if (found == udp_sessions_.end()) {
+  auto end = udp_sessions_.end();
+  lock_.Release();
+
+  if (found == end) {
     LOG(INFO) << this << " session not found, creating new one";
 
     std::unique_ptr<UdpSession> session;
@@ -220,10 +218,12 @@ void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
     }
 
     udp_session = session.get();
-    if (StartSession(std::move(session)))
+    if (StartSession(std::move(session))) {
+      base::AutoLock guard(lock_);
       udp_sessions_.insert({ key, udp_session });
-    else
+    } else {
       udp_session = nullptr;
+    }
   } else {
     DLOG(INFO) << this << " session found";
 
@@ -250,14 +250,14 @@ void Scissors::OnConnected(AsyncSocket* socket, HRESULT result,
                 << " (error: 0x" << std::hex << result << ")";
   }
 
-  lock_.Lock();
+  lock_.Acquire();
 
   auto listener = connecting_[socket];
   connecting_.erase(socket);
   if (connecting_.empty())
-    not_connecting_.WakeAll();
+    not_connecting_.Broadcast();
 
-  lock_.Unlock();
+  lock_.Release();
 
   listener->OnConnected(socket, result, end_point);
 }
