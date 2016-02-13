@@ -204,6 +204,7 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="app\constants.cpp" />
     <ClCompile Include="app\juno.cpp" />
     <ClCompile Include="app\service_manager.cpp" />
     <ClCompile Include="build\precompile.cpp">
