@@ -5,11 +5,11 @@
 #include <windows.h>
 #include <wincrypt.h>
 
-#include <madoka/concurrent/lock_guard.h>
-
 #include <string>
 
 #include "misc/registry_key-inl.h"
+#include "service/http/http_request.h"
+#include "service/http/http_response.h"
 
 namespace {
 const char kUseRemoteProxy[] = "UseRemoteProxy";
@@ -25,10 +25,17 @@ const char kAction[] = "Action";
 const char kName[] = "Name";
 const char kValue[] = "Value";
 const char kReplace[] = "Replace";
+
+const std::string kProxyAuthenticate("Proxy-Authenticate");
+const std::string kProxyAuthorization("Proxy-Authorization");
 }  // namespace
 
 HttpProxyConfig::HttpProxyConfig()
-    : use_remote_proxy_(), remote_proxy_port_(), auth_remote_proxy_() {
+    : use_remote_proxy_(0),
+      remote_proxy_port_(0),
+      auth_remote_proxy_(0),
+      auth_digest_(false),
+      auth_basic_(false) {
 }
 
 HttpProxyConfig::HttpProxyConfig(const HttpProxyConfig& other)
@@ -39,60 +46,63 @@ HttpProxyConfig::HttpProxyConfig(const HttpProxyConfig& other)
       auth_remote_proxy_(other.auth_remote_proxy_),
       remote_proxy_user_(other.remote_proxy_user_),
       remote_proxy_password_(other.remote_proxy_password_),
-      header_filters_(other.header_filters_) {
+      header_filters_(other.header_filters_),
+      auth_digest_(false),
+      auth_basic_(false) {
+  SetCredential();
 }
 
-HttpProxyConfig::~HttpProxyConfig() {
-}
+std::shared_ptr<HttpProxyConfig> HttpProxyConfig::Load(const RegistryKey& key) {
+  auto config = std::make_shared<HttpProxyConfig>();
+  if (config == nullptr)
+    return config;
 
-HttpProxyConfig& HttpProxyConfig::operator=(const HttpProxyConfig& other) {
-  if (&other != this) {
-    use_remote_proxy_ = other.use_remote_proxy_;
-    remote_proxy_host_ = other.remote_proxy_host_;
-    remote_proxy_port_ = other.remote_proxy_port_;
-    auth_remote_proxy_ = other.auth_remote_proxy_;
-    remote_proxy_user_ = other.remote_proxy_user_;
-    remote_proxy_password_ = other.remote_proxy_password_;
-    header_filters_ = other.header_filters_;
-  }
+  int int_value;
+  std::string string_value;
 
-  return *this;
-}
+  if (key.QueryInteger(kUseRemoteProxy, &int_value))
+    config->use_remote_proxy_ = int_value != 0;
 
-bool HttpProxyConfig::Load(const RegistryKey& key) {
-  key.QueryInteger(kUseRemoteProxy, &use_remote_proxy_);
+  if (key.QueryString(kRemoteProxyHost, &string_value))
+    config->remote_proxy_host_ = string_value;
+  else
+    config->use_remote_proxy_ = false;
 
-  if (!key.QueryString(kRemoteProxyHost, &remote_proxy_host_))
-    use_remote_proxy_ = FALSE;
+  key.QueryInteger(kRemoteProxyPort, &int_value);
+  if (0 < int_value && int_value < 65536)
+    config->remote_proxy_port_ = int_value;
+  else
+    config->use_remote_proxy_ = false;
 
-  key.QueryInteger(kRemoteProxyPort, &remote_proxy_port_);
-  if (remote_proxy_port_ <= 0 || 65536 <= remote_proxy_port_)
-    use_remote_proxy_ = FALSE;
+  if (key.QueryInteger(kAuthRemoteProxy, &int_value))
+    config->auth_remote_proxy_ = int_value != 0;
 
-  key.QueryInteger(kAuthRemoteProxy, &auth_remote_proxy_);
+  if (key.QueryString(kRemoteProxyUser, &string_value))
+    config->remote_proxy_user_ = string_value;
+  else
+    config->auth_remote_proxy_ = false;
 
-  if (!key.QueryString(kRemoteProxyUser, &remote_proxy_user_))
-    auth_remote_proxy_ = 0;
-
-  int length = 0;
+  int length;
   if (key.QueryBinary(kRemoteProxyPassword, nullptr, &length)) {
-    BYTE* buffer = new BYTE[length];
+    auto buffer = new BYTE[length];
     key.QueryBinary(kRemoteProxyPassword, buffer, &length);
 
-    DATA_BLOB encrypted = { length, buffer }, decrypted = {};
-    if (::CryptUnprotectData(&encrypted, nullptr, nullptr, nullptr, nullptr, 0,
-                             &decrypted)) {
-      remote_proxy_password_.assign(reinterpret_cast<char*>(decrypted.pbData),
-                                    decrypted.cbData);
-      ::LocalFree(decrypted.pbData);
+    DATA_BLOB encrypted{ static_cast<DWORD>(length), buffer }, decrypted{};
+    if (CryptUnprotectData(&encrypted, nullptr, nullptr, nullptr, nullptr, 0,
+                           &decrypted)) {
+      config->remote_proxy_password_.assign(
+          reinterpret_cast<char*>(decrypted.pbData), decrypted.cbData);
+      LocalFree(decrypted.pbData);
     }
 
     delete[] buffer;
   }
 
+  config->SetCredential();
+
   RegistryKey filters_key;
   if (filters_key.Open(key, kHeaderFilters)) {
-    for (int i = 0; ; ++i) {
+    for (auto i = 0; ; ++i) {
       std::string name;
       if (!filters_key.EnumerateKey(i, &name))
         break;
@@ -100,8 +110,8 @@ bool HttpProxyConfig::Load(const RegistryKey& key) {
       RegistryKey filter_key;
       filter_key.Open(filters_key, name);
 
-      header_filters_.push_back(HeaderFilter());
-      HeaderFilter& filter = header_filters_.back();
+      config->header_filters_.push_back(HeaderFilter());
+      auto& filter = config->header_filters_.back();
 
       filter.request = filter_key.QueryInteger(kRequest) != 0;
       filter.response = filter_key.QueryInteger(kResponse) != 0;
@@ -115,7 +125,7 @@ bool HttpProxyConfig::Load(const RegistryKey& key) {
     filters_key.Close();
   }
 
-  return true;
+  return config;
 }
 
 bool HttpProxyConfig::Save(RegistryKey* key) {
@@ -132,10 +142,10 @@ bool HttpProxyConfig::Save(RegistryKey* key) {
     };
     DATA_BLOB encrypted = {};
 
-    if (::CryptProtectData(&decrypted, nullptr, nullptr, nullptr, nullptr, 0,
-                           &encrypted)) {
+    if (CryptProtectData(&decrypted, nullptr, nullptr, nullptr, nullptr, 0,
+                         &encrypted)) {
       key->SetBinary(kRemoteProxyPassword, encrypted.pbData, encrypted.cbData);
-      ::LocalFree(encrypted.pbData);
+      LocalFree(encrypted.pbData);
     }
   }
 
@@ -148,7 +158,7 @@ bool HttpProxyConfig::Save(RegistryKey* key) {
   char name[16];
 
   for (auto& filter : header_filters_) {
-    ::sprintf_s(name, "%d", index++);
+    sprintf_s(name, "%d", index++);
 
     RegistryKey filter_key;
     filter_key.Create(filters_key, name);
@@ -162,4 +172,104 @@ bool HttpProxyConfig::Save(RegistryKey* key) {
   }
 
   return true;
+}
+
+void HttpProxyConfig::FilterHeaders(HttpHeaders* headers, bool request) const {
+  for (auto& filter : header_filters_) {
+    if (request && filter.request || !request && filter.response) {
+      switch (filter.action) {
+        case Set:
+          headers->SetHeader(filter.name, filter.value);
+          break;
+
+        case Append:
+          headers->AppendHeader(filter.name, filter.value);
+          break;
+
+        case Add:
+          headers->AddHeader(filter.name, filter.value);
+          break;
+
+        case Unset:
+          headers->RemoveHeader(filter.name);
+          break;
+
+        case Merge:
+          headers->MergeHeader(filter.name, filter.value);
+          break;
+
+        case Edit:
+          headers->EditHeader(filter.name, filter.value, filter.replace, false);
+          break;
+
+        case EditR:
+          headers->EditHeader(filter.name, filter.value, filter.replace, true);
+          break;
+      }
+    }
+  }
+}
+
+void HttpProxyConfig::ProcessAuthenticate(HttpResponse* response,
+                                    HttpRequest* request) {
+  base::AutoLock guard(lock_);
+
+  DoProcessAuthenticate(response);
+  DoProcessAuthorization(request);
+}
+
+void HttpProxyConfig::ProcessAuthorization(HttpRequest* request) {
+  base::AutoLock guard(lock_);
+
+  DoProcessAuthorization(request);
+}
+
+void HttpProxyConfig::SetCredential() {
+  digest_.SetCredential(remote_proxy_user_, remote_proxy_password_);
+
+  auto auth = remote_proxy_user_ + ':' + remote_proxy_password_;
+
+  DWORD buffer_size = (((auth.size() - 1) / 3) + 1) * 4;
+  basic_credential_.resize(buffer_size);
+  buffer_size = basic_credential_.capacity();
+
+  CryptBinaryToStringA(reinterpret_cast<const BYTE*>(auth.c_str()),
+                       auth.size(), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
+                       &basic_credential_[0], &buffer_size);
+
+  basic_credential_.insert(0, "Basic ");
+}
+
+void HttpProxyConfig::DoProcessAuthenticate(HttpResponse* response) {
+  if (!response->HeaderExists(kProxyAuthenticate))
+    return;
+  if (!auth_remote_proxy_)
+    return;
+
+  auth_digest_ = false;
+  auth_basic_ = false;
+
+  for (auto& field : response->GetAllHeaders(kProxyAuthenticate)) {
+    if (strncmp(field.c_str(), "Digest", 6) == 0)
+      auth_digest_ = digest_.Input(field);
+    else if (strncmp(field.c_str(), "Basic", 5) == 0)
+      auth_basic_ = true;
+  }
+}
+
+void HttpProxyConfig::DoProcessAuthorization(HttpRequest* request) {
+  // client's request has precedence
+  if (request->HeaderExists(kProxyAuthorization))
+    return;
+
+  if (!auth_remote_proxy_)
+    return;
+
+  if (auth_digest_) {
+    std::string field;
+    if (digest_.Output(request->method(), request->path(), &field))
+      request->SetHeader(kProxyAuthorization, field);
+  } else if (auth_basic_) {
+    request->SetHeader(kProxyAuthorization, basic_credential_);
+  }
 }

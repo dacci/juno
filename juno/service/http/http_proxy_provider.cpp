@@ -16,14 +16,7 @@ ServiceConfigPtr HttpProxyProvider::CreateConfig() {
 }
 
 ServiceConfigPtr HttpProxyProvider::LoadConfig(const RegistryKey& key) {
-  auto& config = std::static_pointer_cast<HttpProxyConfig>(CreateConfig());
-  if (config == nullptr)
-    return nullptr;
-
-  if (!config->Load(key))
-    return nullptr;
-
-  return config;
+  return HttpProxyConfig::Load(key);
 }
 
 bool HttpProxyProvider::SaveConfig(const ServiceConfigPtr& config,

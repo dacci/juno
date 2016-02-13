@@ -172,7 +172,7 @@ void HttpProxyDialog::OnOk(UINT notify_code, int id, CWindow control) {
     }
   }
 
-  config_->use_remote_proxy_ = use_remote_proxy_check_.GetCheck();
+  config_->use_remote_proxy_ = use_remote_proxy_check_.GetCheck() != FALSE;
 
   std::string temp;
 
@@ -181,7 +181,7 @@ void HttpProxyDialog::OnOk(UINT notify_code, int id, CWindow control) {
   config_->remote_proxy_host_ = temp;
 
   config_->remote_proxy_port_ = port_;
-  config_->auth_remote_proxy_ = auth_remote_check_.GetCheck();
+  config_->auth_remote_proxy_ = auth_remote_check_.GetCheck() != FALSE;
 
   temp.resize(::GetWindowTextLengthA(remote_user_edit_));
   ::GetWindowTextA(remote_user_edit_, &temp[0], temp.size() + 1);

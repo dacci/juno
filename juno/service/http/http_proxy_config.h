@@ -3,13 +3,18 @@
 #ifndef JUNO_SERVICE_HTTP_HTTP_PROXY_CONFIG_H_
 #define JUNO_SERVICE_HTTP_HTTP_PROXY_CONFIG_H_
 
+#include <base/synchronization/lock.h>
+
 #include <string>
 #include <vector>
 
 #include "misc/registry_key.h"
 #include "service/service_config.h"
+#include "service/http/http_digest.h"
 
 class HttpHeaders;
+class HttpRequest;
+class HttpResponse;
 
 class HttpProxyConfig : public ServiceConfig {
  public:
@@ -29,51 +34,62 @@ class HttpProxyConfig : public ServiceConfig {
   HttpProxyConfig();
   HttpProxyConfig(const HttpProxyConfig& other);
 
-  virtual ~HttpProxyConfig();
-
-  HttpProxyConfig& operator=(const HttpProxyConfig& other);
-
-  bool Load(const RegistryKey& key);
+  static std::shared_ptr<HttpProxyConfig> Load(const RegistryKey& key);
   bool Save(RegistryKey* key);
 
-  inline int use_remote_proxy() const {
+  void FilterHeaders(HttpHeaders* headers, bool request) const;
+  void ProcessAuthenticate(HttpResponse* response, HttpRequest* request);
+  void ProcessAuthorization(HttpRequest* request);
+
+  bool use_remote_proxy() const {
     return use_remote_proxy_;
   }
 
-  inline const std::string& remote_proxy_host() const {
+  const std::string& remote_proxy_host() const {
     return remote_proxy_host_;
   }
 
-  inline int remote_proxy_port() const {
+  int remote_proxy_port() const {
     return remote_proxy_port_;
   }
 
-  inline int auth_remote_proxy() const {
+  bool auth_remote_proxy() const {
     return auth_remote_proxy_;
   }
 
-  inline const std::string& remote_proxy_user() const {
+  const std::string& remote_proxy_user() const {
     return remote_proxy_user_;
   }
 
-  inline const std::string& remote_proxy_password() const {
+  const std::string& remote_proxy_password() const {
     return remote_proxy_password_;
   }
 
-  inline const std::vector<HeaderFilter>& header_filters() const {
+  const std::vector<HeaderFilter>& header_filters() const {
     return header_filters_;
   }
 
  private:
   friend class HttpProxyDialog;
 
-  int use_remote_proxy_;
+  void SetCredential();
+
+  void DoProcessAuthenticate(HttpResponse* response);
+  void DoProcessAuthorization(HttpRequest* request);
+
+  bool use_remote_proxy_;
   std::string remote_proxy_host_;
   int remote_proxy_port_;
-  int auth_remote_proxy_;
+  bool auth_remote_proxy_;
   std::string remote_proxy_user_;
   std::string remote_proxy_password_;
   std::vector<HeaderFilter> header_filters_;
+
+  base::Lock lock_;
+  bool auth_digest_;
+  bool auth_basic_;
+  HttpDigest digest_;
+  std::string basic_credential_;
 };
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_PROXY_CONFIG_H_

@@ -20,13 +20,16 @@
 #include "service/http/http_response.h"
 
 class HttpProxy;
+class HttpProxyConfig;
 
 class HttpProxySession
     : private Channel::Listener,
       private madoka::net::AsyncSocket::Listener,
       private TimerService::Callback {
  public:
-  HttpProxySession(HttpProxy* proxy, const Service::ChannelPtr& client);
+  HttpProxySession(HttpProxy* proxy,
+                   const std::shared_ptr<HttpProxyConfig>& config,
+                   const Service::ChannelPtr& client);
   ~HttpProxySession();
 
   bool Start();
@@ -90,6 +93,7 @@ class HttpProxySession
                 int address_length) override {}
 
   HttpProxy* const proxy_;
+  std::shared_ptr<HttpProxyConfig> config_;
   base::Lock lock_;
   TimerService::TimerObject timer_;
   char buffer_[kBufferSize];
