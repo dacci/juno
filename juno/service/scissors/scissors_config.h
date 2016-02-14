@@ -3,8 +3,6 @@
 #ifndef JUNO_SERVICE_SCISSORS_SCISSORS_CONFIG_H_
 #define JUNO_SERVICE_SCISSORS_SCISSORS_CONFIG_H_
 
-#include <madoka/concurrent/read_write_lock.h>
-
 #include <string>
 
 #include "misc/registry_key.h"
@@ -15,32 +13,32 @@ class ScissorsConfig : public ServiceConfig {
   ScissorsConfig();
   ScissorsConfig(const ScissorsConfig& other);
 
-  virtual ~ScissorsConfig();
+  static std::shared_ptr<ScissorsConfig> Load(const RegistryKey& key);
+  bool Save(RegistryKey* key) const;
 
-  ScissorsConfig& operator=(const ScissorsConfig& other);
+  std::string remote_address() const {
+    return remote_address_;
+  }
 
-  bool Load(const RegistryKey& key);
-  bool Save(RegistryKey* key);
+  int remote_port() const {
+    return remote_port_;
+  }
 
-  std::string remote_address();
-  void set_remote_address(const std::string& remote_address);
+  bool remote_ssl() const {
+    return remote_ssl_;
+  }
 
-  int remote_port();
-  void set_remote_port(int remote_port);
-
-  int remote_ssl();
-  void set_remote_ssl(int remote_ssl);
-
-  int remote_udp();
-  void set_remote_udp(int remote_udp);
+  bool remote_udp() const {
+    return remote_udp_;
+  }
 
  private:
-  madoka::concurrent::ReadWriteLock lock_;
+  friend class ScissorsDialog;
 
   std::string remote_address_;
   int remote_port_;
-  int remote_ssl_;
-  int remote_udp_;
+  bool remote_ssl_;
+  bool remote_udp_;
 };
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_CONFIG_H_

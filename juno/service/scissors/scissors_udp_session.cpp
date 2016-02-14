@@ -2,12 +2,9 @@
 
 #include "service/scissors/scissors_udp_session.h"
 
-#include <assert.h>
-
 #include <base/logging.h>
 
 #include "net/datagram.h"
-#include "service/scissors/scissors_config.h"
 
 using ::madoka::net::AsyncSocket;
 

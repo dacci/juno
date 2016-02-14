@@ -16,14 +16,7 @@ ServiceConfigPtr ScissorsProvider::CreateConfig() {
 }
 
 ServiceConfigPtr ScissorsProvider::LoadConfig(const RegistryKey& key) {
-  auto& config = std::static_pointer_cast<ScissorsConfig>(CreateConfig());
-  if (config == nullptr)
-    return nullptr;
-
-  if (!config->Load(key))
-    return nullptr;
-
-  return config;
+  return ScissorsConfig::Load(key);
 }
 
 bool ScissorsProvider::SaveConfig(const ServiceConfigPtr& config,

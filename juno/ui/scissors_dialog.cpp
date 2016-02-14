@@ -60,10 +60,10 @@ void ScissorsDialog::OnOk(UINT notify_code, int id, CWindow control) {
   temp.resize(::GetWindowTextLengthA(address_edit_));
   ::GetWindowTextA(address_edit_, &temp[0], temp.size() + 1);
 
-  config_->set_remote_address(temp);
-  config_->set_remote_port(port_);
-  config_->set_remote_ssl(use_ssl_check_.GetCheck());
-  config_->set_remote_udp(use_udp_check_.GetCheck());
+  config_->remote_address_ = temp;
+  config_->remote_port_ = port_;
+  config_->remote_ssl_ = use_ssl_check_.GetCheck() != FALSE;
+  config_->remote_udp_ = use_udp_check_.GetCheck() != FALSE;
 
   EndDialog(IDOK);
 }

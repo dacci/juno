@@ -9,7 +9,6 @@
 #include <base/logging.h>
 
 #include "net/datagram.h"
-#include "service/scissors/scissors_config.h"
 #include "service/scissors/scissors_unwrapping_session.h"
 
 using ::madoka::net::AsyncSocket;
