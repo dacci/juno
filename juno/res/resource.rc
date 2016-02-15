@@ -53,7 +53,9 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDR_MAIN_FRAME          ICON                    "juno.ico"
+
 IDR_TRAY_MENU           ICON                    "juno_g.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -397,11 +399,17 @@ END
 //
 
 IDB_UPDOWN_ARROW        BITMAP                  "updown.bmp"
+
 IDB_ARROW_DOWN          BITMAP                  "arrow-down.bmp"
+
 IDB_ARROW_UP            BITMAP                  "arrow-up.bmp"
+
 IDB_DOCUMENT_CLOSE      BITMAP                  "document-close.bmp"
+
 IDB_DOCUMENT_EDIT       BITMAP                  "document-edit.bmp"
+
 IDB_DOCUMENT_NEW        BITMAP                  "document-new.bmp"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -415,7 +423,7 @@ BEGIN
     IDS_CONFIRM_APPLY       "設定を適用するには現在の通信を切断する必要があります。\n続行しますか?"
     IDS_NAME_NOT_SPECIFIED  "名前が指定されていません"
     IDS_DUPLICATE_NAME      "この名前はすでに使われています"
-    IDS_NOT_SPECIFIED       "入力されていません"
+    IDS_NOT_SPECIFIED       "指定されていません"
     IDS_INVALID_PORT        "ポート番号が正しくありません"
 END
 

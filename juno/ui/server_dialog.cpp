@@ -11,6 +11,7 @@
 #include "app/server_config.h"
 #include "misc/certificate_store.h"
 #include "misc/string_util.h"
+#include "ui/preference_dialog.h"
 
 ServerDialog::ServerDialog(PreferenceDialog* parent, ServerConfig* entry)
     : parent_(parent), entry_(entry) {
@@ -141,30 +142,46 @@ void ServerDialog::OnDetailSetting(UINT notify_code, int id, CWindow control) {
 }
 
 void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
-  EDITBALLOONTIP balloon = { sizeof(balloon) };
-  CStringW message;
-  std::string temp;
+  HideBalloonTip();
 
   DoDataExchange(DDX_SAVE);
 
+  if (bind_.IsEmpty()) {
+    ShowBalloonTip(bind_combo_, IDS_NOT_SPECIFIED);
+    return;
+  }
+
   if (listen_ <= 0 || 65536 <= listen_) {
-    message.LoadString(IDS_INVALID_PORT);
-    balloon.pszText = message.GetString();
+    CString text;
+    text.LoadString(IDS_INVALID_PORT);
+
+    EDITBALLOONTIP balloon{ sizeof(balloon), nullptr, text };
     listen_edit_.ShowBalloonTip(&balloon);
+    return;
+  }
+
+  if (type_combo_.GetCurSel() == CB_ERR) {
+    ShowBalloonTip(type_combo_, IDS_NOT_SPECIFIED);
+    return;
+  }
+
+  if (service_combo_.GetCurSel() == CB_ERR) {
+    ShowBalloonTip(service_combo_, IDS_NOT_SPECIFIED);
     return;
   }
 
   if (entry_->name_.empty()) {
     entry_->name_ = GenerateGUID();
     if (entry_->name_.empty()) {
-      message.LoadString(IDS_ERR_UNEXPECTED);
-      MessageBox(message, nullptr, MB_ICONERROR);
+      TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_UNEXPECTED, TDCBF_OK_BUTTON,
+                 TD_ERROR_ICON, nullptr);
       return;
     }
   }
 
   entry_->bind_ = CStringA(bind_);
 
+  std::string temp;
   temp.resize(service_combo_.GetWindowTextLength());
   GetWindowTextA(service_combo_, &temp[0], temp.size() + 1);
   entry_->service_name_ = temp;

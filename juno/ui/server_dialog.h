@@ -4,20 +4,21 @@
 #define JUNO_UI_SERVER_DIALOG_H_
 
 #include <atlbase.h>
+#include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atlctrls.h>
 #include <atlddx.h>
-#include <atldlgs.h>
 
 #include "res/resource.h"
-#include "ui/preference_dialog.h"
+#include "ui/dialog_impl_ex.h"
 
+class PreferenceDialog;
 class ServerConfig;
 
 class ServerDialog
-    : public CDialogImpl<ServerDialog>,
+    : public DialogImplEx<ServerDialog>,
       public CWinDataExchange<ServerDialog> {
  public:
   static const UINT IDD = IDD_SERVER;
@@ -44,6 +45,8 @@ class ServerDialog
     COMMAND_ID_HANDLER_EX(ID_FILE_PAGE_SETUP, OnDetailSetting)
     COMMAND_ID_HANDLER_EX(IDOK, OnOk)
     COMMAND_ID_HANDLER_EX(IDCANCEL, OnCancel)
+
+    CHAIN_MSG_MAP(DialogImplEx)
   END_MSG_MAP()
 
  private:

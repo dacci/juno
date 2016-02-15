@@ -4,23 +4,24 @@
 #define JUNO_UI_PROVIDER_DIALOG_H_
 
 #include <atlbase.h>
+#include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atlctrls.h>
 #include <atlddx.h>
-#include <atldlgs.h>
 
 #include <string>
 #include <vector>
 
 #include "res/resource.h"
-#include "ui/preference_dialog.h"
+#include "ui/dialog_impl_ex.h"
 
+class PreferenceDialog;
 class ServiceProvider;
 
 class ProviderDialog
-    : public CDialogImpl<ProviderDialog>,
+    : public DialogImplEx<ProviderDialog>,
       public CWinDataExchange<ProviderDialog> {
  public:
   static const UINT IDD = IDD_PROVIDER;
@@ -38,6 +39,8 @@ class ProviderDialog
 
     COMMAND_ID_HANDLER_EX(IDOK, OnOk)
     COMMAND_ID_HANDLER_EX(IDCANCEL, OnCancel)
+
+    CHAIN_MSG_MAP(DialogImplEx)
   END_MSG_MAP()
 
   const std::string& GetProviderName() const;

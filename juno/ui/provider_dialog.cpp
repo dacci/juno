@@ -5,10 +5,10 @@
 #include <string>
 
 #include "app/service_manager.h"
-#include "misc/string_util.h"
+#include "ui/preference_dialog.h"
 
 namespace {
-std::string kEmptyString;
+const std::string kEmptyString;
 }  // namespace
 
 ProviderDialog::ProviderDialog(PreferenceDialog* parent)
@@ -37,6 +37,8 @@ BOOL ProviderDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
 }
 
 void ProviderDialog::OnOk(UINT notify_code, int id, CWindow control) {
+  HideBalloonTip();
+
   EDITBALLOONTIP balloon = { sizeof(balloon) };
   CStringW message;
 
@@ -49,18 +51,22 @@ void ProviderDialog::OnOk(UINT notify_code, int id, CWindow control) {
     return;
   }
 
-  name_.resize(::GetWindowTextLengthA(name_edit_));
-  ::GetWindowTextA(name_edit_, &name_[0], name_.size() + 1);
+  provider_index_ = provider_combo_.GetCurSel();
+  if (provider_index_ == CB_ERR) {
+    ShowBalloonTip(provider_combo_, IDS_NOT_SPECIFIED);
+    return;
+  }
 
-  auto& pair = parent_->service_configs_.find(name_);
+  name_.resize(::GetWindowTextLengthA(name_edit_));
+  GetWindowTextA(name_edit_, &name_[0], name_.size() + 1);
+
+  auto pair = parent_->service_configs_.find(name_);
   if (pair != parent_->service_configs_.end()) {
     message.LoadString(IDS_DUPLICATE_NAME);
     balloon.pszText = message;
     name_edit_.ShowBalloonTip(&balloon);
     return;
   }
-
-  provider_index_ = provider_combo_.GetCurSel();
 
   EndDialog(IDOK);
 }
