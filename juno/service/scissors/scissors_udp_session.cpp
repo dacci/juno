@@ -11,11 +11,14 @@ using ::madoka::net::AsyncSocket;
 ScissorsUdpSession::ScissorsUdpSession(Scissors* service,
                                        const Scissors::AsyncSocketPtr& source)
     : UdpSession(service), source_(source) {
-  DLOG(INFO) << this << "session created";
+  DLOG(INFO) << this << " session created";
 }
 
 ScissorsUdpSession::~ScissorsUdpSession() {
-  DLOG(INFO) << this << "session destroyed";
+  DLOG(INFO) << this << " session destroyed";
+
+  source_->Close();
+  sink_->Close();
 }
 
 bool ScissorsUdpSession::Start() {
