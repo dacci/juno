@@ -4,7 +4,6 @@
 #define JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_
 
 #include <string.h>
-#include <tchar.h>
 
 #include <string>
 
@@ -21,7 +20,7 @@ class SchannelContext {
 
   virtual ~SchannelContext() {
     if (SecIsValidHandle(&handle_)) {
-      ::DeleteSecurityContext(&handle_);
+      DeleteSecurityContext(&handle_);
       SecInvalidateHandle(&handle_);
     }
   }
@@ -38,18 +37,18 @@ class SchannelContext {
     if (!target_name_.empty())
       target_name = &target_name_[0];
 
-    return ::InitializeSecurityContextA(&credential_->handle_,
-                                        in_handle,
-                                        target_name,
-                                        request,
-                                        0,     // reserved
-                                        0,     // unused
-                                        input,
-                                        0,     // reserved
-                                        out_handle,
-                                        output,
-                                        &attributes_,
-                                        &expiry_);
+    return InitializeSecurityContextA(&credential_->handle_,
+                                      in_handle,
+                                      target_name,
+                                      request,
+                                      0,     // reserved
+                                      0,     // unused
+                                      input,
+                                      0,     // reserved
+                                      out_handle,
+                                      output,
+                                      &attributes_,
+                                      &expiry_);
   }
 
   HRESULT AcceptContext(ULONG request, SecBufferDesc* input,
@@ -60,15 +59,15 @@ class SchannelContext {
     else
       out_handle = &handle_;
 
-    return ::AcceptSecurityContext(&credential_->handle_,
-                                   in_handle,
-                                   input,
-                                   request,
-                                   0,         // unused
-                                   out_handle,
-                                   output,
-                                   &attributes_,
-                                   &expiry_);
+    return AcceptSecurityContext(&credential_->handle_,
+                                 in_handle,
+                                 input,
+                                 request,
+                                 0,         // unused
+                                 out_handle,
+                                 output,
+                                 &attributes_,
+                                 &expiry_);
   }
 
   HRESULT ApplyControlToken(ULONG token) {
@@ -79,7 +78,7 @@ class SchannelContext {
   }
 
   HRESULT QueryAttributes(ULONG attribute, void* buffer) {
-    return ::QueryContextAttributesA(&handle_, attribute, buffer);
+    return QueryContextAttributesA(&handle_, attribute, buffer);
   }
 
   HRESULT EncryptMessage(ULONG qop, SecBufferDesc* message) {

@@ -15,8 +15,8 @@
 
 #include "app/service_manager.h"
 #include "res/resource.h"
-#include "ui/preference_dialog.h"
 
+class PreferenceDialog;
 class ServiceConfig;
 
 class ServicesPage

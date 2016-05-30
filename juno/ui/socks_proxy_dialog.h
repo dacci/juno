@@ -12,7 +12,6 @@
 #include <atldlgs.h>
 
 #include "res/resource.h"
-#include "ui/preference_dialog.h"
 
 class ServiceConfig;
 

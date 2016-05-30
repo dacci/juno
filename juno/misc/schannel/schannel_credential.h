@@ -22,7 +22,7 @@ class SchannelCredential {
       CertFreeCertificateContext(certificate);
 
     if (SecIsValidHandle(&handle_)) {
-      ::FreeCredentialHandle(&handle_);
+      FreeCredentialsHandle(&handle_);
       SecInvalidateHandle(&handle_);
     }
   }
@@ -31,9 +31,9 @@ class SchannelCredential {
     if (SecIsValidHandle(&handle_))
       return SEC_E_INTERNAL_ERROR;
 
-    return ::AcquireCredentialsHandle(nullptr, UNISP_NAME, usage, nullptr,
-                                      &auth_data_, nullptr, nullptr, &handle_,
-                                      &expiry_);
+    return AcquireCredentialsHandle(nullptr, UNISP_NAME, usage, nullptr,
+                                    &auth_data_, nullptr, nullptr, &handle_,
+                                    &expiry_);
   }
 
   void AddCertificate(const CERT_CONTEXT* certificate) {

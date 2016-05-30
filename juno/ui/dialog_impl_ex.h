@@ -46,7 +46,7 @@ class ATL_NO_VTABLE DialogImplEx : public CDialogImpl<T, TBase> {
       return;
 
     balloon_tool_tip_.SetMaxTipWidth(400);
-    balloon_tool_tip_.SetTitle(0U, nullptr);
+    balloon_tool_tip_.SetTitle(static_cast<UINT_PTR>(0), nullptr);
 
     CRect rect;
     if (!control.GetWindowRect(&rect))

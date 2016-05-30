@@ -2,14 +2,12 @@
 
 #include "ui/services_page.h"
 
-#include <assert.h>
-
 #include <memory>
 #include <utility>
 
 #include "service/service_config.h"
 #include "service/service_provider.h"
-#include "misc/string_util.h"
+#include "ui/preference_dialog.h"
 #include "ui/provider_dialog.h"
 
 ServicesPage::ServicesPage(PreferenceDialog* parent, ServiceConfigMap* configs)
@@ -91,7 +89,7 @@ void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
   CStringA name(name_unicode);
   auto& config = configs_->at(name.GetString());
 
-  auto& provider = ServiceManager::GetInstance()->
+  auto provider = ServiceManager::GetInstance()->
       GetProvider(config->provider_name_);
   if (provider->Configure(config, *parent_) != IDOK)
     return;

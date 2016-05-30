@@ -17,6 +17,8 @@ class Channel {
                            int length) = 0;
   };
 
+  virtual ~Channel() {}
+
   virtual void Close() = 0;
   virtual void ReadAsync(void* buffer, int length, Listener* listener) = 0;
   virtual void WriteAsync(const void* buffer, int length,
