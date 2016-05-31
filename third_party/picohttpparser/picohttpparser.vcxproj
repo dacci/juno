@@ -28,7 +28,7 @@
     <ProjectGuid>{BFBC2B65-BC8C-4C05-B6EA-A4FA571D7F09}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>picohttpparser</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.10240.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.10586.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

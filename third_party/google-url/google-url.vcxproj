@@ -68,7 +68,7 @@
     <ProjectGuid>{91887F13-BACA-45FE-BE93-6098B768685B}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>google-url</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.10240.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.10586.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">

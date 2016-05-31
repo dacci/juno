@@ -22,7 +22,7 @@
     <ProjectGuid>{8DF17305-24E8-446A-A1ED-0AAA01C3C43D}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>juno</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.10240.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.10586.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
