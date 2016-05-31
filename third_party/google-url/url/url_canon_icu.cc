@@ -4,6 +4,7 @@
 
 // ICU integration functions.
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -99,8 +100,10 @@ struct UIDNAWrapper {
     // TODO(jungshik): Change options as different parties (browsers,
     // registrars, search engines) converge toward a consensus.
     value = uidna_openUTS46(UIDNA_CHECK_BIDI, &err);
-    if (U_FAILURE(err))
+    if (U_FAILURE(err)) {
+      CHECK(false) << "failed to open UTS46 data with error: " << err;
       value = NULL;
+    }
   }
 
   UIDNA* value;

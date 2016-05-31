@@ -2,11 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <stddef.h>
+
 #include "base/macros.h"
 #include "testing/gtest/include/gtest/gtest.h"
+#include "url/third_party/mozilla/url_parse.h"
 #include "url/url_canon.h"
 #include "url/url_canon_stdstring.h"
-#include "url/url_parse.h"
 #include "url/url_test_utils.h"
 #include "url/url_util.h"
 
@@ -44,7 +46,7 @@ TEST(URLUtilTest, FindAndCompareScheme) {
   EXPECT_FALSE(FindAndCompareScheme("", 0, "", &found_scheme));
   EXPECT_TRUE(found_scheme == Component());
 
-  // When there is a whitespace char in scheme, it should canonicalize the url
+  // When there is a whitespace char in scheme, it should canonicalize the URL
   // before comparison.
   const char whtspc_str[] = " \r\n\tjav\ra\nscri\tpt:alert(1)";
   EXPECT_TRUE(FindAndCompareScheme(whtspc_str,
@@ -59,6 +61,38 @@ TEST(URLUtilTest, FindAndCompareScheme) {
                                     static_cast<int>(strlen(ctrl_str)),
                                     "javascript", &found_scheme));
   EXPECT_TRUE(found_scheme == Component(1, 11));
+}
+
+TEST(URLUtilTest, IsStandard) {
+  const char kHTTPScheme[] = "http";
+  EXPECT_TRUE(IsStandard(kHTTPScheme, Component(0, strlen(kHTTPScheme))));
+
+  const char kFooScheme[] = "foo";
+  EXPECT_FALSE(IsStandard(kFooScheme, Component(0, strlen(kFooScheme))));
+}
+
+TEST(URLUtilTest, GetStandardSchemeType) {
+  url::SchemeType scheme_type;
+
+  const char kHTTPScheme[] = "http";
+  scheme_type = url::SCHEME_WITHOUT_AUTHORITY;
+  EXPECT_TRUE(GetStandardSchemeType(kHTTPScheme,
+                                    Component(0, strlen(kHTTPScheme)),
+                                    &scheme_type));
+  EXPECT_EQ(url::SCHEME_WITH_PORT, scheme_type);
+
+  const char kFilesystemScheme[] = "filesystem";
+  scheme_type = url::SCHEME_WITH_PORT;
+  EXPECT_TRUE(GetStandardSchemeType(kFilesystemScheme,
+                                    Component(0, strlen(kFilesystemScheme)),
+                                    &scheme_type));
+  EXPECT_EQ(url::SCHEME_WITHOUT_AUTHORITY, scheme_type);
+
+  const char kFooScheme[] = "foo";
+  scheme_type = url::SCHEME_WITH_PORT;
+  EXPECT_FALSE(GetStandardSchemeType(kFooScheme,
+                                     Component(0, strlen(kFooScheme)),
+                                     &scheme_type));
 }
 
 TEST(URLUtilTest, ReplaceComponents) {
@@ -220,7 +254,7 @@ TEST(URLUtilTest, TestEncodeURIComponent) {
 }
 
 TEST(URLUtilTest, TestResolveRelativeWithNonStandardBase) {
-  // This tests non-standard (in the sense that GIsStandard() == false)
+  // This tests non-standard (in the sense that IsStandard() == false)
   // hierarchical schemes.
   struct ResolveRelativeCase {
     const char* base;
@@ -273,6 +307,15 @@ TEST(URLUtilTest, TestResolveRelativeWithNonStandardBase) {
       // any URL scheme is we might break javascript: URLs by doing so...
     {"javascript:alert('foo#bar')", "#badfrag", true,
       "javascript:alert('foo#badfrag" },
+      // In this case, the backslashes will not be canonicalized because it's a
+      // non-standard URL, but they will be treated as a path separators,
+      // giving the base URL here a path of "\".
+      //
+      // The result here is somewhat arbitrary. One could argue it should be
+      // either "aaa://a\" or "aaa://a/" since the path is being replaced with
+      // the "current directory". But in the context of resolving on data URLs,
+      // adding the requested dot doesn't seem wrong either.
+    {"aaa://a\\", "aaa:.", true, "aaa://a\\." }
   };
 
   for (size_t i = 0; i < arraysize(resolve_non_standard_cases); i++) {
@@ -296,8 +339,8 @@ TEST(URLUtilTest, TestResolveRelativeWithNonStandardBase) {
 }
 
 TEST(URLUtilTest, TestNoRefComponent) {
-  // The hash-mark must be ignored when mailto: scheme is
-  // parsed, even if the url has a base and relative part.
+  // The hash-mark must be ignored when mailto: scheme is parsed,
+  // even if the URL has a base and relative part.
   const char* base = "mailto://to/";
   const char* rel = "any#body";
 

@@ -5,17 +5,10 @@
 #ifndef URL_THIRD_PARTY_MOZILLA_URL_PARSE_H_
 #define URL_THIRD_PARTY_MOZILLA_URL_PARSE_H_
 
-#include <string>
-
-#include "base/basictypes.h"
 #include "base/strings/string16.h"
 #include "url/url_export.h"
 
 namespace url {
-
-// Deprecated, but WebKit/WebCore/platform/KURLGooglePrivate.h and
-// KURLGoogle.cpp still rely on this type.
-typedef base::char16 UTF16Char;
 
 // Component ------------------------------------------------------------------
 

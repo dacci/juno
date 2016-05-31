@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClInclude Include="url\gurl.h" />
     <ClInclude Include="url\origin.h" />
+    <ClInclude Include="url\scheme_host_port.h" />
     <ClInclude Include="url\third_party\mozilla\url_parse.h" />
     <ClInclude Include="url\url_canon.h" />
     <ClInclude Include="url\url_canon_icu.h" />
@@ -31,7 +32,6 @@
     <ClInclude Include="url\url_constants.h" />
     <ClInclude Include="url\url_export.h" />
     <ClInclude Include="url\url_file.h" />
-    <ClInclude Include="url\url_parse.h" />
     <ClInclude Include="url\url_parse_internal.h" />
     <ClInclude Include="url\url_test_utils.h" />
     <ClInclude Include="url\url_util.h" />
@@ -40,6 +40,7 @@
   <ItemGroup>
     <ClCompile Include="url\gurl.cc" />
     <ClCompile Include="url\origin.cc" />
+    <ClCompile Include="url\scheme_host_port.cc" />
     <ClCompile Include="url\third_party\mozilla\url_parse.cc" />
     <ClCompile Include="url\url_canon_etc.cc" />
     <ClCompile Include="url\url_canon_filesystemurl.cc" />
