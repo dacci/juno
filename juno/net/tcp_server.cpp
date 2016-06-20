@@ -39,17 +39,18 @@ bool TcpServer::Setup(const char* address, int port) {
 
   resolver_.SetFlags(AI_PASSIVE);
   resolver_.SetType(SOCK_STREAM);
-  if (!resolver_.Resolve(address, port))
+  auto result = resolver_.Resolve(address, port);
+  if (FAILED(result))
     return false;
 
   bool succeeded = false;
 
-  for (const auto& end_point : resolver_) {
+  for (auto& end_point : resolver_) {
     auto server = std::make_unique<AsyncServerSocket>();
     if (server == nullptr)
       break;
 
-    if (server->Bind(end_point) && server->Listen(SOMAXCONN)) {
+    if (server->Bind(end_point.get()) && server->Listen(SOMAXCONN)) {
       servers_.push_back(std::move(server));
       succeeded = true;
     }

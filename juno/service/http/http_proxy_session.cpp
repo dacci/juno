@@ -181,7 +181,8 @@ void HttpProxySession::DispatchRequest() {
   last_host_ = std::move(new_host);
   last_port_ = new_port;
 
-  if (!resolver_.Resolve(last_host_, last_port_)) {
+  auto result = resolver_.Resolve(last_host_, last_port_);
+  if (FAILED(result)) {
     SetError(HTTP::BAD_GATEWAY);
     return;
   }
@@ -203,7 +204,7 @@ void HttpProxySession::DispatchRequest() {
   }
 
   state_ = Connecting;
-  remote_socket->ConnectAsync(*resolver_.begin(), this);
+  remote_socket->ConnectAsync(resolver_.begin()->get(), this);
 }
 
 void HttpProxySession::SendRequest() {

@@ -4,11 +4,10 @@
 
 #include <assert.h>
 
-#include <madoka/net/resolver.h>
-
 #include <string>
 
 #include "net/socket_channel.h"
+#include "net/socket_resolver.h"
 #include "net/tunneling_service.h"
 #include "service/socks/socks_proxy.h"
 
@@ -93,7 +92,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, HRESULT result,
 
     if (request->address.s_addr != 0 &&
         ::htonl(request->address.s_addr) <= 0x000000FF)
-      delete static_cast<madoka::net::Resolver*>(end_point_);
+      delete static_cast<SocketResolver*>(end_point_);
     else
       delete static_cast<SocketAddress4*>(end_point_);
 
@@ -120,7 +119,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, HRESULT result,
         break;
 
       case SOCKS5::DOMAINNAME:
-        delete static_cast<madoka::net::Resolver*>(end_point_);
+        delete static_cast<SocketResolver*>(end_point_);
         break;
 
       case SOCKS5::IP_V6:
@@ -189,18 +188,17 @@ void SocksProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
           // SOCKS4a extension
           const char* host = request->user_id + ::strlen(request->user_id) + 1;
 
-          auto resolver = new madoka::net::Resolver();
+          auto resolver = std::make_unique<SocketResolver>();
           if (resolver == nullptr)
             break;
 
-          if (!resolver->Resolve(host, ::htons(request->port))) {
-            delete resolver;
+          auto result = resolver->Resolve(host, ::htons(request->port));
+          if (FAILED(result))
             break;
-          }
 
-          end_point_ = resolver;
-
-          remote_->ConnectAsync(*resolver->begin(), this);
+          end_point_ = resolver.get();
+          remote_->ConnectAsync(resolver->begin()->get(), this);
+          resolver.release();
         } else {
           auto address = new SocketAddress4();
           if (address == nullptr)
@@ -335,14 +333,15 @@ bool SocksProxySession::ConnectDomain(const SOCKS5::ADDRESS& address) {
       address.domain.domain_name +
       address.domain.domain_len);
 
-  auto resolver = std::make_unique<madoka::net::Resolver>();
+  auto resolver = std::make_unique<SocketResolver>();
   if (resolver == nullptr)
     return false;
 
-  if (!resolver->Resolve(domain_name, ::htons(port)))
+  auto result = resolver->Resolve(domain_name, ::htons(port));
+  if (FAILED(result))
     return false;
 
-  remote_->ConnectAsync(*resolver->begin(), this);
+  remote_->ConnectAsync(resolver->begin()->get(), this);
 
   end_point_ = resolver.release();
 

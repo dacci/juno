@@ -4,7 +4,6 @@
 #define JUNO_NET_UDP_SERVER_H_
 
 #include <madoka/net/async_socket.h>
-#include <madoka/net/resolver.h>
 
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
@@ -15,6 +14,7 @@
 #include <vector>
 
 #include "net/server.h"
+#include "net/socket_resolver.h"
 
 struct Datagram;
 class Service;
@@ -57,7 +57,7 @@ class UdpServer : public Server, public madoka::net::AsyncSocket::Listener {
                                         void* context);
   void DeleteServerImpl(madoka::net::AsyncSocket* server);
 
-  madoka::net::Resolver resolver_;
+  SocketResolver resolver_;
   std::vector<std::shared_ptr<madoka::net::AsyncSocket>> servers_;
   std::map<madoka::net::AsyncSocket*, std::unique_ptr<char[]>> buffers_;
   Service* service_;

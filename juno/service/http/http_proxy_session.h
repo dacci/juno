@@ -5,7 +5,6 @@
 
 #include <stdint.h>
 
-#include <madoka/net/resolver.h>
 #include <madoka/net/async_socket.h>
 
 #include <base/synchronization/lock.h>
@@ -15,6 +14,7 @@
 
 #include "misc/timer_service.h"
 #include "net/channel.h"
+#include "net/socket_resolver.h"
 #include "service/service.h"
 #include "service/http/http_request.h"
 #include "service/http/http_response.h"
@@ -102,7 +102,7 @@ class HttpProxySession
   bool tunnel_;
   std::string last_host_;
   int last_port_;
-  madoka::net::Resolver resolver_;
+  SocketResolver resolver_;
   bool retry_;
   int status_code_;
 

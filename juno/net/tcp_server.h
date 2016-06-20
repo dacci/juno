@@ -4,7 +4,6 @@
 #define JUNO_NET_TCP_SERVER_H_
 
 #include <madoka/net/async_server_socket.h>
-#include <madoka/net/resolver.h>
 
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
@@ -15,6 +14,7 @@
 
 #include "net/channel.h"
 #include "net/server.h"
+#include "net/socket_resolver.h"
 #include "service/service.h"
 
 class TcpServer
@@ -53,7 +53,7 @@ class TcpServer
     madoka::net::AsyncServerSocket::Context* context) override;
 
   ChannelFactory* channel_factory_;
-  madoka::net::Resolver resolver_;
+  SocketResolver resolver_;
   std::vector<std::unique_ptr<madoka::net::AsyncServerSocket>> servers_;
   Service* service_;
 

@@ -4,7 +4,6 @@
 #define JUNO_SERVICE_SCISSORS_SCISSORS_H_
 
 #include <madoka/net/async_socket.h>
-#include <madoka/net/resolver.h>
 
 #include <base/hash.h>
 #include <base/synchronization/condition_variable.h>
@@ -17,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include "net/socket_resolver.h"
 #include "service/service.h"
 
 class SchannelCredential;
@@ -112,7 +112,7 @@ class Scissors : public Service, private madoka::net::AsyncSocket::Listener {
   std::unique_ptr<SchannelCredential> credential_;
   base::Lock lock_;
 
-  madoka::net::Resolver resolver_;
+  SocketResolver resolver_;
   std::map<madoka::net::AsyncSocket*, madoka::net::AsyncSocket::Listener*>
       connecting_;
   base::ConditionVariable not_connecting_;

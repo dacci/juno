@@ -17,7 +17,6 @@
 #include "service/scissors/scissors_wrapping_session.h"
 
 using ::madoka::net::AsyncSocket;
-using ::madoka::net::Resolver;
 
 Scissors::Scissors() : stopped_(), not_connecting_(&lock_), empty_(&lock_) {
 }
@@ -39,7 +38,9 @@ bool Scissors::UpdateConfig(const ServiceConfigPtr& config) {
   else
     resolver_.SetType(SOCK_STREAM);
 
-  if (!resolver_.Resolve(config_->remote_address(), config_->remote_port())) {
+  auto result = resolver_.Resolve(config_->remote_address(),
+                                  config_->remote_port());
+  if (FAILED(result)) {
     LOG(ERROR) << "failed to resolve "
                << config_->remote_address() << ":" << config_->remote_port();
     return false;
@@ -101,8 +102,8 @@ Scissors::AsyncSocketPtr Scissors::CreateSocket() {
   if (socket == nullptr)
     return nullptr;
 
-  for (auto end_point : resolver_) {
-    if (socket->Connect(end_point))
+  for (auto& end_point : resolver_) {
+    if (socket->Connect(end_point.get()))
       break;
   }
   if (!socket->connected()) {
@@ -134,7 +135,7 @@ void Scissors::ConnectSocket(AsyncSocket* socket,
   base::AutoLock guard(lock_);
 
   connecting_.insert({ socket, listener });
-  socket->ConnectAsync(*resolver_.begin(), this);
+  socket->ConnectAsync(resolver_.begin()->get(), this);
 }
 
 void CALLBACK Scissors::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,

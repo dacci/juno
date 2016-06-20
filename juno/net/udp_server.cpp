@@ -25,12 +25,13 @@ bool UdpServer::Setup(const char* address, int port) {
 
   resolver_.SetFlags(AI_PASSIVE);
   resolver_.SetType(SOCK_DGRAM);
-  if (!resolver_.Resolve(address, port))
+  auto result = resolver_.Resolve(address, port);
+  if (FAILED(result))
     return false;
 
   bool succeeded = false;
 
-  for (const auto& end_point : resolver_) {
+  for (auto& end_point : resolver_) {
     auto buffer = std::make_unique<char[]>(kBufferSize);
     if (buffer == nullptr)
       break;
@@ -39,7 +40,7 @@ bool UdpServer::Setup(const char* address, int port) {
     if (server == nullptr)
       break;
 
-    if (server->Bind(end_point)) {
+    if (server->Bind(end_point.get())) {
       succeeded = true;
       buffers_.insert({ server.get(), std::move(buffer) });
       servers_.push_back(std::move(server));

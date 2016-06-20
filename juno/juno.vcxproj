@@ -216,6 +216,7 @@
     <ClCompile Include="net\channel_util.cpp" />
     <ClCompile Include="net\secure_socket_channel.cpp" />
     <ClCompile Include="net\socket_channel.cpp" />
+    <ClCompile Include="net\socket_resolver.cpp" />
     <ClCompile Include="net\tcp_server.cpp" />
     <ClCompile Include="net\tunneling_service.cpp" />
     <ClCompile Include="net\udp_server.cpp" />
@@ -270,6 +271,7 @@
     <ClInclude Include="net\secure_socket_channel.h" />
     <ClInclude Include="net\server.h" />
     <ClInclude Include="net\socket_channel.h" />
+    <ClInclude Include="net\socket_resolver.h" />
     <ClInclude Include="net\tcp_server.h" />
     <ClInclude Include="net\tunneling_service.h" />
     <ClInclude Include="net\udp_server.h" />
