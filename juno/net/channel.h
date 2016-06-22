@@ -1,28 +1,28 @@
-// Copyright (c) 2014 dacci.org
+// Copyright (c) 2016 dacci.org
 
 #ifndef JUNO_NET_CHANNEL_H_
 #define JUNO_NET_CHANNEL_H_
 
-#include <windows.h>
+#include <winerror.h>
 
-class Channel {
+class __declspec(novtable) Channel {
  public:
-  class Listener {
+  class __declspec(novtable) Listener {
    public:
     virtual ~Listener() {}
 
-    virtual void OnRead(Channel* channel, DWORD error, void* buffer,
+    virtual void OnRead(Channel* channel, HRESULT result, void* buffer,
                         int length) = 0;
-    virtual void OnWritten(Channel* channel, DWORD error, void* buffer,
+    virtual void OnWritten(Channel* channel, HRESULT result, void* buffer,
                            int length) = 0;
   };
 
   virtual ~Channel() {}
 
   virtual void Close() = 0;
-  virtual void ReadAsync(void* buffer, int length, Listener* listener) = 0;
-  virtual void WriteAsync(const void* buffer, int length,
-                          Listener* listener) = 0;
+  virtual HRESULT ReadAsync(void* buffer, int length, Listener* listener) = 0;
+  virtual HRESULT WriteAsync(const void* buffer, int length,
+                             Listener* listener) = 0;
 };
 
 #endif  // JUNO_NET_CHANNEL_H_

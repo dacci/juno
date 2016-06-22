@@ -49,7 +49,12 @@ bool ScissorsUnwrappingSession::Start() {
     }
   }
 
-  source_->ReadAsync(buffer_, sizeof(buffer_), this);
+  auto result = source_->ReadAsync(buffer_, sizeof(buffer_), this);
+  if (FAILED(result)) {
+    LOG(ERROR) << this
+        << " failed to read from source: 0x" << std::hex << result;
+    service_->EndSession(this);
+  }
 
   DLOG(INFO) << this << " session started";
 
@@ -63,21 +68,27 @@ void ScissorsUnwrappingSession::Stop() {
 }
 
 void ScissorsUnwrappingSession::ProcessBuffer() {
-  if (received_.size() < packet_length_)
-    source_->ReadAsync(buffer_, sizeof(buffer_), this);
-  else if (sink_address_length_ > 0)
+  if (received_.size() < packet_length_) {
+    auto result = source_->ReadAsync(buffer_, sizeof(buffer_), this);
+    if (FAILED(result)) {
+      LOG(ERROR) << this
+          << " failed to read from source: 0x" << std::hex << result;
+      service_->EndSession(this);
+    }
+  } else if (sink_address_length_ > 0) {
     sink_->SendToAsync(received_.data(), packet_length_, 0,
                        reinterpret_cast<sockaddr*>(&sink_address_),
                        sink_address_length_, this);
-  else
+  } else {
     sink_->SendAsync(received_.data(), packet_length_, 0, this);
+  }
 }
 
-void ScissorsUnwrappingSession::OnRead(Channel* channel, DWORD error,
+void ScissorsUnwrappingSession::OnRead(Channel* channel, HRESULT result,
                                        void* buffer, int length) {
-  if (error != 0 || length == 0) {
-    LOG_IF(ERROR, error != 0)
-        << this << " failed to receive from the source: " << error;
+  if (FAILED(result) || length == 0) {
+    LOG_IF(ERROR, FAILED(result)) << this
+        << " failed to receive from the source: 0x" << std::hex << result;
     service_->EndSession(this);
     return;
   }
@@ -98,7 +109,7 @@ void ScissorsUnwrappingSession::OnRead(Channel* channel, DWORD error,
   ProcessBuffer();
 }
 
-void ScissorsUnwrappingSession::OnWritten(Channel* channel, DWORD error,
+void ScissorsUnwrappingSession::OnWritten(Channel* channel, HRESULT result,
                                           void* buffer, int length) {
   DCHECK(false);
 }
@@ -117,7 +128,13 @@ void ScissorsUnwrappingSession::OnSent(AsyncSocket* socket, HRESULT result,
   received_.erase(0, length);
   if (received_.empty()) {
     packet_length_ = -1;
-    source_->ReadAsync(buffer_, sizeof(buffer_), this);
+
+    result = source_->ReadAsync(buffer_, sizeof(buffer_), this);
+    if (FAILED(result)) {
+      LOG(ERROR) << this
+          << " failed to read from source: 0x" << std::hex << result;
+      service_->EndSession(this);
+    }
   } else {
     ProcessBuffer();
   }

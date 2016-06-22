@@ -50,8 +50,9 @@ class ScissorsWrappingSession
   void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
                   void* buffer, int length, int flags) override;
 
-  void OnRead(Channel* channel, DWORD error, void* buffer, int length) override;
-  void OnWritten(Channel* channel, DWORD error, void* buffer,
+  void OnRead(Channel* channel, HRESULT result, void* buffer,
+              int length) override;
+  void OnWritten(Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
   void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,

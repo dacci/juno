@@ -47,12 +47,12 @@ class SecureSocketChannel::Request {
 
   virtual void Run() = 0;
 
-  inline void FireReadError(DWORD error) {
-    listener_->OnRead(channel_, error, buffer_, 0);
+  void FireReadError(HRESULT result) {
+    listener_->OnRead(channel_, result, buffer_, 0);
   }
 
-  inline void FireWriteError(DWORD error) {
-    listener_->OnWritten(channel_, error, buffer_, 0);
+  void FireWriteError(HRESULT result) {
+    listener_->OnWritten(channel_, result, buffer_, 0);
   }
 
   SecureSocketChannel* const channel_;
@@ -107,18 +107,16 @@ void SecureSocketChannel::Close() {
   }
 }
 
-void SecureSocketChannel::ReadAsync(void* buffer, int length,
-                                    Listener* listener) {
-  if (listener == nullptr) {
-    listener->OnRead(this, E_POINTER, buffer, 0);
-    return;
-  } else if (buffer == nullptr && length != 0 || length < 0) {
-    listener->OnRead(this, E_INVALIDARG, buffer, 0);
-    return;
-  } else if (socket_ == nullptr || !socket_->IsValid() || closed_) {
-    listener->OnRead(this, E_HANDLE, buffer, 0);
-    return;
-  }
+HRESULT SecureSocketChannel::ReadAsync(void* buffer, int length,
+                                       Listener* listener) {
+  if (listener == nullptr)
+    return E_POINTER;
+
+  if (buffer == nullptr && length != 0 || length < 0)
+    return E_INVALIDARG;
+
+  if (socket_ == nullptr || !socket_->IsValid() || closed_)
+    return E_HANDLE;
 
   {
     base::AutoLock guard(lock_);
@@ -128,46 +126,48 @@ void SecureSocketChannel::ReadAsync(void* buffer, int length,
         memmove(buffer, decrypted_.data(), size);
         decrypted_.erase(0, size);
       }
-      listener->OnRead(this, 0, buffer, size);
-      return;
+      listener->OnRead(this, S_OK, buffer, size);
+      return S_OK;
     }
   }
 
-  if (closed_) {
-    listener->OnRead(this, E_HANDLE, buffer, 0);
-    return;
-  }
+  if (closed_)
+    return E_HANDLE;
 
   ReadRequest* request = new ReadRequest(this, buffer, length, listener);
-  if (request == nullptr) {
-    listener->OnRead(this, E_OUTOFMEMORY, buffer, 0);
-  } else if (!TrySubmitThreadpoolCallback(BeginRequest, request, nullptr)) {
-    listener->OnRead(this, GetLastError(), buffer, 0);
+  if (request == nullptr)
+    return E_OUTOFMEMORY;
+
+  if (!TrySubmitThreadpoolCallback(BeginRequest, request, nullptr)) {
     delete request;
+    return HRESULT_FROM_WIN32(GetLastError());
   }
+
+  return S_OK;
 }
 
-void SecureSocketChannel::WriteAsync(const void* buffer, int length,
-                                     Listener* listener) {
-  if (listener == nullptr) {
-    listener->OnWritten(this, E_POINTER, const_cast<void*>(buffer), 0);
-    return;
-  } else if (buffer == nullptr && length != 0 || length < 0) {
-    listener->OnWritten(this, E_INVALIDARG, const_cast<void*>(buffer), 0);
-    return;
-  } else if (socket_ == nullptr || !socket_->IsValid() || closed_) {
-    listener->OnWritten(this, E_HANDLE, const_cast<void*>(buffer), 0);
-    return;
-  }
+HRESULT SecureSocketChannel::WriteAsync(const void* buffer, int length,
+                                        Listener* listener) {
+  if (listener == nullptr)
+    return E_POINTER;
+
+  if (buffer == nullptr && length != 0 || length < 0)
+    return E_INVALIDARG;
+
+  if (socket_ == nullptr || !socket_->IsValid() || closed_)
+    return E_HANDLE;
 
   WriteRequest* request = new WriteRequest(this, const_cast<void*>(buffer),
                                            length, listener);
-  if (request == nullptr) {
-    listener->OnWritten(this, E_OUTOFMEMORY, const_cast<void*>(buffer), 0);
-  } else if (!TrySubmitThreadpoolCallback(BeginRequest, request, nullptr)) {
-    listener->OnWritten(this, GetLastError(), const_cast<void*>(buffer), 0);
+  if (request == nullptr)
+    return  E_OUTOFMEMORY;
+
+  if (!TrySubmitThreadpoolCallback(BeginRequest, request, nullptr)) {
     delete request;
+    return HRESULT_FROM_WIN32(GetLastError());
   }
+
+  return S_OK;
 }
 
 void CALLBACK SecureSocketChannel::BeginRequest(PTP_CALLBACK_INSTANCE instance,
@@ -406,7 +406,7 @@ void SecureSocketChannel::ReadRequest::Run() {
     memmove(buffer_, channel_->decrypted_.data(), size);
     channel_->decrypted_.erase(0, size);
   }
-  listener_->OnRead(channel_, 0, buffer_, size);
+  listener_->OnRead(channel_, S_OK, buffer_, size);
 }
 
 SecureSocketChannel::WriteRequest::WriteRequest(SecureSocketChannel* channel,

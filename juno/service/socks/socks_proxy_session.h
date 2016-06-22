@@ -24,8 +24,9 @@ class SocksProxySession
 
   void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
                    const addrinfo* end_point) override;
-  void OnRead(Channel* channel, DWORD error, void* buffer, int length) override;
-  void OnWritten(Channel* channel, DWORD error, void* buffer,
+  void OnRead(Channel* channel, HRESULT result, void* buffer,
+              int length) override;
+  void OnWritten(Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
   void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,

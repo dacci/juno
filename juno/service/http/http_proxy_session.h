@@ -52,7 +52,7 @@ class HttpProxySession
   // and begins receiving response.
   void EndRequest();
 
-  void ReceiveResponse();
+  HRESULT ReceiveResponse();
   void ProcessResponse();
   void ProcessResponseChunk();
   void SendResponse();
@@ -64,24 +64,25 @@ class HttpProxySession
 
   void OnTimeout() override;
 
-  void OnRead(Channel* channel, DWORD error, void* buffer, int length) override;
-  void OnWritten(Channel* channel, DWORD error, void* buffer,
+  void OnRead(Channel* channel, HRESULT result, void* buffer,
+              int length) override;
+  void OnWritten(Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
   void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
                   void* buffer, int length, int flags) override;
 
-  void OnRequestReceived(DWORD error, int length);
+  void OnRequestReceived(HRESULT result, int length);
   void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
                    const addrinfo* end_point) override;
-  void OnRequestSent(DWORD error, int length);
-  void OnRequestBodyReceived(DWORD error, int length);
-  void OnRequestBodySent(DWORD error, int length);
+  void OnRequestSent(HRESULT result, int length);
+  void OnRequestBodyReceived(HRESULT result, int length);
+  void OnRequestBodySent(HRESULT result, int length);
 
-  void OnResponseReceived(DWORD error, int length);
-  void OnResponseSent(DWORD error, int length);
-  void OnResponseBodyReceived(DWORD error, int length);
-  void OnResponseBodySent(DWORD error, int length);
+  void OnResponseReceived(HRESULT result, int length);
+  void OnResponseSent(HRESULT result, int length);
+  void OnResponseBodyReceived(HRESULT result, int length);
+  void OnResponseBodySent(HRESULT result, int length);
 
   void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
                       void* buffer, int length, int flags,

@@ -14,10 +14,11 @@ class TunnelingService::Session : public Channel::Listener {
           const ChannelPtr& to);
   ~Session();
 
-  void Start();
+  HRESULT Start();
 
-  void OnRead(Channel* channel, DWORD error, void* buffer, int length) override;
-  void OnWritten(Channel* channel, DWORD error, void* buffer,
+  void OnRead(Channel* channel, HRESULT result, void* buffer,
+              int length) override;
+  void OnWritten(Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
   TunnelingService* service_;
@@ -78,7 +79,9 @@ bool TunnelingService::BindSocket(const ChannelPtr& from,
   if (session == nullptr)
     return false;
 
-  session->Start();
+  if (FAILED(session->Start()))
+    return false;
+
   sessions_.push_back(std::move(session));
 
   return true;
@@ -128,22 +131,28 @@ TunnelingService::Session::~Session() {
   to_->Close();
 }
 
-void TunnelingService::Session::Start() {
-  from_->ReadAsync(buffer_, sizeof(buffer_), this);
+HRESULT TunnelingService::Session::Start() {
+  return from_->ReadAsync(buffer_, sizeof(buffer_), this);
 }
 
-void TunnelingService::Session::OnRead(Channel* channel, DWORD error,
+void TunnelingService::Session::OnRead(Channel* channel, HRESULT result,
                                        void* buffer, int length) {
-  if (error == 0 && length > 0)
-    to_->WriteAsync(buffer, length, this);
-  else
-    service_->EndSession(this);
+  if (SUCCEEDED(result) && length > 0) {
+    result = to_->WriteAsync(buffer, length, this);
+    if (SUCCEEDED(result))
+      return;
+  }
+
+  service_->EndSession(this);
 }
 
-void TunnelingService::Session::OnWritten(Channel* channel, DWORD error,
+void TunnelingService::Session::OnWritten(Channel* channel, HRESULT result,
                                           void* buffer, int length) {
-  if (error == 0 && length > 0)
-    from_->ReadAsync(buffer_, sizeof(buffer_), this);
-  else
-    service_->EndSession(this);
+  if (SUCCEEDED(result) && length > 0) {
+    result = from_->ReadAsync(buffer_, sizeof(buffer_), this);
+    if (SUCCEEDED(result))
+      return;
+  }
+
+  service_->EndSession(this);
 }

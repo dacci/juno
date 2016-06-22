@@ -24,8 +24,9 @@ class SecureSocketChannel : public Channel {
   virtual ~SecureSocketChannel();
 
   void Close() override;
-  void ReadAsync(void* buffer, int length, Listener* listener) override;
-  void WriteAsync(const void* buffer, int length, Listener* listener) override;
+  HRESULT ReadAsync(void* buffer, int length, Listener* listener) override;
+  HRESULT WriteAsync(const void* buffer, int length,
+                     Listener* listener) override;
 
   SchannelContext* context() {
     return &context_;

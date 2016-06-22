@@ -87,9 +87,15 @@ void HttpProxySession::Stop() {
 }
 
 void HttpProxySession::ReceiveRequest() {
-  if (timer_ != nullptr) {
-    timer_->Start(kTimeout, 0);
-    client_->ReadAsync(buffer_, kBufferSize, this);
+  if (timer_ == nullptr)
+    return;
+
+  timer_->Start(kTimeout, 0);
+  auto result = client_->ReadAsync(buffer_, kBufferSize, this);
+  if (FAILED(result)) {
+    LOG(ERROR) << this
+        << " failed to receive from client: 0x" << std::hex << result;
+    proxy_->EndSession(this);
   }
 }
 
@@ -214,7 +220,11 @@ void HttpProxySession::SendRequest() {
   request_.Serialize(&message);
   memmove(buffer_, message.data(), message.size());
 
-  remote_->WriteAsync(buffer_, message.size(), this);
+  auto result = remote_->WriteAsync(buffer_, message.size(), this);
+  if (FAILED(result)) {
+    LOG(ERROR) << this << " failed to send to remote: 0x" << std::hex << result;
+    SendError(HTTP::INTERNAL_SERVER_ERROR);
+  }
 }
 
 void HttpProxySession::ProcessRequestChunk() {
@@ -241,25 +251,34 @@ void HttpProxySession::EndRequest() {
     response_chunked_ = 0;
     close_remote_ = false;
 
-    ReceiveResponse();
+    auto result = ReceiveResponse();
+    if (FAILED(result)) {
+      LOG(ERROR) << this
+          << " failed to receive response: 0x" << std::hex << result;
+      SendError(HTTP::INTERNAL_SERVER_ERROR);
+    }
   } else {
     SendError(static_cast<HTTP::StatusCode>(status_code_));
   }
 }
 
-void HttpProxySession::ReceiveResponse() {
-  remote_->ReadAsync(buffer_, kBufferSize, this);
+HRESULT HttpProxySession::ReceiveResponse() {
+  return remote_->ReadAsync(buffer_, kBufferSize, this);
 }
 
 void HttpProxySession::ProcessResponse() {
-  int result = response_.Parse(remote_buffer_);
-  if (result > 0) {
-    remote_buffer_.erase(0, result);
-  } else if (result == -2) {
-    ReceiveResponse();
+  int length = response_.Parse(remote_buffer_);
+  if (length > 0) {
+    remote_buffer_.erase(0, length);
+  } else if (length == -2) {
+    auto result = ReceiveResponse();
+    if (FAILED(result)) {
+      LOG(ERROR) << this
+          << " failed to receive response: 0x" << std::hex << result;
+      SendError(HTTP::INTERNAL_SERVER_ERROR);
+    }
     return;
   } else {
-    close_remote_ = true;
     SendError(HTTP::BAD_GATEWAY);
     return;
   }
@@ -317,10 +336,16 @@ void HttpProxySession::ProcessResponse() {
           response_length_ -= remote_buffer_.size();
         remote_buffer_.clear();
 
-        if (response_length_ == -1 || response_length_ > 0)
-          ReceiveResponse();
-        else
+        if (response_length_ == -1 || response_length_ > 0) {
+          auto result = ReceiveResponse();
+          if (FAILED(result)) {
+            LOG(ERROR) << this
+                << " failed to receive response: 0x" << std::hex << result;
+            proxy_->EndSession(this);
+          }
+        } else {
           SendRequest();
+        }
       }
     } else {
       SendRequest();
@@ -349,12 +374,24 @@ void HttpProxySession::ProcessResponse() {
 void HttpProxySession::ProcessResponseChunk() {
   response_length_ = http_util::ParseChunk(remote_buffer_, &last_chunk_size_);
   if (response_length_ > 0) {
-    if (retry_)
+    if (retry_) {
       OnResponseBodySent(0, response_length_);
-    else
-      client_->WriteAsync(remote_buffer_.data(), response_length_, this);
+    } else {
+      auto result = client_->WriteAsync(remote_buffer_.data(), response_length_,
+                                        this);
+      if (FAILED(result)) {
+        LOG(ERROR) << this
+            << " failed to send to client: 0x" << std::hex << result;
+        proxy_->EndSession(this);
+      }
+    }
   } else if (response_length_ == -2) {
-    ReceiveResponse();
+    auto result = ReceiveResponse();
+    if (FAILED(result)) {
+      LOG(ERROR) << this
+          << " failed to receive response: 0x" << std::hex << result;
+      proxy_->EndSession(this);
+    }
   } else {
     LOG(ERROR) << this << " invalid response chunk";
     proxy_->EndSession(this);
@@ -368,7 +405,11 @@ void HttpProxySession::SendResponse() {
   response_.Serialize(&message);
   memmove(buffer_, message.data(), message.size());
 
-  client_->WriteAsync(buffer_, message.size(), this);
+  auto result = client_->WriteAsync(buffer_, message.size(), this);
+  if (FAILED(result)) {
+    LOG(ERROR) << this << " failed to send to client: 0x" << std::hex << result;
+    proxy_->EndSession(this);
+  }
 }
 
 // not safe to call from remote_'s event handler.
@@ -385,7 +426,14 @@ void HttpProxySession::EndResponse() {
 
   if (response_.status() / 100 == 1) {
     state_ = ResponseHeader;
-    ReceiveResponse();
+
+    auto result = ReceiveResponse();
+    if (FAILED(result)) {
+      LOG(ERROR) << this
+          << " failed to receive response: 0x" << std::hex << result;
+      SendError(HTTP::INTERNAL_SERVER_ERROR);
+    }
+
     return;
   }
 
@@ -463,11 +511,17 @@ void HttpProxySession::SendError(HTTP::StatusCode status) {
 }
 
 void HttpProxySession::SendToRemote(const void* buffer, int length) {
-  if (status_code_ != 0)
+  if (status_code_ != 0) {
     channel_util::FireEvent(this, ChannelEvent::Write, remote_.get(), 0, buffer,
                             length);
-  else
-    remote_->WriteAsync(buffer, length, this);
+  } else {
+    auto result = remote_->WriteAsync(buffer, length, this);
+    if (FAILED(result)) {
+      LOG(ERROR) << this
+          << " failed to send to remote: 0x" << std::hex << result;
+      SendError(HTTP::INTERNAL_SERVER_ERROR);
+    }
+  }
 }
 
 void HttpProxySession::OnTimeout() {
@@ -476,25 +530,25 @@ void HttpProxySession::OnTimeout() {
   proxy_->EndSession(this);
 }
 
-void HttpProxySession::OnRead(Channel* /*channel*/, DWORD error,
+void HttpProxySession::OnRead(Channel* /*channel*/, HRESULT result,
                               void* /*buffer*/, int length) {
   base::AutoLock guard(lock_);
 
   switch (state_) {
     case RequestHeader:
-      OnRequestReceived(error, length);
+      OnRequestReceived(result, length);
       return;
 
     case RequestBody:
-      OnRequestBodyReceived(error, length);
+      OnRequestBodyReceived(result, length);
       return;
 
     case ResponseHeader:
-      OnResponseReceived(error, length);
+      OnResponseReceived(result, length);
       return;
 
     case ResponseBody:
-      OnResponseBodyReceived(error, length);
+      OnResponseBodyReceived(result, length);
       return;
 
     default:
@@ -503,25 +557,25 @@ void HttpProxySession::OnRead(Channel* /*channel*/, DWORD error,
   }
 }
 
-void HttpProxySession::OnWritten(Channel* /*channel*/, DWORD error,
+void HttpProxySession::OnWritten(Channel* /*channel*/, HRESULT result,
                                  void* /*buffer*/, int length) {
   base::AutoLock guard(lock_);
 
   switch (state_) {
     case RequestHeader:
-      OnRequestSent(error, length);
+      OnRequestSent(result, length);
       return;
 
     case RequestBody:
-      OnRequestBodySent(error, length);
+      OnRequestBodySent(result, length);
       return;
 
     case ResponseHeader:
-      OnResponseSent(error, length);
+      OnResponseSent(result, length);
       return;
 
     case ResponseBody:
-      OnResponseBodySent(error, length);
+      OnResponseBodySent(result, length);
       return;
 
     default:
@@ -547,12 +601,12 @@ void HttpProxySession::OnReceived(AsyncSocket* socket, HRESULT result,
   }
 }
 
-void HttpProxySession::OnRequestReceived(DWORD error, int length) {
+void HttpProxySession::OnRequestReceived(HRESULT result, int length) {
   timer_->Stop();
 
-  if (error != 0 || length == 0) {
-    LOG_IF(ERROR, error != 0) << this
-        << " failed to receive request: " << error;
+  if (FAILED(result) || length == 0) {
+    LOG_IF(ERROR, FAILED(result)) << this
+        << " failed to receive request: 0x" << std::hex << result;
     proxy_->EndSession(this);
     return;
   }
@@ -593,9 +647,10 @@ void HttpProxySession::OnConnected(AsyncSocket* socket, HRESULT result,
   }
 }
 
-void HttpProxySession::OnRequestSent(DWORD error, int length) {
-  if (error != 0 || length == 0) {
-    LOG_IF(ERROR, error != 0) << " failed to send request: " << error;
+void HttpProxySession::OnRequestSent(HRESULT result, int length) {
+  if (FAILED(result) || length == 0) {
+    LOG_IF(ERROR, FAILED(result)) << this
+        << " failed to send request: 0x" << std::hex << result;
     SendError(HTTP::BAD_GATEWAY);
     return;
   }
@@ -621,12 +676,12 @@ void HttpProxySession::OnRequestSent(DWORD error, int length) {
   }
 }
 
-void HttpProxySession::OnRequestBodyReceived(DWORD error, int length) {
+void HttpProxySession::OnRequestBodyReceived(HRESULT result, int length) {
   timer_->Stop();
 
-  if (error != 0 || length == 0) {
-    LOG_IF(ERROR, error != 0) << this
-        << " failed to receive request body: " << error;
+  if (FAILED(result) || length == 0) {
+    LOG_IF(ERROR, FAILED(result)) << this
+        << " failed to receive request body: 0x" << std::hex << result;
     proxy_->EndSession(this);
     return;
   }
@@ -639,10 +694,10 @@ void HttpProxySession::OnRequestBodyReceived(DWORD error, int length) {
   }
 }
 
-void HttpProxySession::OnRequestBodySent(DWORD error, int length) {
-  if (error != 0 || length == 0) {
-    LOG_IF(ERROR, error != 0) << this
-        << " failed to send request body: " << error;
+void HttpProxySession::OnRequestBodySent(HRESULT result, int length) {
+  if (FAILED(result) || length == 0) {
+    LOG_IF(ERROR, FAILED(result)) << this
+        << " failed to send request body: 0x" << std::hex << result;
     SendError(HTTP::BAD_GATEWAY);
     return;
   }
@@ -662,10 +717,10 @@ void HttpProxySession::OnRequestBodySent(DWORD error, int length) {
   }
 }
 
-void HttpProxySession::OnResponseReceived(DWORD error, int length) {
-  if (error != 0 || length == 0) {
-    LOG_IF(ERROR, error != 0) << this
-        << " failed to receive response: " << error;
+void HttpProxySession::OnResponseReceived(HRESULT result, int length) {
+  if (FAILED(result) || length == 0) {
+    LOG_IF(ERROR, FAILED(result)) << this
+        << " failed to receive response: 0x" << std::hex << result;
     SendError(HTTP::BAD_GATEWAY);
     return;
   }
@@ -674,9 +729,10 @@ void HttpProxySession::OnResponseReceived(DWORD error, int length) {
   ProcessResponse();
 }
 
-void HttpProxySession::OnResponseSent(DWORD error, int length) {
-  if (error != 0 || length == 0) {
-    LOG_IF(ERROR, error != 0) << this << " failed to send request: " << error;
+void HttpProxySession::OnResponseSent(HRESULT result, int length) {
+  if (FAILED(result) || length == 0) {
+    LOG_IF(ERROR, FAILED(result)) << this
+        << " failed to send request: 0x" << std::hex << result;
     proxy_->EndSession(this);
     return;
   }
@@ -691,9 +747,20 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
   if (response_chunked_) {
     ProcessResponseChunk();
   } else if (remote_buffer_.empty()) {
-    ReceiveResponse();
+    result = ReceiveResponse();
+    if (FAILED(result)) {
+      LOG(ERROR) << this
+          << " failed to receive response: 0x" << std::hex << result;
+      proxy_->EndSession(this);
+    }
   } else if (response_length_ < 0) {
-    client_->WriteAsync(remote_buffer_.data(), remote_buffer_.size(), this);
+    result = client_->WriteAsync(remote_buffer_.data(), remote_buffer_.size(),
+                                 this);
+    if (FAILED(result)) {
+      LOG(ERROR) << this
+          << " faield to send to client: 0x" << std::hex << result;
+      proxy_->EndSession(this);
+    }
   } else {
     size_t size = std::min({ remote_buffer_.size(),
                              static_cast<size_t>(response_length_),
@@ -701,14 +768,19 @@ void HttpProxySession::OnResponseSent(DWORD error, int length) {
     memmove(buffer_, remote_buffer_.data(), size);
     remote_buffer_.erase(0, size);
 
-    client_->WriteAsync(buffer_, size, this);
+    result = client_->WriteAsync(buffer_, size, this);
+    if (FAILED(result)) {
+      LOG(ERROR) << this
+          << " failed to send to client: 0x" << std::hex << result;
+      proxy_->EndSession(this);
+    }
   }
 }
 
-void HttpProxySession::OnResponseBodyReceived(DWORD error, int length) {
-  if (error != 0 || length == 0) {
-    LOG_IF(ERROR, error != 0) << this
-        << " failed to receive response body: " << error;
+void HttpProxySession::OnResponseBodyReceived(HRESULT result, int length) {
+  if (FAILED(result) || length == 0) {
+    LOG_IF(ERROR, FAILED(result)) << this
+        << " failed to receive response body: 0x" << std::hex << result;
     proxy_->EndSession(this);
     return;
   }
@@ -717,17 +789,23 @@ void HttpProxySession::OnResponseBodyReceived(DWORD error, int length) {
     remote_buffer_.append(buffer_, length);
     ProcessResponseChunk();
   } else {
-    if (retry_)
+    if (retry_) {
       OnResponseBodySent(0, length);
-    else
-      client_->WriteAsync(buffer_, length, this);
+    } else {
+      result = client_->WriteAsync(buffer_, length, this);
+      if (FAILED(result)) {
+        LOG(ERROR) << this
+            << " failed to send to client: 0x" << std::hex << result;
+        proxy_->EndSession(this);
+      }
+    }
   }
 }
 
-void HttpProxySession::OnResponseBodySent(DWORD error, int length) {
-  if (error != 0 || length == 0) {
-    LOG_IF(ERROR, error != 0) << this
-        << " failed to send response body: " << error;
+void HttpProxySession::OnResponseBodySent(HRESULT result, int length) {
+  if (FAILED(result) || length == 0) {
+    LOG_IF(ERROR, FAILED(result)) << this
+        << " failed to send response body: 0x" << std::hex << result;
     proxy_->EndSession(this);
     return;
   }
@@ -743,7 +821,12 @@ void HttpProxySession::OnResponseBodySent(DWORD error, int length) {
     if (response_length_ > length)
       response_length_ -= length;
 
-    ReceiveResponse();
+    result = ReceiveResponse();
+    if (FAILED(result)) {
+      LOG(ERROR) << this
+          << " failed to receive response: 0x" << std::hex << result;
+      proxy_->EndSession(this);
+    }
   } else {
     EndResponse();
   }

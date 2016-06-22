@@ -62,7 +62,9 @@ bool SocksProxySession::Start() {
   if (remote_ == nullptr)
     return false;
 
-  client_->ReadAsync(request_buffer_, kBufferSize, this);
+  auto result = client_->ReadAsync(request_buffer_, kBufferSize, this);
+  if (FAILED(result))
+    return false;
 
   return true;
 }
@@ -104,7 +106,9 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, HRESULT result,
                                std::make_shared<SocketChannel>(remote_)))
       response->code = SOCKS4::GRANTED;
 
-    client_->WriteAsync(response, sizeof(*response), this);
+    result = client_->WriteAsync(response, sizeof(*response), this);
+    if (FAILED(result))
+      proxy_->EndSession(this);
   } else if (request_buffer_[0] == 5) {
     SOCKS5::REQUEST* request =
         reinterpret_cast<SOCKS5::REQUEST*>(request_buffer_);
@@ -158,16 +162,18 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, HRESULT result,
         response->code = SOCKS5::SUCCEEDED;
     }
 
-    client_->WriteAsync(response, response_length, this);
+    result = client_->WriteAsync(response, response_length, this);
+    if (FAILED(result))
+      proxy_->EndSession(this);
   } else {
     assert(false);
     proxy_->EndSession(this);
   }
 }
 
-void SocksProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
+void SocksProxySession::OnRead(Channel* channel, HRESULT result, void* buffer,
                                int length) {
-  if (error != 0 || length == 0) {
+  if (FAILED(result) || length == 0) {
     proxy_->EndSession(this);
     return;
   }
@@ -216,8 +222,9 @@ void SocksProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
       } while (false);
     }
 
-    client_->WriteAsync(response, sizeof(*response), this);
-    return;
+    result = client_->WriteAsync(response, sizeof(*response), this);
+    if (SUCCEEDED(result))
+      return;
   } else if (request_buffer_[0] == 5) {
     if (phase_ == 0) {
       SOCKS5::METHOD_REQUEST* request =
@@ -235,8 +242,9 @@ void SocksProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
         }
       }
 
-      client_->WriteAsync(response, sizeof(*response), this);
-      return;
+      result = client_->WriteAsync(response, sizeof(*response), this);
+      if (SUCCEEDED(result))
+        return;
     } else if (phase_ == 1) {
       SOCKS5::REQUEST* request =
           reinterpret_cast<SOCKS5::REQUEST*>(request_buffer_);
@@ -268,17 +276,18 @@ void SocksProxySession::OnRead(Channel* channel, DWORD error, void* buffer,
           return;
       }
 
-      client_->WriteAsync(response, 10, this);
-      return;
+      result = client_->WriteAsync(response, 10, this);
+      if (SUCCEEDED(result))
+        return;
     }
   }
 
   proxy_->EndSession(this);
 }
 
-void SocksProxySession::OnWritten(Channel* channel, DWORD error, void* buffer,
-                                  int length) {
-  if (error != 0 || length == 0) {
+void SocksProxySession::OnWritten(Channel* channel, HRESULT result,
+                                  void* buffer, int length) {
+  if (FAILED(result) || length == 0) {
     proxy_->EndSession(this);
     return;
   }
@@ -293,8 +302,9 @@ void SocksProxySession::OnWritten(Channel* channel, DWORD error, void* buffer,
   } else if (request_buffer_[0] == 5) {
     if (phase_ == 0) {
       ++phase_;
-      client_->ReadAsync(request_buffer_, kBufferSize, this);
-      return;
+      result = client_->ReadAsync(request_buffer_, kBufferSize, this);
+      if (SUCCEEDED(result))
+        return;
     } else if (phase_ == 1) {
       SOCKS5::RESPONSE* response =
           reinterpret_cast<SOCKS5::RESPONSE*>(response_buffer_);

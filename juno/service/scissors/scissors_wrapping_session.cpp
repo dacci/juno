@@ -125,23 +125,27 @@ void ScissorsWrappingSession::OnReceived(AsyncSocket* socket, HRESULT result,
   uint16_t* packet_length = reinterpret_cast<uint16_t*>(buffer_);
   *packet_length = htons(length);
 
-  sink_->WriteAsync(buffer_, kLengthOffset + length, this);
+  result = sink_->WriteAsync(buffer_, kLengthOffset + length, this);
+  if (FAILED(result)) {
+    LOG(ERROR) << this << " failed to send to sink: 0x" << std::hex << result;
+    Stop();
+  }
 }
 
-void ScissorsWrappingSession::OnRead(Channel* channel, DWORD error,
+void ScissorsWrappingSession::OnRead(Channel* channel, HRESULT result,
                                      void* buffer, int length) {
   DCHECK(false);
 }
 
-void ScissorsWrappingSession::OnWritten(Channel* channel, DWORD error,
+void ScissorsWrappingSession::OnWritten(Channel* channel, HRESULT result,
                                         void* buffer, int length) {
-  if (error == 0 && length > 0) {
+  if (SUCCEEDED(result) && length > 0) {
     timer_->Start(kTimeout, 0);
 
     if (source_address_length_ == 0)
       source_->ReceiveAsync(buffer_ + kLengthOffset, kDatagramSize, 0, this);
   } else {
-    LOG(ERROR) << this << " failed to send to sink: " << error;
+    LOG(ERROR) << this << " failed to send to sink: 0x" << std::hex << result;
     Stop();
   }
 }

@@ -47,51 +47,47 @@ void SocketChannel::Close() {
     socket_->Close();
 }
 
-void SocketChannel::ReadAsync(void* buffer, int length, Listener* listener) {
-  if (listener == nullptr) {
-    listener->OnRead(this, E_POINTER, buffer, 0);
-    return;
-  } else if (buffer == nullptr && length != 0 || length < 0) {
-    listener->OnRead(this, E_INVALIDARG, buffer, 0);
-    return;
-  } else if (closed_ || socket_ == nullptr || !socket_->IsValid()) {
-    listener->OnRead(this, E_HANDLE, buffer, 0);
-    return;
-  }
+HRESULT SocketChannel::ReadAsync(void* buffer, int length, Listener* listener) {
+  if (listener == nullptr)
+    return E_POINTER;
+
+  if (buffer == nullptr && length != 0 || length < 0)
+    return E_INVALIDARG;
+
+  if (closed_ || socket_ == nullptr || !socket_->IsValid())
+    return E_HANDLE;
 
   auto request = std::make_unique<Request>(this, listener);
-  if (request == nullptr) {
-    listener->OnRead(this, E_OUTOFMEMORY, buffer, 0);
-    return;
-  }
+  if (request == nullptr)
+    return E_OUTOFMEMORY;
 
   base::AutoLock guard(lock_);
   socket_->ReceiveAsync(buffer, length, 0, request.get());
   requests_.push_back(std::move(request));
+
+  return S_OK;
 }
 
-void SocketChannel::WriteAsync(const void* buffer, int length,
-                               Listener* listener) {
-  if (listener == nullptr) {
-    listener->OnWritten(this, E_POINTER, const_cast<void*>(buffer), 0);
-    return;
-  } else if (buffer == nullptr && length != 0 || length < 0) {
-    listener->OnWritten(this, E_INVALIDARG, const_cast<void*>(buffer), 0);
-    return;
-  } else if (closed_ || socket_ == nullptr || !socket_->IsValid()) {
-    listener->OnWritten(this, E_HANDLE, const_cast<void*>(buffer), 0);
-    return;
-  }
+HRESULT SocketChannel::WriteAsync(const void* buffer, int length,
+                                  Listener* listener) {
+  if (listener == nullptr)
+    return E_POINTER;
+
+  if (buffer == nullptr && length != 0 || length < 0)
+    return E_INVALIDARG;
+
+  if (closed_ || socket_ == nullptr || !socket_->IsValid())
+    return E_HANDLE;
 
   auto request = std::make_unique<Request>(this, listener);
-  if (request == nullptr) {
-    listener->OnWritten(this, E_OUTOFMEMORY, const_cast<void*>(buffer), 0);
-    return;
-  }
+  if (request == nullptr)
+    return E_OUTOFMEMORY;
 
   base::AutoLock guard(lock_);
   socket_->SendAsync(buffer, length, 0, request.get());
   requests_.push_back(std::move(request));
+
+  return S_OK;
 }
 
 void SocketChannel::EndRequest(Request* request) {
@@ -118,12 +114,12 @@ SocketChannel::Request::Request(SocketChannel* channel,
 
 void SocketChannel::Request::OnReceived(AsyncSocket* socket, HRESULT result,
                                         void* buffer, int length, int flags) {
-  listener_->OnRead(channel_, HRESULT_CODE(result), buffer, length);
+  listener_->OnRead(channel_, result, buffer, length);
   channel_->EndRequest(this);
 }
 
 void SocketChannel::Request::OnSent(AsyncSocket* socket, HRESULT result,
                                     void* buffer, int length) {
-  listener_->OnWritten(channel_, HRESULT_CODE(result), buffer, length);
+  listener_->OnWritten(channel_, result, buffer, length);
   channel_->EndRequest(this);
 }
