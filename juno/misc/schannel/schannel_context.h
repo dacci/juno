@@ -1,9 +1,7 @@
-// Copyright (c) 2013 dacci.org
+// Copyright (c) 2016 dacci.org
 
 #ifndef JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_
 #define JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_
-
-#include <string.h>
 
 #include <string>
 
@@ -12,9 +10,7 @@
 class SchannelContext {
  public:
   explicit SchannelContext(SchannelCredential* credential)
-      : credential_(credential),
-        attributes_(),
-        expiry_() {
+      : credential_(credential), attributes_(), expiry_() {
     SecInvalidateHandle(&handle_);
   }
 
@@ -37,18 +33,9 @@ class SchannelContext {
     if (!target_name_.empty())
       target_name = &target_name_[0];
 
-    return InitializeSecurityContextA(&credential_->handle_,
-                                      in_handle,
-                                      target_name,
-                                      request,
-                                      0,     // reserved
-                                      0,     // unused
-                                      input,
-                                      0,     // reserved
-                                      out_handle,
-                                      output,
-                                      &attributes_,
-                                      &expiry_);
+    return InitializeSecurityContextA(
+        &credential_->handle_, in_handle, target_name, request, 0, 0, input, 0,
+        out_handle, output, &attributes_, &expiry_);
   }
 
   HRESULT AcceptContext(ULONG request, SecBufferDesc* input,
@@ -59,20 +46,14 @@ class SchannelContext {
     else
       out_handle = &handle_;
 
-    return AcceptSecurityContext(&credential_->handle_,
-                                 in_handle,
-                                 input,
-                                 request,
-                                 0,         // unused
-                                 out_handle,
-                                 output,
-                                 &attributes_,
+    return AcceptSecurityContext(&credential_->handle_, in_handle, input,
+                                 request, 0, out_handle, output, &attributes_,
                                  &expiry_);
   }
 
   HRESULT ApplyControlToken(ULONG token) {
-    SecBuffer buffer = { sizeof(token), SECBUFFER_TOKEN, &token };
-    SecBufferDesc buffers = { SECBUFFER_VERSION, 1, &buffer };
+    SecBuffer buffer{sizeof(token), SECBUFFER_TOKEN, &token};
+    SecBufferDesc buffers{SECBUFFER_VERSION, 1, &buffer};
 
     return ::ApplyControlToken(&handle_, &buffers);
   }
@@ -126,8 +107,8 @@ class SchannelContext {
   ULONG attributes_;
   TimeStamp expiry_;
 
-  SchannelContext(const SchannelContext&);
-  SchannelContext& operator=(const SchannelContext&);
+  SchannelContext(const SchannelContext&) = delete;
+  SchannelContext& operator=(const SchannelContext&) = delete;
 };
 
 #endif  // JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_

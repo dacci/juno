@@ -5,26 +5,8 @@
 #include "net/socket_channel.h"
 #include "service/service.h"
 
-using ::madoka::net::AsyncServerSocket;
-using ::madoka::net::AsyncSocket;
-
-namespace {
-
-class SocketChannelFactory : public TcpServer::ChannelFactory {
- public:
-  Service::ChannelPtr CreateChannel(
-      const std::shared_ptr<madoka::net::AsyncSocket>& socket) override {
-    return std::make_shared<SocketChannel>(socket);
-  }
-};
-
-SocketChannelFactory socket_channel_factory;
-
-}  // namespace
-
 TcpServer::TcpServer()
-    : channel_factory_(&socket_channel_factory), service_(), empty_(&lock_) {
-}
+    : channel_customizer_(nullptr), service_(nullptr), empty_(&lock_) {}
 
 TcpServer::~TcpServer() {
   Stop();
@@ -81,13 +63,6 @@ void TcpServer::Stop() {
     empty_.Wait();
 }
 
-void TcpServer::SetChannelFactory(ChannelFactory* channel_factory) {
-  if (channel_factory == nullptr)
-    channel_factory_ = &socket_channel_factory;
-  else
-    channel_factory_ = channel_factory;
-}
-
 void TcpServer::DeleteServer(AsyncServerSocket* server) {
   ServerSocketPair* pair = new ServerSocketPair(this, server);
   if (pair == nullptr ||
@@ -127,20 +102,21 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, HRESULT result,
     if (FAILED(result))
       break;
 
-    std::shared_ptr<AsyncSocket> peer =
-        server->EndAccept<AsyncSocket>(context, &result);
-    if (peer == nullptr)
+    std::shared_ptr<Channel> channel =
+        server->EndAccept<SocketChannel>(context, &result);
+    if (channel == nullptr)
       break;
 
-    server->AcceptAsync(this);
+    {
+      base::AutoLock guard(lock_);
 
-    auto channel = channel_factory_->CreateChannel(peer);
-    if (channel == nullptr) {
-      result = E_OUTOFMEMORY;
-      break;
+      if (channel_customizer_ != nullptr)
+        channel = channel_customizer_->Customize(channel);
     }
 
     service_->OnAccepted(channel);
+
+    result = server->AcceptAsync(this);
   } while (false);
 
   if (FAILED(result)) {

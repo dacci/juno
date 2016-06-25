@@ -38,7 +38,7 @@ bool ScissorsWrappingSession::Start() {
   }
 
   if (sink_ == nullptr) {
-    auto socket = std::make_shared<AsyncSocket>();
+    auto socket = std::make_shared<SocketChannel>();
     if (socket == nullptr) {
       LOG(ERROR) << this << " failed to create socket";
       return false;
@@ -82,8 +82,8 @@ void ScissorsWrappingSession::OnReceived(const Service::DatagramPtr& datagram) {
              0);
 }
 
-void ScissorsWrappingSession::OnConnected(AsyncSocket* socket, HRESULT result,
-                                          const addrinfo* end_point) {
+void ScissorsWrappingSession::OnConnected(SocketChannel* socket,
+                                          HRESULT result) {
   if (FAILED(result)) {
     LOG(ERROR) << this << " failed to connect: 0x" << std::hex << result;
     Stop();

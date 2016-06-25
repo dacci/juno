@@ -6,12 +6,9 @@
 
 #include <string>
 
-#include "net/socket_channel.h"
 #include "net/socket_resolver.h"
 #include "net/tunneling_service.h"
 #include "service/socks/socks_proxy.h"
-
-using ::madoka::net::AsyncSocket;
 
 namespace {
 
@@ -49,7 +46,6 @@ SocksProxySession::SocksProxySession(SocksProxy* proxy,
                                      const Service::ChannelPtr& client)
     : proxy_(proxy),
       client_(client),
-      remote_(new AsyncSocket()),
       phase_(),
       end_point_() {
 }
@@ -59,6 +55,7 @@ SocksProxySession::~SocksProxySession() {
 }
 
 bool SocksProxySession::Start() {
+  remote_ = std::make_shared<SocketChannel>();
   if (remote_ == nullptr)
     return false;
 
@@ -81,13 +78,7 @@ void SocksProxySession::Stop() {
   }
 }
 
-void SocksProxySession::OnConnected(AsyncSocket* socket, HRESULT result,
-                                    const addrinfo* end_point) {
-  if (FAILED(result) && result != E_ABORT && end_point->ai_next != nullptr) {
-    socket->ConnectAsync(end_point->ai_next, this);
-    return;
-  }
-
+void SocksProxySession::OnConnected(SocketChannel* channel, HRESULT result) {
   if (request_buffer_[0] == 4) {
     SOCKS4::REQUEST* request =
         reinterpret_cast<SOCKS4::REQUEST*>(request_buffer_);
@@ -101,9 +92,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, HRESULT result,
     SOCKS4::RESPONSE* response =
         reinterpret_cast<SOCKS4::RESPONSE*>(response_buffer_);
 
-    if (SUCCEEDED(result) &&
-        TunnelingService::Bind(client_,
-                               std::make_shared<SocketChannel>(remote_)))
+    if (SUCCEEDED(result) && TunnelingService::Bind(client_, remote_))
       response->code = SOCKS4::GRANTED;
 
     result = client_->WriteAsync(response, sizeof(*response), this);
@@ -157,8 +146,7 @@ void SocksProxySession::OnConnected(AsyncSocket* socket, HRESULT result,
         }
       }
 
-      if (TunnelingService::Bind(client_,
-                                 std::make_shared<SocketChannel>(remote_)))
+      if (TunnelingService::Bind(client_, remote_))
         response->code = SOCKS5::SUCCEEDED;
     }
 

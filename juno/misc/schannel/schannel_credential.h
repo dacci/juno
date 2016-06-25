@@ -1,7 +1,14 @@
-// Copyright (c) 2013 dacci.org
+// Copyright (c) 2016 dacci.org
 
 #ifndef JUNO_MISC_SCHANNEL_SCHANNEL_CREDENTIAL_H_
 #define JUNO_MISC_SCHANNEL_SCHANNEL_CREDENTIAL_H_
+
+#if !defined(SECURITY_WIN32) && !defined(SECURITY_KERNEL)
+#define SECURITY_WIN32
+#endif
+
+#pragma comment(lib, "crypt32.lib")
+#pragma comment(lib, "secur32.lib")
 
 #include <windows.h>
 #include <schnlsp.h>
@@ -38,13 +45,13 @@ class SchannelCredential {
 
   void AddCertificate(const CERT_CONTEXT* certificate) {
     certificates_.push_back(CertDuplicateCertificateContext(certificate));
-    auth_data_.cCreds = certificates_.size();
+    auth_data_.cCreds = static_cast<DWORD>(certificates_.size());
     auth_data_.paCred = certificates_.data();
   }
 
   void AddSupportedAlgorithm(ALG_ID algorithm) {
     algorithms_.push_back(algorithm);
-    auth_data_.cSupportedAlgs = algorithms_.size();
+    auth_data_.cSupportedAlgs = static_cast<DWORD>(algorithms_.size());
     auth_data_.palgSupportedAlgs = algorithms_.data();
   }
 
@@ -74,8 +81,8 @@ class SchannelCredential {
   std::vector<const CERT_CONTEXT*> certificates_;
   std::vector<ALG_ID> algorithms_;
 
-  SchannelCredential(const SchannelCredential&);
-  SchannelCredential& operator=(const SchannelCredential&);
+  SchannelCredential(const SchannelCredential&) = delete;
+  SchannelCredential& operator=(const SchannelCredential&) = delete;
 };
 
 #endif  // JUNO_MISC_SCHANNEL_SCHANNEL_CREDENTIAL_H_

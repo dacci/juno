@@ -5,15 +5,13 @@
 
 #include <stdint.h>
 
-#include <madoka/net/async_socket.h>
-
 #include <base/synchronization/lock.h>
 
 #include <memory>
 #include <string>
 
 #include "misc/timer_service.h"
-#include "net/channel.h"
+#include "net/socket_channel.h"
 #include "net/socket_resolver.h"
 #include "service/service.h"
 #include "service/http/http_request.h"
@@ -22,10 +20,9 @@
 class HttpProxy;
 class HttpProxyConfig;
 
-class HttpProxySession
-    : private Channel::Listener,
-      private madoka::net::AsyncSocket::Listener,
-      private TimerService::Callback {
+class HttpProxySession : private Channel::Listener,
+                         private SocketChannel::Listener,
+                         private TimerService::Callback {
  public:
   HttpProxySession(HttpProxy* proxy,
                    const std::shared_ptr<HttpProxyConfig>& config,
@@ -37,11 +34,16 @@ class HttpProxySession
 
  private:
   enum State {
-    Idle, Connecting, RequestHeader, RequestBody, ResponseHeader, ResponseBody
+    Idle,
+    Connecting,
+    RequestHeader,
+    RequestBody,
+    ResponseHeader,
+    ResponseBody
   };
 
-  static const size_t kBufferSize = 8 * 1024;   // 8 KiB
-  static const int kTimeout = 15 * 1000;        // 15 sec
+  static const size_t kBufferSize = 8 * 1024;  // 8 KiB
+  static const int kTimeout = 15 * 1000;       // 15 sec
 
   void ReceiveRequest();
   void ProcessRequest();
@@ -69,12 +71,10 @@ class HttpProxySession
   void OnWritten(Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
-  void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
-                  void* buffer, int length, int flags) override;
+  void OnClosed(SocketChannel* socket, HRESULT result) override;
 
   void OnRequestReceived(HRESULT result, int length);
-  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
-                   const addrinfo* end_point) override;
+  void OnConnected(SocketChannel* socket, HRESULT result) override;
   void OnRequestSent(HRESULT result, int length);
   void OnRequestBodyReceived(HRESULT result, int length);
   void OnRequestBodySent(HRESULT result, int length);
@@ -83,15 +83,6 @@ class HttpProxySession
   void OnResponseSent(HRESULT result, int length);
   void OnResponseBodyReceived(HRESULT result, int length);
   void OnResponseBodySent(HRESULT result, int length);
-
-  void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
-                      void* buffer, int length, int flags,
-                      const sockaddr* address, int address_length) override {}
-  void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-              int length) override {}
-  void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-                int length, const sockaddr* address,
-                int address_length) override {}
 
   HttpProxy* const proxy_;
   std::shared_ptr<HttpProxyConfig> config_;
@@ -114,15 +105,15 @@ class HttpProxySession
   bool request_chunked_;
   bool close_client_;
 
-  madoka::net::AsyncSocket* remote_socket_;
-  Service::ChannelPtr remote_;
+  std::shared_ptr<SocketChannel> remote_;
   std::string remote_buffer_;
   HttpResponse response_;
   int64_t response_length_;
   bool response_chunked_;
   bool close_remote_;
 
-  char peek_buffer_[16];
+  HttpProxySession(const HttpProxySession&) = delete;
+  HttpProxySession& operator=(const HttpProxySession&) = delete;
 };
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_PROXY_SESSION_H_

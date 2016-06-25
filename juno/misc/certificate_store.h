@@ -1,7 +1,9 @@
-// Copyright (c) 2014 dacci.org
+// Copyright (c) 2016 dacci.org
 
 #ifndef JUNO_MISC_CERTIFICATE_STORE_H_
 #define JUNO_MISC_CERTIFICATE_STORE_H_
+
+#pragma comment(lib, "crypt32.lib")
 
 #include <windows.h>
 #include <cryptuiapi.h>
@@ -13,7 +15,8 @@ class CertificateStore {
   }
 
   CertificateStore(const char* provider, DWORD encoding, DWORD flags,
-                   const void* param) : store_handle_() {
+                   const void* param)
+      : store_handle_() {
     store_handle_ = CertOpenStore(provider, encoding, NULL, flags, param);
   }
 
@@ -47,20 +50,23 @@ class CertificateStore {
                                                 message, exclude, 0, nullptr);
   }
 
-  inline operator HCERTSTORE() const {
+  operator HCERTSTORE() const {
     return store_handle_;
   }
 
-  inline bool IsValid() const {
+  bool IsValid() const {
     return store_handle_ != NULL;
   }
 
-  inline operator bool() const {
+  operator bool() const {
     return IsValid();
   }
 
  private:
   HCERTSTORE store_handle_;
+
+  CertificateStore(const CertificateStore&) = delete;
+  CertificateStore& operator=(const CertificateStore&) = delete;
 };
 
 #endif  // JUNO_MISC_CERTIFICATE_STORE_H_

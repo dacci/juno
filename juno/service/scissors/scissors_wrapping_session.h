@@ -11,11 +11,11 @@
 
 class ScissorsUnwrappingSession;
 
-class ScissorsWrappingSession
-    : public Scissors::UdpSession,
-      private Channel::Listener,
-      private madoka::net::AsyncSocket::Listener,
-      private TimerService::Callback {
+class ScissorsWrappingSession : public Scissors::UdpSession,
+                                private Channel::Listener,
+                                private SocketChannel::Listener,
+                                private madoka::net::AsyncSocket::Listener,
+                                private TimerService::Callback {
  public:
   typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
 
@@ -45,20 +45,21 @@ class ScissorsWrappingSession
 
   void OnReceived(const Service::DatagramPtr& datagram) override;
 
-  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
-                   const addrinfo* end_point) override;
+  void OnConnected(SocketChannel* socket, HRESULT result) override;
   void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
                   void* buffer, int length, int flags) override;
+  void OnClosed(SocketChannel* /*channel*/, HRESULT /*result*/) override {}
 
   void OnRead(Channel* channel, HRESULT result, void* buffer,
               int length) override;
   void OnWritten(Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
+  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
+                   const addrinfo* end_point) override {}
   void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
                       void* buffer, int length, int flags,
-                      const sockaddr* address,
-                      int address_length) override {}
+                      const sockaddr* address, int address_length) override {}
   void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
               int length) override {}
   void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
@@ -73,6 +74,9 @@ class ScissorsWrappingSession
   sockaddr_storage source_address_;
   int source_address_length_;
   char buffer_[kLengthOffset + kDatagramSize];
+
+  ScissorsWrappingSession(const ScissorsWrappingSession&) = delete;
+  ScissorsWrappingSession& operator=(const ScissorsWrappingSession&) = delete;
 };
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_WRAPPING_SESSION_H_

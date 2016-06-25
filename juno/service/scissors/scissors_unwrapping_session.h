@@ -50,7 +50,7 @@ class ScissorsUnwrappingSession
                 int address_length) override;
 
   void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
-                           const addrinfo* end_point) override {}
+                   const addrinfo* end_point) override {}
   void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
                   void* buffer, int length, int flags) override {}
   void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,

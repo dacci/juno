@@ -16,6 +16,7 @@
 #include <utility>
 #include <vector>
 
+#include "net/socket_channel.h"
 #include "net/socket_resolver.h"
 #include "service/service.h"
 
@@ -23,7 +24,7 @@ class SchannelCredential;
 class ScissorsConfig;
 class ServiceConfig;
 
-class Scissors : public Service, private madoka::net::AsyncSocket::Listener {
+class Scissors : public Service, private SocketChannel::Listener {
  public:
   typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
 
@@ -57,10 +58,9 @@ class Scissors : public Service, private madoka::net::AsyncSocket::Listener {
 
   AsyncSocketPtr CreateSocket();
 
-  ChannelPtr CreateChannel(
-      const std::shared_ptr<madoka::net::AsyncSocket>& socket);
-  void ConnectSocket(madoka::net::AsyncSocket* socket,
-                     madoka::net::AsyncSocket::Listener* listener);
+  ChannelPtr CreateChannel(const ChannelPtr& channel);
+  HRESULT ConnectSocket(SocketChannel* channel,
+                        SocketChannel::Listener* listener);
 
   ScissorsConfig* config() const {
     return config_.get();
@@ -93,19 +93,9 @@ class Scissors : public Service, private madoka::net::AsyncSocket::Listener {
   void OnAccepted(const ChannelPtr& client) override;
   void OnReceivedFrom(const DatagramPtr& datagram) override;
   void OnError(DWORD error) override;
-  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
-                   const addrinfo* end_point) override;
 
-  void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
-                  void* buffer, int length, int flags) override {}
-  void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
-                      void* buffer, int length, int flags,
-                      const sockaddr* address, int address_length) override {}
-  void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-              int length) override {}
-  void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-                int length, const sockaddr* address,
-                int address_length) override {}
+  void OnConnected(SocketChannel* socket, HRESULT result) override;
+  void OnClosed(SocketChannel* /*channel*/, HRESULT /*result*/) override {}
 
   bool stopped_;
   std::shared_ptr<ScissorsConfig> config_;
@@ -113,8 +103,7 @@ class Scissors : public Service, private madoka::net::AsyncSocket::Listener {
   base::Lock lock_;
 
   SocketResolver resolver_;
-  std::map<madoka::net::AsyncSocket*, madoka::net::AsyncSocket::Listener*>
-      connecting_;
+  std::map<SocketChannel*, SocketChannel::Listener*> connecting_;
   base::ConditionVariable not_connecting_;
 
   std::vector<std::unique_ptr<Session>> sessions_;

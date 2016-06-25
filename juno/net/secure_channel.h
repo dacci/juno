@@ -1,0 +1,96 @@
+// Copyright (c) 2016 dacci.org
+
+#ifndef JUNO_NET_SECURE_CHANNEL_H_
+#define JUNO_NET_SECURE_CHANNEL_H_
+
+#pragma warning(push, 3)
+#pragma warning(disable : 4244)
+#include <base/atomic_ref_count.h>
+#include <base/synchronization/condition_variable.h>
+#include <base/synchronization/lock.h>
+#pragma warning(pop)
+
+#include <list>
+#include <map>
+#include <memory>
+#include <string>
+
+#include "misc/schannel/schannel_context.h"
+#include "net/channel.h"
+
+class SecureChannel : public Channel, private Channel::Listener {
+ public:
+  SecureChannel(SchannelCredential* credential,
+                const std::shared_ptr<Channel>& channel, bool inbound);
+  virtual ~SecureChannel();
+
+  void Close() override;
+  HRESULT ReadAsync(void* buffer, int length,
+                    Channel::Listener* listener) override;
+  HRESULT WriteAsync(const void* buffer, int length,
+                     Channel::Listener* listener) override;
+
+  SchannelContext* context() {
+    return &context_;
+  }
+
+  const SchannelContext* context() const {
+    return &context_;
+  }
+
+ private:
+  struct Request;
+
+  enum Status { kNegotiate, kData, kError, kClosing, kClosed };
+
+  static const size_t kBufferSize = 16 * 1024;
+
+  HRESULT CheckMessage() const;
+  HRESULT Negotiate();
+  HRESULT Decrypt();
+  HRESULT Encrypt(const void* input, int length, std::string* output);
+
+  HRESULT EnsureReading();
+  HRESULT WriteAsyncImpl(const std::string& message, Request* request);
+  HRESULT WriteAsyncImpl(std::unique_ptr<char[]>&& buffer, size_t length,
+                         Request* request);
+
+  void OnRead(Channel* channel, HRESULT result, void* raw_buffer,
+              int length) override;
+  void OnWritten(Channel* channel, HRESULT result, void* raw_buffer,
+                 int length) override;
+
+  static void CALLBACK OnRead(PTP_CALLBACK_INSTANCE callback, void* instance,
+                              PTP_WORK work);
+  void OnRead();
+
+  static void CALLBACK OnWrite(PTP_CALLBACK_INSTANCE callback, void* instance,
+                               PTP_WORK work);
+  void OnWrite();
+
+  SchannelContext context_;
+  std::shared_ptr<Channel> channel_;
+  const bool inbound_;
+
+  base::Lock lock_;
+  base::ConditionVariable deletable_;
+  base::AtomicRefCount ref_count_;
+
+  Status status_;
+  std::string message_;
+  SecPkgContext_StreamSizes stream_sizes_;
+
+  std::string decrypted_;
+  std::list<std::unique_ptr<Request>> pending_reads_;
+  base::AtomicRefCount reads_;
+  PTP_WORK read_work_;
+
+  std::list<std::unique_ptr<Request>> pending_writes_;
+  std::map<void*, std::unique_ptr<Request>> writes_;
+  PTP_WORK write_work_;
+
+  SecureChannel(const SecureChannel&) = delete;
+  SecureChannel& operator=(const SecureChannel&) = delete;
+};
+
+#endif  // JUNO_NET_SECURE_CHANNEL_H_

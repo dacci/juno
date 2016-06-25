@@ -7,9 +7,8 @@
 #include "misc/registry_key.h"
 #include "misc/schannel/schannel_credential.h"
 #include "net/datagram.h"
-#include "net/secure_socket_channel.h"
+#include "net/secure_channel.h"
 #include "net/socket_channel.h"
-#include "net/tunneling_service.h"
 #include "service/scissors/scissors_config.h"
 #include "service/scissors/scissors_tcp_session.h"
 #include "service/scissors/scissors_udp_session.h"
@@ -115,27 +114,31 @@ Scissors::AsyncSocketPtr Scissors::CreateSocket() {
   return socket;
 }
 
-Service::ChannelPtr Scissors::CreateChannel(
-    const std::shared_ptr<AsyncSocket>& socket) {
+Service::ChannelPtr Scissors::CreateChannel(const ChannelPtr& channel) {
+  if (channel == nullptr)
+    return channel;
+
   base::AutoLock guard(lock_);
 
-  if (config_->remote_ssl()) {
-    auto channel =
-        std::make_shared<SecureSocketChannel>(credential_.get(), socket, false);
-    if (channel != nullptr)
-      channel->context()->set_target_name(config_->remote_address());
+  if (!config_->remote_ssl())
     return channel;
-  } else {
-    return std::make_shared<SocketChannel>(socket);
-  }
+
+  auto secure_channel =
+      std::make_shared<SecureChannel>(credential_.get(), channel, false);
+  if (secure_channel == nullptr)
+    return channel;
+
+  secure_channel->context()->set_target_name(config_->remote_address());
+
+  return secure_channel;
 }
 
-void Scissors::ConnectSocket(AsyncSocket* socket,
-                             AsyncSocket::Listener* listener) {
+HRESULT Scissors::ConnectSocket(SocketChannel* channel,
+                                SocketChannel::Listener* listener) {
   base::AutoLock guard(lock_);
 
-  connecting_.insert({ socket, listener });
-  socket->ConnectAsync(resolver_.begin()->get(), this);
+  connecting_.insert({channel, listener});
+  return channel->ConnectAsync(resolver_.begin()->get(), this);
 }
 
 void CALLBACK Scissors::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
@@ -235,17 +238,11 @@ void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
     udp_session->OnReceived(datagram);
 }
 
-void Scissors::OnError(DWORD error) {
+void Scissors::OnError(DWORD /*error*/) {
 }
 
-void Scissors::OnConnected(AsyncSocket* socket, HRESULT result,
-                           const addrinfo* end_point) {
+void Scissors::OnConnected(SocketChannel* socket, HRESULT result) {
   if (FAILED(result)) {
-    if (result != E_ABORT && end_point->ai_next != nullptr) {
-      socket->ConnectAsync(end_point->ai_next, this);
-      return;
-    }
-
     LOG(ERROR) << "failed to connect to "
                 << config_->remote_address() << ":" << config_->remote_port()
                 << " (error: 0x" << std::hex << result << ")";
@@ -260,5 +257,5 @@ void Scissors::OnConnected(AsyncSocket* socket, HRESULT result,
 
   lock_.Release();
 
-  listener->OnConnected(socket, result, end_point);
+  listener->OnConnected(socket, result);
 }

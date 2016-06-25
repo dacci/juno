@@ -22,8 +22,6 @@
 #undef min
 #endif  // min
 
-using ::madoka::net::AsyncSocket;
-
 namespace {
 const std::string kConnection("Connection");
 const std::string kContentLength("Content-Length");
@@ -45,7 +43,6 @@ HttpProxySession::HttpProxySession(
       last_port_(-1),
       retry_(),
       client_(client),
-      remote_socket_(),
       close_remote_() {
   DLOG(INFO) << this << " session created";
 }
@@ -193,24 +190,14 @@ void HttpProxySession::DispatchRequest() {
     return;
   }
 
-  auto remote_socket = std::make_shared<AsyncSocket>();
-  if (remote_socket == nullptr) {
-    SetError(HTTP::INTERNAL_SERVER_ERROR);
-    return;
-  }
-
-  remote_socket_ = remote_socket.get();
-
-  lock_.Release();
-  remote_ = std::make_shared<SocketChannel>(remote_socket);
-  lock_.Acquire();
+  remote_ = std::make_shared<SocketChannel>();
   if (remote_ == nullptr) {
     SetError(HTTP::INTERNAL_SERVER_ERROR);
     return;
   }
 
   state_ = Connecting;
-  remote_socket->ConnectAsync(resolver_.begin()->get(), this);
+  remote_->ConnectAsync(resolver_.begin()->get(), this);
 }
 
 void HttpProxySession::SendRequest() {
@@ -512,8 +499,8 @@ void HttpProxySession::SendError(HTTP::StatusCode status) {
 
 void HttpProxySession::SendToRemote(const void* buffer, int length) {
   if (status_code_ != 0) {
-    channel_util::FireEvent(this, ChannelEvent::Write, remote_.get(), 0, buffer,
-                            length);
+    channel_util::FireEvent(this, ChannelEvent::Write, remote_.get(), S_OK,
+                            buffer, length);
   } else {
     auto result = remote_->WriteAsync(buffer, length, this);
     if (FAILED(result)) {
@@ -584,21 +571,16 @@ void HttpProxySession::OnWritten(Channel* /*channel*/, HRESULT result,
   }
 }
 
-void HttpProxySession::OnReceived(AsyncSocket* socket, HRESULT result,
-                                  void* buffer, int length, int flags) {
+void HttpProxySession::OnClosed(SocketChannel* socket, HRESULT result) {
   base::AutoLock guard(lock_);
 
-  if (socket != remote_socket_)
+  if (socket != remote_.get())
     return;
 
-  if (FAILED(result) || length == 0) {
-    LOG(WARNING) << this << " socket disconnected";
+  LOG(WARNING) << this << " socket disconnected";
 
-    last_host_.clear();
-    last_port_ = -1;
-  } else {
-    socket->ReceiveAsync(peek_buffer_, sizeof(peek_buffer_), MSG_PEEK, this);
-  }
+  last_host_.clear();
+  last_port_ = -1;
 }
 
 void HttpProxySession::OnRequestReceived(HRESULT result, int length) {
@@ -615,23 +597,17 @@ void HttpProxySession::OnRequestReceived(HRESULT result, int length) {
   ProcessRequest();
 }
 
-void HttpProxySession::OnConnected(AsyncSocket* socket, HRESULT result,
-                                   const addrinfo* end_point) {
+void HttpProxySession::OnConnected(SocketChannel* socket, HRESULT result) {
   base::AutoLock guard(lock_);
 
   if (FAILED(result)) {
-    if (result != E_ABORT && end_point->ai_next != nullptr) {
-      socket->ConnectAsync(end_point->ai_next, this);
-    } else {
-      LOG(ERROR) << this << " failed to connect: 0x" << std::hex << result;
-      SendError(HTTP::BAD_GATEWAY);
-    }
-
+    LOG(ERROR) << this << " failed to connect: 0x" << std::hex << result;
+    SendError(HTTP::BAD_GATEWAY);
     return;
   }
 
   if (!tunnel_)
-    socket->ReceiveAsync(peek_buffer_, sizeof(peek_buffer_), MSG_PEEK, this);
+    socket->MonitorConnection(this);
 
   if (tunnel_ && !config_->use_remote_proxy()) {
     if (TunnelingService::Bind(client_, remote_)) {

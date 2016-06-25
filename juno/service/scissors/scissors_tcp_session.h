@@ -5,8 +5,8 @@
 
 #include "service/scissors/scissors.h"
 
-class ScissorsTcpSession
-    : public Scissors::Session , private madoka::net::AsyncSocket::Listener {
+class ScissorsTcpSession : public Scissors::Session,
+                           private SocketChannel::Listener {
  public:
   explicit ScissorsTcpSession(Scissors* service,
                               const Service::ChannelPtr& source);
@@ -15,25 +15,17 @@ class ScissorsTcpSession
   bool Start() override;
   void Stop() override;
 
-  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
-                   const addrinfo* end_point) override;
-
-  void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
-                  void* buffer, int length, int flags) override {}
-  void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
-                      void* buffer, int length, int flags,
-                      const sockaddr* address, int address_length) override {}
-  void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-              int length) override {}
-  void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-                int length, const sockaddr* address,
-                int address_length) override {}
+  void OnConnected(SocketChannel* channel, HRESULT result) override;
+  void OnClosed(SocketChannel* /*channel*/, HRESULT /*result*/) override {}
 
  private:
   static const size_t kBufferSize = 8192;
 
   Service::ChannelPtr source_;
   Service::ChannelPtr sink_;
+
+  ScissorsTcpSession(const ScissorsTcpSession&) = delete;
+  ScissorsTcpSession& operator=(const ScissorsTcpSession&) = delete;
 };
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_TCP_SESSION_H_

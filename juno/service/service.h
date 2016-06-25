@@ -3,8 +3,6 @@
 #ifndef JUNO_SERVICE_SERVICE_H_
 #define JUNO_SERVICE_SERVICE_H_
 
-#include <madoka/net/async_socket.h>
-
 #include <memory>
 
 #include "service/service_config.h"

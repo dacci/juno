@@ -3,8 +3,6 @@
 #ifndef JUNO_NET_TCP_SERVER_H_
 #define JUNO_NET_TCP_SERVER_H_
 
-#include <madoka/net/async_server_socket.h>
-
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
 
@@ -12,18 +10,19 @@
 #include <utility>
 #include <vector>
 
-#include "net/channel.h"
+#include "net/async_server_socket.h"
 #include "net/server.h"
 #include "net/socket_resolver.h"
 #include "service/service.h"
 
-class TcpServer
-    : public Server, private madoka::net::AsyncServerSocket::Listener {
+class TcpServer : public Server, private AsyncServerSocket::Listener {
  public:
-  class ChannelFactory {
+  class __declspec(novtable) ChannelCustomizer {
    public:
-    virtual Service::ChannelPtr CreateChannel(
-        const std::shared_ptr<madoka::net::AsyncSocket>& socket) = 0;
+    virtual ~ChannelCustomizer() {}
+
+    virtual Service::ChannelPtr Customize(
+        const Service::ChannelPtr& channel) = 0;
   };
 
   TcpServer();
@@ -33,32 +32,36 @@ class TcpServer
   bool Start() override;
   void Stop() override;
 
-  void SetChannelFactory(ChannelFactory* channel_factory);
+  void SetChannelCustomizer(ChannelCustomizer* customizer) {
+    base::AutoLock guard(lock_);
+    channel_customizer_ = customizer;
+  }
 
   void SetService(Service* service) override {
     service_ = service;
   }
 
  private:
-  typedef std::pair<TcpServer*, madoka::net::AsyncServerSocket*>
-      ServerSocketPair;
+  typedef std::pair<TcpServer*, AsyncServerSocket*> ServerSocketPair;
 
-  void DeleteServer(madoka::net::AsyncServerSocket* server);
+  void DeleteServer(AsyncServerSocket* server);
   static void CALLBACK DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
                                         void* param);
-  void DeleteServerImpl(madoka::net::AsyncServerSocket* server);
+  void DeleteServerImpl(AsyncServerSocket* server);
 
-  void OnAccepted(
-    madoka::net::AsyncServerSocket* server, HRESULT result,
-    madoka::net::AsyncServerSocket::Context* context) override;
+  void OnAccepted(AsyncServerSocket* server, HRESULT result,
+                  AsyncServerSocket::Context* context) override;
 
-  ChannelFactory* channel_factory_;
+  ChannelCustomizer* channel_customizer_;
   SocketResolver resolver_;
-  std::vector<std::unique_ptr<madoka::net::AsyncServerSocket>> servers_;
+  std::vector<std::unique_ptr<AsyncServerSocket>> servers_;
   Service* service_;
 
   base::Lock lock_;
   base::ConditionVariable empty_;
+
+  TcpServer(const TcpServer&) = delete;
+  TcpServer& operator=(const TcpServer&) = delete;
 };
 
 #endif  // JUNO_NET_TCP_SERVER_H_

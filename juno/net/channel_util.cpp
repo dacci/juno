@@ -4,6 +4,8 @@
 
 #include <assert.h>
 
+#include <windows.h>
+
 #include <memory>
 
 namespace {
@@ -12,20 +14,20 @@ typedef struct {
   Channel::Listener* listener;
   ChannelEvent event;
   Channel* channel;
-  DWORD error;
+  HRESULT result;
   void* buffer;
   int length;
 } EventData;
 
 void FireEventImpl(Channel::Listener* listener, ChannelEvent event,
-                   Channel* channel, DWORD error, void* buffer, int length) {
+                   Channel* channel, HRESULT result, void* buffer, int length) {
   switch (event) {
     case Read:
-      listener->OnRead(channel, error, buffer, length);
+      listener->OnRead(channel, result, buffer, length);
       break;
 
     case Write:
-      listener->OnWritten(channel, error, buffer, length);
+      listener->OnWritten(channel, result, buffer, length);
       break;
 
     default:
@@ -37,7 +39,7 @@ void CALLBACK FireEventImpl(PTP_CALLBACK_INSTANCE instance, void* param) {
   auto event_data = static_cast<EventData*>(param);
 
   FireEventImpl(event_data->listener, event_data->event, event_data->channel,
-                event_data->error, event_data->buffer, event_data->length);
+                event_data->result, event_data->buffer, event_data->length);
 
   delete event_data;
 }
@@ -47,10 +49,10 @@ void CALLBACK FireEventImpl(PTP_CALLBACK_INSTANCE instance, void* param) {
 namespace channel_util {
 
 void FireEvent(Channel::Listener* listener, ChannelEvent event,
-               Channel* channel, DWORD error, const void* buffer, int length) {
-  HRESULT result = S_OK;
+               Channel* channel, HRESULT result, const void* buffer,
+               int length) {
   std::unique_ptr<EventData> event_data(new EventData{
-      listener, event, channel, error, const_cast<void*>(buffer), length });
+      listener, event, channel, result, const_cast<void*>(buffer), length});
 
   if (event_data == nullptr)
     result = E_OUTOFMEMORY;
@@ -61,7 +63,7 @@ void FireEvent(Channel::Listener* listener, ChannelEvent event,
   if (SUCCEEDED(result))
     event_data.release();
   else
-    FireEventImpl(listener, event, channel, error, const_cast<void*>(buffer),
+    FireEventImpl(listener, event, channel, result, const_cast<void*>(buffer),
                   length);
 }
 

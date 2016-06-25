@@ -4,8 +4,6 @@
 
 #include "service/socks/socks_proxy_session.h"
 
-using ::madoka::net::AsyncSocket;
-
 SocksProxy::SocksProxy() : empty_(&lock_), stopped_() {
 }
 

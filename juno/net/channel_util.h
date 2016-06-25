@@ -14,7 +14,8 @@ enum ChannelEvent {
 namespace channel_util {
 
 void FireEvent(Channel::Listener* listener, ChannelEvent event,
-               Channel* channel, DWORD error, const void* buffer, int length);
+               Channel* channel, HRESULT result, const void* buffer,
+               int length);
 
 }  // namespace channel_util
 

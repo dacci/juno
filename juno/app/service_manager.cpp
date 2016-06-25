@@ -12,7 +12,7 @@
 
 #include "misc/certificate_store.h"
 #include "misc/registry_key-inl.h"
-#include "net/secure_socket_channel.h"
+#include "net/secure_channel.h"
 #include "net/tcp_server.h"
 #include "net/udp_server.h"
 #include "service/service.h"
@@ -32,18 +32,17 @@ const char kBindValueName[] = "Bind";
 const char kTypeValueName[] = "Type";
 const char kCertificateValueName[] = "Certificate";
 
-class SecureChannelFactory : public TcpServer::ChannelFactory {
+class SecureChannelCustomizer : public TcpServer::ChannelCustomizer {
  public:
-  Service::ChannelPtr CreateChannel(
-      const std::shared_ptr<madoka::net::AsyncSocket>& socket) {
-    return std::make_shared<SecureSocketChannel>(&credential_, socket, true);
+  Service::ChannelPtr Customize(const Service::ChannelPtr& channel) override {
+    return std::make_shared<SecureChannel>(&credential_, channel, true);
   }
 
   SchannelCredential credential_;
 };
 
 CertificateStore certificate_store(L"MY");
-std::vector<std::unique_ptr<SecureChannelFactory>> channel_factories;
+std::vector<std::unique_ptr<SecureChannelCustomizer>> channel_customizers;
 
 }  // namespace
 
@@ -152,7 +151,7 @@ void ServiceManager::StopServers() {
     pair.second->Stop();
   servers_.clear();
 
-  channel_factories.clear();
+  channel_customizers.clear();
 }
 
 ServiceProviderPtr ServiceManager::GetProvider(const std::string& name) const {
@@ -403,7 +402,7 @@ bool ServiceManager::CreateServer(const std::string& name) {
       break;
 
     case ServerConfig::TLS: {
-      auto factory = std::make_unique<SecureChannelFactory>();
+      auto factory = std::make_unique<SecureChannelCustomizer>();
       if (factory == nullptr)
         break;
 
@@ -433,9 +432,9 @@ bool ServiceManager::CreateServer(const std::string& name) {
         break;
 
       TcpServer* tcp_server = static_cast<TcpServer*>(server.get());
-      tcp_server->SetChannelFactory(factory.get());
+      tcp_server->SetChannelCustomizer(factory.get());
 
-      channel_factories.push_back(std::move(factory));
+      channel_customizers.push_back(std::move(factory));
 
       break;
     }
