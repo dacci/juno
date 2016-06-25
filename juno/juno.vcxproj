@@ -91,12 +91,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_WTL_NO_CSTRING;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>4018;4244;4267</DisableSpecificWarnings>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>build/precompile.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>build/precompile.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -118,12 +116,10 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_WTL_NO_CSTRING;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>4018;4244;4267</DisableSpecificWarnings>
-      <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>build/precompile.h</PrecompiledHeaderFile>
-      <ForcedIncludeFiles>build/precompile.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -147,9 +143,10 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_WTL_NO_CSTRING;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>4018;4244;4267</DisableSpecificWarnings>
+      <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -171,9 +168,10 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_WTL_NO_CSTRING;WIN32;NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_WTL_NO_CSTRING;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <DisableSpecificWarnings>4018;4244;4267</DisableSpecificWarnings>
+      <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -207,10 +205,6 @@
     <ClCompile Include="app\constants.cpp" />
     <ClCompile Include="app\juno.cpp" />
     <ClCompile Include="app\service_manager.cpp" />
-    <ClCompile Include="build\precompile.cpp">
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
-      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
-    </ClCompile>
     <ClCompile Include="misc\registry_key.cpp" />
     <ClCompile Include="misc\timer_service.cpp" />
     <ClCompile Include="net\async_server_socket.cpp" />
@@ -258,7 +252,6 @@
     <ClInclude Include="app\juno.h" />
     <ClInclude Include="app\server_config.h" />
     <ClInclude Include="app\service_manager.h" />
-    <ClInclude Include="build\precompile.h" />
     <ClInclude Include="misc\certificate_store.h" />
     <ClInclude Include="misc\registry_key-inl.h" />
     <ClInclude Include="misc\registry_key.h" />
