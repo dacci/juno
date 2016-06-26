@@ -6,11 +6,7 @@
 
 #include <string>
 
-HttpResponse::HttpResponse() {
-}
-
-HttpResponse::~HttpResponse() {
-}
+HttpResponse::HttpResponse() : minor_version_(0), status_(0) {}
 
 int HttpResponse::Parse(const char* data, size_t length) {
   int minor_version;
@@ -18,11 +14,11 @@ int HttpResponse::Parse(const char* data, size_t length) {
   const char* message;
   size_t message_length;
   phr_header headers[kMaxHeaders];
-  size_t header_count = kMaxHeaders;
+  auto header_count = kMaxHeaders;
 
-  int result = ::phr_parse_response(data, length, &minor_version, &status,
-                                    &message, &message_length,
-                                    headers, &header_count, 0);
+  auto result =
+      phr_parse_response(data, length, &minor_version, &status, &message,
+                         &message_length, headers, &header_count, 0);
   if (result > 0) {
     Clear();
 
@@ -45,7 +41,7 @@ void HttpResponse::Clear() {
 
 void HttpResponse::Serialize(std::string* output) {
   char status[14];
-  ::sprintf_s(status, "HTTP/1.%d %d ", minor_version_, status_);
+  sprintf_s(status, "HTTP/1.%d %d ", minor_version_, status_);
 
   output->append(status).append(message_).append("\x0D\x0A");
   SerializeHeaders(output);

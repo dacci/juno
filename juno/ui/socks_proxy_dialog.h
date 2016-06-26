@@ -4,6 +4,7 @@
 #define JUNO_UI_SOCKS_PROXY_DIALOG_H_
 
 #include <atlbase.h>
+#include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
@@ -15,17 +16,12 @@
 
 class ServiceConfig;
 
-class SocksProxyDialog
-    : public CDialogImpl<SocksProxyDialog>,
-      public CWinDataExchange<SocksProxyDialog> {
+class SocksProxyDialog : public CDialogImpl<SocksProxyDialog>,
+                         public CWinDataExchange<SocksProxyDialog> {
  public:
   static const UINT IDD = IDD_SOCKS_PROXY;
 
   explicit SocksProxyDialog(ServiceConfig* config);
-  ~SocksProxyDialog();
-
-  BEGIN_DDX_MAP(SocksProxyDialog)
-  END_DDX_MAP()
 
   BEGIN_MSG_MAP(SocksProxyDialog)
     MSG_WM_INITDIALOG(OnInitDialog)
@@ -34,6 +30,9 @@ class SocksProxyDialog
     COMMAND_ID_HANDLER_EX(IDCANCEL, OnCancel)
   END_MSG_MAP()
 
+  BEGIN_DDX_MAP(SocksProxyDialog)
+  END_DDX_MAP()
+
  private:
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
@@ -41,6 +40,9 @@ class SocksProxyDialog
   void OnCancel(UINT notify_code, int id, CWindow control);
 
   ServiceConfig* config_;
+
+  SocksProxyDialog(const SocksProxyDialog&) = delete;
+  SocksProxyDialog& operator=(const SocksProxyDialog&) = delete;
 };
 
 #endif  // JUNO_UI_SOCKS_PROXY_DIALOG_H_

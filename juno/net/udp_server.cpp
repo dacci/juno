@@ -9,8 +9,7 @@
 
 using ::madoka::net::AsyncSocket;
 
-UdpServer::UdpServer() : service_(), empty_(&lock_) {
-}
+UdpServer::UdpServer() : service_(), empty_(&lock_) {}
 
 UdpServer::~UdpServer() {
   Stop();
@@ -29,7 +28,7 @@ bool UdpServer::Setup(const char* address, int port) {
   if (FAILED(result))
     return false;
 
-  bool succeeded = false;
+  auto succeeded = false;
 
   for (auto& end_point : resolver_) {
     auto buffer = std::make_unique<char[]>(kBufferSize);
@@ -42,7 +41,7 @@ bool UdpServer::Setup(const char* address, int port) {
 
     if (server->Bind(end_point.get())) {
       succeeded = true;
-      buffers_.insert({ server.get(), std::move(buffer) });
+      buffers_.insert({server.get(), std::move(buffer)});
       servers_.push_back(std::move(server));
     }
   }
@@ -72,13 +71,13 @@ void UdpServer::Stop() {
     empty_.Wait();
 }
 
-void UdpServer::OnReceived(AsyncSocket* socket, HRESULT result,
-                           void* buffer, int length, int flags) {
+void UdpServer::OnReceived(AsyncSocket* socket, HRESULT /*result*/,
+                           void* /*buffer*/, int /*length*/, int /*flags*/) {
   delete socket;
 }
 
 void UdpServer::OnReceivedFrom(AsyncSocket* socket, HRESULT result,
-                               void* buffer, int length, int flags,
+                               void* buffer, int length, int /*flags*/,
                                const sockaddr* address, int address_length) {
   if (SUCCEEDED(result)) {
     do {
@@ -88,7 +87,7 @@ void UdpServer::OnReceivedFrom(AsyncSocket* socket, HRESULT result,
         break;
       }
 
-      datagram->data.reset(new char[length]);
+      datagram->data = std::make_unique<char[]>(length);
       if (datagram->data == nullptr) {
         result = E_OUTOFMEMORY;
         break;
@@ -119,7 +118,7 @@ void UdpServer::OnReceivedFrom(AsyncSocket* socket, HRESULT result,
 }
 
 void UdpServer::DeleteServer(AsyncSocket* server) {
-  ServerSocketPair* pair = new ServerSocketPair(this, server);
+  auto pair = new ServerSocketPair(this, server);
   if (pair == nullptr ||
       !TrySubmitThreadpoolCallback(DeleteServerImpl, pair, nullptr)) {
     delete pair;
@@ -127,9 +126,9 @@ void UdpServer::DeleteServer(AsyncSocket* server) {
   }
 }
 
-void CALLBACK UdpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
+void CALLBACK UdpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE /*instance*/,
                                           void* context) {
-  ServerSocketPair* pair = static_cast<ServerSocketPair*>(context);
+  auto pair = static_cast<ServerSocketPair*>(context);
   pair->first->DeleteServerImpl(pair->second);
   delete pair;
 }

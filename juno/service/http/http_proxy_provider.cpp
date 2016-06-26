@@ -8,9 +8,6 @@
 #include "service/http/http_proxy_config.h"
 #include "ui/http_proxy_dialog.h"
 
-HttpProxyProvider::~HttpProxyProvider() {
-}
-
 ServiceConfigPtr HttpProxyProvider::CreateConfig() {
   return std::make_shared<HttpProxyConfig>();
 }

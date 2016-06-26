@@ -25,7 +25,7 @@ bool TcpServer::Setup(const char* address, int port) {
   if (FAILED(result))
     return false;
 
-  bool succeeded = false;
+  auto succeeded = false;
 
   for (auto& end_point : resolver_) {
     auto server = std::make_unique<AsyncServerSocket>();
@@ -64,7 +64,7 @@ void TcpServer::Stop() {
 }
 
 void TcpServer::DeleteServer(AsyncServerSocket* server) {
-  ServerSocketPair* pair = new ServerSocketPair(this, server);
+  auto pair = new ServerSocketPair(this, server);
   if (pair == nullptr ||
       !TrySubmitThreadpoolCallback(DeleteServerImpl, pair, nullptr)) {
     delete pair;
@@ -72,9 +72,9 @@ void TcpServer::DeleteServer(AsyncServerSocket* server) {
   }
 }
 
-void CALLBACK TcpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
+void CALLBACK TcpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE /*instance*/,
                                           void* param) {
-  ServerSocketPair* pair = static_cast<ServerSocketPair*>(param);
+  auto pair = static_cast<ServerSocketPair*>(param);
   pair->first->DeleteServerImpl(pair->second);
   delete pair;
 }

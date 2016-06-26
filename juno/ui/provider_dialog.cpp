@@ -8,15 +8,13 @@
 #include "ui/preference_dialog.h"
 
 namespace {
+
 const std::string kEmptyString;
+
 }  // namespace
 
 ProviderDialog::ProviderDialog(PreferenceDialog* parent)
-    : parent_(parent), provider_index_(CB_ERR) {
-}
-
-ProviderDialog::~ProviderDialog() {
-}
+    : parent_(parent), provider_index_(CB_ERR) {}
 
 const std::string& ProviderDialog::GetProviderName() const {
   if (provider_index_ == CB_ERR)
@@ -25,7 +23,7 @@ const std::string& ProviderDialog::GetProviderName() const {
   return provider_names_.at(provider_index_);
 }
 
-BOOL ProviderDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
+BOOL ProviderDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   DoDataExchange();
 
   for (auto& provider : ServiceManager::GetInstance()->providers()) {
@@ -36,10 +34,11 @@ BOOL ProviderDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   return TRUE;
 }
 
-void ProviderDialog::OnOk(UINT notify_code, int id, CWindow control) {
+void ProviderDialog::OnOk(UINT /*notify_code*/, int /*id*/,
+                          CWindow /*control*/) {
   HideBalloonTip();
 
-  EDITBALLOONTIP balloon = { sizeof(balloon) };
+  EDITBALLOONTIP balloon{sizeof(balloon)};
   CStringW message;
 
   DoDataExchange(DDX_SAVE);
@@ -58,7 +57,7 @@ void ProviderDialog::OnOk(UINT notify_code, int id, CWindow control) {
   }
 
   name_.resize(::GetWindowTextLengthA(name_edit_));
-  GetWindowTextA(name_edit_, &name_[0], name_.size() + 1);
+  GetWindowTextA(name_edit_, &name_[0], static_cast<int>(name_.size() + 1));
 
   auto pair = parent_->service_configs_.find(name_);
   if (pair != parent_->service_configs_.end()) {
@@ -71,6 +70,7 @@ void ProviderDialog::OnOk(UINT notify_code, int id, CWindow control) {
   EndDialog(IDOK);
 }
 
-void ProviderDialog::OnCancel(UINT notify_code, int id, CWindow control) {
+void ProviderDialog::OnCancel(UINT /*notify_code*/, int /*id*/,
+                              CWindow /*control*/) {
   EndDialog(IDCANCEL);
 }

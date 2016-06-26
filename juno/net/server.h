@@ -5,7 +5,7 @@
 
 class Service;
 
-class Server {
+class __declspec(novtable) Server {
  public:
   virtual ~Server() {}
 

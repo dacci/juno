@@ -2,11 +2,8 @@
 
 #include "ui/preference_dialog.h"
 
-#include <wincrypt.h>
-
 #include <utility>
 
-#include "res/resource.h"
 #include "ui/servers_page.h"
 #include "ui/services_page.h"
 
@@ -22,10 +19,7 @@ PreferenceDialog::PreferenceDialog()
   AddPage(*new ServersPage(this, &server_configs_));
 }
 
-PreferenceDialog::~PreferenceDialog() {
-}
-
-void PreferenceDialog::OnShowWindow(BOOL show, UINT status) {
+void PreferenceDialog::OnShowWindow(BOOL show, UINT /*status*/) {
   SetMsgHandled(FALSE);
 
   if (show && !centered_) {

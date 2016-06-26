@@ -2,21 +2,19 @@
 
 #include "ui/socks_proxy_dialog.h"
 
-SocksProxyDialog::SocksProxyDialog(ServiceConfig* config) : config_(config) {
-}
+SocksProxyDialog::SocksProxyDialog(ServiceConfig* config) : config_(config) {}
 
-SocksProxyDialog::~SocksProxyDialog() {
-}
-
-BOOL SocksProxyDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
+BOOL SocksProxyDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   DoDataExchange();
   return TRUE;
 }
 
-void SocksProxyDialog::OnOk(UINT notify_code, int id, CWindow control) {
+void SocksProxyDialog::OnOk(UINT /*notify_code*/, int /*id*/,
+                            CWindow /*control*/) {
   EndDialog(IDOK);
 }
 
-void SocksProxyDialog::OnCancel(UINT notify_code, int id, CWindow control) {
+void SocksProxyDialog::OnCancel(UINT /*notify_code*/, int /*id*/,
+                                CWindow /*control*/) {
   EndDialog(IDCANCEL);
 }

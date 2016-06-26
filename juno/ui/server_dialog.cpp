@@ -14,11 +14,7 @@
 #include "ui/preference_dialog.h"
 
 ServerDialog::ServerDialog(PreferenceDialog* parent, ServerConfig* entry)
-    : parent_(parent), entry_(entry) {
-}
-
-ServerDialog::~ServerDialog() {
-}
+    : parent_(parent), entry_(entry), listen_(0), enabled_(TRUE) {}
 
 void ServerDialog::FillBindCombo() {
   bind_combo_.Clear();
@@ -26,11 +22,10 @@ void ServerDialog::FillBindCombo() {
   bind_combo_.AddString(_T("localhost"));
 
   ULONG size = 0;
-  ::GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, nullptr, &size);
+  GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, nullptr, &size);
 
-  IP_ADAPTER_ADDRESSES* addresses =
-      static_cast<IP_ADAPTER_ADDRESSES*>(::malloc(size));
-  ULONG error = ::GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, addresses, &size);
+  auto addresses = static_cast<IP_ADAPTER_ADDRESSES*>(malloc(size));
+  auto error = GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, addresses, &size);
   ATLASSERT(error == ERROR_SUCCESS);
   if (error != ERROR_SUCCESS)
     return;
@@ -40,11 +35,9 @@ void ServerDialog::FillBindCombo() {
          address = address->Next) {
       CString text;
       DWORD length = 48;
-      error = ::WSAAddressToString(address->Address.lpSockaddr,
-                                   address->Address.iSockaddrLength,
-                                   nullptr,
-                                   text.GetBuffer(length),
-                                   &length);
+      error = WSAAddressToString(address->Address.lpSockaddr,
+                                 address->Address.iSockaddrLength, nullptr,
+                                 text.GetBuffer(length), &length);
       ATLASSERT(error == 0);
       if (error != 0)
         continue;
@@ -54,7 +47,7 @@ void ServerDialog::FillBindCombo() {
     }
   }
 
-  ::free(addresses);
+  free(addresses);
 }
 
 void ServerDialog::FillServiceCombo() {
@@ -64,7 +57,7 @@ void ServerDialog::FillServiceCombo() {
     service_combo_.AddString(CString(service.first.c_str()));
 }
 
-BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
+BOOL ServerDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   bind_ = entry_->bind_.c_str();
   listen_ = entry_->listen_;
   enabled_ = entry_->enabled_;
@@ -101,7 +94,8 @@ BOOL ServerDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   return TRUE;
 }
 
-void ServerDialog::OnTypeChange(UINT notify_code, int id, CWindow control) {
+void ServerDialog::OnTypeChange(UINT /*notify_code*/, int /*id*/,
+                                CWindow /*control*/) {
   switch (type_combo_.GetCurSel() + 1) {
     case ServerConfig::TCP:
     case ServerConfig::UDP:
@@ -114,12 +108,12 @@ void ServerDialog::OnTypeChange(UINT notify_code, int id, CWindow control) {
   }
 }
 
-void ServerDialog::OnDetailSetting(UINT notify_code, int id, CWindow control) {
+void ServerDialog::OnDetailSetting(UINT /*notify_code*/, int /*id*/,
+                                   CWindow /*control*/) {
   switch (type_combo_.GetCurSel() + 1) {
     case ServerConfig::TLS: {
       CertificateStore store(L"MY");
-      PCCERT_CONTEXT cert =
-          store.SelectCertificate(m_hWnd, nullptr, nullptr, 0);
+      auto cert = store.SelectCertificate(m_hWnd, nullptr, nullptr, 0);
       if (cert == nullptr)
         break;
 
@@ -141,7 +135,7 @@ void ServerDialog::OnDetailSetting(UINT notify_code, int id, CWindow control) {
   }
 }
 
-void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
+void ServerDialog::OnOk(UINT /*notify_code*/, int /*id*/, CWindow /*control*/) {
   HideBalloonTip();
 
   DoDataExchange(DDX_SAVE);
@@ -155,7 +149,7 @@ void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
     CString text;
     text.LoadString(IDS_INVALID_PORT);
 
-    EDITBALLOONTIP balloon{ sizeof(balloon), nullptr, text };
+    EDITBALLOONTIP balloon{sizeof(balloon), nullptr, text};
     listen_edit_.ShowBalloonTip(&balloon);
     return;
   }
@@ -183,7 +177,7 @@ void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
 
   std::string temp;
   temp.resize(service_combo_.GetWindowTextLength());
-  GetWindowTextA(service_combo_, &temp[0], temp.size() + 1);
+  GetWindowTextA(service_combo_, &temp[0], static_cast<int>(temp.size() + 1));
   entry_->service_name_ = temp;
 
   entry_->listen_ = listen_;
@@ -193,6 +187,7 @@ void ServerDialog::OnOk(UINT notify_code, int id, CWindow control) {
   EndDialog(IDOK);
 }
 
-void ServerDialog::OnCancel(UINT notify_code, int id, CWindow control) {
+void ServerDialog::OnCancel(UINT /*notify_code*/, int /*id*/,
+                            CWindow /*control*/) {
   EndDialog(IDCANCEL);
 }

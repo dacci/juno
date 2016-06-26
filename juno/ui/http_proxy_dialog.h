@@ -4,6 +4,7 @@
 #define JUNO_UI_HTTP_PROXY_DIALOG_H_
 
 #include <atlbase.h>
+#include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
@@ -15,18 +16,29 @@
 
 #include "res/resource.h"
 #include "service/http/http_proxy_config.h"
-#include "ui/preference_dialog.h"
 
 class ServiceConfig;
 
-class HttpProxyDialog
-    : public CDialogImpl<HttpProxyDialog>,
-      public CWinDataExchange<HttpProxyDialog> {
+class HttpProxyDialog : public CDialogImpl<HttpProxyDialog>,
+                        public CWinDataExchange<HttpProxyDialog> {
  public:
   static const UINT IDD = IDD_HTTP_PROXY;
 
   explicit HttpProxyDialog(const ServiceConfigPtr& entry);
-  ~HttpProxyDialog();
+
+  BEGIN_MSG_MAP(HttpProxyDialog)
+    MSG_WM_INITDIALOG(OnInitDialog)
+
+    COMMAND_ID_HANDLER_EX(IDC_ADD_BUTTON, OnAddFilter)
+    COMMAND_ID_HANDLER_EX(IDC_EDIT_BUTTON, OnEditFilter)
+    COMMAND_ID_HANDLER_EX(IDC_DELETE_BUTTON, OnDeleteFilter)
+    COMMAND_ID_HANDLER_EX(ID_SCROLL_UP, OnScrollUp)
+    COMMAND_ID_HANDLER_EX(ID_SCROLL_DOWN, OnScrollDown)
+    COMMAND_ID_HANDLER_EX(IDOK, OnOk)
+    COMMAND_ID_HANDLER_EX(IDCANCEL, OnCancel)
+
+    NOTIFY_HANDLER_EX(IDC_FILTER_LIST, NM_DBLCLK, OnFilterListDoubleClicked)
+  END_MSG_MAP()
 
   BEGIN_DDX_MAP(HttpProxyDialog)
     DDX_CONTROL_HANDLE(IDC_USE_REMOTE_PROXY, use_remote_proxy_check_)
@@ -44,20 +56,6 @@ class HttpProxyDialog
     DDX_CONTROL_HANDLE(ID_SCROLL_UP, up_button_)
     DDX_CONTROL_HANDLE(ID_SCROLL_DOWN, down_button_)
   END_DDX_MAP()
-
-  BEGIN_MSG_MAP(HttpProxyDialog)
-    MSG_WM_INITDIALOG(OnInitDialog)
-
-    COMMAND_ID_HANDLER_EX(IDC_ADD_BUTTON, OnAddFilter)
-    COMMAND_ID_HANDLER_EX(IDC_EDIT_BUTTON, OnEditFilter)
-    COMMAND_ID_HANDLER_EX(IDC_DELETE_BUTTON, OnDeleteFilter)
-    COMMAND_ID_HANDLER_EX(ID_SCROLL_UP, OnScrollUp)
-    COMMAND_ID_HANDLER_EX(ID_SCROLL_DOWN, OnScrollDown)
-    COMMAND_ID_HANDLER_EX(IDOK, OnOk)
-    COMMAND_ID_HANDLER_EX(IDCANCEL, OnCancel)
-
-    NOTIFY_HANDLER_EX(IDC_FILTER_LIST, NM_DBLCLK, OnFilterListDoubleClicked)
-  END_MSG_MAP()
 
  private:
   void AddFilterItem(const HttpProxyConfig::HeaderFilter& filter,
@@ -93,6 +91,9 @@ class HttpProxyDialog
   CButton delete_button_;
   CButton up_button_;
   CButton down_button_;
+
+  HttpProxyDialog(const HttpProxyDialog&) = delete;
+  HttpProxyDialog& operator=(const HttpProxyDialog&) = delete;
 };
 
 #endif  // JUNO_UI_HTTP_PROXY_DIALOG_H_

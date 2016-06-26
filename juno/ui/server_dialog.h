@@ -17,14 +17,23 @@
 class PreferenceDialog;
 class ServerConfig;
 
-class ServerDialog
-    : public DialogImplEx<ServerDialog>,
-      public CWinDataExchange<ServerDialog> {
+class ServerDialog : public DialogImplEx<ServerDialog>,
+                     public CWinDataExchange<ServerDialog> {
  public:
   static const UINT IDD = IDD_SERVER;
 
   ServerDialog(PreferenceDialog* parent, ServerConfig* entry);
-  ~ServerDialog();
+
+  BEGIN_MSG_MAP(ServerDialog)
+    MSG_WM_INITDIALOG(OnInitDialog)
+
+    COMMAND_HANDLER_EX(IDC_PROTOCOL, CBN_SELCHANGE, OnTypeChange)
+    COMMAND_ID_HANDLER_EX(ID_FILE_PAGE_SETUP, OnDetailSetting)
+    COMMAND_ID_HANDLER_EX(IDOK, OnOk)
+    COMMAND_ID_HANDLER_EX(IDCANCEL, OnCancel)
+
+    CHAIN_MSG_MAP(DialogImplEx)
+  END_MSG_MAP()
 
   BEGIN_DDX_MAP(ServerDialog)
     DDX_TEXT(IDC_BIND, bind_)
@@ -37,17 +46,6 @@ class ServerDialog
     DDX_CONTROL_HANDLE(IDC_SERVICE, service_combo_)
     DDX_CHECK(IDC_ENABLE, enabled_)
   END_DDX_MAP()
-
-  BEGIN_MSG_MAP(ServerDialog)
-    MSG_WM_INITDIALOG(OnInitDialog)
-
-    COMMAND_HANDLER_EX(IDC_PROTOCOL, CBN_SELCHANGE, OnTypeChange)
-    COMMAND_ID_HANDLER_EX(ID_FILE_PAGE_SETUP, OnDetailSetting)
-    COMMAND_ID_HANDLER_EX(IDOK, OnOk)
-    COMMAND_ID_HANDLER_EX(IDCANCEL, OnCancel)
-
-    CHAIN_MSG_MAP(DialogImplEx)
-  END_MSG_MAP()
 
  private:
   void FillBindCombo();
@@ -72,6 +70,9 @@ class ServerDialog
   CButton detail_button_;
   CComboBox service_combo_;
   BOOL enabled_;
+
+  ServerDialog(const ServerDialog&) = delete;
+  ServerDialog& operator=(const ServerDialog&) = delete;
 };
 
 #endif  // JUNO_UI_SERVER_DIALOG_H_

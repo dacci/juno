@@ -12,17 +12,11 @@
 #include "ui/server_dialog.h"
 
 const wchar_t* kTypeNames[] = {
-  L"TCP",
-  L"UDP",
-  L"SSL/TLS",
+    L"TCP", L"UDP", L"SSL/TLS",
 };
 
 ServersPage::ServersPage(PreferenceDialog* parent, ServerConfigMap* configs)
-    : parent_(parent), configs_(configs), initialized_() {
-}
-
-ServersPage::~ServersPage() {
-}
+    : parent_(parent), configs_(configs), initialized_() {}
 
 void ServersPage::OnPageRelease() {
   delete this;
@@ -47,7 +41,7 @@ void ServersPage::AddServerItem(const ServerConfigPtr& config, int index) {
   server_list_.SetItemData(index, reinterpret_cast<DWORD_PTR>(config.get()));
 }
 
-BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
+BOOL ServersPage::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   DoDataExchange();
 
   CString caption;
@@ -82,8 +76,9 @@ BOOL ServersPage::OnInitDialog(CWindow focus, LPARAM init_param) {
   return TRUE;
 }
 
-void ServersPage::OnAddServer(UINT notify_code, int id, CWindow control) {
-  ServerConfigPtr config = std::make_shared<ServerConfig>();
+void ServersPage::OnAddServer(UINT /*notify_code*/, int /*id*/,
+                              CWindow /*control*/) {
+  auto config = std::make_shared<ServerConfig>();
   ServerDialog dialog(parent_, config.get());
   if (dialog.DoModal(m_hWnd) != IDOK)
     return;
@@ -93,8 +88,9 @@ void ServersPage::OnAddServer(UINT notify_code, int id, CWindow control) {
   server_list_.SelectItem(server_list_.GetItemCount());
 }
 
-void ServersPage::OnEditServer(UINT notify_code, int id, CWindow control) {
-  int index = server_list_.GetSelectedIndex();
+void ServersPage::OnEditServer(UINT /*notify_code*/, int /*id*/,
+                               CWindow /*control*/) {
+  auto index = server_list_.GetSelectedIndex();
   if (index == CB_ERR)
     return;
 
@@ -112,8 +108,9 @@ void ServersPage::OnEditServer(UINT notify_code, int id, CWindow control) {
   server_list_.SelectItem(index);
 }
 
-void ServersPage::OnDeleteServer(UINT notify_code, int id, CWindow control) {
-  int index = server_list_.GetSelectedIndex();
+void ServersPage::OnDeleteServer(UINT /*notify_code*/, int /*id*/,
+                                 CWindow /*control*/) {
+  auto index = server_list_.GetSelectedIndex();
   if (index == CB_ERR)
     return;
 
@@ -129,18 +126,17 @@ LRESULT ServersPage::OnServerListChanged(LPNMHDR header) {
   if (!initialized_)
     return 0;
 
-  NMLISTVIEW* notify = reinterpret_cast<NMLISTVIEW*>(header);
+  auto notify = reinterpret_cast<NMLISTVIEW*>(header);
 
   if (notify->uNewState & LVIS_STATEIMAGEMASK &&
       notify->uOldState & LVIS_STATEIMAGEMASK) {
-    auto config =
-        reinterpret_cast<ServerConfig*>(
-            server_list_.GetItemData(notify->iItem));
+    auto config = reinterpret_cast<ServerConfig*>(
+        server_list_.GetItemData(notify->iItem));
     if (config != nullptr)
       config->enabled_ = (notify->uNewState >> 12) - 1;
   }
 
-  UINT count = server_list_.GetSelectedCount();
+  auto count = server_list_.GetSelectedCount();
   edit_button_.EnableWindow(count > 0);
   delete_button_.EnableWindow(count > 0);
 
@@ -148,7 +144,7 @@ LRESULT ServersPage::OnServerListChanged(LPNMHDR header) {
 }
 
 LRESULT ServersPage::OnServerListDoubleClicked(LPNMHDR header) {
-  NMITEMACTIVATE* notify = reinterpret_cast<NMITEMACTIVATE*>(header);
+  auto notify = reinterpret_cast<NMITEMACTIVATE*>(header);
 
   if (notify->iItem < 0)
     return 0;

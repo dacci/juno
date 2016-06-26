@@ -39,6 +39,8 @@ class ScissorsConfig : public ServiceConfig {
   int remote_port_;
   bool remote_ssl_;
   bool remote_udp_;
+
+  ScissorsConfig& operator=(const ScissorsConfig&) = delete;
 };
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_CONFIG_H_

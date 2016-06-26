@@ -30,9 +30,9 @@ int64_t GetContentLength(const HttpHeaders& headers) {
 }
 
 int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size) {
-  char* start = const_cast<char*>(buffer.c_str());
-  char* end = start;
-  *chunk_size = ::_strtoi64(start, &end, 16);
+  auto start = const_cast<char*>(buffer.c_str());
+  auto end = start;
+  *chunk_size = _strtoi64(start, &end, 16);
 
   while (*end) {
     if (*end != '\x0D' && *end != '\x0A' && *end != ' ')
@@ -49,8 +49,8 @@ int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size) {
 
   ++end;
 
-  int64_t length = *chunk_size + (end - start);
-  if (buffer.size() < length)
+  auto length = *chunk_size + (end - start);
+  if (buffer.size() < static_cast<size_t>(length))
     return -2;
 
   end = start + length;
@@ -74,20 +74,20 @@ int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size) {
 }
 
 bool ProcessHopByHopHeaders(HttpHeaders* headers) {
-  bool has_close = false;
+  auto has_close = false;
 
   if (headers->HeaderExists(kConnection)) {
-    const std::string& connection = headers->GetHeader(kConnection);
+    auto& connection = headers->GetHeader(kConnection);
     size_t start = 0;
 
     while (true) {
-      size_t end = connection.find_first_of(',', start);
-      size_t length = std::string::npos;
+      auto end = connection.find_first_of(',', start);
+      auto length = std::string::npos;
       if (end != std::string::npos)
         length = end - start;
 
-      std::string token = connection.substr(start, length);
-      if (::_stricmp(token.c_str(), "close") == 0)
+      auto token = connection.substr(start, length);
+      if (_stricmp(token.c_str(), "close") == 0)
         has_close = true;
       else
         headers->RemoveHeader(token);

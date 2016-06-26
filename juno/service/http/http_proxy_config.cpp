@@ -35,8 +35,7 @@ HttpProxyConfig::HttpProxyConfig()
       remote_proxy_port_(0),
       auth_remote_proxy_(0),
       auth_digest_(false),
-      auth_basic_(false) {
-}
+      auth_basic_(false) {}
 
 HttpProxyConfig::HttpProxyConfig(const HttpProxyConfig& other)
     : ServiceConfig(other),
@@ -87,7 +86,7 @@ std::shared_ptr<HttpProxyConfig> HttpProxyConfig::Load(const RegistryKey& key) {
     auto buffer = new BYTE[length];
     key.QueryBinary(kRemoteProxyPassword, buffer, &length);
 
-    DATA_BLOB encrypted{ static_cast<DWORD>(length), buffer }, decrypted{};
+    DATA_BLOB encrypted{static_cast<DWORD>(length), buffer}, decrypted{};
     if (CryptUnprotectData(&encrypted, nullptr, nullptr, nullptr, nullptr, 0,
                            &decrypted)) {
       config->remote_proxy_password_.assign(
@@ -102,7 +101,7 @@ std::shared_ptr<HttpProxyConfig> HttpProxyConfig::Load(const RegistryKey& key) {
 
   RegistryKey filters_key;
   if (filters_key.Open(key, kHeaderFilters)) {
-    for (auto i = 0; ; ++i) {
+    for (auto i = 0;; ++i) {
       std::string name;
       if (!filters_key.EnumerateKey(i, &name))
         break;
@@ -136,11 +135,9 @@ bool HttpProxyConfig::Save(RegistryKey* key) {
   key->SetString(kRemoteProxyUser, remote_proxy_user_);
 
   if (!remote_proxy_password_.empty()) {
-    DATA_BLOB decrypted = {
-      remote_proxy_password_.size(),
-      reinterpret_cast<BYTE*>(&remote_proxy_password_[0])
-    };
-    DATA_BLOB encrypted = {};
+    DATA_BLOB decrypted{static_cast<DWORD>(remote_proxy_password_.size()),
+                        reinterpret_cast<BYTE*>(&remote_proxy_password_[0])};
+    DATA_BLOB encrypted{};
 
     if (CryptProtectData(&decrypted, nullptr, nullptr, nullptr, nullptr, 0,
                          &encrypted)) {
@@ -153,7 +150,7 @@ bool HttpProxyConfig::Save(RegistryKey* key) {
 
   RegistryKey filters_key;
   filters_key.Create(*key, kHeaderFilters);
-  int index = 0;
+  auto index = 0;
 
   char name[16];
 
@@ -211,7 +208,7 @@ void HttpProxyConfig::FilterHeaders(HttpHeaders* headers, bool request) const {
 }
 
 void HttpProxyConfig::ProcessAuthenticate(HttpResponse* response,
-                                    HttpRequest* request) {
+                                          HttpRequest* request) {
   base::AutoLock guard(lock_);
 
   DoProcessAuthenticate(response);
@@ -229,12 +226,13 @@ void HttpProxyConfig::SetCredential() {
 
   auto auth = remote_proxy_user_ + ':' + remote_proxy_password_;
 
-  DWORD buffer_size = (((auth.size() - 1) / 3) + 1) * 4;
+  auto buffer_size = static_cast<DWORD>(((auth.size() - 1) / 3 + 1) * 4);
   basic_credential_.resize(buffer_size);
-  buffer_size = basic_credential_.capacity();
+  buffer_size = static_cast<DWORD>(basic_credential_.capacity());
 
   CryptBinaryToStringA(reinterpret_cast<const BYTE*>(auth.c_str()),
-                       auth.size(), CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
+                       static_cast<DWORD>(auth.size()),
+                       CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
                        &basic_credential_[0], &buffer_size);
 
   basic_credential_.insert(0, "Basic ");

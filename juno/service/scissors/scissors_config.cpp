@@ -12,16 +12,14 @@ const char kRemoteUDP[] = "RemoteUDP";
 }  // namespace
 
 ScissorsConfig::ScissorsConfig()
-    : remote_port_(), remote_ssl_(), remote_udp_() {
-}
+    : remote_port_(), remote_ssl_(), remote_udp_() {}
 
 ScissorsConfig::ScissorsConfig(const ScissorsConfig& other)
     : ServiceConfig(other),
       remote_address_(other.remote_address_),
       remote_port_(other.remote_port_),
       remote_ssl_(other.remote_ssl_),
-      remote_udp_(other.remote_udp_) {
-}
+      remote_udp_(other.remote_udp_) {}
 
 std::shared_ptr<ScissorsConfig> ScissorsConfig::Load(const RegistryKey& key) {
   auto config = std::make_shared<ScissorsConfig>();

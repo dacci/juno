@@ -13,7 +13,7 @@
 #undef CreateService
 #endif
 
-class ServiceProvider {
+class __declspec(novtable) ServiceProvider {
  public:
   virtual ~ServiceProvider() {}
 

@@ -5,12 +5,10 @@
 #include <string>
 #include <utility>
 
-#include "misc/registry_key-inl.h"
 #include "service/http/http_proxy_config.h"
 #include "service/http/http_proxy_session.h"
 
-HttpProxy::HttpProxy() : empty_(&lock_), stopped_() {
-}
+HttpProxy::HttpProxy() : empty_(&lock_), stopped_() {}
 
 HttpProxy::~HttpProxy() {
   Stop();
@@ -59,14 +57,13 @@ void HttpProxy::OnAccepted(const ChannelPtr& client) {
     sessions_.push_back(std::move(session));
 }
 
-void HttpProxy::OnReceivedFrom(const DatagramPtr& datagram) {
+void HttpProxy::OnReceivedFrom(const DatagramPtr& /*datagram*/) {
   // Do nothing
 }
 
-void HttpProxy::OnError(DWORD error) {
-}
+void HttpProxy::OnError(DWORD /*error*/) {}
 
-void CALLBACK HttpProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
+void CALLBACK HttpProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE /*instance*/,
                                         void* param) {
   auto pair = static_cast<ServiceSessionPair*>(param);
   pair->first->EndSessionImpl(pair->second);

@@ -13,9 +13,8 @@
 class SocksProxySession : public SocketChannel::Listener,
                           public Channel::Listener {
  public:
-  explicit SocksProxySession(SocksProxy* proxy,
-                             const Service::ChannelPtr& client);
-  virtual ~SocksProxySession();
+  SocksProxySession(SocksProxy* proxy, const Service::ChannelPtr& client);
+  ~SocksProxySession();
 
   bool Start();
   void Stop();

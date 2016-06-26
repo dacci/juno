@@ -20,7 +20,7 @@ class ScissorsWrappingSession : public Scissors::UdpSession,
   typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
 
   explicit ScissorsWrappingSession(Scissors* service);
-  virtual ~ScissorsWrappingSession();
+  ~ScissorsWrappingSession();
 
   bool Start() override;
   void Stop() override;
@@ -55,16 +55,17 @@ class ScissorsWrappingSession : public Scissors::UdpSession,
   void OnWritten(Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
-  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
-                   const addrinfo* end_point) override {}
-  void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
-                      void* buffer, int length, int flags,
-                      const sockaddr* address, int address_length) override {}
-  void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-              int length) override {}
-  void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-                int length, const sockaddr* address,
-                int address_length) override {}
+  void OnConnected(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+                   const addrinfo* /*end_point*/) override {}
+  void OnReceivedFrom(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+                      void* /*buffer*/, int /*length*/, int /*flags*/,
+                      const sockaddr* /*address*/,
+                      int /*address_length*/) override {}
+  void OnSent(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+              void* /*buffer*/, int /*length*/) override {}
+  void OnSentTo(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+                void* /*buffer*/, int /*length*/, const sockaddr* /*address*/,
+                int /*address_length*/) override {}
 
   void OnTimeout() override;
 

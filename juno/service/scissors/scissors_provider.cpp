@@ -8,9 +8,6 @@
 #include "service/scissors/scissors_config.h"
 #include "ui/scissors_dialog.h"
 
-ScissorsProvider::~ScissorsProvider() {
-}
-
 ServiceConfigPtr ScissorsProvider::CreateConfig() {
   return std::make_shared<ScissorsConfig>();
 }

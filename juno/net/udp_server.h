@@ -3,10 +3,16 @@
 #ifndef JUNO_NET_UDP_SERVER_H_
 #define JUNO_NET_UDP_SERVER_H_
 
+#pragma warning(push)
+#pragma warning(disable : 4267)
 #include <madoka/net/async_socket.h>
+#pragma warning(pop)
 
+#pragma warning(push, 3)
+#pragma warning(disable : 4244)
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
+#pragma warning(pop)
 
 #include <map>
 #include <memory>
@@ -34,21 +40,20 @@ class UdpServer : public Server, public madoka::net::AsyncSocket::Listener {
                       void* buffer, int length, int flags,
                       const sockaddr* address, int address_length) override;
 
-  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
-                   const addrinfo* end_point) override {}
-  void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-              int length) override {}
-  void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-                int length, const sockaddr* address,
-                int address_length) override {}
+  void OnConnected(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+                   const addrinfo* /*end_point*/) override {}
+  void OnSent(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+              void* /*buffer*/, int /*length*/) override {}
+  void OnSentTo(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+                void* /*buffer*/, int /*length*/, const sockaddr* /*address*/,
+                int /*address_length*/) override {}
 
   void SetService(Service* service) override {
     service_ = service;
   }
 
  private:
-  typedef std::pair<UdpServer*, madoka::net::AsyncSocket*>
-      ServerSocketPair;
+  typedef std::pair<UdpServer*, madoka::net::AsyncSocket*> ServerSocketPair;
 
   static const int kBufferSize = 65536;
 
@@ -64,6 +69,9 @@ class UdpServer : public Server, public madoka::net::AsyncSocket::Listener {
 
   base::Lock lock_;
   base::ConditionVariable empty_;
+
+  UdpServer(const UdpServer&) = delete;
+  UdpServer& operator=(const UdpServer&) = delete;
 };
 
 #endif  // JUNO_NET_UDP_SERVER_H_

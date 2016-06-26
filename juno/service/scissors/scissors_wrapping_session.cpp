@@ -4,8 +4,6 @@
 
 #include <stdint.h>
 
-#include <madoka/net/async_socket.h>
-
 #include <base/logging.h>
 
 #include "net/datagram.h"
@@ -82,7 +80,7 @@ void ScissorsWrappingSession::OnReceived(const Service::DatagramPtr& datagram) {
              0);
 }
 
-void ScissorsWrappingSession::OnConnected(SocketChannel* socket,
+void ScissorsWrappingSession::OnConnected(SocketChannel* /*socket*/,
                                           HRESULT result) {
   if (FAILED(result)) {
     LOG(ERROR) << this << " failed to connect: 0x" << std::hex << result;
@@ -107,13 +105,14 @@ void ScissorsWrappingSession::OnConnected(SocketChannel* socket,
   service_->StartSession(std::move(pair));
 }
 
-void ScissorsWrappingSession::OnReceived(AsyncSocket* socket, HRESULT result,
-                                         void* buffer, int length, int flags) {
+void ScissorsWrappingSession::OnReceived(AsyncSocket* /*socket*/,
+                                         HRESULT result, void* buffer,
+                                         int length, int /*flags*/) {
   timer_->Stop();
 
   if (FAILED(result)) {
-    LOG(ERROR) << this << " failed to receive from the source: 0x"
-                       << std::hex << result;
+    LOG(ERROR) << this << " failed to receive from the source: 0x" << std::hex
+               << result;
     Stop();
     return;
   }
@@ -122,8 +121,8 @@ void ScissorsWrappingSession::OnReceived(AsyncSocket* socket, HRESULT result,
 
   memmove(buffer_ + kLengthOffset, buffer, length);
 
-  uint16_t* packet_length = reinterpret_cast<uint16_t*>(buffer_);
-  *packet_length = htons(length);
+  auto packet_length = reinterpret_cast<uint16_t*>(buffer_);
+  *packet_length = htons(static_cast<u_short>(length));
 
   result = sink_->WriteAsync(buffer_, kLengthOffset + length, this);
   if (FAILED(result)) {
@@ -132,13 +131,13 @@ void ScissorsWrappingSession::OnReceived(AsyncSocket* socket, HRESULT result,
   }
 }
 
-void ScissorsWrappingSession::OnRead(Channel* channel, HRESULT result,
-                                     void* buffer, int length) {
+void ScissorsWrappingSession::OnRead(Channel* /*channel*/, HRESULT /*result*/,
+                                     void* /*buffer*/, int /*length*/) {
   DCHECK(false);
 }
 
-void ScissorsWrappingSession::OnWritten(Channel* channel, HRESULT result,
-                                        void* buffer, int length) {
+void ScissorsWrappingSession::OnWritten(Channel* /*channel*/, HRESULT result,
+                                        void* /*buffer*/, int length) {
   if (SUCCEEDED(result) && length > 0) {
     timer_->Start(kTimeout, 0);
 

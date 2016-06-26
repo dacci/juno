@@ -3,7 +3,10 @@
 #ifndef JUNO_SERVICE_HTTP_HTTP_PROXY_CONFIG_H_
 #define JUNO_SERVICE_HTTP_HTTP_PROXY_CONFIG_H_
 
+#pragma warning(push, 3)
+#pragma warning(disable : 4244)
 #include <base/synchronization/lock.h>
+#pragma warning(pop)
 
 #include <string>
 #include <vector>
@@ -19,7 +22,13 @@ class HttpResponse;
 class HttpProxyConfig : public ServiceConfig {
  public:
   enum FilterAction {
-    Set, Append, Add, Unset, Merge, Edit, EditR,
+    Set,
+    Append,
+    Add,
+    Unset,
+    Merge,
+    Edit,
+    EditR,
   };
 
   struct HeaderFilter {
@@ -90,6 +99,8 @@ class HttpProxyConfig : public ServiceConfig {
   bool auth_basic_;
   HttpDigest digest_;
   std::string basic_credential_;
+
+  HttpProxyConfig& operator=(const HttpProxyConfig& other) = delete;
 };
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_PROXY_CONFIG_H_

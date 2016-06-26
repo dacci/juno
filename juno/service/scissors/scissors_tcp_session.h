@@ -8,9 +8,8 @@
 class ScissorsTcpSession : public Scissors::Session,
                            private SocketChannel::Listener {
  public:
-  explicit ScissorsTcpSession(Scissors* service,
-                              const Service::ChannelPtr& source);
-  virtual ~ScissorsTcpSession();
+  ScissorsTcpSession(Scissors* service, const Service::ChannelPtr& source);
+  ~ScissorsTcpSession();
 
   bool Start() override;
   void Stop() override;

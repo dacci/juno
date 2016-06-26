@@ -17,8 +17,7 @@ class ServerConfig {
     TLS,
   };
 
-  ServerConfig() : listen_(), type_(), enabled_(1) {
-  }
+  ServerConfig() : listen_(), type_(), enabled_(1) {}
 
   ServerConfig(const ServerConfig& other)
       : name_(other.name_),
@@ -27,8 +26,7 @@ class ServerConfig {
         type_(other.type_),
         service_name_(other.service_name_),
         enabled_(other.enabled_),
-        cert_hash_(other.cert_hash_) {
-  }
+        cert_hash_(other.cert_hash_) {}
 
   std::string name_;
   std::string bind_;
@@ -39,7 +37,7 @@ class ServerConfig {
   std::vector<uint8_t> cert_hash_;
 
  private:
-  ServerConfig& operator=(const ServerConfig&);
+  ServerConfig& operator=(const ServerConfig&) = delete;
 };
 
 typedef std::shared_ptr<ServerConfig> ServerConfigPtr;

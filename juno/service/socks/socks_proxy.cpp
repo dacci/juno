@@ -4,19 +4,9 @@
 
 #include "service/socks/socks_proxy_session.h"
 
-SocksProxy::SocksProxy() : empty_(&lock_), stopped_() {
-}
+SocksProxy::SocksProxy() : empty_(&lock_), stopped_() {}
 
-SocksProxy::~SocksProxy() {
-}
-
-bool SocksProxy::Setup(HKEY key) {
-  return true;
-}
-
-bool SocksProxy::UpdateConfig(const ServiceConfigPtr& config) {
-  return true;
-}
+SocksProxy::~SocksProxy() {}
 
 void SocksProxy::Stop() {
   base::AutoLock guard(lock_);
@@ -53,14 +43,7 @@ void SocksProxy::OnAccepted(const ChannelPtr& client) {
     sessions_.push_back(std::move(session));
 }
 
-void SocksProxy::OnReceivedFrom(const DatagramPtr& datagram) {
-  // Do nothing
-}
-
-void SocksProxy::OnError(DWORD error) {
-}
-
-void CALLBACK SocksProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
+void CALLBACK SocksProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE /*instance*/,
                                          void* param) {
   auto pair = static_cast<ServiceSessionPair*>(param);
   pair->first->EndSessionImpl(pair->second);

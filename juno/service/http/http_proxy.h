@@ -3,8 +3,11 @@
 #ifndef JUNO_SERVICE_HTTP_HTTP_PROXY_H_
 #define JUNO_SERVICE_HTTP_HTTP_PROXY_H_
 
+#pragma warning(push, 3)
+#pragma warning(disable : 4244)
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
+#pragma warning(pop)
 
 #include <memory>
 #include <string>
@@ -46,6 +49,9 @@ class HttpProxy : public Service {
   base::ConditionVariable empty_;
   bool stopped_;
   std::vector<std::unique_ptr<HttpProxySession>> sessions_;
+
+  HttpProxy(const HttpProxy&) = delete;
+  HttpProxy& operator=(const HttpProxy&) = delete;
 };
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_PROXY_H_

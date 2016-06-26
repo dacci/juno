@@ -14,7 +14,6 @@ class HttpResponse : public HttpHeaders {
   static const int kError = -1;
 
   HttpResponse();
-  virtual ~HttpResponse();
 
   int Parse(const char* data, size_t length);
   int Parse(const std::string& data) {
@@ -59,6 +58,9 @@ class HttpResponse : public HttpHeaders {
   int minor_version_;
   int status_;
   std::string message_;
+
+  HttpResponse(const HttpResponse&) = delete;
+  HttpResponse& operator=(const HttpResponse&) = delete;
 };
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_RESPONSE_H_

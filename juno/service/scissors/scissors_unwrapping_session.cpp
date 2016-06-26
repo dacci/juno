@@ -51,8 +51,8 @@ bool ScissorsUnwrappingSession::Start() {
 
   auto result = source_->ReadAsync(buffer_, sizeof(buffer_), this);
   if (FAILED(result)) {
-    LOG(ERROR) << this
-        << " failed to read from source: 0x" << std::hex << result;
+    LOG(ERROR) << this << " failed to read from source: 0x" << std::hex
+               << result;
     service_->EndSession(this);
   }
 
@@ -68,11 +68,11 @@ void ScissorsUnwrappingSession::Stop() {
 }
 
 void ScissorsUnwrappingSession::ProcessBuffer() {
-  if (received_.size() < packet_length_) {
+  if (static_cast<int>(received_.size()) < packet_length_) {
     auto result = source_->ReadAsync(buffer_, sizeof(buffer_), this);
     if (FAILED(result)) {
-      LOG(ERROR) << this
-          << " failed to read from source: 0x" << std::hex << result;
+      LOG(ERROR) << this << " failed to read from source: 0x" << std::hex
+                 << result;
       service_->EndSession(this);
     }
   } else if (sink_address_length_ > 0) {
@@ -84,22 +84,23 @@ void ScissorsUnwrappingSession::ProcessBuffer() {
   }
 }
 
-void ScissorsUnwrappingSession::OnRead(Channel* channel, HRESULT result,
+void ScissorsUnwrappingSession::OnRead(Channel* /*channel*/, HRESULT result,
                                        void* buffer, int length) {
   if (FAILED(result) || length == 0) {
-    LOG_IF(ERROR, FAILED(result)) << this
-        << " failed to receive from the source: 0x" << std::hex << result;
+    LOG_IF(ERROR, FAILED(result))
+        << this << " failed to receive from the source: 0x" << std::hex
+        << result;
     service_->EndSession(this);
     return;
   }
 
   DLOG(INFO) << this << " " << length << " bytes received from the source";
 
-  char* pointer = static_cast<char*>(buffer);
+  auto pointer = static_cast<char*>(buffer);
 
   if (packet_length_ == -1) {
     memmove(&packet_length_, pointer, 2);
-    packet_length_ = htons(packet_length_);
+    packet_length_ = htons(static_cast<u_short>(packet_length_));
 
     pointer += 2;
     length -= 2;
@@ -109,16 +110,17 @@ void ScissorsUnwrappingSession::OnRead(Channel* channel, HRESULT result,
   ProcessBuffer();
 }
 
-void ScissorsUnwrappingSession::OnWritten(Channel* channel, HRESULT result,
-                                          void* buffer, int length) {
+void ScissorsUnwrappingSession::OnWritten(Channel* /*channel*/,
+                                          HRESULT /*result*/, void* /*buffer*/,
+                                          int /*length*/) {
   DCHECK(false);
 }
 
-void ScissorsUnwrappingSession::OnSent(AsyncSocket* socket, HRESULT result,
-                                       void* buffer, int length) {
+void ScissorsUnwrappingSession::OnSent(AsyncSocket* /*socket*/, HRESULT result,
+                                       void* /*buffer*/, int length) {
   if (FAILED(result) || length == 0) {
-    LOG_IF(ERROR, FAILED(result))
-        << this << " failed to send to the sink: 0x" << std::hex << result;
+    LOG_IF(ERROR, FAILED(result)) << this << " failed to send to the sink: 0x"
+                                  << std::hex << result;
     service_->EndSession(this);
     return;
   }
@@ -131,8 +133,8 @@ void ScissorsUnwrappingSession::OnSent(AsyncSocket* socket, HRESULT result,
 
     result = source_->ReadAsync(buffer_, sizeof(buffer_), this);
     if (FAILED(result)) {
-      LOG(ERROR) << this
-          << " failed to read from source: 0x" << std::hex << result;
+      LOG(ERROR) << this << " failed to read from source: 0x" << std::hex
+                 << result;
       service_->EndSession(this);
     }
   } else {
@@ -140,8 +142,9 @@ void ScissorsUnwrappingSession::OnSent(AsyncSocket* socket, HRESULT result,
   }
 }
 
-void ScissorsUnwrappingSession::OnSentTo(
-    AsyncSocket* socket, HRESULT result, void* buffer, int length,
-    const sockaddr* address, int address_length) {
+void ScissorsUnwrappingSession::OnSentTo(AsyncSocket* socket, HRESULT result,
+                                         void* buffer, int length,
+                                         const sockaddr* /*address*/,
+                                         int /*address_length*/) {
   OnSent(socket, result, buffer, length);
 }

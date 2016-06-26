@@ -3,8 +3,11 @@
 #ifndef JUNO_SERVICE_SOCKS_SOCKS_PROXY_H_
 #define JUNO_SERVICE_SOCKS_SOCKS_PROXY_H_
 
+#pragma warning(push, 3)
+#pragma warning(disable : 4244)
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
+#pragma warning(pop)
 
 #include <memory>
 #include <utility>
@@ -18,16 +21,18 @@ class SocksProxySession;
 class SocksProxy : public Service {
  public:
   SocksProxy();
-  virtual ~SocksProxy();
+  ~SocksProxy();
 
-  bool Setup(HKEY key);
-  bool UpdateConfig(const ServiceConfigPtr& config) override;
+  bool UpdateConfig(const ServiceConfigPtr& /*config*/) override {
+    return true;
+  }
+
   void Stop() override;
   void EndSession(SocksProxySession* session);
 
   void OnAccepted(const ChannelPtr& client) override;
-  void OnReceivedFrom(const DatagramPtr& datagram) override;
-  void OnError(DWORD error) override;
+  void OnReceivedFrom(const DatagramPtr& /*datagram*/) override {}
+  void OnError(DWORD /*error*/) override {}
 
  private:
   typedef std::pair<SocksProxy*, SocksProxySession*> ServiceSessionPair;
@@ -41,9 +46,8 @@ class SocksProxy : public Service {
   std::vector<std::unique_ptr<SocksProxySession>> sessions_;
   bool stopped_;
 
-  // disallow copy and assign
-  SocksProxy(const SocksProxy&);
-  SocksProxy& operator=(const SocksProxy&);
+  SocksProxy(const SocksProxy&) = delete;
+  SocksProxy& operator=(const SocksProxy&) = delete;
 };
 
 #endif  // JUNO_SERVICE_SOCKS_SOCKS_PROXY_H_

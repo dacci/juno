@@ -25,6 +25,10 @@ class TunnelingService::Session : public Channel::Listener {
   ChannelPtr from_;
   ChannelPtr to_;
   char buffer_[65535];
+
+ private:
+  Session(const Session&) = delete;
+  Session& operator=(const Session&) = delete;
 };
 
 bool TunnelingService::Init() {
@@ -53,8 +57,7 @@ bool TunnelingService::Bind(const ChannelPtr& a, const ChannelPtr& b) {
   return instance_->BindSocket(a, b) && instance_->BindSocket(b, a);
 }
 
-TunnelingService::TunnelingService() : empty_(&lock_), stopped_() {
-}
+TunnelingService::TunnelingService() : empty_(&lock_), stopped_() {}
 
 TunnelingService::~TunnelingService() {
   base::AutoLock guard(lock_);
@@ -88,7 +91,7 @@ bool TunnelingService::BindSocket(const ChannelPtr& from,
 }
 
 void TunnelingService::EndSession(Session* session) {
-  ServiceSessionPair* pair = new ServiceSessionPair(this, session);
+  auto pair = new ServiceSessionPair(this, session);
   if (pair == nullptr ||
       !TrySubmitThreadpoolCallback(EndSessionImpl, pair, nullptr)) {
     delete pair;
@@ -96,9 +99,9 @@ void TunnelingService::EndSession(Session* session) {
   }
 }
 
-void CALLBACK TunnelingService::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
-                                               void* param) {
-  ServiceSessionPair* pair = static_cast<ServiceSessionPair*>(param);
+void CALLBACK TunnelingService::EndSessionImpl(
+    PTP_CALLBACK_INSTANCE /*instance*/, void* param) {
+  auto pair = static_cast<ServiceSessionPair*>(param);
   pair->first->EndSessionImpl(pair->second);
   delete param;
 }
@@ -121,10 +124,8 @@ void TunnelingService::EndSessionImpl(Session* session) {
 }
 
 TunnelingService::Session::Session(TunnelingService* service,
-                                   const ChannelPtr& from,
-                                   const ChannelPtr& to)
-    : service_(service), from_(from), to_(to) {
-}
+                                   const ChannelPtr& from, const ChannelPtr& to)
+    : service_(service), from_(from), to_(to) {}
 
 TunnelingService::Session::~Session() {
   from_->Close();
@@ -135,7 +136,7 @@ HRESULT TunnelingService::Session::Start() {
   return from_->ReadAsync(buffer_, sizeof(buffer_), this);
 }
 
-void TunnelingService::Session::OnRead(Channel* channel, HRESULT result,
+void TunnelingService::Session::OnRead(Channel* /*channel*/, HRESULT result,
                                        void* buffer, int length) {
   if (SUCCEEDED(result) && length > 0) {
     result = to_->WriteAsync(buffer, length, this);
@@ -146,8 +147,8 @@ void TunnelingService::Session::OnRead(Channel* channel, HRESULT result,
   service_->EndSession(this);
 }
 
-void TunnelingService::Session::OnWritten(Channel* channel, HRESULT result,
-                                          void* buffer, int length) {
+void TunnelingService::Session::OnWritten(Channel* /*channel*/, HRESULT result,
+                                          void* /*buffer*/, int length) {
   if (SUCCEEDED(result) && length > 0) {
     result = from_->ReadAsync(buffer_, sizeof(buffer_), this);
     if (SUCCEEDED(result))

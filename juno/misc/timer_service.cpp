@@ -4,8 +4,8 @@
 
 namespace {
 
-void CALLBACK TimerCallback(PTP_CALLBACK_INSTANCE instance, void* context,
-                            PTP_TIMER timer) {
+void CALLBACK TimerCallback(PTP_CALLBACK_INSTANCE /*instance*/, void* context,
+                            PTP_TIMER /*timer*/) {
   static_cast<TimerService::Callback*>(context)->OnTimeout();
 }
 
@@ -14,16 +14,18 @@ void CALLBACK TimerCallback(PTP_CALLBACK_INSTANCE instance, void* context,
 TimerService TimerService::default_instance_(nullptr);
 
 TimerService::TimerService(PTP_CALLBACK_ENVIRON environment)
-    : environment_(environment) {
-}
+    : environment_(environment) {}
 
 TimerService::TimerObject TimerService::Create(Callback* callback) {
-  PTP_TIMER timer = CreateThreadpoolTimer(TimerCallback, callback,
-                                          environment_);
+  auto timer = CreateThreadpoolTimer(TimerCallback, callback, environment_);
   if (timer == nullptr)
     return nullptr;
 
-  TimerObject timer_object(new Timer(timer, callback));
+  struct Wrapper : Timer {
+    Wrapper(PTP_TIMER timer, Callback* callback) : Timer(timer, callback) {}
+  };
+
+  auto timer_object = std::make_shared<Wrapper>(timer, callback);
   if (timer_object == nullptr)
     CloseThreadpoolTimer(timer);
 
@@ -56,5 +58,4 @@ bool TimerService::Timer::IsStarted() const {
 }
 
 TimerService::Timer::Timer(PTP_TIMER timer, Callback* callback)
-    : timer_(timer), callback_(callback) {
-}
+    : timer_(timer), callback_(callback) {}

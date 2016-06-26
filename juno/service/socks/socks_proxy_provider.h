@@ -6,21 +6,37 @@
 #include "service/service_config.h"
 #include "service/service_provider.h"
 
-class SocksProxyConfig : public ServiceConfig {
-};
+class SocksProxyConfig : public ServiceConfig {};
 
 class SocksProxyProvider : public ServiceProvider {
  public:
-  virtual ~SocksProxyProvider();
+  SocksProxyProvider() {}
 
-  ServiceConfigPtr CreateConfig() override;
-  ServiceConfigPtr LoadConfig(const RegistryKey& key) override;
-  bool SaveConfig(const ServiceConfigPtr& config, RegistryKey* key) override;
+  ServiceConfigPtr CreateConfig() override {
+    return std::make_shared<SocksProxyConfig>();
+  }
+
+  ServiceConfigPtr LoadConfig(const RegistryKey& /*key*/) override {
+    return CreateConfig();
+  }
+
+  bool SaveConfig(const ServiceConfigPtr& /*config*/,
+                  RegistryKey* /*key*/) override {
+    return true;
+  }
+
   ServiceConfigPtr CopyConfig(const ServiceConfigPtr& config) override;
 
   ServicePtr CreateService(const ServiceConfigPtr& config) override;
 
-  INT_PTR Configure(const ServiceConfigPtr& config, HWND parent) override;
+  INT_PTR Configure(const ServiceConfigPtr& /*config*/,
+                    HWND /*parent*/) override {
+    return IDOK;
+  }
+
+ private:
+  SocksProxyProvider(const SocksProxyProvider&) = delete;
+  SocksProxyProvider& operator=(const SocksProxyProvider&) = delete;
 };
 
 #endif  // JUNO_SERVICE_SOCKS_SOCKS_PROXY_PROVIDER_H_

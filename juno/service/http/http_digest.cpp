@@ -16,29 +16,29 @@ class CryptHash {
     Destroy();
   }
 
-  bool Hash(const void* data, DWORD length) {
+  bool Hash(const void* data, size_t length) {
     if (handle_ == NULL)
       return false;
 
-    return ::CryptHashData(handle_, static_cast<const BYTE*>(data), length,
-                           0) != FALSE;
+    return CryptHashData(handle_, static_cast<const BYTE*>(data),
+                         static_cast<DWORD>(length), 0) != FALSE;
   }
 
-  inline bool Hash(const char* string) {
-    return Hash(string, ::strlen(string));
+  bool Hash(const char* string) {
+    return Hash(string, strlen(string));
   }
 
-  inline bool Hash(const std::string& string) {
+  bool Hash(const std::string& string) {
     return Hash(string.c_str(), string.size());
   }
 
-  template<typename T>
-  inline bool Hash(const T& data) {
+  template <typename T>
+  bool Hash(const T& data) {
     return Hash(&data, sizeof(data));
   }
 
   const std::string& Complete() {
-    BOOL succeeded = FALSE;
+    BOOL succeeded;
 
     do {
       if (handle_ == NULL)
@@ -46,9 +46,9 @@ class CryptHash {
 
       DWORD hash_length = 0;
       DWORD length = sizeof(hash_length);
-      succeeded = ::CryptGetHashParam(handle_, HP_HASHSIZE,
-                                      reinterpret_cast<BYTE*>(&hash_length),
-                                      &length, 0);
+      succeeded =
+          CryptGetHashParam(handle_, HP_HASHSIZE,
+                            reinterpret_cast<BYTE*>(&hash_length), &length, 0);
       if (!succeeded)
         break;
 
@@ -56,18 +56,17 @@ class CryptHash {
       if (hash_data == nullptr)
         break;
 
-      succeeded = ::CryptGetHashParam(handle_, HP_HASHVAL, hash_data.get(),
-                                      &hash_length, 0);
+      succeeded = CryptGetHashParam(handle_, HP_HASHVAL, hash_data.get(),
+                                    &hash_length, 0);
       if (!succeeded)
         break;
 
       hash_.resize(hash_length * 2);
-      length = hash_.capacity();
+      length = static_cast<DWORD>(hash_.capacity());
 
-      succeeded = ::CryptBinaryToStringA(
+      succeeded = CryptBinaryToStringA(
           hash_data.get(), hash_length,
-          CRYPT_STRING_HEXRAW | CRYPT_STRING_NOCRLF,
-          &hash_[0], &length);
+          CRYPT_STRING_HEXRAW | CRYPT_STRING_NOCRLF, &hash_[0], &length);
       if (!succeeded) {
         hash_.clear();
         break;
@@ -82,12 +81,11 @@ class CryptHash {
  private:
   friend class CryptProvider;
 
-  explicit CryptHash(HCRYPTHASH handle) : handle_(handle) {
-  }
+  explicit CryptHash(HCRYPTHASH handle) : handle_(handle) {}
 
   void Destroy() {
     if (handle_ != NULL) {
-      ::CryptDestroyHash(handle_);
+      CryptDestroyHash(handle_);
       handle_ = NULL;
     }
   }
@@ -95,28 +93,32 @@ class CryptHash {
   HCRYPTHASH handle_;
   std::string hash_;
 
-  CryptHash(const CryptHash&);
-  CryptHash& operator=(const CryptHash&);
+  CryptHash(const CryptHash&) = delete;
+  CryptHash& operator=(const CryptHash&) = delete;
 };
 
 class CryptProvider {
  public:
   CryptProvider() : handle_(NULL) {
-    ::CryptAcquireContext(&handle_, nullptr, nullptr, PROV_RSA_FULL,
-                          CRYPT_VERIFYCONTEXT);
+    CryptAcquireContext(&handle_, nullptr, nullptr, PROV_RSA_FULL,
+                        CRYPT_VERIFYCONTEXT);
   }
 
   ~CryptProvider() {
     if (IsValid()) {
-      ::CryptReleaseContext(handle_, 0);
+      CryptReleaseContext(handle_, 0);
       handle_ = NULL;
     }
   }
 
   std::unique_ptr<CryptHash> CreateHash(ALG_ID algorithm) {
+    struct Wrapper : CryptHash {
+      explicit Wrapper(HCRYPTHASH handle) : CryptHash(handle) {}
+    };
+
     HCRYPTHASH hash = NULL;
-    if (::CryptCreateHash(handle_, algorithm, NULL, 0, &hash))
-      return std::unique_ptr<CryptHash>(new CryptHash(hash));
+    if (CryptCreateHash(handle_, algorithm, NULL, 0, &hash))
+      return std::make_unique<Wrapper>(hash);
     else
       return nullptr;
   }
@@ -124,7 +126,7 @@ class CryptProvider {
   std::unique_ptr<BYTE[]> GenerateRandom(DWORD length) {
     auto random = std::make_unique<BYTE[]>(length);
     if (random) {
-      BOOL succeeded = ::CryptGenRandom(handle_, length, random.get());
+      auto succeeded = CryptGenRandom(handle_, length, random.get());
       if (!succeeded)
         random.reset(nullptr);
     }
@@ -132,7 +134,7 @@ class CryptProvider {
     return random;
   }
 
-  inline bool IsValid() const {
+  bool IsValid() const {
     return handle_ != NULL;
   }
 
@@ -142,9 +144,9 @@ class CryptProvider {
 
 bool GetPair(const char* input, std::string* name, std::string* value,
              const char** endptr) {
-  const char* str = input;
-  bool starts_with_quote = false;
-  bool escape = false;
+  auto str = input;
+  auto starts_with_quote = false;
+  auto escape = false;
 
   while (*str && *str != '=')
     ++str;
@@ -159,7 +161,7 @@ bool GetPair(const char* input, std::string* name, std::string* value,
     starts_with_quote = true;
   }
 
-  for (bool loop = true; loop && *str; ++str) {
+  for (auto loop = true; loop && *str; ++str) {
     switch (*str) {
       case '\\':
         if (!escape) {
@@ -207,11 +209,11 @@ HttpDigest::HttpDigest() {
 }
 
 bool HttpDigest::Input(const std::string& input) {
-  const char* header = input.data();
-  if (::strncmp(header, "Digest", 6) != 0)
-    return false;
-  else
+  auto header = input.data();
+  if (strncmp(header, "Digest", 6) == 0)
     header += 6;
+  else
+    return false;
 
   Reset();
 
@@ -236,14 +238,14 @@ bool HttpDigest::Input(const std::string& input) {
     } else if (name.compare("opaque") == 0) {
       opaque_ = std::move(value);
     } else if (name.compare("qop") == 0) {
-      bool auth_found = false, auth_int_found = false;
+      auto auth_found = false, auth_int_found = false;
 
-      char* tok_buf;
-      char* token = strtok_s(&value[0], ",", &tok_buf);
+      char* tok_buf = nullptr;
+      auto token = strtok_s(&value[0], ",", &tok_buf);
       while (token != nullptr) {
-        if (::strcmp(token, "auth") == 0)
+        if (strcmp(token, "auth") == 0)
           auth_found = true;
-        else if (::strcmp(token, "auth-int") == 0)
+        else if (strcmp(token, "auth-int") == 0)
           auth_int_found = true;
 
         token = strtok_s(nullptr, ",", &tok_buf);
@@ -281,26 +283,25 @@ bool HttpDigest::Output(const std::string& method, const std::string& path,
   if (cnonce_.empty()) {
     SYSTEMTIME system_time;
     FILETIME file_time;
-    ::GetSystemTime(&system_time);
-    ::SystemTimeToFileTime(&system_time, &file_time);
+    GetSystemTime(&system_time);
+    SystemTimeToFileTime(&system_time, &file_time);
 
     auto random1 = crypt_provider.GenerateRandom(4);
     auto random2 = crypt_provider.GenerateRandom(4);
 
     std::string cnonce_buffer;
     cnonce_buffer.resize(32);
-    ::sprintf_s(&cnonce_buffer[0], cnonce_buffer.capacity(), "%08x%08x%08x%08x",
-                *reinterpret_cast<DWORD*>(random1.get()),
-                *reinterpret_cast<DWORD*>(random2.get()),
-                file_time.dwHighDateTime,
-                file_time.dwLowDateTime);
+    sprintf_s(&cnonce_buffer[0], cnonce_buffer.capacity(), "%08x%08x%08x%08x",
+              *reinterpret_cast<DWORD*>(random1.get()),
+              *reinterpret_cast<DWORD*>(random2.get()),
+              file_time.dwHighDateTime, file_time.dwLowDateTime);
 
     cnonce_.resize(44);
-    DWORD length = cnonce_.capacity();
-    ::CryptBinaryToStringA(reinterpret_cast<const BYTE*>(cnonce_buffer.data()),
-                           cnonce_buffer.size(),
-                           CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF,
-                           &cnonce_[0], &length);
+    auto length = static_cast<DWORD>(cnonce_.capacity());
+    CryptBinaryToStringA(reinterpret_cast<const BYTE*>(cnonce_buffer.data()),
+                         static_cast<DWORD>(cnonce_buffer.size()),
+                         CRYPT_STRING_BASE64 | CRYPT_STRING_NOCRLF, &cnonce_[0],
+                         &length);
     cnonce_.resize(length);
   }
 
@@ -347,7 +348,7 @@ bool HttpDigest::Output(const std::string& method, const std::string& path,
 
   if (!qop_.empty()) {
     char nc[9];
-    ::sprintf_s(nc, "%08x", nonce_count_);
+    sprintf_s(nc, "%08x", nonce_count_);
 
     hash->Hash(":");
     hash->Hash(nc);
@@ -361,18 +362,25 @@ bool HttpDigest::Output(const std::string& method, const std::string& path,
   hash->Hash(ha2);
 
   output->assign("Digest ")
-      .append("username=\"").append(username_)
-      .append("\", realm=\"").append(realm_)
-      .append("\", nonce=\"").append(nonce_)
-      .append("\", uri=\"").append(path);
+      .append("username=\"")
+      .append(username_)
+      .append("\", realm=\"")
+      .append(realm_)
+      .append("\", nonce=\"")
+      .append(nonce_)
+      .append("\", uri=\"")
+      .append(path);
 
   if (!qop_.empty()) {
     char nc[9];
-    ::sprintf_s(nc, "%08x", nonce_count_);
+    sprintf_s(nc, "%08x", nonce_count_);
 
-    output->append("\", cnonce=\"").append(cnonce_)
-        .append("\", nc=\"").append(nc)
-        .append("\", qop=\"").append(qop_);
+    output->append("\", cnonce=\"")
+        .append(cnonce_)
+        .append("\", nc=\"")
+        .append(nc)
+        .append("\", qop=\"")
+        .append(qop_);
 
     if (qop_.compare("auth") == 0)
       ++nonce_count_;

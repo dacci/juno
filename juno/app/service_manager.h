@@ -40,8 +40,9 @@ class ServiceManager {
 
   void CopyServerConfigs(ServerConfigMap* configs) const;
 
-  bool UpdateConfiguration(ServiceConfigMap&& service_configs,
-                           ServerConfigMap&& server_configs);
+  bool UpdateConfiguration(
+      ServiceConfigMap&& service_configs,  // NOLINT(whitespace/operators)
+      ServerConfigMap&& server_configs);   // NOLINT(whitespace/operators)
 
   const ProviderMap& providers() const {
     return providers_;
@@ -57,8 +58,9 @@ class ServiceManager {
   bool CreateService(const std::string& name);
 
   bool LoadServer(const RegistryKey& parent, const std::string& key_name);
-  bool SaveServer(const RegistryKey& parent, const ServerConfigPtr& config);
   bool CreateServer(const std::string& name);
+  static bool SaveServer(const RegistryKey& parent,
+                         const ServerConfigPtr& config);
 
   static ServiceManager* instance_;
 
@@ -67,6 +69,9 @@ class ServiceManager {
   ServerConfigMap server_configs_;
   ServiceMap services_;
   ServerMap servers_;
+
+  ServiceManager(const ServiceManager&) = delete;
+  ServiceManager& operator=(const ServiceManager&) = delete;
 };
 
 #endif  // JUNO_APP_SERVICE_MANAGER_H_

@@ -17,8 +17,7 @@
 
 using ::madoka::net::AsyncSocket;
 
-Scissors::Scissors() : stopped_(), not_connecting_(&lock_), empty_(&lock_) {
-}
+Scissors::Scissors() : stopped_(), not_connecting_(&lock_), empty_(&lock_) {}
 
 Scissors::~Scissors() {
   Stop();
@@ -37,11 +36,11 @@ bool Scissors::UpdateConfig(const ServiceConfigPtr& config) {
   else
     resolver_.SetType(SOCK_STREAM);
 
-  auto result = resolver_.Resolve(config_->remote_address(),
-                                  config_->remote_port());
+  auto result =
+      resolver_.Resolve(config_->remote_address(), config_->remote_port());
   if (FAILED(result)) {
-    LOG(ERROR) << "failed to resolve "
-               << config_->remote_address() << ":" << config_->remote_port();
+    LOG(ERROR) << "failed to resolve " << config_->remote_address() << ":"
+               << config_->remote_port();
     return false;
   }
 
@@ -53,7 +52,7 @@ bool Scissors::UpdateConfig(const ServiceConfigPtr& config) {
     credential_->SetEnabledProtocols(SP_PROT_SSL3TLS1_X_CLIENTS);
     credential_->SetFlags(SCH_CRED_MANUAL_CRED_VALIDATION);
 
-    SECURITY_STATUS status = credential_->AcquireHandle(SECPKG_CRED_OUTBOUND);
+    auto status = credential_->AcquireHandle(SECPKG_CRED_OUTBOUND);
     if (FAILED(status)) {
       LOG(ERROR) << "failed to initialize credential: " << status;
       return false;
@@ -106,8 +105,8 @@ Scissors::AsyncSocketPtr Scissors::CreateSocket() {
       break;
   }
   if (!socket->connected()) {
-    LOG(ERROR) << "failed to connect to "
-               << config_->remote_address() << ":" << config_->remote_port();
+    LOG(ERROR) << "failed to connect to " << config_->remote_address() << ":"
+               << config_->remote_port();
     return nullptr;
   }
 
@@ -141,9 +140,9 @@ HRESULT Scissors::ConnectSocket(SocketChannel* channel,
   return channel->ConnectAsync(resolver_.begin()->get(), this);
 }
 
-void CALLBACK Scissors::EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
+void CALLBACK Scissors::EndSessionImpl(PTP_CALLBACK_INSTANCE /*instance*/,
                                        void* param) {
-  Session* session = static_cast<Session*>(param);
+  auto session = static_cast<Session*>(param);
   session->service_->EndSessionImpl(session);
 }
 
@@ -209,7 +208,7 @@ void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
     std::unique_ptr<UdpSession> session;
 
     if (config_->remote_udp()) {
-      session.reset(new ScissorsUdpSession(this, datagram->socket));
+      session = std::make_unique<ScissorsUdpSession>(this, datagram->socket);
     } else {
       auto wrapper = std::make_unique<ScissorsWrappingSession>(this);
       if (wrapper == nullptr)
@@ -224,7 +223,7 @@ void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
     udp_session = session.get();
     if (StartSession(std::move(session))) {
       base::AutoLock guard(lock_);
-      udp_sessions_.insert({ key, udp_session });
+      udp_sessions_.insert({key, udp_session});
     } else {
       udp_session = nullptr;
     }
@@ -238,15 +237,12 @@ void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
     udp_session->OnReceived(datagram);
 }
 
-void Scissors::OnError(DWORD /*error*/) {
-}
+void Scissors::OnError(DWORD /*error*/) {}
 
 void Scissors::OnConnected(SocketChannel* socket, HRESULT result) {
-  if (FAILED(result)) {
-    LOG(ERROR) << "failed to connect to "
-                << config_->remote_address() << ":" << config_->remote_port()
-                << " (error: 0x" << std::hex << result << ")";
-  }
+  LOG_IF(ERROR, FAILED(result))
+      << "failed to connect to " << config_->remote_address() << ":"
+      << config_->remote_port() << " (error: 0x" << std::hex << result << ")";
 
   lock_.Acquire();
 

@@ -13,13 +13,11 @@ class HttpHeaders {
  public:
   typedef std::pair<std::string, std::string> Pair;
   typedef std::list<Pair> List;
-  typedef List::const_iterator Iterator;
   typedef std::list<std::string> ValueList;
 
   static const std::string kNotFound;
 
   HttpHeaders();
-  virtual ~HttpHeaders();
 
   // The response header is added to the existing set of headers,
   // even if this header already exists.
@@ -72,11 +70,11 @@ class HttpHeaders {
 
   void SerializeHeaders(std::string* buffer) const;
 
-  Iterator begin() const {
+  auto begin() const {
     return list_.begin();
   }
 
-  Iterator end() const {
+  auto end() const {
     return list_.end();
   }
 
@@ -85,6 +83,9 @@ class HttpHeaders {
 
  private:
   List list_;
+
+  HttpHeaders(const HttpHeaders&) = delete;
+  HttpHeaders& operator=(const HttpHeaders&) = delete;
 };
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_HEADERS_H_

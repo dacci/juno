@@ -10,7 +10,7 @@
 class Channel;
 struct Datagram;
 
-class Service {
+class __declspec(novtable) Service {
  public:
   typedef std::shared_ptr<Channel> ChannelPtr;
   typedef std::shared_ptr<Datagram> DatagramPtr;

@@ -2,8 +2,6 @@
 
 #include "service/http/http_status.h"
 
-#include <stddef.h>
-
 namespace HTTP {
 namespace {
 
@@ -12,6 +10,7 @@ typedef struct STATUS_MESSAGE {
   const char* message;
 } STATUS_MESSAGE;
 
+// clang-format off
 STATUS_MESSAGE http_status_messages[] = {
   // 1xx Informational,
   { CONTINUE, "Continue" },
@@ -80,11 +79,12 @@ STATUS_MESSAGE http_status_messages[] = {
   { PERMISSION_DENIED, "Permission denied" },
   { 0, nullptr }
 };
+// clang-format on
 
 }  // namespace
 
 const char* GetStatusMessage(StatusCode status) {
-  STATUS_MESSAGE* entry = http_status_messages;
+  auto entry = http_status_messages;
 
   while (entry->status) {
     if (entry->status == status)

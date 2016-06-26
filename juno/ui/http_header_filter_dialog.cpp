@@ -6,13 +6,11 @@
 #include <string>
 
 HttpHeaderFilterDialog::HttpHeaderFilterDialog(
-    HttpProxyConfig::HeaderFilter* filter) : filter_(filter) {
-}
+    HttpProxyConfig::HeaderFilter* filter)
+    : filter_(filter) {}
 
-HttpHeaderFilterDialog::~HttpHeaderFilterDialog() {
-}
-
-BOOL HttpHeaderFilterDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
+BOOL HttpHeaderFilterDialog::OnInitDialog(CWindow /*focus*/,
+                                          LPARAM /*init_param*/) {
   DoDataExchange();
 
   action_combo_.AddString(_T("Set"));
@@ -33,11 +31,12 @@ BOOL HttpHeaderFilterDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   return TRUE;
 }
 
-void HttpHeaderFilterDialog::OnOk(UINT notify_code, int id, CWindow control) {
+void HttpHeaderFilterDialog::OnOk(UINT /*notify_code*/, int /*id*/,
+                                  CWindow /*control*/) {
   CStringW message;
   message.LoadString(IDS_NOT_SPECIFIED);
 
-  EDITBALLOONTIP balloon = { sizeof(balloon) };
+  EDITBALLOONTIP balloon{sizeof(balloon)};
   balloon.pszText = message;
 
   if (name_edit_.GetWindowTextLength() <= 0) {
@@ -45,7 +44,7 @@ void HttpHeaderFilterDialog::OnOk(UINT notify_code, int id, CWindow control) {
     return;
   }
 
-  int action = action_combo_.GetCurSel();
+  auto action = action_combo_.GetCurSel();
   if (action != 3 && value_edit_.GetWindowTextLength() <= 0) {
     value_edit_.ShowBalloonTip(&balloon);
     return;
@@ -60,7 +59,7 @@ void HttpHeaderFilterDialog::OnOk(UINT notify_code, int id, CWindow control) {
 #else   // UNICODE
       std::regex(value.GetString());
 #endif  // UNICODE
-    } catch (const std::regex_error& e) {  // NOLINT(*)
+    } catch (const std::regex_error& e) {
       message = e.what();
       balloon.pszText = message;
       value_edit_.ShowBalloonTip(&balloon);
@@ -74,22 +73,22 @@ void HttpHeaderFilterDialog::OnOk(UINT notify_code, int id, CWindow control) {
 
   std::string temp;
 
-  temp.resize(::GetWindowTextLengthA(name_edit_));
-  ::GetWindowTextA(name_edit_, &temp[0], temp.size() + 1);
+  temp.resize(GetWindowTextLengthA(name_edit_));
+  GetWindowTextA(name_edit_, &temp[0], static_cast<int>(temp.size() + 1));
   filter_->name = temp;
 
-  temp.resize(::GetWindowTextLengthA(value_edit_));
-  ::GetWindowTextA(value_edit_, &temp[0], temp.size() + 1);
+  temp.resize(GetWindowTextLengthA(value_edit_));
+  GetWindowTextA(value_edit_, &temp[0], static_cast<int>(temp.size() + 1));
   filter_->value = temp;
 
-  temp.resize(::GetWindowTextLengthA(replace_edit_));
-  ::GetWindowTextA(replace_edit_, &temp[0], temp.size() + 1);
+  temp.resize(GetWindowTextLengthA(replace_edit_));
+  GetWindowTextA(replace_edit_, &temp[0], static_cast<int>(temp.size() + 1));
   filter_->replace = temp;
 
   EndDialog(IDOK);
 }
 
-void HttpHeaderFilterDialog::OnCancel(UINT notify_code, int id,
-                                      CWindow control) {
+void HttpHeaderFilterDialog::OnCancel(UINT /*notify_code*/, int /*id*/,
+                                      CWindow /*control*/) {
   EndDialog(IDCANCEL);
 }

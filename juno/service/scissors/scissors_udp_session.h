@@ -9,13 +9,12 @@
 #include "service/service.h"
 #include "service/scissors/scissors.h"
 
-class ScissorsUdpSession
-    : public Scissors::UdpSession,
-      private madoka::net::AsyncSocket::Listener,
-      private TimerService::Callback {
+class ScissorsUdpSession : public Scissors::UdpSession,
+                           private madoka::net::AsyncSocket::Listener,
+                           private TimerService::Callback {
  public:
   ScissorsUdpSession(Scissors* service, const Scissors::AsyncSocketPtr& source);
-  virtual ~ScissorsUdpSession();
+  ~ScissorsUdpSession();
 
   bool Start() override;
   void Stop() override;
@@ -29,16 +28,17 @@ class ScissorsUdpSession
   void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
                   void* buffer, int length, int flags) override;
 
-  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
-                   const addrinfo* end_point) override {}
-  void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
-                      void* buffer, int length, int flags,
-                      const sockaddr* address, int address_length) override {}
-  void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-              int length) override {}
-  void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-                int length, const sockaddr* address,
-                int address_length) override {}
+  void OnConnected(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+                   const addrinfo* /*end_point*/) override {}
+  void OnReceivedFrom(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+                      void* /*buffer*/, int /*length*/, int /*flags*/,
+                      const sockaddr* /*address*/,
+                      int /*address_length*/) override {}
+  void OnSent(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+              void* /*buffer*/, int /*length*/) override {}
+  void OnSentTo(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+                void* /*buffer*/, int /*length*/, const sockaddr* /*address*/,
+                int /*address_length*/) override {}
 
   void OnTimeout() override;
 
@@ -48,6 +48,9 @@ class ScissorsUdpSession
   int address_length_;
   char buffer_[kBufferSize];
   TimerService::TimerObject timer_;
+
+  ScissorsUdpSession(const ScissorsUdpSession&) = delete;
+  ScissorsUdpSession& operator=(const ScissorsUdpSession&) = delete;
 };
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_UDP_SESSION_H_

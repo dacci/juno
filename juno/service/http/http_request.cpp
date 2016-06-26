@@ -6,11 +6,7 @@
 
 #include <string>
 
-HttpRequest::HttpRequest() {
-}
-
-HttpRequest::~HttpRequest() {
-}
+HttpRequest::HttpRequest() : minor_version_(0) {}
 
 int HttpRequest::Parse(const char* data, size_t length) {
   const char* method;
@@ -19,11 +15,11 @@ int HttpRequest::Parse(const char* data, size_t length) {
   size_t path_length;
   int minor_version;
   phr_header headers[kMaxHeaders];
-  size_t header_count = kMaxHeaders;
+  auto header_count = kMaxHeaders;
 
-  int result = ::phr_parse_request(data, length, &method, &method_length,
-                                   &path, &path_length, &minor_version,
-                                   headers, &header_count, 0);
+  auto result = phr_parse_request(data, length, &method, &method_length, &path,
+                                  &path_length, &minor_version, headers,
+                                  &header_count, 0);
   if (result > 0) {
     Clear();
 
@@ -44,9 +40,9 @@ void HttpRequest::Clear() {
   ClearHeaders();
 }
 
-void HttpRequest::Serialize(std::string* output) {
+void HttpRequest::Serialize(std::string* output) const {
   char version[12];
-  ::sprintf_s(version, " HTTP/1.%d\x0D\x0A", minor_version_);
+  sprintf_s(version, " HTTP/1.%d\x0D\x0A", minor_version_);
 
   output->append(method_).append(" ").append(path_).append(version);
   SerializeHeaders(output);

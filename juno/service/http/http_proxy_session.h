@@ -5,7 +5,10 @@
 
 #include <stdint.h>
 
+#pragma warning(push, 3)
+#pragma warning(disable : 4244)
 #include <base/synchronization/lock.h>
+#pragma warning(pop)
 
 #include <memory>
 #include <string>

@@ -6,10 +6,13 @@
 
 #include <winsock2.h>
 
+#pragma warning(push, 3)
+#pragma warning(disable : 4244)
 #include <base/at_exit.h>
 #include <base/command_line.h>
 #include <base/logging.h>
 #include <base/logging_win.h>
+#pragma warning(pop)
 
 #include <url/url_util.h>
 
@@ -18,6 +21,18 @@
 #include "ui/main_frame.h"
 
 CAppModule _Module;
+
+static int Main() {
+  MainFrame frame;
+  if (frame.CreateEx() == NULL) {
+    LOG(ERROR) << "Failed to create main frame.";
+    return __LINE__;
+  }
+
+  _Module.GetMessageLoop()->Run();
+
+  return 0;
+}
 
 int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
                        wchar_t* /*command_line*/, int /*show_mode*/) {
@@ -28,9 +43,9 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
   SetDllDirectory(_T(""));
 
 #ifdef _DEBUG
-    int debug_flags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
-    debug_flags |= _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF;
-    _CrtSetDbgFlag(debug_flags);
+  auto debug_flags = _CrtSetDbgFlag(_CRTDBG_REPORT_FLAG);
+  debug_flags |= _CRTDBG_LEAK_CHECK_DF | _CRTDBG_CHECK_ALWAYS_DF;
+  _CrtSetDbgFlag(debug_flags);
 #endif  // _DEBUG
 
   base::AtExitManager at_exit_manager;
@@ -40,8 +55,8 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
       base::CommandLine::Reset();
     }, nullptr);
   } else {
-    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME),
-               nullptr, MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
+    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME), nullptr,
+               MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
                TD_ERROR_ICON, nullptr);
     return __LINE__;
   }
@@ -49,8 +64,8 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
   logging::LoggingSettings logging_settings;
   logging_settings.logging_dest = logging::LOG_TO_SYSTEM_DEBUG_LOG;
   if (!logging::InitLogging(logging_settings)) {
-    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME),
-               nullptr, MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
+    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME), nullptr,
+               MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
                TD_ERROR_ICON, nullptr);
     return __LINE__;
   }
@@ -60,29 +75,31 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
     logging::LogEventProvider::Uninitialize();
   }, nullptr);
 
-  HRESULT result = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+  HRESULT result;
+
+  result = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
   if (SUCCEEDED(result)) {
     base::AtExitManager::RegisterCallback([](void* /*param*/) {
       CoUninitialize();
     }, nullptr);
   } else {
     LOG(ERROR) << "CoInitializeEx failed: 0x" << std::hex << result;
-    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME),
-               nullptr, MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
+    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME), nullptr,
+               MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
                TD_ERROR_ICON, nullptr);
     return __LINE__;
   }
 
   if (!AtlInitCommonControls(0xFFFF)) {  // all classes
     LOG(ERROR) << "AtlInitCommonControls failed";
-    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME),
-               nullptr, MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
+    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME), nullptr,
+               MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
                TD_ERROR_ICON, nullptr);
     return __LINE__;
   }
 
   WSADATA wsa_data;
-  int error = WSAStartup(WINSOCK_VERSION, &wsa_data);
+  auto error = WSAStartup(WINSOCK_VERSION, &wsa_data);
   if (error == 0) {
     DLOG(INFO) << wsa_data.szDescription << " is " << wsa_data.szSystemStatus;
     base::AtExitManager::RegisterCallback([](void* /*param*/) {
@@ -90,8 +107,8 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
     }, nullptr);
   } else {
     LOG(ERROR) << "WinSock startup failed: " << error;
-    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME),
-               nullptr, MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
+    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME), nullptr,
+               MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
                TD_ERROR_ICON, nullptr);
     return __LINE__;
   }
@@ -108,28 +125,29 @@ int __stdcall wWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/,
     }, nullptr);
   } else {
     LOG(ERROR) << "CAppModule::Init failed: 0x" << std::hex << result;
-    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME),
-               nullptr, MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
+    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME), nullptr,
+               MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
                TD_ERROR_ICON, nullptr);
     return __LINE__;
   }
 
   CMessageLoop message_loop;
-  if (!_Module.AddMessageLoop(&message_loop)) {
+  if (_Module.AddMessageLoop(&message_loop)) {
+    base::AtExitManager::RegisterCallback([](void* /*param*/) {
+      if (!_Module.RemoveMessageLoop())
+        LOG(WARNING) << "Failed to remove message loop.";
+    }, nullptr);
+  } else {
     LOG(ERROR) << "Failed to create message loop.";
-    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME),
-               nullptr, MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
+    TaskDialog(NULL, hInstance, MAKEINTRESOURCE(IDR_MAIN_FRAME), nullptr,
+               MAKEINTRESOURCE(IDS_ERR_INIT_FAILED), TDCBF_OK_BUTTON,
                TD_ERROR_ICON, nullptr);
     return __LINE__;
   }
 
-  MainFrame frame;
-  frame.CreateEx();
+  auto exit_code = Main();
 
-  message_loop.Run();
+  base::AtExitManager::ProcessCallbacksNow();
 
-  if (!_Module.RemoveMessageLoop())
-    LOG(WARNING) << "Failed to remove message loop.";
-
-  return 0;
+  return exit_code;
 }

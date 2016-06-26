@@ -69,7 +69,7 @@ inline bool RegistryKey::QueryInteger(const std::string& name,
 }
 
 inline int RegistryKey::QueryInteger(const char* name) const {
-  int value = 0;
+  auto value = 0;
   QueryInteger(name, &value);
   return value;
 }
@@ -84,7 +84,7 @@ inline bool RegistryKey::QueryInteger(const std::wstring& name,
 }
 
 inline int RegistryKey::QueryInteger(const wchar_t* name) const {
-  int value = 0;
+  auto value = 0;
   QueryInteger(name, &value);
   return value;
 }

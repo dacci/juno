@@ -12,7 +12,7 @@
 
 class TimerService {
  public:
-  class Callback {
+  class __declspec(novtable) Callback {
    public:
     virtual ~Callback() {}
 
@@ -62,6 +62,9 @@ class TimerService {
   static TimerService default_instance_;
 
   const PTP_CALLBACK_ENVIRON environment_;
+
+  TimerService(const TimerService&) = delete;
+  TimerService& operator=(const TimerService&) = delete;
 };
 
 #endif  // JUNO_MISC_TIMER_SERVICE_H_

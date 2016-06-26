@@ -16,11 +16,9 @@ const UINT MainFrame::WM_TASKBARCREATED =
     RegisterWindowMessage(_T("TaskbarCreated"));
 
 MainFrame::MainFrame()
-    : mutex_(NULL), old_windows_(false), notify_icon_(), configuring_(false) {
-}
+    : mutex_(NULL), old_windows_(false), notify_icon_(), configuring_(false) {}
 
-MainFrame::~MainFrame() {
-}
+MainFrame::~MainFrame() {}
 
 void MainFrame::TrackTrayMenu(int x, int y) {
   if (configuring_)
@@ -28,7 +26,7 @@ void MainFrame::TrackTrayMenu(int x, int y) {
 
   CMenu menu;
   menu.LoadMenu(IDR_TRAY_MENU);
-  CMenuHandle popup_menu = menu.GetSubMenu(0);
+  auto popup_menu = menu.GetSubMenu(0);
   popup_menu.SetMenuDefaultItem(kDefaultTrayCommand);
 
   SetForegroundWindow(m_hWnd);
@@ -36,13 +34,13 @@ void MainFrame::TrackTrayMenu(int x, int y) {
   PostMessage(WM_NULL);
 }
 
-int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
+int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
   CString message;
 
   wchar_t mutex_name[40];
   StringFromGUID2(GUID_JUNO_APPLICATION, mutex_name, _countof(mutex_name));
   mutex_ = CreateMutex(nullptr, TRUE, mutex_name);
-  DWORD error = GetLastError();
+  auto error = GetLastError();
 
   if (mutex_ == NULL) {
     message.LoadString(IDS_ERR_INIT_FAILED);
@@ -58,12 +56,11 @@ int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
 
   notify_icon_.cbSize = sizeof(notify_icon_);
   notify_icon_.hWnd = m_hWnd;
-  notify_icon_.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_GUID |
-                        NIF_SHOWTIP;
+  notify_icon_.uFlags =
+      NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_GUID | NIF_SHOWTIP;
   notify_icon_.uCallbackMessage = WM_TRAYNOTIFY;
   LoadIconMetric(ModuleHelper::GetResourceInstance(),
-                 MAKEINTRESOURCE(IDR_MAIN_FRAME),
-                 LIM_SMALL,
+                 MAKEINTRESOURCE(IDR_MAIN_FRAME), LIM_SMALL,
                  &notify_icon_.hIcon);
   _stprintf_s(notify_icon_.szTip, _T("Juno"));
   notify_icon_.uVersion = NOTIFYICON_VERSION_4;
@@ -106,7 +103,7 @@ int MainFrame::OnCreate(CREATESTRUCT* create_struct) {
     return -1;
   }
 
-  bool some_failed = false;
+  auto some_failed = false;
 
   if (!service_manager_->LoadServers())
     some_failed = true;
@@ -126,8 +123,7 @@ void MainFrame::OnDestroy() {
   SetMsgHandled(FALSE);
 
   LoadIconMetric(ModuleHelper::GetResourceInstance(),
-                 MAKEINTRESOURCE(IDR_TRAY_MENU),
-                 LIM_SMALL,
+                 MAKEINTRESOURCE(IDR_TRAY_MENU), LIM_SMALL,
                  &notify_icon_.hIcon);
   Shell_NotifyIcon(NIM_MODIFY, &notify_icon_);
 
@@ -147,7 +143,7 @@ void MainFrame::OnDestroy() {
   TunnelingService::Term();
 }
 
-void MainFrame::OnEndSession(BOOL ending, UINT log_off) {
+void MainFrame::OnEndSession(BOOL ending, UINT /*log_off*/) {
   if (ending)
     DestroyWindow();
 }
@@ -170,7 +166,8 @@ LRESULT MainFrame::OnTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
   return 0;
 }
 
-LRESULT MainFrame::OnOldTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
+LRESULT MainFrame::OnOldTrayNotify(UINT /*message*/, WPARAM /*wParam*/,
+                                   LPARAM lParam) {
   switch (lParam) {
     case WM_LBUTTONDBLCLK:
       SetForegroundWindow(m_hWnd);
@@ -188,28 +185,29 @@ LRESULT MainFrame::OnOldTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
   return 0;
 }
 
-LRESULT MainFrame::OnTaskbarCreated(UINT message, WPARAM wParam,
-                                    LPARAM lParam) {
+LRESULT MainFrame::OnTaskbarCreated(UINT /*message*/, WPARAM /*wParam*/,
+                                    LPARAM /*lParam*/) {
   Shell_NotifyIcon(NIM_ADD, &notify_icon_);
   old_windows_ = Shell_NotifyIcon(NIM_SETVERSION, &notify_icon_) == FALSE;
 
   return 0;
 }
 
-void MainFrame::OnFileNew(UINT notify_code, int id, CWindow control) {
+void MainFrame::OnFileNew(UINT /*notify_code*/, int /*id*/,
+                          CWindow /*control*/) {
   if (configuring_)
     return;
 
   PreferenceDialog dialog;
 
   configuring_ = true;
-  int result = dialog.DoModal(NULL);
+  auto result = dialog.DoModal(NULL);
   configuring_ = false;
 
   if (result != IDOK)
     return;
 
-  bool succeeded = service_manager_->UpdateConfiguration(
+  auto succeeded = service_manager_->UpdateConfiguration(
       std::move(dialog.service_configs_), std::move(dialog.server_configs_));
   if (!succeeded) {
     CString message;
@@ -218,6 +216,7 @@ void MainFrame::OnFileNew(UINT notify_code, int id, CWindow control) {
   }
 }
 
-void MainFrame::OnAppExit(UINT notify_code, int id, CWindow control) {
+void MainFrame::OnAppExit(UINT /*notify_code*/, int /*id*/,
+                          CWindow /*control*/) {
   PostMessage(WM_CLOSE);
 }

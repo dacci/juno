@@ -222,7 +222,7 @@ HRESULT SocketChannel::MonitorConnection(Listener* listener) {
 BOOL SocketChannel::OnInitialize(INIT_ONCE* /*init_once*/, void* /*param*/,
                                  void** /*context*/) {
   auto result = FALSE;
-  auto sock = INVALID_SOCKET;
+  SOCKET sock;
 
   do {
     sock = socket(AF_INET, SOCK_STREAM, 0);

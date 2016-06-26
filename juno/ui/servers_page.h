@@ -4,6 +4,7 @@
 #define JUNO_UI_SERVERS_PAGE_H_
 
 #include <atlbase.h>
+#include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
@@ -17,23 +18,14 @@
 class PreferenceDialog;
 class ServerConfig;
 
-class ServersPage
-    : public CPropertyPageImpl<ServersPage>,
-      public CWinDataExchange<ServersPage> {
+class ServersPage : public CPropertyPageImpl<ServersPage>,
+                    public CWinDataExchange<ServersPage> {
  public:
   static const UINT IDD = IDD_SERVERS_PAGE;
 
   ServersPage(PreferenceDialog* parent, ServerConfigMap* configs);
-  ~ServersPage();
 
   void OnPageRelease();
-
-  BEGIN_DDX_MAP(ServersPage)
-    DDX_CONTROL_HANDLE(IDC_SERVER_LIST, server_list_)
-    DDX_CONTROL_HANDLE(IDC_ADD_BUTTON, add_button_)
-    DDX_CONTROL_HANDLE(IDC_EDIT_BUTTON, edit_button_)
-    DDX_CONTROL_HANDLE(IDC_DELETE_BUTTON, delete_button_)
-  END_DDX_MAP()
 
   BEGIN_MSG_MAP(ServersPage)
     MSG_WM_INITDIALOG(OnInitDialog)
@@ -47,6 +39,13 @@ class ServersPage
 
     CHAIN_MSG_MAP(CPropertyPageImpl)
   END_MSG_MAP()
+
+  BEGIN_DDX_MAP(ServersPage)
+    DDX_CONTROL_HANDLE(IDC_SERVER_LIST, server_list_)
+    DDX_CONTROL_HANDLE(IDC_ADD_BUTTON, add_button_)
+    DDX_CONTROL_HANDLE(IDC_EDIT_BUTTON, edit_button_)
+    DDX_CONTROL_HANDLE(IDC_DELETE_BUTTON, delete_button_)
+  END_DDX_MAP()
 
  private:
   void AddServerItem(const ServerConfigPtr& entry, int index);
@@ -68,6 +67,9 @@ class ServersPage
   CButton add_button_;
   CButton edit_button_;
   CButton delete_button_;
+
+  ServersPage(const ServersPage&) = delete;
+  ServersPage& operator=(const ServersPage&) = delete;
 };
 
 #endif  // JUNO_UI_SERVERS_PAGE_H_

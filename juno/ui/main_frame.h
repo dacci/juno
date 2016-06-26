@@ -4,6 +4,7 @@
 #define JUNO_UI_MAIN_FRAME_H_
 
 #include <atlbase.h>
+#include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
@@ -17,10 +18,10 @@ class ServiceManager;
 
 class MainFrame : public CFrameWindowImpl<MainFrame> {
  public:
-  DECLARE_FRAME_WND_CLASS(nullptr, IDR_MAIN_FRAME)
-
   MainFrame();
-  ~MainFrame();
+  ~MainFrame();  // Required as ServiceManager is incomplete.
+
+  DECLARE_FRAME_WND_CLASS(nullptr, IDR_MAIN_FRAME)
 
   BEGIN_MSG_MAP(MainFrame)
     MSG_WM_CREATE(OnCreate)
@@ -58,6 +59,9 @@ class MainFrame : public CFrameWindowImpl<MainFrame> {
   bool configuring_;
 
   std::unique_ptr<ServiceManager> service_manager_;
+
+  MainFrame(const MainFrame&) = delete;
+  MainFrame& operator=(const MainFrame&) = delete;
 };
 
 #endif  // JUNO_UI_MAIN_FRAME_H_

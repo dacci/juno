@@ -5,7 +5,6 @@
 
 #include <stdint.h>
 
-#include <map>
 #include <string>
 
 #include "service/http/http_headers.h"

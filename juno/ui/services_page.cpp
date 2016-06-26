@@ -11,11 +11,7 @@
 #include "ui/provider_dialog.h"
 
 ServicesPage::ServicesPage(PreferenceDialog* parent, ServiceConfigMap* configs)
-    : parent_(parent), configs_(configs), initialized_() {
-}
-
-ServicesPage::~ServicesPage() {
-}
+    : parent_(parent), configs_(configs), initialized_() {}
 
 void ServicesPage::OnPageRelease() {
   delete this;
@@ -29,7 +25,7 @@ void ServicesPage::AddServiceItem(const ServiceConfigPtr& config, int index) {
   service_list_.AddItem(index, 1, CString(config->provider_name_.c_str()));
 }
 
-BOOL ServicesPage::OnInitDialog(CWindow focus, LPARAM init_param) {
+BOOL ServicesPage::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   DoDataExchange();
 
   CString caption;
@@ -55,21 +51,22 @@ BOOL ServicesPage::OnInitDialog(CWindow focus, LPARAM init_param) {
   return TRUE;
 }
 
-void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
+void ServicesPage::OnAddService(UINT /*notify_code*/, int /*id*/,
+                                CWindow /*control*/) {
   ProviderDialog provider_dialog(parent_);
   if (provider_dialog.DoModal(m_hWnd) != IDOK)
     return;
 
-  ServiceProviderPtr provider = ServiceManager::GetInstance()->
-      GetProvider(provider_dialog.GetProviderName());
+  auto provider = ServiceManager::GetInstance()->GetProvider(
+      provider_dialog.GetProviderName());
   if (provider == nullptr)
     return;
 
-  ServiceConfigPtr config = provider->CreateConfig();
+  auto config = provider->CreateConfig();
   config->name_ = provider_dialog.name();
   config->provider_name_ = provider_dialog.GetProviderName();
 
-  INT_PTR dialog_result = provider->Configure(config, *parent_);
+  auto dialog_result = provider->Configure(config, *parent_);
   if (dialog_result != IDOK)
     return;
 
@@ -78,8 +75,9 @@ void ServicesPage::OnAddService(UINT notify_code, int id, CWindow control) {
   service_list_.SelectItem(service_list_.GetItemCount());
 }
 
-void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
-  int index = service_list_.GetSelectedIndex();
+void ServicesPage::OnEditService(UINT /*notify_code*/, int /*id*/,
+                                 CWindow /*control*/) {
+  auto index = service_list_.GetSelectedIndex();
   if (index == CB_ERR)
     return;
 
@@ -89,8 +87,8 @@ void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
   CStringA name(name_unicode);
   auto& config = configs_->at(name.GetString());
 
-  auto provider = ServiceManager::GetInstance()->
-      GetProvider(config->provider_name_);
+  auto provider =
+      ServiceManager::GetInstance()->GetProvider(config->provider_name_);
   if (provider->Configure(config, *parent_) != IDOK)
     return;
 
@@ -99,8 +97,9 @@ void ServicesPage::OnEditService(UINT notify_code, int id, CWindow control) {
   service_list_.SelectItem(index);
 }
 
-void ServicesPage::OnDeleteService(UINT notify_code, int id, CWindow control) {
-  int index = service_list_.GetSelectedIndex();
+void ServicesPage::OnDeleteService(UINT /*notify_code*/, int /*id*/,
+                                   CWindow /*control*/) {
+  auto index = service_list_.GetSelectedIndex();
   if (index == CB_ERR)
     return;
 
@@ -116,11 +115,11 @@ void ServicesPage::OnDeleteService(UINT notify_code, int id, CWindow control) {
   service_list_.SelectItem(index);
 }
 
-LRESULT ServicesPage::OnServiceListChanged(LPNMHDR header) {
+LRESULT ServicesPage::OnServiceListChanged(LPNMHDR /*header*/) {
   if (!initialized_)
     return 0;
 
-  UINT count = service_list_.GetSelectedCount();
+  auto count = service_list_.GetSelectedCount();
   edit_button_.EnableWindow(count > 0);
   delete_button_.EnableWindow(count > 0);
 
@@ -128,8 +127,7 @@ LRESULT ServicesPage::OnServiceListChanged(LPNMHDR header) {
 }
 
 LRESULT ServicesPage::OnServiceListDoubleClicked(LPNMHDR header) {
-  NMITEMACTIVATE* notify = reinterpret_cast<NMITEMACTIVATE*>(header);
-
+  auto notify = reinterpret_cast<NMITEMACTIVATE*>(header);
   if (notify->iItem < 0)
     return 0;
 

@@ -4,6 +4,7 @@
 #define JUNO_UI_SERVICES_PAGE_H_
 
 #include <atlbase.h>
+#include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
@@ -19,23 +20,14 @@
 class PreferenceDialog;
 class ServiceConfig;
 
-class ServicesPage
-    : public CPropertyPageImpl<ServicesPage>,
-      public CWinDataExchange<ServicesPage> {
+class ServicesPage : public CPropertyPageImpl<ServicesPage>,
+                     public CWinDataExchange<ServicesPage> {
  public:
   static const UINT IDD = IDD_SERVICES_PAGE;
 
   ServicesPage(PreferenceDialog* parent, ServiceConfigMap* configs);
-  ~ServicesPage();
 
   void OnPageRelease();
-
-  BEGIN_DDX_MAP(ServicesPage)
-    DDX_CONTROL_HANDLE(IDC_SERVICE_LIST, service_list_)
-    DDX_CONTROL_HANDLE(IDC_ADD_BUTTON, add_button_)
-    DDX_CONTROL_HANDLE(IDC_EDIT_BUTTON, edit_button_)
-    DDX_CONTROL_HANDLE(IDC_DELETE_BUTTON, delete_button_)
-  END_DDX_MAP()
 
   BEGIN_MSG_MAP(ServicesPage)
     MSG_WM_INITDIALOG(OnInitDialog)
@@ -49,6 +41,13 @@ class ServicesPage
 
     CHAIN_MSG_MAP(CPropertyPageImpl)
   END_MSG_MAP()
+
+  BEGIN_DDX_MAP(ServicesPage)
+    DDX_CONTROL_HANDLE(IDC_SERVICE_LIST, service_list_)
+    DDX_CONTROL_HANDLE(IDC_ADD_BUTTON, add_button_)
+    DDX_CONTROL_HANDLE(IDC_EDIT_BUTTON, edit_button_)
+    DDX_CONTROL_HANDLE(IDC_DELETE_BUTTON, delete_button_)
+  END_DDX_MAP()
 
  private:
   void AddServiceItem(const ServiceConfigPtr& config, int index);
@@ -70,6 +69,9 @@ class ServicesPage
   CButton add_button_;
   CButton edit_button_;
   CButton delete_button_;
+
+  ServicesPage(const ServicesPage&) = delete;
+  ServicesPage& operator=(const ServicesPage&) = delete;
 };
 
 #endif  // JUNO_UI_SERVICES_PAGE_H_

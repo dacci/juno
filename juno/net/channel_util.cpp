@@ -35,7 +35,7 @@ void FireEventImpl(Channel::Listener* listener, ChannelEvent event,
   }
 }
 
-void CALLBACK FireEventImpl(PTP_CALLBACK_INSTANCE instance, void* param) {
+void CALLBACK FireEventImpl(PTP_CALLBACK_INSTANCE /*instance*/, void* param) {
   auto event_data = static_cast<EventData*>(param);
 
   FireEventImpl(event_data->listener, event_data->event, event_data->channel,

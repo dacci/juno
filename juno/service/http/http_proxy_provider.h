@@ -7,7 +7,7 @@
 
 class HttpProxyProvider : public ServiceProvider {
  public:
-  virtual ~HttpProxyProvider();
+  HttpProxyProvider() {}
 
   ServiceConfigPtr CreateConfig() override;
   ServiceConfigPtr LoadConfig(const RegistryKey& key) override;
@@ -17,6 +17,10 @@ class HttpProxyProvider : public ServiceProvider {
   ServicePtr CreateService(const ServiceConfigPtr& config) override;
 
   INT_PTR Configure(const ServiceConfigPtr& config, HWND parent) override;
+
+ private:
+  HttpProxyProvider(const HttpProxyProvider&) = delete;
+  HttpProxyProvider& operator=(const HttpProxyProvider&) = delete;
 };
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_PROXY_PROVIDER_H_

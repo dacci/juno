@@ -3,17 +3,22 @@
 #ifndef JUNO_SERVICE_SCISSORS_SCISSORS_H_
 #define JUNO_SERVICE_SCISSORS_SCISSORS_H_
 
+#pragma warning(push)
+#pragma warning(disable : 4267)
 #include <madoka/net/async_socket.h>
+#pragma warning(pop)
 
+#pragma warning(push, 3)
+#pragma warning(disable : 4244)
 #include <base/hash.h>
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
+#pragma warning(pop)
 
 #include <map>
 #include <memory>
 #include <string>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "net/socket_channel.h"
@@ -48,7 +53,7 @@ class Scissors : public Service, private SocketChannel::Listener {
   };
 
   Scissors();
-  virtual ~Scissors();
+  ~Scissors();
 
   bool UpdateConfig(const ServiceConfigPtr& config) override;
   void Stop() override;
@@ -110,6 +115,9 @@ class Scissors : public Service, private SocketChannel::Listener {
   base::ConditionVariable empty_;
 
   UdpSessionMap udp_sessions_;
+
+  Scissors(const Scissors&) = delete;
+  Scissors& operator=(const Scissors&) = delete;
 };
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_H_

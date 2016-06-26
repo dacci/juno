@@ -6,7 +6,6 @@
 #include <windows.h>
 
 #include <string>
-#include <utility>
 
 class RegistryKey {
  public:
@@ -92,8 +91,8 @@ class RegistryKey {
  private:
   HKEY key_;
 
-  RegistryKey(const RegistryKey&);
-  RegistryKey& operator=(const RegistryKey&);
+  RegistryKey(const RegistryKey&) = delete;
+  RegistryKey& operator=(const RegistryKey&) = delete;
 };
 
 #endif  // JUNO_MISC_REGISTRY_KEY_H_

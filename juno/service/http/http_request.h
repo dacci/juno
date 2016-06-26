@@ -13,7 +13,6 @@ class HttpRequest : public HttpHeaders {
   static const int kError = -1;
 
   HttpRequest();
-  virtual ~HttpRequest();
 
   int Parse(const char* data, size_t length);
   int Parse(const std::string& data) {
@@ -22,7 +21,7 @@ class HttpRequest : public HttpHeaders {
 
   void Clear();
 
-  void Serialize(std::string* output);
+  void Serialize(std::string* output) const;
 
   const std::string& method() const {
     return method_;
@@ -62,6 +61,9 @@ class HttpRequest : public HttpHeaders {
   std::string method_;
   std::string path_;
   int minor_version_;
+
+  HttpRequest(const HttpRequest&) = delete;
+  HttpRequest& operator=(const HttpRequest&) = delete;
 };
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_REQUEST_H_

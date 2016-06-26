@@ -8,15 +8,14 @@
 #include "net/channel.h"
 #include "service/scissors/scissors.h"
 
-class ScissorsUnwrappingSession
-    : public Scissors::Session,
-      private Channel::Listener,
-      private madoka::net::AsyncSocket::Listener {
+class ScissorsUnwrappingSession : public Scissors::Session,
+                                  private Channel::Listener,
+                                  private madoka::net::AsyncSocket::Listener {
  public:
   typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
 
   explicit ScissorsUnwrappingSession(Scissors* service);
-  virtual ~ScissorsUnwrappingSession();
+  ~ScissorsUnwrappingSession();
 
   bool Start() override;
   void Stop() override;
@@ -49,13 +48,14 @@ class ScissorsUnwrappingSession
                 int length, const sockaddr* address,
                 int address_length) override;
 
-  void OnConnected(madoka::net::AsyncSocket* socket, HRESULT result,
-                   const addrinfo* end_point) override {}
-  void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
-                  void* buffer, int length, int flags) override {}
-  void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
-                      void* buffer, int length, int flags,
-                      const sockaddr* address, int address_length) override {}
+  void OnConnected(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+                   const addrinfo* /*end_point*/) override {}
+  void OnReceived(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+                  void* /*buffer*/, int /*length*/, int /*flags*/) override {}
+  void OnReceivedFrom(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
+                      void* /*buffer*/, int /*length*/, int /*flags*/,
+                      const sockaddr* /*address*/,
+                      int /*address_length*/) override {}
 
   Service::ChannelPtr source_;
   AsyncSocketPtr sink_;
@@ -64,6 +64,10 @@ class ScissorsUnwrappingSession
   char buffer_[2 + kBufferSize];  // header + payload
   int packet_length_;
   std::string received_;
+
+  ScissorsUnwrappingSession(const ScissorsUnwrappingSession&) = delete;
+  ScissorsUnwrappingSession& operator=(const ScissorsUnwrappingSession&) =
+      delete;
 };
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_UNWRAPPING_SESSION_H_

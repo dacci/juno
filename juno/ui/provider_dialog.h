@@ -20,19 +20,18 @@
 class PreferenceDialog;
 class ServiceProvider;
 
-class ProviderDialog
-    : public DialogImplEx<ProviderDialog>,
-      public CWinDataExchange<ProviderDialog> {
+class ProviderDialog : public DialogImplEx<ProviderDialog>,
+                       public CWinDataExchange<ProviderDialog> {
  public:
   static const UINT IDD = IDD_PROVIDER;
 
   explicit ProviderDialog(PreferenceDialog* parent);
-  ~ProviderDialog();
 
-  BEGIN_DDX_MAP(ProviderDialog)
-    DDX_CONTROL_HANDLE(IDC_NAME, name_edit_)
-    DDX_CONTROL_HANDLE(IDC_PROVIDER, provider_combo_)
-  END_DDX_MAP()
+  const std::string& GetProviderName() const;
+
+  const std::string& name() const {
+    return name_;
+  }
 
   BEGIN_MSG_MAP(ProviderDialog)
     MSG_WM_INITDIALOG(OnInitDialog)
@@ -43,11 +42,10 @@ class ProviderDialog
     CHAIN_MSG_MAP(DialogImplEx)
   END_MSG_MAP()
 
-  const std::string& GetProviderName() const;
-
-  const std::string& name() const {
-    return name_;
-  }
+  BEGIN_DDX_MAP(ProviderDialog)
+    DDX_CONTROL_HANDLE(IDC_NAME, name_edit_)
+    DDX_CONTROL_HANDLE(IDC_PROVIDER, provider_combo_)
+  END_DDX_MAP()
 
  private:
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
@@ -63,6 +61,9 @@ class ProviderDialog
   CEdit name_edit_;
   CComboBox provider_combo_;
   int provider_index_;
+
+  ProviderDialog(const ProviderDialog&) = delete;
+  ProviderDialog& operator=(const ProviderDialog&) = delete;
 };
 
 #endif  // JUNO_UI_PROVIDER_DIALOG_H_

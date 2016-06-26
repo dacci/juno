@@ -7,13 +7,9 @@
 #include "service/scissors/scissors_config.h"
 
 ScissorsDialog::ScissorsDialog(ServiceConfig* config)
-    : config_(static_cast<ScissorsConfig*>(config)) {
-}
+    : config_(static_cast<ScissorsConfig*>(config)), port_(0) {}
 
-ScissorsDialog::~ScissorsDialog() {
-}
-
-BOOL ScissorsDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
+BOOL ScissorsDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   port_ = config_->remote_port();
 
   DoDataExchange();
@@ -26,18 +22,21 @@ BOOL ScissorsDialog::OnInitDialog(CWindow focus, LPARAM init_param) {
   return TRUE;
 }
 
-void ScissorsDialog::OnUseSsl(UINT notify_code, int id, CWindow control) {
+void ScissorsDialog::OnUseSsl(UINT /*notify_code*/, int /*id*/,
+                              CWindow /*control*/) {
   if (use_ssl_check_.GetCheck())
     use_udp_check_.SetCheck(FALSE);
 }
 
-void ScissorsDialog::OnUseUdp(UINT notify_code, int id, CWindow control) {
+void ScissorsDialog::OnUseUdp(UINT /*notify_code*/, int /*id*/,
+                              CWindow /*control*/) {
   if (use_udp_check_.GetCheck())
     use_ssl_check_.SetCheck(FALSE);
 }
 
-void ScissorsDialog::OnOk(UINT notify_code, int id, CWindow control) {
-  EDITBALLOONTIP balloon = { sizeof(balloon) };
+void ScissorsDialog::OnOk(UINT /*notify_code*/, int /*id*/,
+                          CWindow /*control*/) {
+  EDITBALLOONTIP balloon{sizeof(balloon)};
   CStringW message;
 
   DoDataExchange(DDX_SAVE);
@@ -57,8 +56,8 @@ void ScissorsDialog::OnOk(UINT notify_code, int id, CWindow control) {
   }
 
   std::string temp;
-  temp.resize(::GetWindowTextLengthA(address_edit_));
-  ::GetWindowTextA(address_edit_, &temp[0], temp.size() + 1);
+  temp.resize(GetWindowTextLengthA(address_edit_));
+  GetWindowTextA(address_edit_, &temp[0], static_cast<int>(temp.size() + 1));
 
   config_->remote_address_ = temp;
   config_->remote_port_ = port_;
@@ -68,6 +67,7 @@ void ScissorsDialog::OnOk(UINT notify_code, int id, CWindow control) {
   EndDialog(IDOK);
 }
 
-void ScissorsDialog::OnCancel(UINT notify_code, int id, CWindow control) {
+void ScissorsDialog::OnCancel(UINT /*notify_code*/, int /*id*/,
+                              CWindow /*control*/) {
   EndDialog(IDCANCEL);
 }

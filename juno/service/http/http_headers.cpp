@@ -12,16 +12,12 @@
 
 const std::string HttpHeaders::kNotFound;
 
-HttpHeaders::HttpHeaders() {
-}
-
-HttpHeaders::~HttpHeaders() {
-}
+HttpHeaders::HttpHeaders() {}
 
 void HttpHeaders::AppendHeader(const std::string& name,
                                const std::string& value) {
   for (auto& pair : list_) {
-    if (::_stricmp(pair.first.c_str(), name.c_str()) == 0) {
+    if (_stricmp(pair.first.c_str(), name.c_str()) == 0) {
       pair.second.append(", ");
       pair.second.append(value);
       return;
@@ -32,11 +28,11 @@ void HttpHeaders::AppendHeader(const std::string& name,
 }
 
 void HttpHeaders::SetHeader(const std::string& name, const std::string& value) {
-  bool first = true;
-  bool found = false;
+  auto first = true;
+  auto found = false;
 
   for (auto i = list_.begin(), l = list_.end(); i != l;) {
-    if (::_stricmp(i->first.c_str(), name.c_str()) == 0) {
+    if (_stricmp(i->first.c_str(), name.c_str()) == 0) {
       found = true;
 
       if (first) {
@@ -58,9 +54,9 @@ void HttpHeaders::SetHeader(const std::string& name, const std::string& value) {
 void HttpHeaders::MergeHeader(const std::string& name,
                               const std::string& value) {
   for (auto& pair : list_) {
-    if (::_stricmp(pair.first.c_str(), name.c_str()) == 0) {
-      const char* start = pair.second.c_str();
-      const char* end = start;
+    if (_stricmp(pair.first.c_str(), name.c_str()) == 0) {
+      auto start = pair.second.c_str();
+      auto end = start;
 
       while (true) {
         while (*end) {
@@ -70,7 +66,7 @@ void HttpHeaders::MergeHeader(const std::string& name,
           ++end;
         }
 
-        if (::_strnicmp(value.c_str(), start, end - start) == 0)
+        if (_strnicmp(value.c_str(), start, end - start) == 0)
           return;
 
         if (*end == '\0')
@@ -105,17 +101,16 @@ void HttpHeaders::EditHeader(const std::string& name, const std::string& value,
   std::regex pattern;
   try {
     pattern.assign(value);
-  } catch (...) {  // NOLINT(*)
+  } catch (...) {
     return;
   }
 
-  std::regex_constants::match_flag_type flags =
-      std::regex_constants::match_default;
+  auto flags = std::regex_constants::match_default;
   if (!all)
     flags |= std::regex_constants::format_first_only;
 
   for (auto& pair : list_) {
-    if (::_stricmp(pair.first.c_str(), name.c_str()) == 0) {
+    if (_stricmp(pair.first.c_str(), name.c_str()) == 0) {
       pair.second = std::regex_replace(pair.second, pattern, replace, flags);
       if (!all)
         break;
@@ -125,11 +120,10 @@ void HttpHeaders::EditHeader(const std::string& name, const std::string& value,
 
 void HttpHeaders::RemoveHeader(const std::string& name,
                                const std::string& value, bool exact) {
-  typedef int (*Comparator)(const char*, const char*);
-  Comparator comparator = exact ? strcmp : _stricmp;
+  auto comparator = exact ? strcmp : _stricmp;
 
   for (auto i = list_.begin(), l = list_.end(); i != l; ++i) {
-    if (::_stricmp(i->first.c_str(), name.c_str()) == 0 &&
+    if (_stricmp(i->first.c_str(), name.c_str()) == 0 &&
         comparator(i->second.c_str(), value.c_str()) == 0) {
       list_.erase(i);
       break;
@@ -139,7 +133,7 @@ void HttpHeaders::RemoveHeader(const std::string& name,
 
 void HttpHeaders::RemoveHeader(const std::string& name) {
   for (auto i = list_.begin(), l = list_.end(); i != l;) {
-    if (::_stricmp(i->first.c_str(), name.c_str()) == 0)
+    if (_stricmp(i->first.c_str(), name.c_str()) == 0)
       list_.erase(i++);
     else
       ++i;
@@ -147,8 +141,8 @@ void HttpHeaders::RemoveHeader(const std::string& name) {
 }
 
 bool HttpHeaders::HeaderExists(const std::string& name) const {
-  for (auto& pair : *this) {
-    if (::_stricmp(pair.first.c_str(), name.c_str()) == 0)
+  for (auto& pair : list_) {
+    if (_stricmp(pair.first.c_str(), name.c_str()) == 0)
       return true;
   }
 
@@ -159,8 +153,8 @@ const std::string& HttpHeaders::GetHeader(const std::string& name,
                                           size_t position) const {
   size_t index = 0;
 
-  for (auto& pair : *this) {
-    if (::_stricmp(pair.first.c_str(), name.c_str()) == 0) {
+  for (auto& pair : list_) {
+    if (_stricmp(pair.first.c_str(), name.c_str()) == 0) {
       if (index == position)
         return pair.second;
       ++index;
@@ -172,18 +166,18 @@ const std::string& HttpHeaders::GetHeader(const std::string& name,
 
 HttpHeaders::ValueList HttpHeaders::GetAllHeaders(
     const std::string& name) const {
-  ValueList list;
+  ValueList new_list;
 
-  for (auto& pair : *this) {
-    if (::_stricmp(pair.first.c_str(), name.c_str()) == 0)
-      list.push_back(pair.second);
+  for (auto& pair : list_) {
+    if (_stricmp(pair.first.c_str(), name.c_str()) == 0)
+      new_list.push_back(pair.second);
   }
 
-  return list;
+  return new_list;
 }
 
 void HttpHeaders::SerializeHeaders(std::string* buffer) const {
-  for (auto& pair : *this) {
+  for (auto& pair : list_) {
     buffer->append(pair.first);
     buffer->append(": ");
     buffer->append(pair.second);
@@ -193,16 +187,16 @@ void HttpHeaders::SerializeHeaders(std::string* buffer) const {
 
 void HttpHeaders::AddHeaders(const phr_header* headers, size_t count) {
   for (size_t i = 0; i < count; ++i) {
-    const phr_header& current = headers[i];
+    const auto& current = headers[i];
     std::string value(current.value, current.value_len);
 
-    for (size_t j = i + 1; j < count; ++j) {
-      const phr_header& next = headers[j];
+    for (auto j = i + 1; j < count; ++j) {
+      const auto& next = headers[j];
       if (next.name_len != 0)
         break;
 
-      const char* start = next.value;
-      const char* end = start + next.value_len - 1;  // value_len includes CR
+      auto start = next.value;
+      auto end = start + next.value_len - 1;  // value_len includes CR
       for (; start < end; ++start) {
         if (*start != '\t' && *start != ' ')
           break;

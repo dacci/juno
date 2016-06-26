@@ -10,18 +10,17 @@
 #include <atlctrls.h>
 #include <atlmisc.h>
 
-template<class T, class TBase = CWindow>
+template <class T, class TBase = CWindow>
 class ATL_NO_VTABLE DialogImplEx : public CDialogImpl<T, TBase> {
+ public:
   BEGIN_MSG_MAP(DialogImplEx)
     MESSAGE_HANDLER(WM_TIMER, OnTimer)
   END_MSG_MAP()
 
  protected:
-  HRESULT TaskDialog(_U_STRINGorID window_title,
-                     _U_STRINGorID main_instruction,
+  HRESULT TaskDialog(_U_STRINGorID window_title, _U_STRINGorID main_instruction,
                      _U_STRINGorID content,
-                     TASKDIALOG_COMMON_BUTTON_FLAGS buttons,
-                     _U_STRINGorID icon,
+                     TASKDIALOG_COMMON_BUTTON_FLAGS buttons, _U_STRINGorID icon,
                      int* answer) {
     return ::TaskDialog(m_hWnd, ModuleHelper::GetResourceInstance(),
                         window_title.m_lpstr, main_instruction.m_lpstr,
@@ -67,7 +66,7 @@ class ATL_NO_VTABLE DialogImplEx : public CDialogImpl<T, TBase> {
   }
 
  private:
-  const int kBalloonTimerId = rand();  // NOLINT(runtime/threadsafe_fn)
+  const UINT_PTR kBalloonTimerId = rand();  // NOLINT(runtime/threadsafe_fn)
 
   LRESULT OnTimer(UINT /*message*/, WPARAM wParam, LPARAM /*lParam*/,
                   BOOL& handled) {  // NOLINT(runtime/references)

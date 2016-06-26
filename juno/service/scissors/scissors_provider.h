@@ -7,7 +7,7 @@
 
 class ScissorsProvider : public ServiceProvider {
  public:
-  virtual ~ScissorsProvider();
+  ScissorsProvider() {}
 
   ServiceConfigPtr CreateConfig() override;
   ServiceConfigPtr LoadConfig(const RegistryKey& key) override;
@@ -17,6 +17,10 @@ class ScissorsProvider : public ServiceProvider {
   ServicePtr CreateService(const ServiceConfigPtr& config) override;
 
   INT_PTR Configure(const ServiceConfigPtr& config, HWND parent) override;
+
+ private:
+  ScissorsProvider(const ScissorsProvider&) = delete;
+  ScissorsProvider& operator=(const ScissorsProvider&) = delete;
 };
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_PROVIDER_H_

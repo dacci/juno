@@ -16,9 +16,7 @@ class HttpDigest {
   void SetCredential(const std::string& username, const std::string& password);
 
  private:
-  enum Algorithm {
-    MD5SESS, MD5
-  };
+  enum Algorithm { MD5SESS, MD5 };
 
   void Reset();
 
@@ -35,6 +33,9 @@ class HttpDigest {
   std::string opaque_;
   std::string qop_;
   std::string algorithm_;
+
+  HttpDigest(const HttpDigest&) = delete;
+  HttpDigest& operator=(const HttpDigest&) = delete;
 };
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_DIGEST_H_
