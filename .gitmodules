@@ -1,9 +1,6 @@
 [submodule "third_party/picohttpparser/picohttpparser"]
 	path = third_party/picohttpparser/picohttpparser
 	url = https://github.com/h2o/picohttpparser.git
-[submodule "madoka"]
-	path = madoka
-	url = https://github.com/dacci/madoka.git
 [submodule "third_party/libchromium"]
 	path = third_party/libchromium
 	url = https://github.com/dacci/libchromium.git

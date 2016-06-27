@@ -1,11 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "juno", "juno\juno.vcxproj", "{8DF17305-24E8-446A-A1ED-0AAA01C3C43D}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "madoka", "madoka\madoka.vcxproj", "{849CC6CC-460E-45DE-8EA5-4DDA0F25837D}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "picohttpparser", "third_party\picohttpparser\picohttpparser.vcxproj", "{BFBC2B65-BC8C-4C05-B6EA-A4FA571D7F09}"
 EndProject
@@ -29,14 +27,6 @@ Global
 		{8DF17305-24E8-446A-A1ED-0AAA01C3C43D}.Release|x64.Build.0 = Release|x64
 		{8DF17305-24E8-446A-A1ED-0AAA01C3C43D}.Release|x86.ActiveCfg = Release|Win32
 		{8DF17305-24E8-446A-A1ED-0AAA01C3C43D}.Release|x86.Build.0 = Release|Win32
-		{849CC6CC-460E-45DE-8EA5-4DDA0F25837D}.Debug|x64.ActiveCfg = Debug|x64
-		{849CC6CC-460E-45DE-8EA5-4DDA0F25837D}.Debug|x64.Build.0 = Debug|x64
-		{849CC6CC-460E-45DE-8EA5-4DDA0F25837D}.Debug|x86.ActiveCfg = Debug|Win32
-		{849CC6CC-460E-45DE-8EA5-4DDA0F25837D}.Debug|x86.Build.0 = Debug|Win32
-		{849CC6CC-460E-45DE-8EA5-4DDA0F25837D}.Release|x64.ActiveCfg = Release|x64
-		{849CC6CC-460E-45DE-8EA5-4DDA0F25837D}.Release|x64.Build.0 = Release|x64
-		{849CC6CC-460E-45DE-8EA5-4DDA0F25837D}.Release|x86.ActiveCfg = Release|Win32
-		{849CC6CC-460E-45DE-8EA5-4DDA0F25837D}.Release|x86.Build.0 = Release|Win32
 		{BFBC2B65-BC8C-4C05-B6EA-A4FA571D7F09}.Debug|x64.ActiveCfg = Debug|x64
 		{BFBC2B65-BC8C-4C05-B6EA-A4FA571D7F09}.Debug|x64.Build.0 = Debug|x64
 		{BFBC2B65-BC8C-4C05-B6EA-A4FA571D7F09}.Debug|x86.ActiveCfg = Debug|Win32
