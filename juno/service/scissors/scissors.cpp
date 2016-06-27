@@ -15,8 +15,6 @@
 #include "service/scissors/scissors_unwrapping_session.h"
 #include "service/scissors/scissors_wrapping_session.h"
 
-using ::madoka::net::AsyncSocket;
-
 Scissors::Scissors() : stopped_(), not_connecting_(&lock_), empty_(&lock_) {}
 
 Scissors::~Scissors() {
@@ -95,8 +93,8 @@ void Scissors::EndSession(Session* session) {
     EndSessionImpl(session);
 }
 
-Scissors::AsyncSocketPtr Scissors::CreateSocket() {
-  auto socket = std::make_shared<AsyncSocket>();
+std::shared_ptr<DatagramChannel> Scissors::CreateSocket() {
+  auto socket = std::make_shared<DatagramChannel>();
   if (socket == nullptr)
     return nullptr;
 
@@ -208,13 +206,13 @@ void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
     std::unique_ptr<UdpSession> session;
 
     if (config_->remote_udp()) {
-      session = std::make_unique<ScissorsUdpSession>(this, datagram->socket);
+      session = std::make_unique<ScissorsUdpSession>(this, datagram->channel);
     } else {
       auto wrapper = std::make_unique<ScissorsWrappingSession>(this);
       if (wrapper == nullptr)
         return;
 
-      wrapper->SetSource(datagram->socket);
+      wrapper->SetSource(datagram->channel);
       wrapper->SetSourceAddress(datagram->from, datagram->from_length);
 
       session = std::move(wrapper);

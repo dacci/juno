@@ -6,9 +6,8 @@
 
 #include <memory>
 
+#include "net/datagram_channel.h"
 #include "service/scissors/scissors_wrapping_session.h"
-
-using ::madoka::net::AsyncSocket;
 
 ScissorsUnwrappingSession::ScissorsUnwrappingSession(Scissors* service)
     : Session(service), packet_length_(-1) {
@@ -76,11 +75,20 @@ void ScissorsUnwrappingSession::ProcessBuffer() {
       service_->EndSession(this);
     }
   } else if (sink_address_length_ > 0) {
-    sink_->SendToAsync(received_.data(), packet_length_, 0,
-                       reinterpret_cast<sockaddr*>(&sink_address_),
-                       sink_address_length_, this);
+    auto result = sink_->WriteAsync(received_.data(), packet_length_,
+                                    &sink_address_, sink_address_length_, this);
+    if (FAILED(result)) {
+      LOG(ERROR) << this << " failed to write to sink: 0x" << std::hex
+                 << result;
+      service_->EndSession(this);
+    }
   } else {
-    sink_->SendAsync(received_.data(), packet_length_, 0, this);
+    auto result = sink_->WriteAsync(received_.data(), packet_length_, this);
+    if (FAILED(result)) {
+      LOG(ERROR) << this << " failed to write to sink: 0x" << std::hex
+                 << result;
+      service_->EndSession(this);
+    }
   }
 }
 
@@ -110,14 +118,8 @@ void ScissorsUnwrappingSession::OnRead(Channel* /*channel*/, HRESULT result,
   ProcessBuffer();
 }
 
-void ScissorsUnwrappingSession::OnWritten(Channel* /*channel*/,
-                                          HRESULT /*result*/, void* /*buffer*/,
-                                          int /*length*/) {
-  DCHECK(false);
-}
-
-void ScissorsUnwrappingSession::OnSent(AsyncSocket* /*socket*/, HRESULT result,
-                                       void* /*buffer*/, int length) {
+void ScissorsUnwrappingSession::OnWritten(Channel* /*channel*/, HRESULT result,
+                                          void* /*buffer*/, int length) {
   if (FAILED(result) || length == 0) {
     LOG_IF(ERROR, FAILED(result)) << this << " failed to send to the sink: 0x"
                                   << std::hex << result;
@@ -140,11 +142,4 @@ void ScissorsUnwrappingSession::OnSent(AsyncSocket* /*socket*/, HRESULT result,
   } else {
     ProcessBuffer();
   }
-}
-
-void ScissorsUnwrappingSession::OnSentTo(AsyncSocket* socket, HRESULT result,
-                                         void* buffer, int length,
-                                         const sockaddr* /*address*/,
-                                         int /*address_length*/) {
-  OnSent(socket, result, buffer, length);
 }

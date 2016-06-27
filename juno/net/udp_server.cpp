@@ -7,8 +7,6 @@
 #include "net/datagram.h"
 #include "service/service.h"
 
-using ::madoka::net::AsyncSocket;
-
 UdpServer::UdpServer() : service_(), empty_(&lock_) {}
 
 UdpServer::~UdpServer() {
@@ -35,7 +33,7 @@ bool UdpServer::Setup(const char* address, int port) {
     if (buffer == nullptr)
       break;
 
-    auto server = std::make_unique<AsyncSocket>();
+    auto server = std::make_unique<DatagramChannel>();
     if (server == nullptr)
       break;
 
@@ -56,7 +54,7 @@ bool UdpServer::Start() {
   base::AutoLock guard(lock_);
 
   for (auto& pair : buffers_)
-    pair.first->ReceiveFromAsync(pair.second.get(), kBufferSize, 0, this);
+    pair.first->ReadFromAsync(pair.second.get(), kBufferSize, this);
 
   return true;
 }
@@ -71,14 +69,13 @@ void UdpServer::Stop() {
     empty_.Wait();
 }
 
-void UdpServer::OnReceived(AsyncSocket* socket, HRESULT /*result*/,
-                           void* /*buffer*/, int /*length*/, int /*flags*/) {
-  delete socket;
+void UdpServer::OnRead(Channel* /*socket*/, HRESULT /*result*/,
+                       void* /*buffer*/, int /*length*/) {
+  DCHECK(FALSE) << "This must not occurr.";
 }
 
-void UdpServer::OnReceivedFrom(AsyncSocket* socket, HRESULT result,
-                               void* buffer, int length, int /*flags*/,
-                               const sockaddr* address, int address_length) {
+void UdpServer::OnRead(DatagramChannel* socket, HRESULT result, void* buffer,
+                       int length, const void* from, int from_length) {
   if (SUCCEEDED(result)) {
     do {
       auto datagram = std::make_shared<Datagram>();
@@ -95,17 +92,17 @@ void UdpServer::OnReceivedFrom(AsyncSocket* socket, HRESULT result,
 
       for (auto& server : servers_) {
         if (server.get() == socket) {
-          datagram->socket = server;
+          datagram->channel = server;
           break;
         }
       }
 
       datagram->data_length = length;
       memmove(datagram->data.get(), buffer, length);
-      datagram->from_length = address_length;
-      memmove(&datagram->from, address, address_length);
+      datagram->from_length = from_length;
+      memmove(&datagram->from, from, from_length);
 
-      socket->ReceiveFromAsync(buffer, kBufferSize, 0, this);
+      socket->ReadFromAsync(buffer, kBufferSize, this);
 
       service_->OnReceivedFrom(datagram);
     } while (false);
@@ -117,7 +114,12 @@ void UdpServer::OnReceivedFrom(AsyncSocket* socket, HRESULT result,
   }
 }
 
-void UdpServer::DeleteServer(AsyncSocket* server) {
+void UdpServer::OnWritten(Channel* /*channel*/, HRESULT /*result*/,
+                          void* /*buffer*/, int /*length*/) {
+  DLOG(ERROR) << "This must not occurr.";
+}
+
+void UdpServer::DeleteServer(DatagramChannel* server) {
   auto pair = new ServerSocketPair(this, server);
   if (pair == nullptr ||
       !TrySubmitThreadpoolCallback(DeleteServerImpl, pair, nullptr)) {
@@ -133,9 +135,9 @@ void CALLBACK UdpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE /*instance*/,
   delete pair;
 }
 
-void UdpServer::DeleteServerImpl(AsyncSocket* server) {
+void UdpServer::DeleteServerImpl(DatagramChannel* server) {
   std::unique_ptr<char[]> removed_buffer;
-  std::shared_ptr<AsyncSocket> removed_server;
+  std::shared_ptr<DatagramChannel> removed_server;
 
   lock_.Acquire();
 

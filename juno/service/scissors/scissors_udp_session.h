@@ -6,14 +6,16 @@
 #include <memory>
 
 #include "misc/timer_service.h"
-#include "service/service.h"
+#include "net/datagram_channel.h"
 #include "service/scissors/scissors.h"
+#include "service/service.h"
 
 class ScissorsUdpSession : public Scissors::UdpSession,
-                           private madoka::net::AsyncSocket::Listener,
+                           private Channel::Listener,
                            private TimerService::Callback {
  public:
-  ScissorsUdpSession(Scissors* service, const Scissors::AsyncSocketPtr& source);
+  ScissorsUdpSession(Scissors* service,
+                     const std::shared_ptr<DatagramChannel>& source);
   ~ScissorsUdpSession();
 
   bool Start() override;
@@ -25,25 +27,15 @@ class ScissorsUdpSession : public Scissors::UdpSession,
 
   void OnReceived(const Service::DatagramPtr& datagram) override;
 
-  void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
-                  void* buffer, int length, int flags) override;
-
-  void OnConnected(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
-                   const addrinfo* /*end_point*/) override {}
-  void OnReceivedFrom(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
-                      void* /*buffer*/, int /*length*/, int /*flags*/,
-                      const sockaddr* /*address*/,
-                      int /*address_length*/) override {}
-  void OnSent(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
-              void* /*buffer*/, int /*length*/) override {}
-  void OnSentTo(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
-                void* /*buffer*/, int /*length*/, const sockaddr* /*address*/,
-                int /*address_length*/) override {}
+  void OnRead(Channel* channel, HRESULT result, void* buffer,
+              int length) override;
+  void OnWritten(Channel* channel, HRESULT result, void* buffer,
+                 int length) override;
 
   void OnTimeout() override;
 
-  Scissors::AsyncSocketPtr source_;
-  Scissors::AsyncSocketPtr sink_;
+  std::shared_ptr<DatagramChannel> source_;
+  std::shared_ptr<DatagramChannel> sink_;
   sockaddr_storage address_;
   int address_length_;
   char buffer_[kBufferSize];

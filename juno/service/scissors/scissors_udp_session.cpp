@@ -6,10 +6,8 @@
 
 #include "net/datagram.h"
 
-using ::madoka::net::AsyncSocket;
-
-ScissorsUdpSession::ScissorsUdpSession(Scissors* service,
-                                       const Scissors::AsyncSocketPtr& source)
+ScissorsUdpSession::ScissorsUdpSession(
+    Scissors* service, const std::shared_ptr<DatagramChannel>& source)
     : UdpSession(service), source_(source) {
   DLOG(INFO) << this << " session created";
 }
@@ -35,7 +33,7 @@ bool ScissorsUdpSession::Start() {
   }
 
   timer_->Start(kTimeout, 0);
-  sink_->ReceiveAsync(buffer_, sizeof(buffer_), 0, this);
+  sink_->ReadAsync(buffer_, sizeof(buffer_), this);
 
   DLOG(INFO) << this << " session started";
 
@@ -68,8 +66,8 @@ void ScissorsUdpSession::OnReceived(const Service::DatagramPtr& datagram) {
   }
 }
 
-void ScissorsUdpSession::OnReceived(AsyncSocket* /*socket*/, HRESULT result,
-                                    void* buffer, int length, int /*flags*/) {
+void ScissorsUdpSession::OnRead(Channel* /*channel*/, HRESULT result,
+                                void* buffer, int length) {
   timer_->Stop();
 
   if (SUCCEEDED(result)) {
@@ -79,7 +77,7 @@ void ScissorsUdpSession::OnReceived(AsyncSocket* /*socket*/, HRESULT result,
     if (sent == length) {
       DLOG(INFO) << this << " " << sent << " bytes sent to the source";
       timer_->Start(kTimeout, 0);
-      source_->ReceiveAsync(buffer_, sizeof(buffer_), 0, this);
+      source_->ReadAsync(buffer_, sizeof(buffer_), this);
     } else {
       LOG(ERROR) << this
                  << " failed to send to the source: " << WSAGetLastError();
@@ -90,6 +88,11 @@ void ScissorsUdpSession::OnReceived(AsyncSocket* /*socket*/, HRESULT result,
                << result;
     Stop();
   }
+}
+
+void ScissorsUdpSession::OnWritten(Channel* /*channel*/, HRESULT /*result*/,
+                                   void* /*buffer*/, int /*length*/) {
+  LOG(ERROR) << "This must not occur.";
 }
 
 void ScissorsUdpSession::OnTimeout() {

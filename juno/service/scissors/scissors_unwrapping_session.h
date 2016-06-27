@@ -9,11 +9,8 @@
 #include "service/scissors/scissors.h"
 
 class ScissorsUnwrappingSession : public Scissors::Session,
-                                  private Channel::Listener,
-                                  private madoka::net::AsyncSocket::Listener {
+                                  private Channel::Listener {
  public:
-  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
-
   explicit ScissorsUnwrappingSession(Scissors* service);
   ~ScissorsUnwrappingSession();
 
@@ -24,7 +21,7 @@ class ScissorsUnwrappingSession : public Scissors::Session,
     source_ = source;
   }
 
-  void SetSink(const AsyncSocketPtr& sink) {
+  void SetSink(const std::shared_ptr<DatagramChannel>& sink) {
     sink_ = sink;
   }
 
@@ -42,23 +39,9 @@ class ScissorsUnwrappingSession : public Scissors::Session,
               int length) override;
   void OnWritten(Channel* channel, HRESULT result, void* buffer,
                  int length) override;
-  void OnSent(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-              int length) override;
-  void OnSentTo(madoka::net::AsyncSocket* socket, HRESULT result, void* buffer,
-                int length, const sockaddr* address,
-                int address_length) override;
-
-  void OnConnected(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
-                   const addrinfo* /*end_point*/) override {}
-  void OnReceived(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
-                  void* /*buffer*/, int /*length*/, int /*flags*/) override {}
-  void OnReceivedFrom(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
-                      void* /*buffer*/, int /*length*/, int /*flags*/,
-                      const sockaddr* /*address*/,
-                      int /*address_length*/) override {}
 
   Service::ChannelPtr source_;
-  AsyncSocketPtr sink_;
+  std::shared_ptr<DatagramChannel> sink_;
   sockaddr_storage sink_address_;
   int sink_address_length_;
   char buffer_[2 + kBufferSize];  // header + payload

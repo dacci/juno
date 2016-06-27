@@ -7,9 +7,8 @@
 #include <base/logging.h>
 
 #include "net/datagram.h"
+#include "net/datagram_channel.h"
 #include "service/scissors/scissors_unwrapping_session.h"
-
-using ::madoka::net::AsyncSocket;
 
 ScissorsWrappingSession::ScissorsWrappingSession(Scissors* service)
     : UdpSession(service), source_address_length_(0) {
@@ -53,7 +52,7 @@ bool ScissorsWrappingSession::Start() {
 
   if (source_address_length_ == 0) {
     timer_->Start(kTimeout, 0);
-    source_->ReceiveAsync(buffer_ + kLengthOffset, kDatagramSize, 0, this);
+    source_->ReadAsync(buffer_ + kLengthOffset, kDatagramSize, this);
   }
 
   DLOG(INFO) << this << " session started";
@@ -76,8 +75,7 @@ void ScissorsWrappingSession::OnReceived(const Service::DatagramPtr& datagram) {
     return;
   }
 
-  OnReceived(source_.get(), S_OK, datagram->data.get(), datagram->data_length,
-             0);
+  OnRead(source_.get(), S_OK, datagram->data.get(), datagram->data_length);
 }
 
 void ScissorsWrappingSession::OnConnected(SocketChannel* /*socket*/,
@@ -105,9 +103,8 @@ void ScissorsWrappingSession::OnConnected(SocketChannel* /*socket*/,
   service_->StartSession(std::move(pair));
 }
 
-void ScissorsWrappingSession::OnReceived(AsyncSocket* /*socket*/,
-                                         HRESULT result, void* buffer,
-                                         int length, int /*flags*/) {
+void ScissorsWrappingSession::OnRead(Channel* /*channel*/, HRESULT result,
+                                     void* buffer, int length) {
   timer_->Stop();
 
   if (FAILED(result)) {
@@ -131,18 +128,13 @@ void ScissorsWrappingSession::OnReceived(AsyncSocket* /*socket*/,
   }
 }
 
-void ScissorsWrappingSession::OnRead(Channel* /*channel*/, HRESULT /*result*/,
-                                     void* /*buffer*/, int /*length*/) {
-  DCHECK(false);
-}
-
 void ScissorsWrappingSession::OnWritten(Channel* /*channel*/, HRESULT result,
                                         void* /*buffer*/, int length) {
   if (SUCCEEDED(result) && length > 0) {
     timer_->Start(kTimeout, 0);
 
     if (source_address_length_ == 0)
-      source_->ReceiveAsync(buffer_ + kLengthOffset, kDatagramSize, 0, this);
+      source_->ReadAsync(buffer_ + kLengthOffset, kDatagramSize, this);
   } else {
     LOG(ERROR) << this << " failed to send to sink: 0x" << std::hex << result;
     Stop();

@@ -3,11 +3,6 @@
 #ifndef JUNO_NET_UDP_SERVER_H_
 #define JUNO_NET_UDP_SERVER_H_
 
-#pragma warning(push)
-#pragma warning(disable : 4267)
-#include <madoka/net/async_socket.h>
-#pragma warning(pop)
-
 #pragma warning(push, 3)
 #pragma warning(disable : 4244)
 #include <base/synchronization/condition_variable.h>
@@ -19,13 +14,16 @@
 #include <utility>
 #include <vector>
 
+#include "net/datagram_channel.h"
 #include "net/server.h"
 #include "net/socket_resolver.h"
 
 struct Datagram;
 class Service;
 
-class UdpServer : public Server, public madoka::net::AsyncSocket::Listener {
+class UdpServer : public Server,
+                  public Channel::Listener,
+                  public DatagramChannel::Listener {
  public:
   UdpServer();
   virtual ~UdpServer();
@@ -34,37 +32,30 @@ class UdpServer : public Server, public madoka::net::AsyncSocket::Listener {
   bool Start() override;
   void Stop() override;
 
-  void OnReceived(madoka::net::AsyncSocket* socket, HRESULT result,
-                  void* buffer, int length, int flags) override;
-  void OnReceivedFrom(madoka::net::AsyncSocket* socket, HRESULT result,
-                      void* buffer, int length, int flags,
-                      const sockaddr* address, int address_length) override;
-
-  void OnConnected(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
-                   const addrinfo* /*end_point*/) override {}
-  void OnSent(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
-              void* /*buffer*/, int /*length*/) override {}
-  void OnSentTo(madoka::net::AsyncSocket* /*socket*/, HRESULT /*result*/,
-                void* /*buffer*/, int /*length*/, const sockaddr* /*address*/,
-                int /*address_length*/) override {}
+  void OnRead(Channel* channel, HRESULT result, void* buffer,
+              int length) override;
+  void OnRead(DatagramChannel* channel, HRESULT result, void* buffer,
+              int length, const void* from, int from_length) override;
+  void OnWritten(Channel* channel, HRESULT result, void* buffer,
+                 int length) override;
 
   void SetService(Service* service) override {
     service_ = service;
   }
 
  private:
-  typedef std::pair<UdpServer*, madoka::net::AsyncSocket*> ServerSocketPair;
+  typedef std::pair<UdpServer*, DatagramChannel*> ServerSocketPair;
 
   static const int kBufferSize = 65536;
 
-  void DeleteServer(madoka::net::AsyncSocket* server);
+  void DeleteServer(DatagramChannel* server);
   static void CALLBACK DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
                                         void* context);
-  void DeleteServerImpl(madoka::net::AsyncSocket* server);
+  void DeleteServerImpl(DatagramChannel* server);
 
   SocketResolver resolver_;
-  std::vector<std::shared_ptr<madoka::net::AsyncSocket>> servers_;
-  std::map<madoka::net::AsyncSocket*, std::unique_ptr<char[]>> buffers_;
+  std::vector<std::shared_ptr<DatagramChannel>> servers_;
+  std::map<DatagramChannel*, std::unique_ptr<char[]>> buffers_;
   Service* service_;
 
   base::Lock lock_;

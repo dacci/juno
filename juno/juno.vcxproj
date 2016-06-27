@@ -209,6 +209,7 @@
     <ClCompile Include="misc\timer_service.cpp" />
     <ClCompile Include="net\async_server_socket.cpp" />
     <ClCompile Include="net\channel_util.cpp" />
+    <ClCompile Include="net\datagram_channel.cpp" />
     <ClCompile Include="net\secure_channel.cpp" />
     <ClCompile Include="net\socket_channel.cpp" />
     <ClCompile Include="net\socket_resolver.cpp" />
@@ -264,6 +265,7 @@
     <ClInclude Include="net\channel.h" />
     <ClInclude Include="net\channel_util.h" />
     <ClInclude Include="net\datagram.h" />
+    <ClInclude Include="net\datagram_channel.h" />
     <ClInclude Include="net\secure_channel.h" />
     <ClInclude Include="net\server.h" />
     <ClInclude Include="net\server_socket.h" />

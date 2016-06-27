@@ -3,11 +3,6 @@
 #ifndef JUNO_SERVICE_SCISSORS_SCISSORS_H_
 #define JUNO_SERVICE_SCISSORS_SCISSORS_H_
 
-#pragma warning(push)
-#pragma warning(disable : 4267)
-#include <madoka/net/async_socket.h>
-#pragma warning(pop)
-
 #pragma warning(push, 3)
 #pragma warning(disable : 4244)
 #include <base/hash.h>
@@ -25,14 +20,13 @@
 #include "net/socket_resolver.h"
 #include "service/service.h"
 
+class DatagramChannel;
 class SchannelCredential;
 class ScissorsConfig;
 class ServiceConfig;
 
 class Scissors : public Service, private SocketChannel::Listener {
  public:
-  typedef std::shared_ptr<madoka::net::AsyncSocket> AsyncSocketPtr;
-
   class Session {
    public:
     explicit Session(Scissors* service) : service_(service) {}
@@ -61,7 +55,7 @@ class Scissors : public Service, private SocketChannel::Listener {
   bool StartSession(std::unique_ptr<Session>&& session);
   void EndSession(Session* session);
 
-  AsyncSocketPtr CreateSocket();
+  std::shared_ptr<DatagramChannel> CreateSocket();
 
   ChannelPtr CreateChannel(const ChannelPtr& channel);
   HRESULT ConnectSocket(SocketChannel* channel,
