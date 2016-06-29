@@ -91,7 +91,7 @@ class Scissors : public Service, private SocketChannel::Listener {
 
   void OnAccepted(const ChannelPtr& client) override;
   void OnReceivedFrom(const DatagramPtr& datagram) override;
-  void OnError(DWORD error) override;
+  void OnError(HRESULT /*result*/) override {}
 
   void OnConnected(SocketChannel* socket, HRESULT result) override;
   void OnClosed(SocketChannel* /*channel*/, HRESULT /*result*/) override {}

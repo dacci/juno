@@ -3,6 +3,8 @@
 #ifndef JUNO_SERVICE_SERVICE_H_
 #define JUNO_SERVICE_SERVICE_H_
 
+#include <winerror.h>
+
 #include <memory>
 
 #include "service/service_config.h"
@@ -22,7 +24,7 @@ class __declspec(novtable) Service {
 
   virtual void OnAccepted(const ChannelPtr& client) = 0;
   virtual void OnReceivedFrom(const DatagramPtr& datagram) = 0;
-  virtual void OnError(DWORD error) = 0;
+  virtual void OnError(HRESULT result) = 0;
 };
 
 typedef std::unique_ptr<Service> ServicePtr;

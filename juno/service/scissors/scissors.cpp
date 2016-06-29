@@ -235,8 +235,6 @@ void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
     udp_session->OnReceived(datagram);
 }
 
-void Scissors::OnError(DWORD /*error*/) {}
-
 void Scissors::OnConnected(SocketChannel* socket, HRESULT result) {
   LOG_IF(ERROR, FAILED(result))
       << "failed to connect to " << config_->remote_address() << ":"

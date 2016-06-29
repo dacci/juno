@@ -34,7 +34,7 @@ class HttpProxy : public Service {
 
   void OnAccepted(const ChannelPtr& client) override;
   void OnReceivedFrom(const DatagramPtr& datagram) override;
-  void OnError(DWORD error) override;
+  void OnError(HRESULT /*result*/) override {}
 
  private:
   typedef std::pair<HttpProxy*, HttpProxySession*> ServiceSessionPair;

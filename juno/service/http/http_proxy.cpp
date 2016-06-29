@@ -61,8 +61,6 @@ void HttpProxy::OnReceivedFrom(const DatagramPtr& /*datagram*/) {
   // Do nothing
 }
 
-void HttpProxy::OnError(DWORD /*error*/) {}
-
 void CALLBACK HttpProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE /*instance*/,
                                         void* param) {
   auto pair = static_cast<ServiceSessionPair*>(param);
