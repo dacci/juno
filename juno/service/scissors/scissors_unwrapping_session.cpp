@@ -1,145 +1,189 @@
-// Copyright (c) 2015 dacci.org
+// Copyright (c) 2016 dacci.org
 
 #include "service/scissors/scissors_unwrapping_session.h"
 
 #include <base/logging.h>
 
-#include <memory>
-
 #include "net/datagram_channel.h"
-#include "service/scissors/scissors_wrapping_session.h"
 
-ScissorsUnwrappingSession::ScissorsUnwrappingSession(Scissors* service)
-    : Session(service), packet_length_(-1) {
-  DLOG(INFO) << this << " session created";
-}
+ScissorsUnwrappingSession::ScissorsUnwrappingSession(
+    Scissors* service, const Service::ChannelPtr& source)
+    : Session(service),
+      timer_(TimerService::GetDefault()->Create(this)),
+      stream_(source) {}
 
 ScissorsUnwrappingSession::~ScissorsUnwrappingSession() {
   Stop();
-
-  DLOG(INFO) << this << " session destroyed";
 }
 
 bool ScissorsUnwrappingSession::Start() {
-  if (source_ == nullptr) {
-    LOG(ERROR) << this << " source is not specified";
+  if (timer_ == nullptr) {
+    LOG(ERROR) << "Failed to create timer.";
     return false;
   }
 
-  if (sink_ == nullptr) {
-    sink_ = service_->CreateSocket();
-    if (sink_ == nullptr) {
-      LOG(ERROR) << this << " failed to create sink";
-      return false;
-    }
-
-    auto wrapper = std::make_unique<ScissorsWrappingSession>(service_);
-    if (wrapper == nullptr) {
-      LOG(ERROR) << this << " failed to create wrapping session";
-      return false;
-    }
-
-    wrapper->SetSource(sink_);
-    wrapper->SetSink(source_);
-
-    if (!service_->StartSession(std::move(wrapper))) {
-      LOG(ERROR) << this << " failed to start wrapping session";
-      service_->EndSession(this);
-    }
+  if (stream_ == nullptr) {
+    LOG(ERROR) << "Stream is null.";
+    return false;
   }
 
-  auto result = source_->ReadAsync(buffer_, sizeof(buffer_), this);
+  datagram_ = service_->CreateSocket();
+  if (datagram_ == nullptr) {
+    LOG(ERROR) << "Failed to create datagram channel.";
+    return false;
+  }
+
+  HRESULT result;
+
+  timer_->Start(kTimeout, 0);
+  result = datagram_->ReadAsync(datagram_buffer_ + kHeaderSize,
+                                sizeof(datagram_buffer_) - kHeaderSize, this);
   if (FAILED(result)) {
-    LOG(ERROR) << this << " failed to read from source: 0x" << std::hex
-               << result;
-    service_->EndSession(this);
+    LOG(ERROR) << "Failed to receive datagram: 0x" << std::hex << result;
+    return false;
   }
 
-  DLOG(INFO) << this << " session started";
+  result = stream_->ReadAsync(stream_buffer_, sizeof(stream_buffer_), this);
+  if (FAILED(result)) {
+    LOG(ERROR) << "Failed to read from stream: 0x" << std::hex << result;
+    return false;
+  }
 
   return true;
 }
 
 void ScissorsUnwrappingSession::Stop() {
-  DLOG(INFO) << this << " stop requested";
+  if (timer_ != nullptr)
+    timer_->Stop();
 
-  source_->Close();
+  if (datagram_ != nullptr)
+    datagram_->Close();
+
+  if (stream_ != nullptr)
+    stream_->Close();
 }
 
-void ScissorsUnwrappingSession::ProcessBuffer() {
-  if (static_cast<int>(received_.size()) < packet_length_) {
-    auto result = source_->ReadAsync(buffer_, sizeof(buffer_), this);
-    if (FAILED(result)) {
-      LOG(ERROR) << this << " failed to read from source: 0x" << std::hex
-                 << result;
-      service_->EndSession(this);
-    }
-  } else if (sink_address_length_ > 0) {
-    auto result = sink_->WriteAsync(received_.data(), packet_length_,
-                                    &sink_address_, sink_address_length_, this);
-    if (FAILED(result)) {
-      LOG(ERROR) << this << " failed to write to sink: 0x" << std::hex
-                 << result;
-      service_->EndSession(this);
-    }
-  } else {
-    auto result = sink_->WriteAsync(received_.data(), packet_length_, this);
-    if (FAILED(result)) {
-      LOG(ERROR) << this << " failed to write to sink: 0x" << std::hex
-                 << result;
-      service_->EndSession(this);
-    }
-  }
-}
-
-void ScissorsUnwrappingSession::OnRead(Channel* /*channel*/, HRESULT result,
+void ScissorsUnwrappingSession::OnRead(Channel* channel, HRESULT result,
                                        void* buffer, int length) {
-  if (FAILED(result) || length == 0) {
-    LOG_IF(ERROR, FAILED(result))
-        << this << " failed to receive from the source: 0x" << std::hex
-        << result;
+  auto succeeded = false;
+  if (channel == stream_.get())
+    succeeded = OnStreamRead(channel, result, buffer, length);
+  else
+    succeeded = OnDatagramReceived(channel, result, buffer, length);
+
+  if (!succeeded)
     service_->EndSession(this);
-    return;
-  }
-
-  DLOG(INFO) << this << " " << length << " bytes received from the source";
-
-  auto pointer = static_cast<char*>(buffer);
-
-  if (packet_length_ == -1) {
-    memmove(&packet_length_, pointer, 2);
-    packet_length_ = htons(static_cast<u_short>(packet_length_));
-
-    pointer += 2;
-    length -= 2;
-  }
-
-  received_.append(pointer, length);
-  ProcessBuffer();
 }
 
-void ScissorsUnwrappingSession::OnWritten(Channel* /*channel*/, HRESULT result,
-                                          void* /*buffer*/, int length) {
-  if (FAILED(result) || length == 0) {
-    LOG_IF(ERROR, FAILED(result)) << this << " failed to send to the sink: 0x"
-                                  << std::hex << result;
+void ScissorsUnwrappingSession::OnWritten(Channel* channel, HRESULT result,
+                                          void* buffer, int /*length*/) {
+  delete[] static_cast<char*>(buffer);
+
+  if (FAILED(result)) {
+    if (channel == datagram_.get())
+      LOG(ERROR) << "Failed to send datagram: 0x" << std::hex << result;
+    else
+      LOG(ERROR) << "Failed to write to stream: 0x" << std::hex << result;
+
     service_->EndSession(this);
-    return;
+  }
+}
+
+void ScissorsUnwrappingSession::OnTimeout() {
+  LOG(INFO) << "Timeout.";
+  timer_->Stop();
+  datagram_->Close();
+}
+
+bool ScissorsUnwrappingSession::OnStreamRead(Channel* /*channel*/,
+                                             HRESULT result, void* /*buffer*/,
+                                             int length) {
+  if (FAILED(result) || length == 0) {
+    LOG_IF(ERROR, FAILED(result)) << "Failed to read from stream: 0x"
+                                  << std::hex << result;
+    DLOG_IF(WARNING, length == 0) << "stream disconnected.";
+    return false;
   }
 
-  DLOG(INFO) << this << " " << length << " bytes sent to the sink";
+  stream_message_.append(stream_buffer_, length);
 
-  received_.erase(0, length);
-  if (received_.empty()) {
-    packet_length_ = -1;
-
-    result = source_->ReadAsync(buffer_, sizeof(buffer_), this);
-    if (FAILED(result)) {
-      LOG(ERROR) << this << " failed to read from source: 0x" << std::hex
-                 << result;
-      service_->EndSession(this);
+  do {
+    if (stream_message_.size() < kHeaderSize) {
+      DLOG(INFO) << "Incomplete message.";
+      break;
     }
-  } else {
-    ProcessBuffer();
+
+    auto packet = reinterpret_cast<const Packet*>(stream_message_.data());
+    length = _byteswap_ushort(packet->length);
+    if (static_cast<int>(stream_message_.size()) < kHeaderSize + length) {
+      DLOG(INFO) << "Incomplete payload.";
+      break;
+    }
+
+    auto buffer = std::make_unique<char[]>(length);
+    if (buffer == nullptr) {
+      LOG(ERROR) << "Failed to allocate buffer.";
+      return false;
+    }
+
+    memcpy(buffer.get(), packet->data, length);
+    stream_message_.erase(0, kHeaderSize + length);
+
+    result = datagram_->WriteAsync(buffer.get(), length, this);
+    if (SUCCEEDED(result)) {
+      buffer.release();
+    } else {
+      LOG(ERROR) << "Failed to send datagram: 0x" << std::hex << result;
+      return false;
+    }
+  } while (true);
+
+  result = stream_->ReadAsync(stream_buffer_, sizeof(stream_buffer_), this);
+  if (FAILED(result)) {
+    LOG(ERROR) << "Failed to read from stream: 0x" << std::hex << result;
+    return false;
   }
+
+  return true;
+}
+
+bool ScissorsUnwrappingSession::OnDatagramReceived(Channel* /*channel*/,
+                                                   HRESULT result,
+                                                   void* /*buffer*/,
+                                                   int length) {
+  timer_->Stop();
+
+  if (FAILED(result)) {
+    LOG(ERROR) << "Failed to receive datagram: 0x" << std::hex << result;
+    return false;
+  }
+
+  auto packet = reinterpret_cast<Packet*>(datagram_buffer_);
+  packet->length = _byteswap_ushort(static_cast<uint16_t>(length));
+
+  auto buffer = std::make_unique<char[]>(kHeaderSize + length);
+  if (buffer == nullptr) {
+    LOG(ERROR) << "Failed to allocate buffer.";
+    return false;
+  }
+
+  memcpy(buffer.get(), packet, kHeaderSize + length);
+
+  result = stream_->WriteAsync(buffer.get(), kHeaderSize + length, this);
+  if (SUCCEEDED(result)) {
+    buffer.release();
+  } else {
+    LOG(ERROR) << "Failed to write to stream: 0x" << std::hex << result;
+    return false;
+  }
+
+  timer_->Start(kTimeout, 0);
+  result =
+      datagram_->ReadAsync(datagram_buffer_, sizeof(datagram_buffer_), this);
+  if (FAILED(result)) {
+    LOG(ERROR) << "Failed to receive datagram: 0x" << std::hex << result;
+    return false;
+  }
+
+  return true;
 }

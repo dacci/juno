@@ -1,52 +1,59 @@
-// Copyright (c) 2015 dacci.org
+// Copyright (c) 2016 dacci.org
 
 #ifndef JUNO_SERVICE_SCISSORS_SCISSORS_UNWRAPPING_SESSION_H_
 #define JUNO_SERVICE_SCISSORS_SCISSORS_UNWRAPPING_SESSION_H_
 
+#include <stdint.h>
+
+#include <memory>
 #include <string>
 
-#include "net/channel.h"
+#include "misc/timer_service.h"
 #include "service/scissors/scissors.h"
 
+class DatagramChannel;
+class Scissors;
+
 class ScissorsUnwrappingSession : public Scissors::Session,
-                                  private Channel::Listener {
+                                  public Channel::Listener,
+                                  public TimerService::Callback {
  public:
-  explicit ScissorsUnwrappingSession(Scissors* service);
+  ScissorsUnwrappingSession(Scissors* service,
+                            const Service::ChannelPtr& source);
   ~ScissorsUnwrappingSession();
 
   bool Start() override;
   void Stop() override;
-
-  void SetSource(const Service::ChannelPtr& source) {
-    source_ = source;
-  }
-
-  void SetSink(const std::shared_ptr<DatagramChannel>& sink) {
-    sink_ = sink;
-  }
-
-  void SetSinkAddress(const sockaddr_storage& address, int length) {
-    memmove(&sink_address_, &address, length);
-    sink_address_length_ = length;
-  }
-
- private:
-  static const int kBufferSize = 65535;
-
-  void ProcessBuffer();
 
   void OnRead(Channel* channel, HRESULT result, void* buffer,
               int length) override;
   void OnWritten(Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
-  Service::ChannelPtr source_;
-  std::shared_ptr<DatagramChannel> sink_;
-  sockaddr_storage sink_address_;
-  int sink_address_length_;
-  char buffer_[2 + kBufferSize];  // header + payload
-  int packet_length_;
-  std::string received_;
+  void OnTimeout() override;
+
+ private:
+  struct Packet {
+    uint16_t length;
+    char data[ANYSIZE_ARRAY];
+  };
+
+  static const int kHeaderSize = 2;
+  static const int kDataSize = 0xFFFF;
+  static const int kTimeout = 60 * 1000;
+
+  bool OnStreamRead(Channel* channel, HRESULT result, void* buffer, int length);
+  bool OnDatagramReceived(Channel* channel, HRESULT result, void* buffer,
+                          int length);
+
+  TimerService::TimerObject timer_;
+
+  std::shared_ptr<Channel> stream_;
+  char stream_buffer_[4096];
+  std::string stream_message_;
+
+  std::shared_ptr<DatagramChannel> datagram_;
+  char datagram_buffer_[kDataSize];
 
   ScissorsUnwrappingSession(const ScissorsUnwrappingSession&) = delete;
   ScissorsUnwrappingSession& operator=(const ScissorsUnwrappingSession&) =

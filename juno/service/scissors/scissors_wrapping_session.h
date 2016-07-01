@@ -1,64 +1,65 @@
-// Copyright (c) 2015 dacci.org
+// Copyright (c) 2016 dacci.org
 
 #ifndef JUNO_SERVICE_SCISSORS_SCISSORS_WRAPPING_SESSION_H_
 #define JUNO_SERVICE_SCISSORS_SCISSORS_WRAPPING_SESSION_H_
 
-#include <memory>
+#pragma warning(push, 3)
+#pragma warning(disable : 4244)
+#include <base/synchronization/lock.h>
+#pragma warning(pop)
+
+#include <list>
+#include <string>
 
 #include "misc/timer_service.h"
-#include "net/channel.h"
 #include "service/scissors/scissors.h"
 
-class DatagramChannel;
-class ScissorsUnwrappingSession;
-
 class ScissorsWrappingSession : public Scissors::UdpSession,
-                                private Channel::Listener,
-                                private SocketChannel::Listener,
-                                private TimerService::Callback {
+                                public Channel::Listener,
+                                public SocketChannel::Listener,
+                                public TimerService::Callback {
  public:
-  explicit ScissorsWrappingSession(Scissors* service);
+  ScissorsWrappingSession(Scissors* service, const Datagram* datagram);
   ~ScissorsWrappingSession();
 
   bool Start() override;
   void Stop() override;
 
-  void SetSource(const std::shared_ptr<DatagramChannel>& source) {
-    source_ = source;
-  }
-
-  void SetSink(const Service::ChannelPtr& sink) {
-    sink_ = sink;
-  }
-
-  void SetSourceAddress(const sockaddr_storage& address, int length) {
-    memmove(&source_address_, &address, length);
-    source_address_length_ = length;
-  }
-
- private:
-  static const int kLengthOffset = 2;
-  static const int kDatagramSize = 65535;
-  static const int kTimeout = 60 * 1000;  // 60 sec.
-
   void OnReceived(const Service::DatagramPtr& datagram) override;
-
-  void OnConnected(SocketChannel* socket, HRESULT result) override;
-  void OnClosed(SocketChannel* /*channel*/, HRESULT /*result*/) override {}
-
   void OnRead(Channel* channel, HRESULT result, void* buffer,
               int length) override;
   void OnWritten(Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
+  void OnConnected(SocketChannel* channel, HRESULT result) override;
+  void OnClosed(SocketChannel* /*channel*/, HRESULT /*result*/) override {}
+
   void OnTimeout() override;
 
+ private:
+  struct Packet {
+    uint16_t length;
+    char data[ANYSIZE_ARRAY];
+  };
+
+  static const int kHeaderSize = 2;
+  static const int kDataSize = 0xFFFF;
+  static const int kTimeout = 5 * 1000;
+
+  void SendDatagram();
+
+  base::Lock lock_;
+  std::list<Service::DatagramPtr> queue_;
+  bool connected_;
   TimerService::TimerObject timer_;
-  std::shared_ptr<DatagramChannel> source_;
-  Service::ChannelPtr sink_;
-  sockaddr_storage source_address_;
-  int source_address_length_;
-  char buffer_[kLengthOffset + kDatagramSize];
+
+  std::shared_ptr<Channel> stream_;
+  char stream_buffer_[4096];
+  std::string stream_message_;
+
+  std::shared_ptr<DatagramChannel> datagram_;
+  int address_length_;
+  sockaddr_storage address_;
 
   ScissorsWrappingSession(const ScissorsWrappingSession&) = delete;
   ScissorsWrappingSession& operator=(const ScissorsWrappingSession&) = delete;

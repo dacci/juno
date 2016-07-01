@@ -172,17 +172,10 @@ void Scissors::OnAccepted(const ChannelPtr& client) {
   if (stopped_)
     return;
 
-  if (config_->remote_udp()) {
-    auto session = std::make_unique<ScissorsUnwrappingSession>(this);
-    if (session == nullptr)
-      return;
-
-    session->SetSource(client);
-
-    StartSession(std::move(session));
-  } else {
+  if (config_->remote_udp())
+    StartSession(std::make_unique<ScissorsUnwrappingSession>(this, client));
+  else
     StartSession(std::make_unique<ScissorsTcpSession>(this, client));
-  }
 }
 
 void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
@@ -205,18 +198,11 @@ void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
 
     std::unique_ptr<UdpSession> session;
 
-    if (config_->remote_udp()) {
+    if (config_->remote_udp())
       session = std::make_unique<ScissorsUdpSession>(this, datagram->channel);
-    } else {
-      auto wrapper = std::make_unique<ScissorsWrappingSession>(this);
-      if (wrapper == nullptr)
-        return;
-
-      wrapper->SetSource(datagram->channel);
-      wrapper->SetSourceAddress(datagram->from, datagram->from_length);
-
-      session = std::move(wrapper);
-    }
+    else
+      session = std::move(
+          std::make_unique<ScissorsWrappingSession>(this, datagram.get()));
 
     udp_session = session.get();
     if (StartSession(std::move(session))) {
