@@ -206,29 +206,29 @@ void DatagramChannel::OnRequested(PTP_WORK work) {
   if (!queue_.empty())
     SubmitThreadpoolWork(work);
 
-  if (request->command != kNotify) {
+  do {
+    base::AutoLock guard(lock_, base::AutoLock::AlreadyAcquired());
+
+    if (request->command == kNotify)
+      break;
+
     if (!IsValid()) {
       request->result = E_HANDLE;
-    } else if (io_ == nullptr) {
+      break;
+    }
+
+    if (io_ == nullptr) {
       io_ = CreateThreadpoolIo(reinterpret_cast<HANDLE>(descriptor_),
                                OnCompleted, this, nullptr);
-      if (io_ == nullptr)
+      if (io_ == nullptr) {
         request->result = HRESULT_FROM_WIN32(GetLastError());
+        break;
+      }
     }
-
-    if (request->result != S_OK) {
-      request->completed_command = request->command;
-      request->command = kNotify;
-    }
-  }
-
-  lock_.Release();
-
-  if (request->command != kNotify) {
-    auto succeeded = false;
 
     StartThreadpoolIo(io_);
 
+    auto succeeded = false;
     switch (request->command) {
       case kReadAsync:
         succeeded = WSARecv(descriptor_, request.get(), 1, nullptr,
@@ -265,9 +265,12 @@ void DatagramChannel::OnRequested(PTP_WORK work) {
     }
 
     CancelThreadpoolIo(io_);
+    request->result = HRESULT_FROM_WIN32(error);
+  } while (false);
+
+  if (request->command != kNotify) {
     request->completed_command = request->command;
     request->command = kNotify;
-    request->result = HRESULT_FROM_WIN32(error);
   }
 
   switch (request->completed_command) {

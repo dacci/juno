@@ -106,7 +106,7 @@ SOCKET AsyncServerSocket::EndAcceptImpl(Context* context, HRESULT* result) {
 
   DWORD bytes = 0;
   auto succeeded = GetOverlappedResult(reinterpret_cast<HANDLE>(descriptor_),
-                                       context, &bytes, TRUE);
+                                       context, &bytes, TRUE) != FALSE;
   if (!succeeded) {
     if (result != nullptr)
       *result = HRESULT_FROM_WIN32(GetLastError());
@@ -147,37 +147,32 @@ void AsyncServerSocket::OnRequested(PTP_WORK work) {
   if (!queue_.empty())
     SubmitThreadpoolWork(work);
 
-  if (request->completed) {
-    lock_.Release();
-    request->listener->OnAccepted(this, request->result, request.get());
-    return;
-  }
-
   do {
+    base::AutoLock guard(lock_, base::AutoLock::AlreadyAcquired());
+
+    if (request->completed)
+      break;
+
     if (!IsValid()) {
       request->result = E_HANDLE;
       break;
     }
 
-    if (io_ != nullptr)
-      break;
-
-    io_ = CreateThreadpoolIo(reinterpret_cast<HANDLE>(descriptor_), OnCompleted,
-                             this, nullptr);
     if (io_ == nullptr) {
-      request->result = HRESULT_FROM_WIN32(GetLastError());
-      break;
+      io_ = CreateThreadpoolIo(reinterpret_cast<HANDLE>(descriptor_),
+                               OnCompleted, this, nullptr);
+      if (io_ == nullptr) {
+        request->result = HRESULT_FROM_WIN32(GetLastError());
+        break;
+      }
     }
 
-    if (!GetOption(SOL_SOCKET, SO_PROTOCOL_INFO, &protocol_)) {
+    if (protocol_.iAddressFamily == 0 &&
+        !GetOption(SOL_SOCKET, SO_PROTOCOL_INFO, &protocol_)) {
       request->result = HRESULT_FROM_WIN32(WSAGetLastError());
       break;
     }
-  } while (false);
 
-  lock_.Release();
-
-  while (!request->completed && SUCCEEDED(request->result)) {
     request->socket = socket(protocol_.iAddressFamily, protocol_.iSocketType,
                              protocol_.iProtocol);
     if (request->socket == INVALID_SOCKET) {
@@ -185,27 +180,20 @@ void AsyncServerSocket::OnRequested(PTP_WORK work) {
       break;
     }
 
-    base::AutoLock guard(lock_);
-
-    if (io_ == nullptr) {
-      request->result = E_HANDLE;
-      break;
-    }
-
     StartThreadpoolIo(io_);
+
     auto succeeded = AcceptEx(descriptor_, request->socket, request->buffer, 0,
                               kAddressBufferSize, kAddressBufferSize, nullptr,
                               request.get());
     auto error = WSAGetLastError();
-    if (!succeeded && error != WSA_IO_PENDING) {
-      CancelThreadpoolIo(io_);
-      request->result = HRESULT_FROM_WIN32(error);
-      break;
+    if (succeeded || error == WSA_IO_PENDING) {
+      request.release();
+      return;
     }
 
-    request.release();
-    return;
-  }
+    CancelThreadpoolIo(io_);
+    request->result = HRESULT_FROM_WIN32(error);
+  } while (false);
 
   request->listener->OnAccepted(this, request->result, request.get());
 }

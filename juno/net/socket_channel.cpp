@@ -259,63 +259,69 @@ void SocketChannel::OnRequested(PTP_WORK work) {
   if (!queue_.empty())
     SubmitThreadpoolWork(work);
 
-  if (request->command == kNotify &&
-      request->completed_command == kConnectAsync && FAILED(request->result) &&
-      request->end_point->ai_next != nullptr) {
-    request->command = kConnectAsync;
-    request->end_point = request->end_point->ai_next;
-    request->completed_command = kInvalid;
-    request->result = S_OK;
-  }
+  do {
+    base::AutoLock guard(lock_, base::AutoLock::AlreadyAcquired());
 
-  if (request->command != kNotify) {
-    if (request->command == kConnectAsync && !abort_) {
+    if (request->command == kNotify) {
+      if (request->completed_command != kConnectAsync)
+        break;
+
+      if (SUCCEEDED(request->result)) {
+        if (SetOption(SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, nullptr, 0)) {
+          connected_ = true;
+          break;
+        }
+
+        request->result = HRESULT_FROM_WIN32(WSAGetLastError());
+      }
+
+      if (request->end_point->ai_next == nullptr)
+        break;
+
+      request->command = kConnectAsync;
+      request->end_point = request->end_point->ai_next;
+      request->result = S_OK;
+    }
+
+    if (request->command == kConnectAsync) {
+      if (abort_) {
+        request->result = E_ABORT;
+        break;
+      }
+
       while (request->end_point != nullptr) {
         sockaddr_storage null_address{
             static_cast<ADDRESS_FAMILY>(request->end_point->ai_family)};
 
-        base::AutoUnlock unlock(lock_);
+        {
+          base::AutoUnlock unlock(lock_);
+          Create(request->end_point);
+        }
 
-        if (Create(request->end_point->ai_family,
-                   request->end_point->ai_socktype,
-                   request->end_point->ai_protocol) &&
-            Bind(&null_address, request->end_point->ai_addrlen))
+        if (Bind(&null_address, request->end_point->ai_addrlen))
           break;
 
         request->end_point = request->end_point->ai_next;
       }
+
+      if (!IsValid() || !bound_) {
+        request->result = E_HANDLE;
+        break;
+      }
     }
 
-    if (abort_) {
-      request->result = E_ABORT;
-    } else if (!IsValid()) {
-      request->result = E_HANDLE;
-    } else if (io_ == nullptr) {
+    if (io_ == nullptr) {
       io_ = CreateThreadpoolIo(reinterpret_cast<HANDLE>(descriptor_),
                                OnCompleted, this, nullptr);
-      if (io_ == nullptr)
+      if (io_ == nullptr) {
         request->result = HRESULT_FROM_WIN32(GetLastError());
+        break;
+      }
     }
-
-    if (request->result != S_OK) {
-      request->completed_command = request->command;
-      request->command = kNotify;
-    }
-  } else if (request->completed_command == kConnectAsync &&
-             SUCCEEDED(request->result)) {
-    if (SetOption(SOL_SOCKET, SO_UPDATE_CONNECT_CONTEXT, nullptr, 0))
-      connected_ = true;
-    else
-      request->result = HRESULT_FROM_WIN32(WSAGetLastError());
-  }
-
-  lock_.Release();
-
-  if (request->command != kNotify && request->result == S_OK) {
-    auto succeeded = false;
 
     StartThreadpoolIo(io_);
 
+    auto succeeded = false;
     switch (request->command) {
       case kReadAsync:
       case kMonitorConnection:
@@ -345,9 +351,12 @@ void SocketChannel::OnRequested(PTP_WORK work) {
     }
 
     CancelThreadpoolIo(io_);
+    request->result = HRESULT_FROM_WIN32(error);
+  } while (false);
+
+  if (request->command != kNotify) {
     request->completed_command = request->command;
     request->command = kNotify;
-    request->result = HRESULT_FROM_WIN32(error);
   }
 
   switch (request->completed_command) {

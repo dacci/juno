@@ -36,8 +36,7 @@ class Socket : public AbstractSocket {
     if (connected_)
       return false;
 
-    if (!Create(end_point->ai_family, end_point->ai_socktype,
-                end_point->ai_protocol))
+    if (!Create(end_point))
       return false;
 
     return Connect(end_point->ai_addr, static_cast<int>(end_point->ai_addrlen));

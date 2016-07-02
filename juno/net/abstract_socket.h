@@ -17,6 +17,11 @@ class AbstractSocket {
     return IsValid();
   }
 
+  bool Create(const addrinfo* end_point) {
+    return Create(end_point->ai_family, end_point->ai_socktype,
+                  end_point->ai_protocol);
+  }
+
   bool Bind(const void* address, size_t length) {
     if (!IsValid() || bound_)
       return false;
@@ -34,8 +39,7 @@ class AbstractSocket {
     if (bound_)
       return false;
 
-    if (!Create(end_point->ai_family, end_point->ai_socktype,
-                end_point->ai_protocol))
+    if (!Create(end_point))
       return false;
 
     return Bind(end_point->ai_addr, end_point->ai_addrlen);
