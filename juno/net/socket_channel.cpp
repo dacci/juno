@@ -80,6 +80,7 @@ void SocketChannel::Close() {
 
   base::AutoLock guard(lock_);
 
+  abort_ = true;
   Socket::Close();
 
   if (io_ != nullptr) {
