@@ -57,15 +57,13 @@ void AsyncServerSocket::Close() {
   base::AutoLock guard(lock_);
 
   if (io_ != nullptr) {
-    {
-      base::AutoUnlock unlock(lock_);
-      WaitForThreadpoolIoCallbacks(io_, FALSE);
-    }
+    auto local_io = io_;
+    io_ = nullptr;
 
-    if (io_ != nullptr) {
-      CloseThreadpoolIo(io_);
-      io_ = nullptr;
-    }
+    base::AutoUnlock unlock(lock_);
+
+    WaitForThreadpoolIoCallbacks(local_io, FALSE);
+    CloseThreadpoolIo(local_io);
   }
 }
 
