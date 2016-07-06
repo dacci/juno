@@ -34,6 +34,8 @@ HttpProxySession::HttpProxySession(
     const Service::ChannelPtr& client)
     : proxy_(proxy),
       config_(config),
+      ref_count_(0),
+      free_(&lock_),
       timer_(TimerService::GetDefault()->Create(this)),
       state_(Idle),
       tunnel_(),
@@ -47,6 +49,14 @@ HttpProxySession::HttpProxySession(
 HttpProxySession::~HttpProxySession() {
   if (timer_ != nullptr)
     timer_->Stop();
+
+  remote_.reset();
+  client_.reset();
+
+  base::AutoLock guard(lock_);
+
+  while (!base::AtomicRefCountIsZero(&ref_count_))
+    free_.Wait();
 
   DLOG(INFO) << this << " session destroyed";
 }
@@ -516,68 +526,82 @@ void HttpProxySession::OnTimeout() {
 
 void HttpProxySession::OnRead(Channel* /*channel*/, HRESULT result,
                               void* /*buffer*/, int length) {
+  base::AtomicRefCountInc(&ref_count_);
+
   base::AutoLock guard(lock_);
 
   switch (state_) {
     case RequestHeader:
       OnRequestReceived(result, length);
-      return;
+      break;
 
     case RequestBody:
       OnRequestBodyReceived(result, length);
-      return;
+      break;
 
     case ResponseHeader:
       OnResponseReceived(result, length);
-      return;
+      break;
 
     case ResponseBody:
       OnResponseBodyReceived(result, length);
-      return;
+      break;
 
     default:
       proxy_->EndSession(this);
-      return;
+      break;
   }
+
+  if (!base::AtomicRefCountDec(&ref_count_))
+    free_.Broadcast();
 }
 
 void HttpProxySession::OnWritten(Channel* /*channel*/, HRESULT result,
                                  void* /*buffer*/, int length) {
+  base::AtomicRefCountInc(&ref_count_);
+
   base::AutoLock guard(lock_);
 
   switch (state_) {
     case RequestHeader:
       OnRequestSent(result, length);
-      return;
+      break;
 
     case RequestBody:
       OnRequestBodySent(result, length);
-      return;
+      break;
 
     case ResponseHeader:
       OnResponseSent(result, length);
-      return;
+      break;
 
     case ResponseBody:
       OnResponseBodySent(result, length);
-      return;
+      break;
 
     default:
       proxy_->EndSession(this);
-      return;
+      break;
   }
+
+  if (!base::AtomicRefCountDec(&ref_count_))
+    free_.Broadcast();
 }
 
 void HttpProxySession::OnClosed(SocketChannel* socket, HRESULT /*result*/) {
+  base::AtomicRefCountInc(&ref_count_);
+
   base::AutoLock guard(lock_);
 
-  if (socket != remote_.get())
-    return;
+  if (socket == remote_.get()) {
+    LOG(WARNING) << this << " socket disconnected";
 
-  LOG(WARNING) << this << " socket disconnected";
+    last_host_.clear();
+    last_port_ = -1;
+  }
 
-  last_host_.clear();
-  last_port_ = -1;
+  if (!base::AtomicRefCountDec(&ref_count_))
+    free_.Broadcast();
 }
 
 void HttpProxySession::OnRequestReceived(HRESULT result, int length) {
@@ -595,29 +619,33 @@ void HttpProxySession::OnRequestReceived(HRESULT result, int length) {
 }
 
 void HttpProxySession::OnConnected(SocketChannel* socket, HRESULT result) {
+  base::AtomicRefCountInc(&ref_count_);
+
   base::AutoLock guard(lock_);
 
-  if (FAILED(result)) {
-    LOG(ERROR) << this << " failed to connect: 0x" << std::hex << result;
-    SendError(HTTP::BAD_GATEWAY);
-    return;
-  }
+  if (SUCCEEDED(result)) {
+    if (!tunnel_)
+      socket->MonitorConnection(this);
 
-  if (!tunnel_)
-    socket->MonitorConnection(this);
-
-  if (tunnel_ && !config_->use_remote_proxy()) {
-    if (TunnelingService::Bind(client_, remote_)) {
-      response_.Clear();
-      response_.SetStatus(HTTP::OK, "Connection Established");
-      response_.SetHeader(kContentLength, "0");
-      SendResponse();
+    if (tunnel_ && !config_->use_remote_proxy()) {
+      if (TunnelingService::Bind(client_, remote_)) {
+        response_.Clear();
+        response_.SetStatus(HTTP::OK, "Connection Established");
+        response_.SetHeader(kContentLength, "0");
+        SendResponse();
+      } else {
+        SendError(HTTP::INTERNAL_SERVER_ERROR);
+      }
     } else {
-      SendError(HTTP::INTERNAL_SERVER_ERROR);
+      SendRequest();
     }
   } else {
-    SendRequest();
+    LOG(ERROR) << this << " failed to connect: 0x" << std::hex << result;
+    SendError(HTTP::BAD_GATEWAY);
   }
+
+  if (!base::AtomicRefCountDec(&ref_count_))
+    free_.Broadcast();
 }
 
 void HttpProxySession::OnRequestSent(HRESULT result, int length) {

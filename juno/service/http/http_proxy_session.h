@@ -7,6 +7,8 @@
 
 #pragma warning(push, 3)
 #pragma warning(disable : 4244)
+#include <base/atomic_ref_count.h>
+#include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
 #pragma warning(pop)
 
@@ -89,7 +91,11 @@ class HttpProxySession : private Channel::Listener,
 
   HttpProxy* const proxy_;
   std::shared_ptr<HttpProxyConfig> config_;
+
+  base::AtomicRefCount ref_count_;
   base::Lock lock_;
+  base::ConditionVariable free_;
+
   TimerService::TimerObject timer_;
   char buffer_[kBufferSize];
   State state_;
