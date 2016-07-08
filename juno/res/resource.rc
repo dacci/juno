@@ -63,8 +63,8 @@ IDR_TRAY_MENU           ICON                    "juno_g.ico"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,9,0,0
- PRODUCTVERSION 0,9,0,0
+ FILEVERSION 0,10,0,0
+ PRODUCTVERSION 0,10,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -81,12 +81,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "dacci.org"
             VALUE "FileDescription", "Juno Proxy Server"
-            VALUE "FileVersion", "0.9.0.0"
+            VALUE "FileVersion", "0.10.0.0"
             VALUE "InternalName", "juno.exe"
-            VALUE "LegalCopyright", "Copyright (c) 2015 dacci.org"
+            VALUE "LegalCopyright", "Copyright (c) 2016 dacci.org"
             VALUE "OriginalFilename", "juno.exe"
             VALUE "ProductName", "Juno"
-            VALUE "ProductVersion", "0.9.0.0"
+            VALUE "ProductVersion", "0.10.0.0"
         END
     END
     BLOCK "VarFileInfo"
