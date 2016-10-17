@@ -8,9 +8,9 @@
 #include <stddef.h>
 
 #include <iosfwd>
+#include <memory>
 #include <string>
 
-#include "base/memory/scoped_ptr.h"
 #include "base/strings/string16.h"
 #include "base/strings/string_piece.h"
 #include "url/third_party/mozilla/url_parse.h"
@@ -70,7 +70,7 @@ class URL_EXPORT GURL {
   // from WebURL without copying the string. When we call this constructor
   // we pass in a temporary std::string, which lets the compiler skip the
   // copy and just move the std::string into the function argument. In the
-  // implementation, we use swap to move the data into the GURL itself,
+  // implementation, we use std::move to move the data into the GURL itself,
   // which means we end up with zero copies.
   GURL(std::string canonical_spec, const url::Parsed& parsed, bool is_valid);
 
@@ -214,6 +214,9 @@ class URL_EXPORT GURL {
 
   // Returns true if the scheme is "http" or "https".
   bool SchemeIsHTTPOrHTTPS() const;
+
+  // Returns true if the scheme is valid for use as a referrer.
+  bool SchemeIsValidForReferrer() const;
 
   // Returns true is the scheme is "ws" or "wss".
   bool SchemeIsWSOrWSS() const;
@@ -391,6 +394,10 @@ class URL_EXPORT GURL {
 
   // Returns the inner URL of a nested URL (currently only non-null for
   // filesystem URLs).
+  //
+  // TODO(mmenke): inner_url().spec() currently returns the same value as
+  // caling spec() on the GURL itself. This should be fixed.
+  // See https://crbug.com/619596
   const GURL* inner_url() const {
     return inner_url_.get();
   }
@@ -434,7 +441,7 @@ class URL_EXPORT GURL {
   url::Parsed parsed_;
 
   // Used for nested schemes [currently only filesystem:].
-  scoped_ptr<GURL> inner_url_;
+  std::unique_ptr<GURL> inner_url_;
 };
 
 // Stream operator so GURL can be used in assertion statements.

@@ -5,6 +5,8 @@
 #ifndef URL_URL_CONSTANTS_H_
 #define URL_URL_CONSTANTS_H_
 
+#include <stddef.h>
+
 #include "url/url_export.h"
 
 namespace url {
@@ -15,6 +17,7 @@ URL_EXPORT extern const char kAboutScheme[];
 URL_EXPORT extern const char kBlobScheme[];
 // The content scheme is specific to Android for identifying a stored file.
 URL_EXPORT extern const char kContentScheme[];
+URL_EXPORT extern const char kContentIDScheme[];
 URL_EXPORT extern const char kDataScheme[];
 URL_EXPORT extern const char kFileScheme[];
 URL_EXPORT extern const char kFileSystemScheme[];
@@ -29,6 +32,8 @@ URL_EXPORT extern const char kWssScheme[];
 
 // Used to separate a standard scheme and the hostname: "://".
 URL_EXPORT extern const char kStandardSchemeSeparator[];
+
+URL_EXPORT extern const size_t kMaxURLChars;
 
 }  // namespace url
 
