@@ -4,6 +4,7 @@
 #define JUNO_UI_SCISSORS_DIALOG_H_
 
 #include <atlbase.h>
+#include <atlstr.h>
 #include <atlwin.h>
 
 #include <atlapp.h>

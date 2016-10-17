@@ -91,7 +91,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_WTL_NO_CSTRING;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_CSTRING_NS=ATL;_WTL_NO_CSTRING;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -116,7 +116,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_WTL_NO_CSTRING;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_CSTRING_NS=ATL;_WTL_NO_CSTRING;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -143,7 +143,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_WTL_NO_CSTRING;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_CSTRING_NS=ATL;_WTL_NO_CSTRING;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -168,7 +168,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_ATTRIBUTES;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_WTL_NO_CSTRING;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_CSTRING_NS=ATL;_WTL_NO_CSTRING;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>

@@ -4,6 +4,7 @@
 #define JUNO_UI_SOCKS_PROXY_DIALOG_H_
 
 #include <atlbase.h>
+#include <atlstr.h>
 #include <atlwin.h>
 
 #include <atlapp.h>

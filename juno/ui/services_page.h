@@ -4,6 +4,7 @@
 #define JUNO_UI_SERVICES_PAGE_H_
 
 #include <atlbase.h>
+#include <atlstr.h>
 #include <atlwin.h>
 
 #include <atlapp.h>
