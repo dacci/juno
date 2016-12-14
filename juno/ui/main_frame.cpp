@@ -7,7 +7,6 @@
 #include <base/logging.h>
 
 #include "app/constants.h"
-#include "app/juno.h"
 #include "app/service_manager.h"
 #include "net/tunneling_service.h"
 #include "ui/preference_dialog.h"
@@ -16,7 +15,7 @@ const UINT MainFrame::WM_TASKBARCREATED =
     RegisterWindowMessage(_T("TaskbarCreated"));
 
 MainFrame::MainFrame()
-    : mutex_(NULL), old_windows_(false), notify_icon_(), configuring_(false) {}
+    : old_windows_(false), notify_icon_(), configuring_(false) {}
 
 MainFrame::~MainFrame() {}
 
@@ -37,34 +36,32 @@ void MainFrame::TrackTrayMenu(int x, int y) {
 int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
   CString message;
 
-  wchar_t mutex_name[40];
-  StringFromGUID2(GUID_JUNO_APPLICATION, mutex_name, _countof(mutex_name));
-  mutex_ = CreateMutex(nullptr, TRUE, mutex_name);
-  auto error = GetLastError();
-
-  if (mutex_ == NULL) {
-    message.LoadString(IDS_ERR_INIT_FAILED);
-    MessageBox(message, nullptr, MB_ICONERROR);
-    return -1;
-  }
-
-  if (error != ERROR_SUCCESS) {
-    message.LoadString(IDS_ERR_ALREADY_RUNNING);
-    MessageBox(message, nullptr, MB_ICONERROR);
-    return -1;
-  }
-
   notify_icon_.cbSize = sizeof(notify_icon_);
   notify_icon_.hWnd = m_hWnd;
   notify_icon_.uFlags =
       NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_GUID | NIF_SHOWTIP;
   notify_icon_.uCallbackMessage = WM_TRAYNOTIFY;
-  LoadIconMetric(ModuleHelper::GetResourceInstance(),
-                 MAKEINTRESOURCE(IDR_MAIN_FRAME), LIM_SMALL,
-                 &notify_icon_.hIcon);
-  _stprintf_s(notify_icon_.szTip, _T("Juno"));
   notify_icon_.uVersion = NOTIFYICON_VERSION_4;
   notify_icon_.guidItem = GUID_JUNO_APPLICATION;
+
+  auto result = LoadIconMetric(ModuleHelper::GetResourceInstance(),
+                               MAKEINTRESOURCE(IDR_MAIN_FRAME), LIM_SMALL,
+                               &notify_icon_.hIcon);
+  if (FAILED(result)) {
+    LOG(ERROR) << "LoadIconMetric() failed: 0x" << std::hex << result;
+    message.LoadString(IDS_ERR_INIT_FAILED);
+    MessageBox(message, nullptr, MB_ICONERROR);
+    return -1;
+  }
+
+  auto length = AtlLoadString(IDR_MAIN_FRAME, notify_icon_.szTip,
+                              _countof(notify_icon_.szTip));
+  if (length == 0) {
+    LOG(ERROR) << "LoadString() failed: " << GetLastError();
+    message.LoadString(IDS_ERR_INIT_FAILED);
+    MessageBox(message, nullptr, MB_ICONERROR);
+    return -1;
+  }
 
   Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
   if (!Shell_NotifyIcon(NIM_ADD, &notify_icon_)) {
@@ -131,11 +128,6 @@ void MainFrame::OnDestroy() {
     service_manager_->StopServers();
 
   Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
-
-  if (mutex_ != NULL) {
-    CloseHandle(mutex_);
-    mutex_ = NULL;
-  }
 
   if (service_manager_)
     service_manager_->StopServices();

@@ -91,7 +91,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_CSTRING_NS=ATL;_WTL_NO_CSTRING;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_NO_COM_SUPPORT;_ATL_NO_HOSTING;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_CSTRING_NS=ATL;_WTL_NO_CSTRING;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -116,7 +116,7 @@
     <ClCompile>
       <WarningLevel>Level4</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_CSTRING_NS=ATL;_WTL_NO_CSTRING;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_NO_COM_SUPPORT;_ATL_NO_HOSTING;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_CSTRING_NS=ATL;_WTL_NO_CSTRING;_WINDOWS;_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -143,7 +143,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_CSTRING_NS=ATL;_WTL_NO_CSTRING;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_NO_COM_SUPPORT;_ATL_NO_HOSTING;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_CSTRING_NS=ATL;_WTL_NO_CSTRING;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -168,7 +168,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_CSTRING_NS=ATL;_WTL_NO_CSTRING;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_NO_COM_SUPPORT;_ATL_NO_HOSTING;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_CSTRING_NS=ATL;_WTL_NO_CSTRING;_WINDOWS;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <TreatWarningAsError>true</TreatWarningAsError>
       <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
@@ -199,8 +199,8 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="app\application.cpp" />
     <ClCompile Include="app\constants.cpp" />
-    <ClCompile Include="app\juno.cpp" />
     <ClCompile Include="app\service_manager.cpp" />
     <ClCompile Include="misc\registry_key.cpp" />
     <ClCompile Include="misc\timer_service.cpp" />
@@ -246,8 +246,8 @@
     <ClCompile Include="ui\socks_proxy_dialog.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="app\application.h" />
     <ClInclude Include="app\constants.h" />
-    <ClInclude Include="app\juno.h" />
     <ClInclude Include="app\server_config.h" />
     <ClInclude Include="app\service_manager.h" />
     <ClInclude Include="misc\certificate_store.h" />

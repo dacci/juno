@@ -418,6 +418,29 @@ IDB_DOCUMENT_NEW        BITMAP                  "document-new.bmp"
 
 STRINGTABLE
 BEGIN
+    IDR_MAIN_FRAME          "Juno"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_COLUMN_LISTEN       "ポート"
+    IDS_COLUMN_PROTOCOL     "プロトコル"
+    IDS_COLUMN_SERVICE      "サービス"
+    IDS_COLUMN_ACTION       "アクション"
+    IDS_COLUMN_HEADER       "ヘッダー"
+    IDS_COLUMN_VALUE        "値"
+    IDS_COLUMN_REPLACE      "置換"
+END
+
+STRINGTABLE
+BEGIN
+    IDS_COLUMN_NAME         "名前"
+    IDS_COLUMN_PROVIDER     "プロバイダー"
+    IDS_COLUMN_BIND         "アドレス"
+END
+
+STRINGTABLE
+BEGIN
     IDS_ERR_UNEXPECTED      "予期せぬエラーが発生しました。"
     IDS_ERR_START_FAILED    "一部のサーバーを開始できませんでした。"
     IDS_CONFIRM_APPLY       "設定を適用するには現在の通信を切断する必要があります。\n続行しますか?"
@@ -432,24 +455,6 @@ BEGIN
     IDS_ERR_ALREADY_RUNNING "別のインスタンスがすでに起動しています。"
     IDS_ERR_OUT_OF_MEMORY   "メモリが不足しています。"
     IDS_ERR_INIT_FAILED     "機能の初期化に失敗しました。"
-END
-
-STRINGTABLE
-BEGIN
-    IDS_COLUMN_NAME         "名前"
-    IDS_COLUMN_PROVIDER     "プロバイダー"
-    IDS_COLUMN_BIND         "アドレス"
-END
-
-STRINGTABLE
-BEGIN
-    IDS_COLUMN_LISTEN       "ポート"
-    IDS_COLUMN_PROTOCOL     "プロトコル"
-    IDS_COLUMN_SERVICE      "サービス"
-    IDS_COLUMN_ACTION       "アクション"
-    IDS_COLUMN_HEADER       "ヘッダー"
-    IDS_COLUMN_VALUE        "値"
-    IDS_COLUMN_REPLACE      "置換"
 END
 
 STRINGTABLE
