@@ -6,8 +6,8 @@
 
 #include "net/datagram_channel.h"
 
-ScissorsUnwrappingSession::ScissorsUnwrappingSession(
-    Scissors* service, const Service::ChannelPtr& source)
+ScissorsUnwrappingSession::ScissorsUnwrappingSession(Scissors* service,
+                                                     const ChannelPtr& source)
     : Session(service),
       timer_(TimerService::GetDefault()->Create(this)),
       stream_(source) {}

@@ -70,7 +70,7 @@ void ScissorsWrappingSession::Stop() {
     stream_->Close();
 }
 
-void ScissorsWrappingSession::OnReceived(const Service::DatagramPtr& datagram) {
+void ScissorsWrappingSession::OnReceived(const DatagramPtr& datagram) {
   timer_->Start(kTimeout, 0);
 
   if (datagram->data_length <= kDataSize) {

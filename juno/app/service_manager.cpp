@@ -35,7 +35,7 @@ const char kCertificateValueName[] = "Certificate";
 
 class SecureChannelCustomizer : public TcpServer::ChannelCustomizer {
  public:
-  Service::ChannelPtr Customize(const Service::ChannelPtr& channel) override {
+  ChannelPtr Customize(const ChannelPtr& channel) override {
     return std::make_shared<SecureChannel>(&credential_, channel, true);
   }
 

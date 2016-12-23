@@ -8,7 +8,7 @@
 class ScissorsTcpSession : public Scissors::Session,
                            private SocketChannel::Listener {
  public:
-  ScissorsTcpSession(Scissors* service, const Service::ChannelPtr& source);
+  ScissorsTcpSession(Scissors* service, const ChannelPtr& source);
   ~ScissorsTcpSession();
 
   bool Start() override;
@@ -20,8 +20,8 @@ class ScissorsTcpSession : public Scissors::Session,
  private:
   static const size_t kBufferSize = 8192;
 
-  Service::ChannelPtr source_;
-  Service::ChannelPtr sink_;
+  ChannelPtr source_;
+  ChannelPtr sink_;
 
   ScissorsTcpSession(const ScissorsTcpSession&) = delete;
   ScissorsTcpSession& operator=(const ScissorsTcpSession&) = delete;

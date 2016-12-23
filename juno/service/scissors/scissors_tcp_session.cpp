@@ -10,7 +10,7 @@
 #include "net/tunneling_service.h"
 
 ScissorsTcpSession::ScissorsTcpSession(Scissors* service,
-                                       const Service::ChannelPtr& source)
+                                       const ChannelPtr& source)
     : Session(service), source_(source) {
   DLOG(INFO) << this << " session created";
 }

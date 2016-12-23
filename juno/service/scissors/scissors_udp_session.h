@@ -25,7 +25,7 @@ class ScissorsUdpSession : public Scissors::UdpSession,
   static const size_t kBufferSize = 64 * 1024;  // 64 KiB
   static const int kTimeout = 15 * 1000;        // 15 sec
 
-  void OnReceived(const Service::DatagramPtr& datagram) override;
+  void OnReceived(const DatagramPtr& datagram) override;
 
   void OnRead(Channel* channel, HRESULT result, void* buffer,
               int length) override;

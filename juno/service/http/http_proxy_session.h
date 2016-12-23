@@ -29,7 +29,7 @@ class HttpProxySession : private Channel::Listener,
  public:
   HttpProxySession(HttpProxy* proxy,
                    const std::shared_ptr<HttpProxyConfig>& config,
-                   const Service::ChannelPtr& client);
+                   const ChannelPtr& client);
   ~HttpProxySession();
 
   bool Start();
@@ -105,7 +105,7 @@ class HttpProxySession : private Channel::Listener,
   bool retry_;
   int status_code_;
 
-  Service::ChannelPtr client_;
+  ChannelPtr client_;
   std::string client_buffer_;
   HttpRequest request_;
   int64_t request_length_;

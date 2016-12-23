@@ -21,8 +21,7 @@ class TcpServer : public Server, private AsyncServerSocket::Listener {
    public:
     virtual ~ChannelCustomizer() {}
 
-    virtual Service::ChannelPtr Customize(
-        const Service::ChannelPtr& channel) = 0;
+    virtual ChannelPtr Customize(const ChannelPtr& channel) = 0;
   };
 
   TcpServer();

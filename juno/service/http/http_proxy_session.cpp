@@ -29,7 +29,7 @@ const std::string kProxyAuthorization("Proxy-Authorization");
 
 HttpProxySession::HttpProxySession(
     HttpProxy* proxy, const std::shared_ptr<HttpProxyConfig>& config,
-    const Service::ChannelPtr& client)
+    const ChannelPtr& client)
     : proxy_(proxy),
       config_(config),
       ref_count_(0),

@@ -18,8 +18,7 @@ class ScissorsUnwrappingSession : public Scissors::Session,
                                   public Channel::Listener,
                                   public TimerService::Callback {
  public:
-  ScissorsUnwrappingSession(Scissors* service,
-                            const Service::ChannelPtr& source);
+  ScissorsUnwrappingSession(Scissors* service, const ChannelPtr& source);
   ~ScissorsUnwrappingSession();
 
   bool Start() override;

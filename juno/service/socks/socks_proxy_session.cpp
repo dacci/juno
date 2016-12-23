@@ -45,7 +45,7 @@ struct SocketAddress6 : addrinfo, sockaddr_in6 {
 }  // namespace
 
 SocksProxySession::SocksProxySession(SocksProxy* proxy,
-                                     const Service::ChannelPtr& client)
+                                     const ChannelPtr& client)
     : proxy_(proxy), client_(client), phase_(), end_point_() {}
 
 SocksProxySession::~SocksProxySession() {

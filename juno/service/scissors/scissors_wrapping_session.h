@@ -22,7 +22,7 @@ class ScissorsWrappingSession : public Scissors::UdpSession,
   bool Start() override;
   void Stop() override;
 
-  void OnReceived(const Service::DatagramPtr& datagram) override;
+  void OnReceived(const DatagramPtr& datagram) override;
   void OnRead(Channel* channel, HRESULT result, void* buffer,
               int length) override;
   void OnWritten(Channel* channel, HRESULT result, void* buffer,
@@ -46,7 +46,7 @@ class ScissorsWrappingSession : public Scissors::UdpSession,
   void SendDatagram();
 
   base::Lock lock_;
-  std::list<Service::DatagramPtr> queue_;
+  std::list<DatagramPtr> queue_;
   bool connected_;
   TimerService::TimerObject timer_;
 

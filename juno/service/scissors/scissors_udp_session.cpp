@@ -47,7 +47,7 @@ void ScissorsUdpSession::Stop() {
   service_->EndSession(this);
 }
 
-void ScissorsUdpSession::OnReceived(const Service::DatagramPtr& datagram) {
+void ScissorsUdpSession::OnReceived(const DatagramPtr& datagram) {
   DLOG(INFO) << this << " " << datagram->data_length
              << " bytes receved from the source";
 

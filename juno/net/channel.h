@@ -25,4 +25,9 @@ class __declspec(novtable) Channel {
                              Listener* listener) = 0;
 };
 
+#ifndef JUNO_NO_CHANNEL_PTR
+#include <memory>
+typedef std::shared_ptr<Channel> ChannelPtr;
+#endif  // JUNO_NO_CHANNEL_PTR
+
 #endif  // JUNO_NET_CHANNEL_H_

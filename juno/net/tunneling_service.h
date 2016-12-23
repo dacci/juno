@@ -12,12 +12,10 @@
 #include <utility>
 #include <vector>
 
-class Channel;
+#include "net/channel.h"
 
 class TunnelingService {
  public:
-  typedef std::shared_ptr<Channel> ChannelPtr;
-
   static bool Init();
   static void Term();
   static bool Bind(const ChannelPtr& a, const ChannelPtr& b);

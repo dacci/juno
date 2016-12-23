@@ -5,18 +5,12 @@
 
 #include <winerror.h>
 
-#include <memory>
-
+#include "net/channel.h"
+#include "net/datagram.h"
 #include "service/service_config.h"
-
-class Channel;
-struct Datagram;
 
 class __declspec(novtable) Service {
  public:
-  typedef std::shared_ptr<Channel> ChannelPtr;
-  typedef std::shared_ptr<Datagram> DatagramPtr;
-
   virtual ~Service() {}
 
   virtual bool UpdateConfig(const ServiceConfigPtr& config) = 0;
@@ -27,6 +21,9 @@ class __declspec(novtable) Service {
   virtual void OnError(HRESULT result) = 0;
 };
 
+#ifndef JUNO_NO_SERVICE_PTR
+#include <memory>
 typedef std::unique_ptr<Service> ServicePtr;
+#endif  // JUNO_NO_SERVICE_PTR
 
 #endif  // JUNO_SERVICE_SERVICE_H_

@@ -111,7 +111,7 @@ std::shared_ptr<DatagramChannel> Scissors::CreateSocket() {
   return socket;
 }
 
-Service::ChannelPtr Scissors::CreateChannel(const ChannelPtr& channel) {
+ChannelPtr Scissors::CreateChannel(const ChannelPtr& channel) {
   if (channel == nullptr)
     return channel;
 

@@ -13,7 +13,7 @@
 class SocksProxySession : public SocketChannel::Listener,
                           public Channel::Listener {
  public:
-  SocksProxySession(SocksProxy* proxy, const Service::ChannelPtr& client);
+  SocksProxySession(SocksProxy* proxy, const ChannelPtr& client);
   ~SocksProxySession();
 
   bool Start();
@@ -37,7 +37,7 @@ class SocksProxySession : public SocketChannel::Listener,
   static void CALLBACK DeleteThis(PTP_CALLBACK_INSTANCE instance, void* param);
 
   SocksProxy* const proxy_;
-  Service::ChannelPtr client_;
+  ChannelPtr client_;
   std::shared_ptr<SocketChannel> remote_;
   char request_buffer_[kBufferSize];
   char response_buffer_[kBufferSize];
