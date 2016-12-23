@@ -57,38 +57,43 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
     return result;
   }
 
-  wchar_t mutex_name[40];
-  auto count =
-      StringFromGUID2(GUID_JUNO_APPLICATION, mutex_name, _countof(mutex_name));
-  if (count == 0) {
-    LOG(ERROR) << "StringFromGUID2() failed.";
-    TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
-               TD_ERROR_ICON, nullptr);
-    return S_FALSE;
-  }
+  auto foreground =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kForeground);
 
-  mutex_ = CreateMutex(nullptr, FALSE, mutex_name);
-  if (mutex_ == NULL) {
-    LOG(ERROR) << "Failed to create mutex: " << GetLastError();
-    TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
-               TD_ERROR_ICON, nullptr);
-    return S_FALSE;
-  }
-
-  auto status = WaitForSingleObject(mutex_, 0);
-  if (status != WAIT_OBJECT_0) {
-    UINT message_id;
-    if (status == WAIT_TIMEOUT) {
-      message_id = IDS_ERR_ALREADY_RUNNING;
-      LOG(WARNING) << "Another instance maybe running, exitting.";
-    } else {
-      message_id = IDS_ERR_INIT_FAILED;
-      LOG(ERROR) << "Failed to get status of the mutex: " << GetLastError();
+  if (!foreground) {
+    wchar_t mutex_name[40];
+    auto count = StringFromGUID2(GUID_JUNO_APPLICATION, mutex_name,
+                                 _countof(mutex_name));
+    if (count == 0) {
+      LOG(ERROR) << "StringFromGUID2() failed.";
+      TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
+                 TD_ERROR_ICON, nullptr);
+      return S_FALSE;
     }
 
-    TaskDialog(IDR_MAIN_FRAME, nullptr, message_id, TDCBF_OK_BUTTON,
-               TD_ERROR_ICON, nullptr);
-    return S_FALSE;
+    mutex_ = CreateMutex(nullptr, FALSE, mutex_name);
+    if (mutex_ == NULL) {
+      LOG(ERROR) << "Failed to create mutex: " << GetLastError();
+      TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
+                 TD_ERROR_ICON, nullptr);
+      return S_FALSE;
+    }
+
+    auto status = WaitForSingleObject(mutex_, 0);
+    if (status != WAIT_OBJECT_0) {
+      UINT message_id;
+      if (status == WAIT_TIMEOUT) {
+        message_id = IDS_ERR_ALREADY_RUNNING;
+        LOG(WARNING) << "Another instance maybe running, exitting.";
+      } else {
+        message_id = IDS_ERR_INIT_FAILED;
+        LOG(ERROR) << "Failed to get status of the mutex: " << GetLastError();
+      }
+
+      TaskDialog(IDR_MAIN_FRAME, nullptr, message_id, TDCBF_OK_BUTTON,
+                 TD_ERROR_ICON, nullptr);
+      return S_FALSE;
+    }
   }
 
   if (!AtlInitCommonControls(0xFFFF)) {  // all classes
@@ -132,6 +137,11 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
     TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
                TD_ERROR_ICON, nullptr);
     return S_FALSE;
+  }
+
+  if (foreground) {
+    frame_->ShowWindow(show_mode);
+    frame_->UpdateWindow();
   }
 
   return S_OK;

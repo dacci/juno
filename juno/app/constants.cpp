@@ -3,3 +3,9 @@
 #include <initguid.h>
 
 #include "app/constants.h"
+
+namespace switches {
+
+const char kForeground[] = "foreground";
+
+}  // namespace switches

@@ -9,4 +9,10 @@
 DEFINE_GUID(GUID_JUNO_APPLICATION, 0x303373e4, 0x6763, 0x4780, 0xb1, 0x99, 0x53,
             0x25, 0xdf, 0xaf, 0xef, 0xdd);
 
+namespace switches {
+
+extern const char kForeground[];
+
+}  // namespace switches
+
 #endif  // JUNO_APP_CONSTANTS_H_

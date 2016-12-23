@@ -4,6 +4,7 @@
 
 #include <atlstr.h>
 
+#include <base/command_line.h>
 #include <base/logging.h>
 
 #include "app/constants.h"
@@ -23,8 +24,7 @@ void MainFrame::TrackTrayMenu(int x, int y) {
   if (configuring_)
     return;
 
-  CMenu menu;
-  menu.LoadMenu(IDR_TRAY_MENU);
+  CMenuHandle menu(GetMenu());
   auto popup_menu = menu.GetSubMenu(0);
   popup_menu.SetMenuDefaultItem(kDefaultTrayCommand);
 
@@ -36,45 +36,48 @@ void MainFrame::TrackTrayMenu(int x, int y) {
 int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
   CString message;
 
-  notify_icon_.cbSize = sizeof(notify_icon_);
-  notify_icon_.hWnd = m_hWnd;
-  notify_icon_.uFlags =
-      NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_GUID | NIF_SHOWTIP;
-  notify_icon_.uCallbackMessage = WM_TRAYNOTIFY;
-  notify_icon_.uVersion = NOTIFYICON_VERSION_4;
-  notify_icon_.guidItem = GUID_JUNO_APPLICATION;
+  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
+          switches::kForeground)) {
+    notify_icon_.cbSize = sizeof(notify_icon_);
+    notify_icon_.hWnd = m_hWnd;
+    notify_icon_.uFlags =
+        NIF_MESSAGE | NIF_ICON | NIF_TIP | NIF_GUID | NIF_SHOWTIP;
+    notify_icon_.uCallbackMessage = WM_TRAYNOTIFY;
+    notify_icon_.uVersion = NOTIFYICON_VERSION_4;
+    notify_icon_.guidItem = GUID_JUNO_APPLICATION;
 
-  auto result = LoadIconMetric(ModuleHelper::GetResourceInstance(),
-                               MAKEINTRESOURCE(IDR_MAIN_FRAME), LIM_SMALL,
-                               &notify_icon_.hIcon);
-  if (FAILED(result)) {
-    LOG(ERROR) << "LoadIconMetric() failed: 0x" << std::hex << result;
-    message.LoadString(IDS_ERR_INIT_FAILED);
-    MessageBox(message, nullptr, MB_ICONERROR);
-    return -1;
-  }
+    auto result = LoadIconMetric(ModuleHelper::GetResourceInstance(),
+                                 MAKEINTRESOURCE(IDR_MAIN_FRAME), LIM_SMALL,
+                                 &notify_icon_.hIcon);
+    if (FAILED(result)) {
+      LOG(ERROR) << "LoadIconMetric() failed: 0x" << std::hex << result;
+      message.LoadString(IDS_ERR_INIT_FAILED);
+      MessageBox(message, nullptr, MB_ICONERROR);
+      return -1;
+    }
 
-  auto length = AtlLoadString(IDR_MAIN_FRAME, notify_icon_.szTip,
-                              _countof(notify_icon_.szTip));
-  if (length == 0) {
-    LOG(ERROR) << "LoadString() failed: " << GetLastError();
-    message.LoadString(IDS_ERR_INIT_FAILED);
-    MessageBox(message, nullptr, MB_ICONERROR);
-    return -1;
-  }
+    auto length = AtlLoadString(IDR_MAIN_FRAME, notify_icon_.szTip,
+                                _countof(notify_icon_.szTip));
+    if (length == 0) {
+      LOG(ERROR) << "LoadString() failed: " << GetLastError();
+      message.LoadString(IDS_ERR_INIT_FAILED);
+      MessageBox(message, nullptr, MB_ICONERROR);
+      return -1;
+    }
 
-  Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
-  if (!Shell_NotifyIcon(NIM_ADD, &notify_icon_)) {
-    LOG(ERROR) << "Shell_NotifyIcon failed";
-    message.LoadString(IDS_ERR_INIT_FAILED);
-    MessageBox(message, nullptr, MB_ICONERROR);
-    return -1;
-  }
+    Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
+    if (!Shell_NotifyIcon(NIM_ADD, &notify_icon_)) {
+      LOG(ERROR) << "Shell_NotifyIcon failed";
+      message.LoadString(IDS_ERR_INIT_FAILED);
+      MessageBox(message, nullptr, MB_ICONERROR);
+      return -1;
+    }
 
-  if (RunTimeHelper::IsWin7() &&
-      !Shell_NotifyIcon(NIM_SETVERSION, &notify_icon_)) {
-    old_windows_ = true;
-    LOG(WARNING) << "NIM_SETVERSION failed.";
+    if (RunTimeHelper::IsWin7() &&
+        !Shell_NotifyIcon(NIM_SETVERSION, &notify_icon_)) {
+      old_windows_ = true;
+      LOG(WARNING) << "NIM_SETVERSION failed.";
+    }
   }
 
   if (!TunnelingService::Init()) {
@@ -190,10 +193,12 @@ void MainFrame::OnFileNew(UINT /*notify_code*/, int /*id*/,
   if (configuring_)
     return;
 
+  auto foreground =
+      base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kForeground);
   PreferenceDialog dialog;
 
   configuring_ = true;
-  auto result = dialog.DoModal(NULL);
+  auto result = dialog.DoModal(foreground ? m_hWnd : NULL);
   configuring_ = false;
 
   if (result != IDOK)
