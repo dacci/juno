@@ -3,8 +3,6 @@
 #ifndef JUNO_MISC_CERTIFICATE_STORE_H_
 #define JUNO_MISC_CERTIFICATE_STORE_H_
 
-#pragma comment(lib, "crypt32.lib")
-
 #include <windows.h>
 #include <cryptuiapi.h>
 

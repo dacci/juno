@@ -3,12 +3,9 @@
 #ifndef JUNO_NET_SECURE_CHANNEL_H_
 #define JUNO_NET_SECURE_CHANNEL_H_
 
-#pragma warning(push, 3)
-#pragma warning(disable : 4244)
 #include <base/atomic_ref_count.h>
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
-#pragma warning(pop)
 
 #include <list>
 #include <map>

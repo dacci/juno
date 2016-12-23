@@ -4,7 +4,6 @@
 #define JUNO_SERVICE_SCISSORS_SCISSORS_H_
 
 #pragma warning(push, 3)
-#pragma warning(disable : 4244)
 #include <base/hash.h>
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>

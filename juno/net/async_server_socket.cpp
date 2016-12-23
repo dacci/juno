@@ -2,7 +2,6 @@
 
 #include "net/async_server_socket.h"
 
-#pragma comment(lib, "mswsock.lib")
 #include <mswsock.h>
 
 class AsyncServerSocket::Context : public OVERLAPPED {

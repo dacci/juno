@@ -21,7 +21,7 @@ enum CODE : uint8_t {
   IDENT_MISMATCH,
 };
 
-#pragma pack(push, 1)
+#include <pshpack1.h>
 
 typedef struct REQUEST {
   uint8_t version;
@@ -38,7 +38,7 @@ typedef struct RESPONSE {
   in_addr address;
 } RESPONSE;
 
-#pragma pack(pop)
+#include <poppack.h>
 
 }  // namespace SOCKS4
 

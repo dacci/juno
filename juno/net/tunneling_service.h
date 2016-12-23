@@ -5,11 +5,8 @@
 
 #include <windows.h>
 
-#pragma warning(push, 3)
-#pragma warning(disable : 4244)
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
-#pragma warning(pop)
 
 #include <memory>
 #include <utility>

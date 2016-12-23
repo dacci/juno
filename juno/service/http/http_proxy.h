@@ -3,11 +3,8 @@
 #ifndef JUNO_SERVICE_HTTP_HTTP_PROXY_H_
 #define JUNO_SERVICE_HTTP_HTTP_PROXY_H_
 
-#pragma warning(push, 3)
-#pragma warning(disable : 4244)
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
-#pragma warning(pop)
 
 #include <memory>
 #include <string>

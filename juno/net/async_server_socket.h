@@ -3,10 +3,7 @@
 #ifndef JUNO_NET_ASYNC_SERVER_SOCKET_H_
 #define JUNO_NET_ASYNC_SERVER_SOCKET_H_
 
-#pragma warning(push, 3)
-#pragma warning(disable : 4244)
 #include <base/synchronization/lock.h>
-#pragma warning(pop)
 
 #include <list>
 #include <type_traits>

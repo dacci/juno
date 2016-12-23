@@ -7,9 +7,6 @@
 #define SECURITY_WIN32
 #endif
 
-#pragma comment(lib, "crypt32.lib")
-#pragma comment(lib, "secur32.lib")
-
 #include <windows.h>
 #include <schnlsp.h>
 #include <security.h>

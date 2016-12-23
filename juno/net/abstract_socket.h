@@ -4,7 +4,6 @@
 #define JUNO_NET_ABSTRACT_SOCKET_H_
 
 #include <ws2tcpip.h>
-#pragma comment(lib, "ws2_32.lib")
 
 class AbstractSocket {
  public:

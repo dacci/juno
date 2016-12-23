@@ -41,7 +41,7 @@ enum CODE : uint8_t {
   ADDRESS_TYPE_NOT_SUPPORTED,
 };
 
-#pragma pack(push, 1)
+#include <pshpack1.h>
 
 typedef struct METHOD_REQUEST {
   uint8_t version;
@@ -85,7 +85,7 @@ typedef struct RESPONSE {
   ADDRESS address;
 } RESPONSE;
 
-#pragma pack(pop)
+#include <poppack.h>
 
 }  // namespace SOCKS5
 

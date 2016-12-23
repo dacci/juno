@@ -3,10 +3,7 @@
 #ifndef JUNO_SERVICE_SCISSORS_SCISSORS_WRAPPING_SESSION_H_
 #define JUNO_SERVICE_SCISSORS_SCISSORS_WRAPPING_SESSION_H_
 
-#pragma warning(push, 3)
-#pragma warning(disable : 4244)
 #include <base/synchronization/lock.h>
-#pragma warning(pop)
 
 #include <list>
 #include <string>

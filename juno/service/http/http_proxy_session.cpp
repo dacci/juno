@@ -6,9 +6,7 @@
 
 #include <base/logging.h>
 
-#pragma warning(push, 3)
 #include <url/gurl.h>
-#pragma warning(pop)
 
 #include <algorithm>
 #include <string>
