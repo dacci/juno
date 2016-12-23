@@ -4,6 +4,7 @@
 #define JUNO_MISC_CERTIFICATE_STORE_H_
 
 #include <windows.h>
+
 #include <cryptuiapi.h>
 
 class CertificateStore {

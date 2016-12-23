@@ -3,11 +3,12 @@
 #ifndef JUNO_MISC_SCHANNEL_SCHANNEL_CREDENTIAL_H_
 #define JUNO_MISC_SCHANNEL_SCHANNEL_CREDENTIAL_H_
 
+#include <windows.h>
+
 #if !defined(SECURITY_WIN32) && !defined(SECURITY_KERNEL)
 #define SECURITY_WIN32
 #endif
 
-#include <windows.h>
 #include <schnlsp.h>
 #include <security.h>
 

@@ -3,6 +3,7 @@
 #include "service/http/http_digest.h"
 
 #include <windows.h>
+
 #include <wincrypt.h>
 
 #include <memory>
