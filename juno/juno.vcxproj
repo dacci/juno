@@ -203,6 +203,7 @@
     <ClCompile Include="app\constants.cpp" />
     <ClCompile Include="app\service_manager.cpp" />
     <ClCompile Include="misc\registry_key.cpp" />
+    <ClCompile Include="misc\string_util.cpp" />
     <ClCompile Include="misc\timer_service.cpp" />
     <ClCompile Include="net\async_server_socket.cpp" />
     <ClCompile Include="net\channel_util.cpp" />
@@ -232,8 +233,8 @@
     <ClCompile Include="service\scissors\scissors_wrapping_session.cpp" />
     <ClCompile Include="service\socks\socks_proxy.cpp" />
     <ClCompile Include="service\socks\socks_proxy_provider.cpp" />
-    <ClCompile Include="service\socks\socks_proxy_session.cpp" />
-    <ClCompile Include="misc\string_util.cpp" />
+    <ClCompile Include="service\socks\socks_session_4.cpp" />
+    <ClCompile Include="service\socks\socks_session_5.cpp" />
     <ClCompile Include="ui\http_header_filter_dialog.cpp" />
     <ClCompile Include="ui\http_proxy_dialog.cpp" />
     <ClCompile Include="ui\main_frame.cpp" />
@@ -293,11 +294,13 @@
     <ClInclude Include="service\service.h" />
     <ClInclude Include="service\service_config.h" />
     <ClInclude Include="service\service_provider.h" />
+    <ClInclude Include="service\socks\socket_address.h" />
     <ClInclude Include="service\socks\socks4.h" />
     <ClInclude Include="service\socks\socks5.h" />
     <ClInclude Include="service\socks\socks_proxy.h" />
     <ClInclude Include="service\socks\socks_proxy_provider.h" />
-    <ClInclude Include="service\socks\socks_proxy_session.h" />
+    <ClInclude Include="service\socks\socks_session_4.h" />
+    <ClInclude Include="service\socks\socks_session_5.h" />
     <ClInclude Include="ui\dialog_impl_ex.h" />
     <ClInclude Include="ui\http_header_filter_dialog.h" />
     <ClInclude Include="ui\http_proxy_dialog.h" />

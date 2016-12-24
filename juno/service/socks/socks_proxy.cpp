@@ -2,7 +2,10 @@
 
 #include "service/socks/socks_proxy.h"
 
-#include "service/socks/socks_proxy_session.h"
+#include <base/logging.h>
+
+#include "service/socks/socks_session_4.h"
+#include "service/socks/socks_session_5.h"
 
 SocksProxy::SocksProxy() : empty_(&lock_), stopped_() {}
 
@@ -13,14 +16,16 @@ void SocksProxy::Stop() {
 
   stopped_ = true;
 
+  for (auto& candidate : candidates_)
+    candidate->Close();
+
   for (auto& session : sessions_)
     session->Stop();
 
-  while (!sessions_.empty())
-    empty_.Wait();
+  WaitEmpty();
 }
 
-void SocksProxy::EndSession(SocksProxySession* session) {
+void SocksProxy::EndSession(SocksSession* session) {
   auto pair = new ServiceSessionPair(this, session);
   if (pair == nullptr ||
       !TrySubmitThreadpoolCallback(EndSessionImpl, pair, nullptr)) {
@@ -35,12 +40,97 @@ void SocksProxy::OnAccepted(const ChannelPtr& client) {
   if (stopped_)
     return;
 
-  auto session = std::make_unique<SocksProxySession>(this, client);
-  if (session == nullptr)
+  auto buffer = std::make_unique<char[]>(kBufferSize);
+  if (buffer == nullptr) {
+    LOG(ERROR) << "Failed to allocate buffer.";
     return;
+  }
 
-  if (session->Start())
-    sessions_.push_back(std::move(session));
+  auto result = client->ReadAsync(buffer.get(), kBufferSize, this);
+  if (SUCCEEDED(result)) {
+    candidates_.push_back(client);
+    buffer.release();
+  } else {
+    LOG(ERROR) << "Failed to receive: 0x" << std::hex << result;
+  }
+}
+
+void SocksProxy::CheckEmpty() {
+  if (candidates_.empty() && sessions_.empty())
+    empty_.Broadcast();
+}
+
+void SocksProxy::WaitEmpty() {
+  while (!candidates_.empty() || !sessions_.empty())
+    empty_.Wait();
+}
+
+void SocksProxy::OnRead(Channel* channel, HRESULT result, void* buffer,
+                        int length) {
+  std::unique_ptr<char[]> message(static_cast<char*>(buffer));
+  ChannelPtr candidate;
+
+  base::AutoLock guard(lock_);
+
+  for (auto i = candidates_.begin(), l = candidates_.end(); i != l; ++i) {
+    if (i->get() == channel) {
+      candidate = std::move(*i);
+      candidates_.erase(i);
+      CheckEmpty();
+      break;
+    }
+  }
+  CHECK(candidate != nullptr) << "Candidate not found.";
+
+  if (stopped_) {
+    LOG(WARNING) << "Service stopped.";
+    return;
+  }
+
+  if (FAILED(result)) {
+    LOG(ERROR) << "Failed to receive: 0x" << std::hex << result;
+    return;
+  }
+
+  if (length < 1) {
+    LOG(WARNING) << "Client disconnected.";
+    return;
+  }
+
+  std::unique_ptr<SocksSession> session;
+
+  switch (message[0]) {
+    case 4:
+      session = std::make_unique<SocksSession4>(this, std::move(candidate));
+      break;
+
+    case 5:
+      session = std::make_unique<SocksSession5>(this, std::move(candidate));
+      break;
+
+    default:
+      LOG(ERROR) << "Unknown protocol version: "
+                 << static_cast<int>(message[0]);
+      return;
+  }
+
+  if (session == nullptr) {
+    LOG(ERROR) << "Failed to create session.";
+    return;
+  }
+
+  result = session->Start(std::move(message), length);
+  if (FAILED(result)) {
+    LOG(ERROR) << "Failed to start session: 0x" << std::hex << result;
+    return;
+  }
+
+  sessions_.push_back(std::move(session));
+}
+
+void SocksProxy::OnWritten(Channel* /*channel*/, HRESULT /*result*/,
+                           void* /*buffer*/, int /*length*/) {
+  DLOG(FATAL) << "It's not intended to be used like this.";
 }
 
 void CALLBACK SocksProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE /*instance*/,
@@ -50,19 +140,18 @@ void CALLBACK SocksProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE /*instance*/,
   delete pair;
 }
 
-void SocksProxy::EndSessionImpl(SocksProxySession* session) {
-  std::unique_ptr<SocksProxySession> removed;
+void SocksProxy::EndSessionImpl(SocksSession* session) {
+  std::unique_ptr<SocksSession> removed;
   base::AutoLock guard(lock_);
 
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
     if (i->get() == session) {
       removed = std::move(*i);
       sessions_.erase(i);
-
-      if (sessions_.empty())
-        empty_.Broadcast();
-
-      break;
+      CheckEmpty();
+      return;
     }
   }
+
+  DLOG(WARNING) << "Session not found.";
 }
