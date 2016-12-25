@@ -1,7 +1,7 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_UI_HTTP_PROXY_DIALOG_H_
-#define JUNO_UI_HTTP_PROXY_DIALOG_H_
+#ifndef JUNO_SERVICE_HTTP_UI_HTTP_PROXY_DIALOG_H_
+#define JUNO_SERVICE_HTTP_UI_HTTP_PROXY_DIALOG_H_
 
 #include <atlbase.h>
 #include <atlstr.h>
@@ -97,4 +97,4 @@ class HttpProxyDialog : public CDialogImpl<HttpProxyDialog>,
   HttpProxyDialog& operator=(const HttpProxyDialog&) = delete;
 };
 
-#endif  // JUNO_UI_HTTP_PROXY_DIALOG_H_
+#endif  // JUNO_SERVICE_HTTP_UI_HTTP_PROXY_DIALOG_H_

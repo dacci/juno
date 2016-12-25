@@ -1,4 +1,4 @@
-// copyright (c) 2014 dacci.org
+// Copyright (c) 2014 dacci.org
 
 #include "service/http/http_digest.h"
 

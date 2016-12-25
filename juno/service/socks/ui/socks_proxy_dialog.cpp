@@ -1,6 +1,6 @@
 // Copyright (c) 2013 dacci.org
 
-#include "ui/socks_proxy_dialog.h"
+#include "service/socks/ui/socks_proxy_dialog.h"
 
 SocksProxyDialog::SocksProxyDialog(ServiceConfig* config) : config_(config) {}
 

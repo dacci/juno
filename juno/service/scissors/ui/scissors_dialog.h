@@ -1,7 +1,7 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_UI_SCISSORS_DIALOG_H_
-#define JUNO_UI_SCISSORS_DIALOG_H_
+#ifndef JUNO_SERVICE_SCISSORS_UI_SCISSORS_DIALOG_H_
+#define JUNO_SERVICE_SCISSORS_UI_SCISSORS_DIALOG_H_
 
 #include <atlbase.h>
 #include <atlstr.h>
@@ -65,4 +65,4 @@ class ScissorsDialog : public CDialogImpl<ScissorsDialog>,
   ScissorsDialog& operator=(const ScissorsDialog&) = delete;
 };
 
-#endif  // JUNO_UI_SCISSORS_DIALOG_H_
+#endif  // JUNO_SERVICE_SCISSORS_UI_SCISSORS_DIALOG_H_

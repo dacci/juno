@@ -224,6 +224,8 @@
     <ClCompile Include="service\http\http_response.cpp" />
     <ClCompile Include="service\http\http_status.cpp" />
     <ClCompile Include="service\http\http_util.cpp" />
+    <ClCompile Include="service\http\ui\http_header_filter_dialog.cpp" />
+    <ClCompile Include="service\http\ui\http_proxy_dialog.cpp" />
     <ClCompile Include="service\scissors\scissors.cpp" />
     <ClCompile Include="service\scissors\scissors_config.cpp" />
     <ClCompile Include="service\scissors\scissors_provider.cpp" />
@@ -231,20 +233,18 @@
     <ClCompile Include="service\scissors\scissors_udp_session.cpp" />
     <ClCompile Include="service\scissors\scissors_unwrapping_session.cpp" />
     <ClCompile Include="service\scissors\scissors_wrapping_session.cpp" />
+    <ClCompile Include="service\scissors\ui\scissors_dialog.cpp" />
     <ClCompile Include="service\socks\socks_proxy.cpp" />
     <ClCompile Include="service\socks\socks_proxy_provider.cpp" />
     <ClCompile Include="service\socks\socks_session_4.cpp" />
     <ClCompile Include="service\socks\socks_session_5.cpp" />
-    <ClCompile Include="ui\http_header_filter_dialog.cpp" />
-    <ClCompile Include="ui\http_proxy_dialog.cpp" />
+    <ClCompile Include="service\socks\ui\socks_proxy_dialog.cpp" />
     <ClCompile Include="ui\main_frame.cpp" />
     <ClCompile Include="ui\preference_dialog.cpp" />
     <ClCompile Include="ui\provider_dialog.cpp" />
-    <ClCompile Include="ui\scissors_dialog.cpp" />
     <ClCompile Include="ui\servers_page.cpp" />
     <ClCompile Include="ui\server_dialog.cpp" />
     <ClCompile Include="ui\services_page.cpp" />
-    <ClCompile Include="ui\socks_proxy_dialog.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="app\application.h" />
@@ -284,6 +284,8 @@
     <ClInclude Include="service\http\http_response.h" />
     <ClInclude Include="service\http\http_status.h" />
     <ClInclude Include="service\http\http_util.h" />
+    <ClInclude Include="service\http\ui\http_header_filter_dialog.h" />
+    <ClInclude Include="service\http\ui\http_proxy_dialog.h" />
     <ClInclude Include="service\scissors\scissors.h" />
     <ClInclude Include="service\scissors\scissors_config.h" />
     <ClInclude Include="service\scissors\scissors_provider.h" />
@@ -291,6 +293,7 @@
     <ClInclude Include="service\scissors\scissors_udp_session.h" />
     <ClInclude Include="service\scissors\scissors_unwrapping_session.h" />
     <ClInclude Include="service\scissors\scissors_wrapping_session.h" />
+    <ClInclude Include="service\scissors\ui\scissors_dialog.h" />
     <ClInclude Include="service\service.h" />
     <ClInclude Include="service\service_config.h" />
     <ClInclude Include="service\service_provider.h" />
@@ -301,17 +304,14 @@
     <ClInclude Include="service\socks\socks_proxy_provider.h" />
     <ClInclude Include="service\socks\socks_session_4.h" />
     <ClInclude Include="service\socks\socks_session_5.h" />
+    <ClInclude Include="service\socks\ui\socks_proxy_dialog.h" />
     <ClInclude Include="ui\dialog_impl_ex.h" />
-    <ClInclude Include="ui\http_header_filter_dialog.h" />
-    <ClInclude Include="ui\http_proxy_dialog.h" />
     <ClInclude Include="ui\main_frame.h" />
     <ClInclude Include="ui\preference_dialog.h" />
     <ClInclude Include="ui\provider_dialog.h" />
-    <ClInclude Include="ui\scissors_dialog.h" />
     <ClInclude Include="ui\servers_page.h" />
     <ClInclude Include="ui\server_dialog.h" />
     <ClInclude Include="ui\services_page.h" />
-    <ClInclude Include="ui\socks_proxy_dialog.h" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="res\compatibility.manifest" />

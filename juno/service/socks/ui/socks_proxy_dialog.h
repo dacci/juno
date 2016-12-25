@@ -1,7 +1,7 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_UI_SOCKS_PROXY_DIALOG_H_
-#define JUNO_UI_SOCKS_PROXY_DIALOG_H_
+#ifndef JUNO_SERVICE_SOCKS_UI_SOCKS_PROXY_DIALOG_H_
+#define JUNO_SERVICE_SOCKS_UI_SOCKS_PROXY_DIALOG_H_
 
 #include <atlbase.h>
 #include <atlstr.h>
@@ -46,4 +46,4 @@ class SocksProxyDialog : public CDialogImpl<SocksProxyDialog>,
   SocksProxyDialog& operator=(const SocksProxyDialog&) = delete;
 };
 
-#endif  // JUNO_UI_SOCKS_PROXY_DIALOG_H_
+#endif  // JUNO_SERVICE_SOCKS_UI_SOCKS_PROXY_DIALOG_H_

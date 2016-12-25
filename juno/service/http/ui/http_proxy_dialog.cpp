@@ -1,11 +1,11 @@
 // Copyright (c) 2013 dacci.org
 
-#include "ui/http_proxy_dialog.h"
+#include "service/http/ui/http_proxy_dialog.h"
 
 #include <string>
 
 #include "misc/string_util.h"
-#include "ui/http_header_filter_dialog.h"
+#include "service/http/ui/http_header_filter_dialog.h"
 
 static const TCHAR* kActions[] = {
     _T("Set"),   _T("Append"), _T("Add"),   _T("Unset"),

@@ -1,6 +1,6 @@
 // Copyright (c) 2013 dacci.org
 
-#include "ui/scissors_dialog.h"
+#include "service/scissors/ui/scissors_dialog.h"
 
 #include <string>
 

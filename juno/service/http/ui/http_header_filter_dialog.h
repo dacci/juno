@@ -1,7 +1,7 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_UI_HTTP_HEADER_FILTER_DIALOG_H_
-#define JUNO_UI_HTTP_HEADER_FILTER_DIALOG_H_
+#ifndef JUNO_SERVICE_HTTP_UI_HTTP_HEADER_FILTER_DIALOG_H_
+#define JUNO_SERVICE_HTTP_UI_HTTP_HEADER_FILTER_DIALOG_H_
 
 #include <atlbase.h>
 #include <atlstr.h>
@@ -58,4 +58,4 @@ class HttpHeaderFilterDialog : public CDialogImpl<HttpHeaderFilterDialog>,
   HttpHeaderFilterDialog& operator=(const HttpHeaderFilterDialog&) = delete;
 };
 
-#endif  // JUNO_UI_HTTP_HEADER_FILTER_DIALOG_H_
+#endif  // JUNO_SERVICE_HTTP_UI_HTTP_HEADER_FILTER_DIALOG_H_

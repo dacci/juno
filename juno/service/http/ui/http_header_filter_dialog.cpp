@@ -1,6 +1,6 @@
 // Copyright (c) 2013 dacci.org
 
-#include "ui/http_header_filter_dialog.h"
+#include "service/http/ui/http_header_filter_dialog.h"
 
 #include <regex>
 #include <string>
