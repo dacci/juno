@@ -4,8 +4,9 @@
 
 #include <base/logging.h>
 
-#include "net/socket_resolver.h"
-#include "net/tunneling_service.h"
+#include "io/net/socket_resolver.h"
+#include "misc/tunneling_service.h"
+
 #include "service/socks/socket_address.h"
 
 SocksSession4::SocksSession4(SocksProxy* proxy, const ChannelPtr& channel)

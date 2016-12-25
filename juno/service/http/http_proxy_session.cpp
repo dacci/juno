@@ -11,9 +11,10 @@
 #include <algorithm>
 #include <string>
 
-#include "net/channel_util.h"
-#include "net/socket_channel.h"
-#include "net/tunneling_service.h"
+#include "io/channel_util.h"
+#include "io/net/socket_channel.h"
+#include "misc/tunneling_service.h"
+
 #include "service/http/http_proxy.h"
 #include "service/http/http_proxy_config.h"
 #include "service/http/http_util.h"

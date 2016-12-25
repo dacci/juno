@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "net/socket_channel.h"
+#include "io/net/socket_channel.h"
 
 class SocksSession5 : public SocksSession,
                       private Channel::Listener,

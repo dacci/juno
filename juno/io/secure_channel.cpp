@@ -1,6 +1,6 @@
 // Copyright (c) 2016 dacci.org
 
-#include "net/secure_channel.h"
+#include "io/secure_channel.h"
 
 #include <base/logging.h>
 

@@ -1,7 +1,7 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_NET_TCP_SERVER_H_
-#define JUNO_NET_TCP_SERVER_H_
+#ifndef JUNO_SERVICE_TCP_SERVER_H_
+#define JUNO_SERVICE_TCP_SERVER_H_
 
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
@@ -10,9 +10,9 @@
 #include <utility>
 #include <vector>
 
-#include "net/async_server_socket.h"
-#include "net/server.h"
-#include "net/socket_resolver.h"
+#include "io/net/async_server_socket.h"
+#include "io/net/socket_resolver.h"
+#include "service/server.h"
 #include "service/service.h"
 
 class TcpServer : public Server, private AsyncServerSocket::Listener {
@@ -63,4 +63,4 @@ class TcpServer : public Server, private AsyncServerSocket::Listener {
   TcpServer& operator=(const TcpServer&) = delete;
 };
 
-#endif  // JUNO_NET_TCP_SERVER_H_
+#endif  // JUNO_SERVICE_TCP_SERVER_H_

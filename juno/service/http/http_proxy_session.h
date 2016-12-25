@@ -12,9 +12,9 @@
 #include <memory>
 #include <string>
 
+#include "io/net/socket_channel.h"
+#include "io/net/socket_resolver.h"
 #include "misc/timer_service.h"
-#include "net/socket_channel.h"
-#include "net/socket_resolver.h"
 #include "service/service.h"
 
 #include "service/http/http_request.h"

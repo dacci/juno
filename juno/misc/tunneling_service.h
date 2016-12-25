@@ -1,7 +1,7 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_NET_TUNNELING_SERVICE_H_
-#define JUNO_NET_TUNNELING_SERVICE_H_
+#ifndef JUNO_MISC_TUNNELING_SERVICE_H_
+#define JUNO_MISC_TUNNELING_SERVICE_H_
 
 #include <windows.h>
 
@@ -12,7 +12,7 @@
 #include <utility>
 #include <vector>
 
-#include "net/channel.h"
+#include "io/channel.h"
 
 class TunnelingService {
  public:
@@ -47,4 +47,4 @@ class TunnelingService {
   TunnelingService& operator=(const TunnelingService&) = delete;
 };
 
-#endif  // JUNO_NET_TUNNELING_SERVICE_H_
+#endif  // JUNO_MISC_TUNNELING_SERVICE_H_

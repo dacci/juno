@@ -8,9 +8,9 @@
 
 #include <string>
 
-#include "app/server_config.h"
 #include "misc/certificate_store.h"
 #include "misc/string_util.h"
+#include "service/server_config.h"
 #include "ui/preference_dialog.h"
 
 ServerDialog::ServerDialog(PreferenceDialog* parent, ServerConfig* entry)

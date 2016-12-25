@@ -1,7 +1,7 @@
 // Copyright (c) 2016 dacci.org
 
-#ifndef JUNO_NET_SECURE_CHANNEL_H_
-#define JUNO_NET_SECURE_CHANNEL_H_
+#ifndef JUNO_IO_SECURE_CHANNEL_H_
+#define JUNO_IO_SECURE_CHANNEL_H_
 
 #include <base/atomic_ref_count.h>
 #include <base/synchronization/condition_variable.h>
@@ -12,8 +12,8 @@
 #include <memory>
 #include <string>
 
+#include "io/channel.h"
 #include "misc/schannel/schannel_context.h"
-#include "net/channel.h"
 
 class SecureChannel : public Channel, private Channel::Listener {
  public:
@@ -90,4 +90,4 @@ class SecureChannel : public Channel, private Channel::Listener {
   SecureChannel& operator=(const SecureChannel&) = delete;
 };
 
-#endif  // JUNO_NET_SECURE_CHANNEL_H_
+#endif  // JUNO_IO_SECURE_CHANNEL_H_

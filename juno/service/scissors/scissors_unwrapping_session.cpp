@@ -4,7 +4,7 @@
 
 #include <base/logging.h>
 
-#include "net/datagram_channel.h"
+#include "io/net/datagram_channel.h"
 
 ScissorsUnwrappingSession::ScissorsUnwrappingSession(Scissors* service,
                                                      const ChannelPtr& source)

@@ -4,7 +4,7 @@
 
 #include <string>
 
-#include "app/service_manager.h"
+#include "service/service_manager.h"
 #include "ui/preference_dialog.h"
 
 namespace {

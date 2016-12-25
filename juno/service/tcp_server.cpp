@@ -1,8 +1,8 @@
 // Copyright (c) 2013 dacci.org
 
-#include "net/tcp_server.h"
+#include "service/tcp_server.h"
 
-#include "net/socket_channel.h"
+#include "io/net/socket_channel.h"
 #include "service/service.h"
 
 TcpServer::TcpServer()

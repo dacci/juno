@@ -1,14 +1,14 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_APP_SERVICE_MANAGER_H_
-#define JUNO_APP_SERVICE_MANAGER_H_
+#ifndef JUNO_SERVICE_SERVICE_MANAGER_H_
+#define JUNO_SERVICE_SERVICE_MANAGER_H_
 
 #include <map>
 #include <string>
 #include <vector>
 
-#include "app/server_config.h"
 #include "misc/registry_key.h"
+#include "service/server_config.h"
 #include "service/service_provider.h"
 
 class Server;
@@ -74,4 +74,4 @@ class ServiceManager {
   ServiceManager& operator=(const ServiceManager&) = delete;
 };
 
-#endif  // JUNO_APP_SERVICE_MANAGER_H_
+#endif  // JUNO_SERVICE_SERVICE_MANAGER_H_

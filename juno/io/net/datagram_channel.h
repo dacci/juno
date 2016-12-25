@@ -1,63 +1,56 @@
 // Copyright (c) 2016 dacci.org
 
-#ifndef JUNO_NET_SOCKET_CHANNEL_H_
-#define JUNO_NET_SOCKET_CHANNEL_H_
+#ifndef JUNO_IO_NET_DATAGRAM_CHANNEL_H_
+#define JUNO_IO_NET_DATAGRAM_CHANNEL_H_
 
 #include <base/synchronization/lock.h>
 
 #include <list>
 #include <memory>
 
-#include "net/channel.h"
-#include "net/socket.h"
+#include "io/channel.h"
+#include "io/net/socket.h"
 
-class SocketChannel : public Socket, public Channel {
+class DatagramChannel : public Socket, public Channel {
  public:
   class __declspec(novtable) Listener {
    public:
     virtual ~Listener() {}
 
-    virtual void OnConnected(SocketChannel* channel, HRESULT result) = 0;
-    virtual void OnClosed(SocketChannel* channel, HRESULT result) = 0;
+    virtual void OnRead(DatagramChannel* channel, HRESULT result, void* buffer,
+                        int length, const void* from, int from_length) = 0;
   };
 
-  SocketChannel();
-  virtual ~SocketChannel();
+  DatagramChannel();
+  virtual ~DatagramChannel();
 
   void Close() override;
   HRESULT ReadAsync(void* buffer, int length,
                     Channel::Listener* listener) override;
+  HRESULT ReadFromAsync(void* buffer, int length, Listener* listener);
   HRESULT WriteAsync(const void* buffer, int length,
                      Channel::Listener* listener) override;
-
-  HRESULT ConnectAsync(const addrinfo* end_point, Listener* listener);
-  HRESULT MonitorConnection(Listener* listener);
+  HRESULT WriteAsync(const void* buffer, int length, const void* address,
+                     size_t address_length, Channel::Listener* listener);
 
  private:
   struct Request;
-  class Monitor;
-
-  static BOOL CALLBACK OnInitialize(INIT_ONCE* init_once, void* param,
-                                    void** context);
 
   static void CALLBACK OnRequested(PTP_CALLBACK_INSTANCE callback,
-                                   void* context, PTP_WORK work);
+                                   void* instance, PTP_WORK work);
   void OnRequested(PTP_WORK work);
 
   static void CALLBACK OnCompleted(PTP_CALLBACK_INSTANCE callback,
                                    void* context, void* overlapped, ULONG error,
                                    ULONG_PTR bytes, PTP_IO io);
 
-  static INIT_ONCE init_once_;
-
   base::Lock lock_;
   PTP_WORK work_;
   std::list<std::unique_ptr<Request>> queue_;
   PTP_IO io_;
-  bool abort_;
 
-  SocketChannel(const SocketChannel&) = delete;
-  SocketChannel& operator=(const SocketChannel&) = delete;
+  DatagramChannel(const DatagramChannel&) = delete;
+  DatagramChannel& operator=(const DatagramChannel&) = delete;
 };
 
-#endif  // JUNO_NET_SOCKET_CHANNEL_H_
+#endif  // JUNO_IO_NET_DATAGRAM_CHANNEL_H_

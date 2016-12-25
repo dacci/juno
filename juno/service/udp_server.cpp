@@ -1,10 +1,10 @@
 // Copyright (c) 2013 dacci.org
 
-#include "net/udp_server.h"
+#include "service/udp_server.h"
 
 #include <memory>
 
-#include "net/datagram.h"
+#include "io/net/datagram.h"
 #include "service/service.h"
 
 UdpServer::UdpServer() : service_(), empty_(&lock_) {}

@@ -1,7 +1,7 @@
 // Copyright (c) 2015 dacci.org
 
-#ifndef JUNO_NET_DATAGRAM_H_
-#define JUNO_NET_DATAGRAM_H_
+#ifndef JUNO_IO_NET_DATAGRAM_H_
+#define JUNO_IO_NET_DATAGRAM_H_
 
 #include <ws2tcpip.h>
 
@@ -21,4 +21,4 @@ struct Datagram {
 typedef std::shared_ptr<Datagram> DatagramPtr;
 #endif  // JUNO_NO_DATAGRAM_PTR
 
-#endif  // JUNO_NET_DATAGRAM_H_
+#endif  // JUNO_IO_NET_DATAGRAM_H_

@@ -15,8 +15,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include "net/socket_channel.h"
-#include "net/socket_resolver.h"
+#include "io/net/socket_channel.h"
+#include "io/net/socket_resolver.h"
 #include "service/service.h"
 
 class DatagramChannel;

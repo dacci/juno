@@ -1,9 +1,9 @@
 // Copyright (c) 2014 dacci.org
 
-#ifndef JUNO_NET_CHANNEL_UTIL_H_
-#define JUNO_NET_CHANNEL_UTIL_H_
+#ifndef JUNO_IO_CHANNEL_UTIL_H_
+#define JUNO_IO_CHANNEL_UTIL_H_
 
-#include "net/channel.h"
+#include "io/channel.h"
 
 enum ChannelEvent {
   Invalid,
@@ -19,4 +19,4 @@ void FireEvent(Channel::Listener* listener, ChannelEvent event,
 
 }  // namespace channel_util
 
-#endif  // JUNO_NET_CHANNEL_UTIL_H_
+#endif  // JUNO_IO_CHANNEL_UTIL_H_

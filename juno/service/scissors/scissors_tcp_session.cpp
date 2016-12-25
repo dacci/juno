@@ -6,8 +6,8 @@
 
 #include <memory>
 
-#include "net/socket_channel.h"
-#include "net/tunneling_service.h"
+#include "io/net/socket_channel.h"
+#include "misc/tunneling_service.h"
 
 ScissorsTcpSession::ScissorsTcpSession(Scissors* service,
                                        const ChannelPtr& source)

@@ -1,14 +1,14 @@
 // Copyright (c) 2016 dacci.org
 
-#ifndef JUNO_NET_ASYNC_SERVER_SOCKET_H_
-#define JUNO_NET_ASYNC_SERVER_SOCKET_H_
+#ifndef JUNO_IO_NET_ASYNC_SERVER_SOCKET_H_
+#define JUNO_IO_NET_ASYNC_SERVER_SOCKET_H_
 
 #include <base/synchronization/lock.h>
 
 #include <list>
 #include <type_traits>
 
-#include "net/server_socket.h"
+#include "io/net/server_socket.h"
 
 class AsyncServerSocket : public ServerSocket {
  public:
@@ -84,4 +84,4 @@ class AsyncServerSocket : public ServerSocket {
   AsyncServerSocket& operator=(const AsyncServerSocket&) = delete;
 };
 
-#endif  // JUNO_NET_ASYNC_SERVER_SOCKET_H_
+#endif  // JUNO_IO_NET_ASYNC_SERVER_SOCKET_H_

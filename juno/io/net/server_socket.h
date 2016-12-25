@@ -1,13 +1,13 @@
 // Copyright (c) 2016 dacci.org
 
-#ifndef JUNO_NET_SERVER_SOCKET_H_
-#define JUNO_NET_SERVER_SOCKET_H_
+#ifndef JUNO_IO_NET_SERVER_SOCKET_H_
+#define JUNO_IO_NET_SERVER_SOCKET_H_
 
 #include <memory>
 #include <type_traits>
 
-#include "net/abstract_socket.h"
-#include "net/socket.h"
+#include "io/net/abstract_socket.h"
+#include "io/net/socket.h"
 
 class ServerSocket : public AbstractSocket {
  public:
@@ -78,4 +78,4 @@ class ServerSocket : public AbstractSocket {
   ServerSocket& operator=(const ServerSocket&) = delete;
 };
 
-#endif  // JUNO_NET_SERVER_SOCKET_H_
+#endif  // JUNO_IO_NET_SERVER_SOCKET_H_

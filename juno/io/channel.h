@@ -1,7 +1,7 @@
 // Copyright (c) 2016 dacci.org
 
-#ifndef JUNO_NET_CHANNEL_H_
-#define JUNO_NET_CHANNEL_H_
+#ifndef JUNO_IO_CHANNEL_H_
+#define JUNO_IO_CHANNEL_H_
 
 #include <winerror.h>
 
@@ -30,4 +30,4 @@ class __declspec(novtable) Channel {
 typedef std::shared_ptr<Channel> ChannelPtr;
 #endif  // JUNO_NO_CHANNEL_PTR
 
-#endif  // JUNO_NET_CHANNEL_H_
+#endif  // JUNO_IO_CHANNEL_H_

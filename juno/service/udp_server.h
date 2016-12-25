@@ -1,7 +1,7 @@
 // Copyright (c) 2013 dacci.org
 
-#ifndef JUNO_NET_UDP_SERVER_H_
-#define JUNO_NET_UDP_SERVER_H_
+#ifndef JUNO_SERVICE_UDP_SERVER_H_
+#define JUNO_SERVICE_UDP_SERVER_H_
 
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
@@ -11,9 +11,9 @@
 #include <utility>
 #include <vector>
 
-#include "net/datagram_channel.h"
-#include "net/server.h"
-#include "net/socket_resolver.h"
+#include "io/net/datagram_channel.h"
+#include "io/net/socket_resolver.h"
+#include "service/server.h"
 
 struct Datagram;
 class Service;
@@ -62,4 +62,4 @@ class UdpServer : public Server,
   UdpServer& operator=(const UdpServer&) = delete;
 };
 
-#endif  // JUNO_NET_UDP_SERVER_H_
+#endif  // JUNO_SERVICE_UDP_SERVER_H_

@@ -1,9 +1,9 @@
 // Copyright (c) 2016 dacci.org
 
-#ifndef JUNO_NET_SOCKET_H_
-#define JUNO_NET_SOCKET_H_
+#ifndef JUNO_IO_NET_SOCKET_H_
+#define JUNO_IO_NET_SOCKET_H_
 
-#include "net/abstract_socket.h"
+#include "io/net/abstract_socket.h"
 
 class Socket : public AbstractSocket {
  public:
@@ -88,4 +88,4 @@ class Socket : public AbstractSocket {
   Socket& operator=(const Socket&) = delete;
 };
 
-#endif  // JUNO_NET_SOCKET_H_
+#endif  // JUNO_IO_NET_SOCKET_H_

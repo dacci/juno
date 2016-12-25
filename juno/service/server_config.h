@@ -1,7 +1,7 @@
 // Copyright (c) 2014 dacci.org
 
-#ifndef JUNO_APP_SERVER_CONFIG_H_
-#define JUNO_APP_SERVER_CONFIG_H_
+#ifndef JUNO_SERVICE_SERVER_CONFIG_H_
+#define JUNO_SERVICE_SERVER_CONFIG_H_
 
 #include <stdint.h>
 
@@ -42,4 +42,4 @@ class ServerConfig {
 
 typedef std::shared_ptr<ServerConfig> ServerConfigPtr;
 
-#endif  // JUNO_APP_SERVER_CONFIG_H_
+#endif  // JUNO_SERVICE_SERVER_CONFIG_H_

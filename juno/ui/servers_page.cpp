@@ -7,7 +7,7 @@
 #include <memory>
 #include <utility>
 
-#include "app/server_config.h"
+#include "service/server_config.h"
 #include "ui/preference_dialog.h"
 #include "ui/server_dialog.h"
 

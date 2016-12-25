@@ -5,8 +5,8 @@
 
 #include <winerror.h>
 
-#include "net/channel.h"
-#include "net/datagram.h"
+#include "io/channel.h"
+#include "io/net/datagram.h"
 #include "service/service_config.h"
 
 class __declspec(novtable) Service {

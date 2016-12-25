@@ -4,8 +4,8 @@
 
 #include <base/logging.h>
 
-#include "net/datagram.h"
-#include "net/datagram_channel.h"
+#include "io/net/datagram.h"
+#include "io/net/datagram_channel.h"
 
 ScissorsWrappingSession::ScissorsWrappingSession(Scissors* service,
                                                  const Datagram* datagram)

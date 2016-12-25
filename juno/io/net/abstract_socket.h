@@ -1,7 +1,7 @@
 // Copyright (c) 2016 dacci.org
 
-#ifndef JUNO_NET_ABSTRACT_SOCKET_H_
-#define JUNO_NET_ABSTRACT_SOCKET_H_
+#ifndef JUNO_IO_NET_ABSTRACT_SOCKET_H_
+#define JUNO_IO_NET_ABSTRACT_SOCKET_H_
 
 #include <ws2tcpip.h>
 
@@ -104,4 +104,4 @@ class AbstractSocket {
   AbstractSocket& operator=(const AbstractSocket&) = delete;
 };
 
-#endif  // JUNO_NET_ABSTRACT_SOCKET_H_
+#endif  // JUNO_IO_NET_ABSTRACT_SOCKET_H_

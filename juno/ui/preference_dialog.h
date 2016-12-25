@@ -10,7 +10,7 @@
 #include <atlcrack.h>
 #include <atldlgs.h>
 
-#include "app/service_manager.h"
+#include "service/service_manager.h"
 
 class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
  public:

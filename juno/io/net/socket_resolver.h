@@ -1,7 +1,7 @@
 // Copyright (c) 2016 dacci.org
 
-#ifndef JUNO_NET_SOCKET_RESOLVER_H_
-#define JUNO_NET_SOCKET_RESOLVER_H_
+#ifndef JUNO_IO_NET_SOCKET_RESOLVER_H_
+#define JUNO_IO_NET_SOCKET_RESOLVER_H_
 
 #include <winerror.h>
 #include <ws2tcpip.h>
@@ -85,4 +85,4 @@ class SocketResolver {
   SocketResolver& operator=(const SocketResolver&) = delete;
 };
 
-#endif  // JUNO_NET_SOCKET_RESOLVER_H_
+#endif  // JUNO_IO_NET_SOCKET_RESOLVER_H_

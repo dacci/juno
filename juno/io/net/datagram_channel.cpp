@@ -1,6 +1,6 @@
 // Copyright (c) 2016 dacci.org
 
-#include "net/datagram_channel.h"
+#include "io/net/datagram_channel.h"
 
 namespace {
 

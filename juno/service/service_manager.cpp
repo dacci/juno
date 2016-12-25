@@ -1,6 +1,6 @@
 // Copyright (c) 2013 dacci.org
 
-#include "app/service_manager.h"
+#include "service/service_manager.h"
 
 #include <assert.h>
 
@@ -10,12 +10,12 @@
 #include <string>
 #include <vector>
 
+#include "io/secure_channel.h"
 #include "misc/certificate_store.h"
 #include "misc/registry_key-inl.h"
-#include "net/secure_channel.h"
-#include "net/tcp_server.h"
-#include "net/udp_server.h"
 #include "service/service.h"
+#include "service/tcp_server.h"
+#include "service/udp_server.h"
 
 #include "service/http/http_proxy_provider.h"
 #include "service/scissors/scissors_provider.h"

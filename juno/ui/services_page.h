@@ -15,8 +15,8 @@
 
 #include <map>
 
-#include "app/service_manager.h"
 #include "res/resource.h"
+#include "service/service_manager.h"
 
 class PreferenceDialog;
 class ServiceConfig;

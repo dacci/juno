@@ -8,8 +8,8 @@
 #include <base/logging.h>
 
 #include "app/constants.h"
-#include "app/service_manager.h"
-#include "net/tunneling_service.h"
+#include "misc/tunneling_service.h"
+#include "service/service_manager.h"
 #include "ui/preference_dialog.h"
 
 const UINT MainFrame::WM_TASKBARCREATED =

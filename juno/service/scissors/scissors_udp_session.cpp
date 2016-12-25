@@ -4,7 +4,7 @@
 
 #include <base/logging.h>
 
-#include "net/datagram.h"
+#include "io/net/datagram.h"
 
 ScissorsUdpSession::ScissorsUdpSession(
     Scissors* service, const std::shared_ptr<DatagramChannel>& source)

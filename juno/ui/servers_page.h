@@ -13,8 +13,8 @@
 #include <atlddx.h>
 #include <atldlgs.h>
 
-#include "app/service_manager.h"
 #include "res/resource.h"
+#include "service/service_manager.h"
 
 class PreferenceDialog;
 class ServerConfig;

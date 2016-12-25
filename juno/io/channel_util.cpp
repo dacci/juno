@@ -1,6 +1,6 @@
 // Copyright (c) 2014 dacci.org
 
-#include "net/channel_util.h"
+#include "io/channel_util.h"
 
 #include <assert.h>
 

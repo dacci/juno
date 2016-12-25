@@ -5,7 +5,7 @@
 
 #include <string>
 
-#include "net/socket_channel.h"
+#include "io/net/socket_channel.h"
 
 #include "service/socks/socks4.h"
 #include "service/socks/socks_proxy.h"

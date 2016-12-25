@@ -1,10 +1,10 @@
 // Copyright (c) 2013 dacci.org
 
-#include "net/tunneling_service.h"
+#include "misc/tunneling_service.h"
 
 #include <base/logging.h>
 
-#include "net/channel.h"
+#include "io/channel.h"
 
 TunnelingService* TunnelingService::instance_ = nullptr;
 
