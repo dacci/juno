@@ -11,6 +11,10 @@
 #include "io/channel.h"
 #include "io/net/socket.h"
 
+namespace juno {
+namespace io {
+namespace net {
+
 class SocketChannel : public Socket, public Channel {
  public:
   class __declspec(novtable) Listener {
@@ -59,5 +63,9 @@ class SocketChannel : public Socket, public Channel {
   SocketChannel(const SocketChannel&) = delete;
   SocketChannel& operator=(const SocketChannel&) = delete;
 };
+
+}  // namespace net
+}  // namespace io
+}  // namespace juno
 
 #endif  // JUNO_IO_NET_SOCKET_CHANNEL_H_

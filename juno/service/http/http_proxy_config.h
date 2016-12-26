@@ -13,6 +13,16 @@
 
 #include "service/http/http_digest.h"
 
+namespace juno {
+namespace service {
+namespace http {
+
+namespace ui {
+
+class HttpProxyDialog;
+
+}  // namespace ui
+
 class HttpHeaders;
 class HttpRequest;
 class HttpResponse;
@@ -41,8 +51,8 @@ class HttpProxyConfig : public ServiceConfig {
   HttpProxyConfig();
   HttpProxyConfig(const HttpProxyConfig& other);
 
-  static std::shared_ptr<HttpProxyConfig> Load(const RegistryKey& key);
-  bool Save(RegistryKey* key);
+  static std::shared_ptr<HttpProxyConfig> Load(const misc::RegistryKey& key);
+  bool Save(misc::RegistryKey* key);
 
   void FilterHeaders(HttpHeaders* headers, bool request) const;
   void ProcessAuthenticate(HttpResponse* response, HttpRequest* request);
@@ -77,7 +87,7 @@ class HttpProxyConfig : public ServiceConfig {
   }
 
  private:
-  friend class HttpProxyDialog;
+  friend class ui::HttpProxyDialog;
 
   void SetCredential();
 
@@ -100,5 +110,9 @@ class HttpProxyConfig : public ServiceConfig {
 
   HttpProxyConfig& operator=(const HttpProxyConfig& other) = delete;
 };
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_PROXY_CONFIG_H_

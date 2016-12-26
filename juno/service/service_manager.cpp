@@ -21,7 +21,10 @@
 #include "service/scissors/scissors_provider.h"
 #include "service/socks/socks_proxy_provider.h"
 
+namespace juno {
+namespace service {
 namespace {
+
 const char kConfigKeyName[] = "Software\\dacci.org\\Juno";
 const char kServicesKeyName[] = "Services";
 const char kServersKeyName[] = "Servers";
@@ -35,17 +38,19 @@ const char kCertificateValueName[] = "Certificate";
 
 class SecureChannelCustomizer : public TcpServer::ChannelCustomizer {
  public:
-  ChannelPtr Customize(const ChannelPtr& channel) override {
-    return std::make_shared<SecureChannel>(&credential_, channel, true);
+  io::ChannelPtr Customize(const io::ChannelPtr& channel) override {
+    return std::make_shared<io::SecureChannel>(&credential_, channel, true);
   }
 
-  SchannelCredential credential_;
+  misc::schannel::SchannelCredential credential_;
 };
 
-CertificateStore certificate_store(L"MY");
+misc::CertificateStore certificate_store(L"MY");
 std::vector<std::unique_ptr<SecureChannelCustomizer>> channel_customizers;
 
 }  // namespace
+
+using ::juno::misc::RegistryKey;
 
 ServiceManager* ServiceManager::instance_ = nullptr;
 
@@ -53,12 +58,12 @@ ServiceManager::ServiceManager() {
   DCHECK(instance_ == nullptr);
   instance_ = this;
 
-#define PROVIDER_ENTRY(key) \
-  providers_.insert(std::make_pair(#key, std::make_shared<key##Provider>()))
+#define PROVIDER_ENTRY(key, ns) \
+  providers_.insert(std::make_pair(#key, std::make_shared<ns::key##Provider>()))
 
-  PROVIDER_ENTRY(HttpProxy);
-  PROVIDER_ENTRY(SocksProxy);
-  PROVIDER_ENTRY(Scissors);
+  PROVIDER_ENTRY(HttpProxy, service::http);
+  PROVIDER_ENTRY(SocksProxy, service::socks);
+  PROVIDER_ENTRY(Scissors, service::scissors);
 
 #undef PROVIDER_ENTRY
 }
@@ -453,3 +458,6 @@ bool ServiceManager::SaveServer(const RegistryKey& parent,
 
   return true;
 }
+
+}  // namespace service
+}  // namespace juno

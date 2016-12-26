@@ -13,13 +13,17 @@
 #undef CreateService
 #endif
 
+namespace juno {
+namespace service {
+
 class __declspec(novtable) ServiceProvider {
  public:
   virtual ~ServiceProvider() {}
 
   virtual ServiceConfigPtr CreateConfig() = 0;
-  virtual ServiceConfigPtr LoadConfig(const RegistryKey& key) = 0;
-  virtual bool SaveConfig(const ServiceConfigPtr& config, RegistryKey* key) = 0;
+  virtual ServiceConfigPtr LoadConfig(const misc::RegistryKey& key) = 0;
+  virtual bool SaveConfig(const ServiceConfigPtr& config,
+                          misc::RegistryKey* key) = 0;
   virtual ServiceConfigPtr CopyConfig(const ServiceConfigPtr& config) = 0;
 
   virtual ServicePtr CreateService(const ServiceConfigPtr& config) = 0;
@@ -28,5 +32,8 @@ class __declspec(novtable) ServiceProvider {
 };
 
 typedef std::shared_ptr<ServiceProvider> ServiceProviderPtr;
+
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SERVICE_PROVIDER_H_

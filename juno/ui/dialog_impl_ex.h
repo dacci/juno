@@ -10,6 +10,9 @@
 #include <atlctrls.h>
 #include <atlmisc.h>
 
+namespace juno {
+namespace ui {
+
 template <class T, class TBase = CWindow>
 class ATL_NO_VTABLE DialogImplEx : public CDialogImpl<T, TBase> {
  public:
@@ -80,5 +83,8 @@ class ATL_NO_VTABLE DialogImplEx : public CDialogImpl<T, TBase> {
 
   CToolTipCtrl balloon_tool_tip_;
 };
+
+}  // namespace ui
+}  // namespace juno
 
 #endif  // JUNO_UI_DIALOG_IMPL_EX_H_

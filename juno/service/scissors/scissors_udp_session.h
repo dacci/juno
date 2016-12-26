@@ -10,12 +10,16 @@
 #include "service/scissors/scissors.h"
 #include "service/service.h"
 
+namespace juno {
+namespace service {
+namespace scissors {
+
 class ScissorsUdpSession : public Scissors::UdpSession,
-                           private Channel::Listener,
-                           private TimerService::Callback {
+                           private io::Channel::Listener,
+                           private misc::TimerService::Callback {
  public:
   ScissorsUdpSession(Scissors* service,
-                     const std::shared_ptr<DatagramChannel>& source);
+                     const std::shared_ptr<io::net::DatagramChannel>& source);
   ~ScissorsUdpSession();
 
   bool Start() override;
@@ -25,24 +29,28 @@ class ScissorsUdpSession : public Scissors::UdpSession,
   static const size_t kBufferSize = 64 * 1024;  // 64 KiB
   static const int kTimeout = 15 * 1000;        // 15 sec
 
-  void OnReceived(const DatagramPtr& datagram) override;
+  void OnReceived(const io::net::DatagramPtr& datagram) override;
 
-  void OnRead(Channel* channel, HRESULT result, void* buffer,
+  void OnRead(io::Channel* channel, HRESULT result, void* buffer,
               int length) override;
-  void OnWritten(Channel* channel, HRESULT result, void* buffer,
+  void OnWritten(io::Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
   void OnTimeout() override;
 
-  std::shared_ptr<DatagramChannel> source_;
-  std::shared_ptr<DatagramChannel> sink_;
+  std::shared_ptr<io::net::DatagramChannel> source_;
+  std::shared_ptr<io::net::DatagramChannel> sink_;
   sockaddr_storage address_;
   int address_length_;
   char buffer_[kBufferSize];
-  TimerService::TimerObject timer_;
+  misc::TimerService::TimerObject timer_;
 
   ScissorsUdpSession(const ScissorsUdpSession&) = delete;
   ScissorsUdpSession& operator=(const ScissorsUdpSession&) = delete;
 };
+
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_UDP_SESSION_H_

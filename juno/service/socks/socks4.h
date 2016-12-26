@@ -7,6 +7,9 @@
 
 #include <ws2tcpip.h>
 
+namespace juno {
+namespace service {
+namespace socks {
 namespace SOCKS4 {
 
 enum COMMAND : uint8_t {
@@ -41,5 +44,8 @@ typedef struct RESPONSE {
 #include <poppack.h>
 
 }  // namespace SOCKS4
+}  // namespace socks
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SOCKS_SOCKS4_H_

@@ -5,13 +5,18 @@
 
 #include "service/service_provider.h"
 
+namespace juno {
+namespace service {
+namespace scissors {
+
 class ScissorsProvider : public ServiceProvider {
  public:
   ScissorsProvider() {}
 
   ServiceConfigPtr CreateConfig() override;
-  ServiceConfigPtr LoadConfig(const RegistryKey& key) override;
-  bool SaveConfig(const ServiceConfigPtr& config, RegistryKey* key) override;
+  ServiceConfigPtr LoadConfig(const misc::RegistryKey& key) override;
+  bool SaveConfig(const ServiceConfigPtr& config,
+                  misc::RegistryKey* key) override;
   ServiceConfigPtr CopyConfig(const ServiceConfigPtr& config) override;
 
   ServicePtr CreateService(const ServiceConfigPtr& config) override;
@@ -22,5 +27,9 @@ class ScissorsProvider : public ServiceProvider {
   ScissorsProvider(const ScissorsProvider&) = delete;
   ScissorsProvider& operator=(const ScissorsProvider&) = delete;
 };
+
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_PROVIDER_H_

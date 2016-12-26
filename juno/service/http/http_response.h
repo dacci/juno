@@ -8,6 +8,10 @@
 #include "service/http/http_headers.h"
 #include "service/http/http_status.h"
 
+namespace juno {
+namespace service {
+namespace http {
+
 class HttpResponse : public HttpHeaders {
  public:
   static const int kPartial = -2;
@@ -40,11 +44,11 @@ class HttpResponse : public HttpHeaders {
     return message_;
   }
 
-  void SetStatus(HTTP::StatusCode status) {
-    SetStatus(status, HTTP::GetStatusMessage(status));
+  void SetStatus(StatusCode status) {
+    SetStatus(status, GetStatusMessage(status));
   }
 
-  void SetStatus(HTTP::StatusCode status, const char* message) {
+  void SetStatus(StatusCode status, const char* message) {
     if (minor_version_ == -1)
       set_minor_version(1);
 
@@ -62,5 +66,9 @@ class HttpResponse : public HttpHeaders {
   HttpResponse(const HttpResponse&) = delete;
   HttpResponse& operator=(const HttpResponse&) = delete;
 };
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_RESPONSE_H_

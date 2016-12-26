@@ -7,6 +7,10 @@
 
 #include "service/http/http_headers.h"
 
+namespace juno {
+namespace service {
+namespace http {
+
 class HttpRequest : public HttpHeaders {
  public:
   static const int kPartial = -2;
@@ -65,5 +69,9 @@ class HttpRequest : public HttpHeaders {
   HttpRequest(const HttpRequest&) = delete;
   HttpRequest& operator=(const HttpRequest&) = delete;
 };
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_REQUEST_H_

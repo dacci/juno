@@ -10,6 +10,9 @@
 #include <chrono>
 #include <memory>
 
+namespace juno {
+namespace misc {
+
 class TimerService {
  public:
   class __declspec(novtable) Callback {
@@ -66,5 +69,8 @@ class TimerService {
   TimerService(const TimerService&) = delete;
   TimerService& operator=(const TimerService&) = delete;
 };
+
+}  // namespace misc
+}  // namespace juno
 
 #endif  // JUNO_MISC_TIMER_SERVICE_H_

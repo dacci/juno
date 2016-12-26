@@ -9,6 +9,9 @@
 
 #include "service/http/http_headers.h"
 
+namespace juno {
+namespace service {
+namespace http {
 namespace http_util {
 
 // returns the value of Content-Length header if any,
@@ -22,5 +25,8 @@ int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size);
 bool ProcessHopByHopHeaders(HttpHeaders* headers);
 
 }  // namespace http_util
+}  // namespace http
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_UTIL_H_

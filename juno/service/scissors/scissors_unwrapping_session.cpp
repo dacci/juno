@@ -6,10 +6,16 @@
 
 #include "io/net/datagram_channel.h"
 
-ScissorsUnwrappingSession::ScissorsUnwrappingSession(Scissors* service,
-                                                     const ChannelPtr& source)
+namespace juno {
+namespace service {
+namespace scissors {
+
+using ::juno::io::Channel;
+
+ScissorsUnwrappingSession::ScissorsUnwrappingSession(
+    Scissors* service, const io::ChannelPtr& source)
     : Session(service),
-      timer_(TimerService::GetDefault()->Create(this)),
+      timer_(misc::TimerService::GetDefault()->Create(this)),
       stream_(source) {}
 
 ScissorsUnwrappingSession::~ScissorsUnwrappingSession() {
@@ -187,3 +193,7 @@ bool ScissorsUnwrappingSession::OnDatagramReceived(Channel* /*channel*/,
 
   return true;
 }
+
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno

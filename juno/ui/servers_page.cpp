@@ -11,18 +11,28 @@
 #include "ui/preference_dialog.h"
 #include "ui/server_dialog.h"
 
+namespace juno {
+namespace ui {
+namespace {
+
 const wchar_t* kTypeNames[] = {
     L"TCP", L"UDP", L"SSL/TLS",
 };
 
-ServersPage::ServersPage(PreferenceDialog* parent, ServerConfigMap* configs)
+}  // namespace
+
+using ::juno::service::ServerConfig;
+
+ServersPage::ServersPage(PreferenceDialog* parent,
+                         service::ServerConfigMap* configs)
     : parent_(parent), configs_(configs), initialized_() {}
 
 void ServersPage::OnPageRelease() {
   delete this;
 }
 
-void ServersPage::AddServerItem(const ServerConfigPtr& config, int index) {
+void ServersPage::AddServerItem(const service::ServerConfigPtr& config,
+                                int index) {
   if (index < 0)
     index = server_list_.GetItemCount();
 
@@ -153,3 +163,6 @@ LRESULT ServersPage::OnServerListDoubleClicked(LPNMHDR header) {
 
   return 0;
 }
+
+}  // namespace ui
+}  // namespace juno

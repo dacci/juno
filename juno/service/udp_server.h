@@ -15,12 +15,22 @@
 #include "io/net/socket_resolver.h"
 #include "service/server.h"
 
+namespace juno {
+namespace io {
+namespace net {
+
 struct Datagram;
+
+}  // namespace net
+}  // namespace io
+
+namespace service {
+
 class Service;
 
 class UdpServer : public Server,
-                  public Channel::Listener,
-                  public DatagramChannel::Listener {
+                  public io::Channel::Listener,
+                  public io::net::DatagramChannel::Listener {
  public:
   UdpServer();
   virtual ~UdpServer();
@@ -29,11 +39,11 @@ class UdpServer : public Server,
   bool Start() override;
   void Stop() override;
 
-  void OnRead(Channel* channel, HRESULT result, void* buffer,
+  void OnRead(io::Channel* channel, HRESULT result, void* buffer,
               int length) override;
-  void OnRead(DatagramChannel* channel, HRESULT result, void* buffer,
+  void OnRead(io::net::DatagramChannel* channel, HRESULT result, void* buffer,
               int length, const void* from, int from_length) override;
-  void OnWritten(Channel* channel, HRESULT result, void* buffer,
+  void OnWritten(io::Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
   void SetService(Service* service) override {
@@ -41,18 +51,18 @@ class UdpServer : public Server,
   }
 
  private:
-  typedef std::pair<UdpServer*, DatagramChannel*> ServerSocketPair;
+  typedef std::pair<UdpServer*, io::net::DatagramChannel*> ServerSocketPair;
 
   static const int kBufferSize = 65536;
 
-  void DeleteServer(DatagramChannel* server);
+  void DeleteServer(io::net::DatagramChannel* server);
   static void CALLBACK DeleteServerImpl(PTP_CALLBACK_INSTANCE instance,
                                         void* context);
-  void DeleteServerImpl(DatagramChannel* server);
+  void DeleteServerImpl(io::net::DatagramChannel* server);
 
-  SocketResolver resolver_;
-  std::vector<std::shared_ptr<DatagramChannel>> servers_;
-  std::map<DatagramChannel*, std::unique_ptr<char[]>> buffers_;
+  io::net::SocketResolver resolver_;
+  std::vector<std::shared_ptr<io::net::DatagramChannel>> servers_;
+  std::map<io::net::DatagramChannel*, std::unique_ptr<char[]>> buffers_;
   Service* service_;
 
   base::Lock lock_;
@@ -61,5 +71,8 @@ class UdpServer : public Server,
   UdpServer(const UdpServer&) = delete;
   UdpServer& operator=(const UdpServer&) = delete;
 };
+
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_UDP_SERVER_H_

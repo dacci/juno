@@ -12,7 +12,11 @@
 #include "service/http/http_request.h"
 #include "service/http/http_response.h"
 
+namespace juno {
+namespace service {
+namespace http {
 namespace {
+
 const char kUseRemoteProxy[] = "UseRemoteProxy";
 const char kRemoteProxyHost[] = "RemoteProxyHost";
 const char kRemoteProxyPort[] = "RemoteProxyPort";
@@ -29,7 +33,10 @@ const char kReplace[] = "Replace";
 
 const std::string kProxyAuthenticate("Proxy-Authenticate");
 const std::string kProxyAuthorization("Proxy-Authorization");
+
 }  // namespace
+
+using ::juno::misc::RegistryKey;
 
 HttpProxyConfig::HttpProxyConfig()
     : use_remote_proxy_(0),
@@ -272,3 +279,7 @@ void HttpProxyConfig::DoProcessAuthorization(HttpRequest* request) {
     request->SetHeader(kProxyAuthorization, basic_credential_);
   }
 }
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno

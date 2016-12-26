@@ -7,6 +7,10 @@
 #include "service/socks/socks_session_4.h"
 #include "service/socks/socks_session_5.h"
 
+namespace juno {
+namespace service {
+namespace socks {
+
 SocksProxy::SocksProxy() : empty_(&lock_), stopped_() {}
 
 SocksProxy::~SocksProxy() {}
@@ -34,7 +38,7 @@ void SocksProxy::EndSession(SocksSession* session) {
   }
 }
 
-void SocksProxy::OnAccepted(const ChannelPtr& client) {
+void SocksProxy::OnAccepted(const io::ChannelPtr& client) {
   base::AutoLock guard(lock_);
 
   if (stopped_)
@@ -65,10 +69,10 @@ void SocksProxy::WaitEmpty() {
     empty_.Wait();
 }
 
-void SocksProxy::OnRead(Channel* channel, HRESULT result, void* buffer,
+void SocksProxy::OnRead(io::Channel* channel, HRESULT result, void* buffer,
                         int length) {
   std::unique_ptr<char[]> message(static_cast<char*>(buffer));
-  ChannelPtr candidate;
+  io::ChannelPtr candidate;
 
   base::AutoLock guard(lock_);
 
@@ -128,7 +132,7 @@ void SocksProxy::OnRead(Channel* channel, HRESULT result, void* buffer,
   sessions_.push_back(std::move(session));
 }
 
-void SocksProxy::OnWritten(Channel* /*channel*/, HRESULT /*result*/,
+void SocksProxy::OnWritten(io::Channel* /*channel*/, HRESULT /*result*/,
                            void* /*buffer*/, int /*length*/) {
   DLOG(FATAL) << "It's not intended to be used like this.";
 }
@@ -155,3 +159,7 @@ void SocksProxy::EndSessionImpl(SocksSession* session) {
 
   DLOG(WARNING) << "Session not found.";
 }
+
+}  // namespace socks
+}  // namespace service
+}  // namespace juno

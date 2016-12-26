@@ -6,8 +6,12 @@
 
 #include "io/net/datagram.h"
 
+namespace juno {
+namespace service {
+namespace scissors {
+
 ScissorsUdpSession::ScissorsUdpSession(
-    Scissors* service, const std::shared_ptr<DatagramChannel>& source)
+    Scissors* service, const std::shared_ptr<io::net::DatagramChannel>& source)
     : UdpSession(service), source_(source) {
   DLOG(INFO) << this << " session created";
 }
@@ -20,7 +24,7 @@ ScissorsUdpSession::~ScissorsUdpSession() {
 }
 
 bool ScissorsUdpSession::Start() {
-  timer_ = TimerService::GetDefault()->Create(this);
+  timer_ = misc::TimerService::GetDefault()->Create(this);
   if (timer_ == nullptr) {
     LOG(ERROR) << this << " failed to create timer";
     return false;
@@ -47,7 +51,7 @@ void ScissorsUdpSession::Stop() {
   service_->EndSession(this);
 }
 
-void ScissorsUdpSession::OnReceived(const DatagramPtr& datagram) {
+void ScissorsUdpSession::OnReceived(const io::net::DatagramPtr& datagram) {
   DLOG(INFO) << this << " " << datagram->data_length
              << " bytes receved from the source";
 
@@ -66,7 +70,7 @@ void ScissorsUdpSession::OnReceived(const DatagramPtr& datagram) {
   }
 }
 
-void ScissorsUdpSession::OnRead(Channel* /*channel*/, HRESULT result,
+void ScissorsUdpSession::OnRead(io::Channel* /*channel*/, HRESULT result,
                                 void* buffer, int length) {
   timer_->Stop();
 
@@ -90,7 +94,7 @@ void ScissorsUdpSession::OnRead(Channel* /*channel*/, HRESULT result,
   }
 }
 
-void ScissorsUdpSession::OnWritten(Channel* /*channel*/, HRESULT /*result*/,
+void ScissorsUdpSession::OnWritten(io::Channel* /*channel*/, HRESULT /*result*/,
                                    void* /*buffer*/, int /*length*/) {
   LOG(ERROR) << "This must not occur.";
 }
@@ -100,3 +104,7 @@ void ScissorsUdpSession::OnTimeout() {
 
   sink_->Close();
 }
+
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno

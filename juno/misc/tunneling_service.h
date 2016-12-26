@@ -14,11 +14,14 @@
 
 #include "io/channel.h"
 
+namespace juno {
+namespace misc {
+
 class TunnelingService {
  public:
   static bool Init();
   static void Term();
-  static bool Bind(const ChannelPtr& a, const ChannelPtr& b);
+  static bool Bind(const io::ChannelPtr& a, const io::ChannelPtr& b);
 
  private:
   class Session;
@@ -28,7 +31,7 @@ class TunnelingService {
   TunnelingService();
   ~TunnelingService();
 
-  bool BindSocket(const ChannelPtr& from, const ChannelPtr& to);
+  bool BindSocket(const io::ChannelPtr& from, const io::ChannelPtr& to);
 
   void EndSession(Session* session);
   static void CALLBACK EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
@@ -46,5 +49,8 @@ class TunnelingService {
   TunnelingService(const TunnelingService&) = delete;
   TunnelingService& operator=(const TunnelingService&) = delete;
 };
+
+}  // namespace misc
+}  // namespace juno
 
 #endif  // JUNO_MISC_TUNNELING_SERVICE_H_

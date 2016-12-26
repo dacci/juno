@@ -18,7 +18,13 @@
 #include "res/resource.h"
 #include "service/http/http_proxy_config.h"
 
+namespace juno {
+namespace service {
+
 class ServiceConfig;
+
+namespace http {
+namespace ui {
 
 class HttpProxyDialog : public CDialogImpl<HttpProxyDialog>,
                         public CWinDataExchange<HttpProxyDialog> {
@@ -96,5 +102,10 @@ class HttpProxyDialog : public CDialogImpl<HttpProxyDialog>,
   HttpProxyDialog(const HttpProxyDialog&) = delete;
   HttpProxyDialog& operator=(const HttpProxyDialog&) = delete;
 };
+
+}  // namespace ui
+}  // namespace http
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_HTTP_UI_HTTP_PROXY_DIALOG_H_

@@ -7,6 +7,9 @@
 
 #include <string>
 
+namespace juno {
+namespace misc {
+
 class RegistryKey {
  public:
   RegistryKey();
@@ -94,5 +97,8 @@ class RegistryKey {
   RegistryKey(const RegistryKey&) = delete;
   RegistryKey& operator=(const RegistryKey&) = delete;
 };
+
+}  // namespace misc
+}  // namespace juno
 
 #endif  // JUNO_MISC_REGISTRY_KEY_H_

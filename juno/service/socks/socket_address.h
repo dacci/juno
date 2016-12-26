@@ -5,7 +5,9 @@
 
 #include <ws2tcpip.h>
 
-namespace {
+namespace juno {
+namespace service {
+namespace socks {
 
 struct SocketAddress4 : addrinfo, sockaddr_in {
   SocketAddress4() : addrinfo(), sockaddr_in() {
@@ -35,6 +37,8 @@ struct SocketAddress6 : addrinfo, sockaddr_in6 {
   }
 };
 
-}  // namespace
+}  // namespace socks
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SOCKS_SOCKET_ADDRESS_H_

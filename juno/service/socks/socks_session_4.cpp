@@ -9,7 +9,11 @@
 
 #include "service/socks/socket_address.h"
 
-SocksSession4::SocksSession4(SocksProxy* proxy, const ChannelPtr& channel)
+namespace juno {
+namespace service {
+namespace socks {
+
+SocksSession4::SocksSession4(SocksProxy* proxy, const io::ChannelPtr& channel)
     : SocksSession(proxy, channel), end_point_(nullptr) {}
 
 SocksSession4::~SocksSession4() {
@@ -62,7 +66,7 @@ HRESULT SocksSession4::ProcessRequest() {
       break;
     }
 
-    remote_ = std::make_shared<SocketChannel>();
+    remote_ = std::make_shared<io::net::SocketChannel>();
     if (remote_ == nullptr) {
       LOG(ERROR) << "Failed to allocate SocketChannel.";
       break;
@@ -73,7 +77,7 @@ HRESULT SocksSession4::ProcessRequest() {
       // SOCKS4a extension
       auto host = request->user_id + strlen(request->user_id) + 1;
 
-      auto resolver = std::make_unique<SocketResolver>();
+      auto resolver = std::make_unique<io::net::SocketResolver>();
       if (resolver == nullptr) {
         LOG(ERROR) << "Failed to allocate SocketResolver.";
         break;
@@ -137,7 +141,7 @@ HRESULT SocksSession4::SendResponse(SOCKS4::CODE code) {
   return result;
 }
 
-void SocksSession4::OnRead(Channel* channel, HRESULT result, void* buffer,
+void SocksSession4::OnRead(io::Channel* channel, HRESULT result, void* buffer,
                            int length) {
   DCHECK(channel == client_.get());
 
@@ -168,8 +172,8 @@ void SocksSession4::OnRead(Channel* channel, HRESULT result, void* buffer,
   proxy_->EndSession(this);
 }
 
-void SocksSession4::OnWritten(Channel* channel, HRESULT result, void* buffer,
-                              int length) {
+void SocksSession4::OnWritten(io::Channel* channel, HRESULT result,
+                              void* buffer, int length) {
   DCHECK(channel == client_.get());
 
   std::unique_ptr<SOCKS4::RESPONSE> response(
@@ -195,18 +199,19 @@ void SocksSession4::OnWritten(Channel* channel, HRESULT result, void* buffer,
   proxy_->EndSession(this);
 }
 
-void SocksSession4::OnConnected(SocketChannel* channel, HRESULT result) {
+void SocksSession4::OnConnected(io::net::SocketChannel* channel,
+                                HRESULT result) {
   DCHECK(channel == remote_.get());
 
   auto request = reinterpret_cast<const SOCKS4::REQUEST*>(message_.data());
   if (request->address.s_addr != 0 &&
       htonl(request->address.s_addr) <= 0x000000FF)
-    delete static_cast<SocketResolver*>(end_point_);
+    delete static_cast<io::net::SocketResolver*>(end_point_);
   else
     delete static_cast<SocketAddress4*>(end_point_);
 
   SOCKS4::CODE code;
-  if (SUCCEEDED(result) && TunnelingService::Bind(client_, remote_))
+  if (SUCCEEDED(result) && misc::TunnelingService::Bind(client_, remote_))
     code = SOCKS4::GRANTED;
   else
     code = SOCKS4::FAILED;
@@ -218,6 +223,10 @@ void SocksSession4::OnConnected(SocketChannel* channel, HRESULT result) {
   }
 }
 
-void SocksSession4::OnClosed(SocketChannel* channel, HRESULT result) {
+void SocksSession4::OnClosed(io::net::SocketChannel* channel, HRESULT result) {
   LOG(FATAL) << "channel: " << channel << ", result: 0x" << std::hex << result;
 }
+
+}  // namespace socks
+}  // namespace service
+}  // namespace juno

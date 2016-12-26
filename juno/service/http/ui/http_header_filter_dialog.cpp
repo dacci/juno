@@ -5,6 +5,11 @@
 #include <regex>
 #include <string>
 
+namespace juno {
+namespace service {
+namespace http {
+namespace ui {
+
 HttpHeaderFilterDialog::HttpHeaderFilterDialog(
     HttpProxyConfig::HeaderFilter* filter)
     : filter_(filter) {}
@@ -92,3 +97,8 @@ void HttpHeaderFilterDialog::OnCancel(UINT /*notify_code*/, int /*id*/,
                                       CWindow /*control*/) {
   EndDialog(IDCANCEL);
 }
+
+}  // namespace ui
+}  // namespace http
+}  // namespace service
+}  // namespace juno

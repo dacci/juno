@@ -9,9 +9,13 @@
 
 #include <base/at_exit.h>
 
+namespace juno {
+namespace ui {
+
 class MainFrame;
 
-namespace juno {
+}  // namespace ui
+
 namespace app {
 
 class Application : public CAtlExeModuleT<Application> {
@@ -42,7 +46,7 @@ class Application : public CAtlExeModuleT<Application> {
 
   HANDLE mutex_;
   CMessageLoop* message_loop_;
-  MainFrame* frame_;
+  ui::MainFrame* frame_;
 
   Application(const Application&) = delete;
   Application& operator=(const Application&) = delete;

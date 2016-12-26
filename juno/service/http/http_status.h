@@ -3,7 +3,9 @@
 #ifndef JUNO_SERVICE_HTTP_HTTP_STATUS_H_
 #define JUNO_SERVICE_HTTP_HTTP_STATUS_H_
 
-namespace HTTP {
+namespace juno {
+namespace service {
+namespace http {
 
 enum StatusCode {
   // 1xx Informational
@@ -75,6 +77,8 @@ enum StatusCode {
 
 const char* GetStatusMessage(StatusCode status);
 
-}  // namespace HTTP
+}  // namespace http
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_STATUS_H_

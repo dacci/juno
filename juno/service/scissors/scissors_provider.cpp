@@ -8,16 +8,20 @@
 #include "service/scissors/scissors_config.h"
 #include "ui/scissors_dialog.h"
 
+namespace juno {
+namespace service {
+namespace scissors {
+
 ServiceConfigPtr ScissorsProvider::CreateConfig() {
   return std::make_shared<ScissorsConfig>();
 }
 
-ServiceConfigPtr ScissorsProvider::LoadConfig(const RegistryKey& key) {
+ServiceConfigPtr ScissorsProvider::LoadConfig(const misc::RegistryKey& key) {
   return ScissorsConfig::Load(key);
 }
 
 bool ScissorsProvider::SaveConfig(const ServiceConfigPtr& config,
-                                  RegistryKey* key) {
+                                  misc::RegistryKey* key) {
   return static_cast<ScissorsConfig*>(config.get())->Save(key);
 }
 
@@ -39,5 +43,9 @@ ServicePtr ScissorsProvider::CreateService(const ServiceConfigPtr& config) {
 
 INT_PTR ScissorsProvider::Configure(const ServiceConfigPtr& config,
                                     HWND parent) {
-  return ScissorsDialog(config.get()).DoModal(parent);
+  return ui::ScissorsDialog(config.get()).DoModal(parent);
 }
+
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno

@@ -4,6 +4,9 @@
 
 #include <string>
 
+namespace juno {
+namespace misc {
+
 RegistryKey::RegistryKey() : key_() {}
 
 RegistryKey::RegistryKey(HKEY key) : key_() {
@@ -295,3 +298,6 @@ RegistryKey& RegistryKey::operator=(RegistryKey&& other) {
 
   return *this;
 }
+
+}  // namespace misc
+}  // namespace juno

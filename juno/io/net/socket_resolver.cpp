@@ -4,6 +4,10 @@
 
 #include <stdio.h>
 
+namespace juno {
+namespace io {
+namespace net {
+
 SocketAddress::SocketAddress(const addrinfo& end_point)
     : addrinfo(end_point), sockaddr_() {
   ai_canonname = nullptr;
@@ -49,3 +53,7 @@ HRESULT SocketResolver::Resolve(const char* node_name, int port) {
 
   return Resolve(node_name, service);
 }
+
+}  // namespace net
+}  // namespace io
+}  // namespace juno

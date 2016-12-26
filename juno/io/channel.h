@@ -5,6 +5,11 @@
 
 #include <winerror.h>
 
+#include <memory>
+
+namespace juno {
+namespace io {
+
 class __declspec(novtable) Channel {
  public:
   class __declspec(novtable) Listener {
@@ -26,8 +31,10 @@ class __declspec(novtable) Channel {
 };
 
 #ifndef JUNO_NO_CHANNEL_PTR
-#include <memory>
 typedef std::shared_ptr<Channel> ChannelPtr;
 #endif  // JUNO_NO_CHANNEL_PTR
+
+}  // namespace io
+}  // namespace juno
 
 #endif  // JUNO_IO_CHANNEL_H_

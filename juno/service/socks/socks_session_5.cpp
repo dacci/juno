@@ -12,7 +12,11 @@
 #include "service/socks/socket_address.h"
 #include "service/socks/socks5.h"
 
-SocksSession5::SocksSession5(SocksProxy* proxy, const ChannelPtr& channel)
+namespace juno {
+namespace service {
+namespace socks {
+
+SocksSession5::SocksSession5(SocksProxy* proxy, const io::ChannelPtr& channel)
     : SocksSession(proxy, channel), state_(State::Init), end_point_(nullptr) {}
 
 SocksSession5::~SocksSession5() {
@@ -192,7 +196,7 @@ HRESULT SocksSession5::ProcessCommand() {
     return result;
   }
 
-  remote_ = std::make_shared<SocketChannel>();
+  remote_ = std::make_shared<io::net::SocketChannel>();
   if (remote_ == nullptr) {
     LOG(ERROR) << "Failed to allocate SocketChannel.";
     return E_OUTOFMEMORY;
@@ -228,7 +232,7 @@ HRESULT SocksSession5::ProcessCommand() {
         *reinterpret_cast<const uint16_t*>(request->address.domain.domain_name +
                                            request->address.domain.domain_len);
 
-    auto resolver = std::make_unique<SocketResolver>();
+    auto resolver = std::make_unique<io::net::SocketResolver>();
     if (resolver == nullptr) {
       LOG(ERROR) << "Failed to allocate SocketResolver.";
       return E_OUTOFMEMORY;
@@ -280,7 +284,7 @@ HRESULT SocksSession5::ProcessCommand() {
   return E_INVALID_PROTOCOL_FORMAT;
 }
 
-void SocksSession5::OnRead(Channel* channel, HRESULT result, void* buffer,
+void SocksSession5::OnRead(io::Channel* channel, HRESULT result, void* buffer,
                            int length) {
   DCHECK(channel == client_.get());
 
@@ -311,8 +315,8 @@ void SocksSession5::OnRead(Channel* channel, HRESULT result, void* buffer,
   proxy_->EndSession(this);
 }
 
-void SocksSession5::OnWritten(Channel* channel, HRESULT result, void* buffer,
-                              int length) {
+void SocksSession5::OnWritten(io::Channel* channel, HRESULT result,
+                              void* buffer, int length) {
   DCHECK(channel == client_.get());
 
   std::unique_ptr<char[]> message(static_cast<char*>(buffer));
@@ -358,7 +362,8 @@ void SocksSession5::OnWritten(Channel* channel, HRESULT result, void* buffer,
   proxy_->EndSession(this);
 }
 
-void SocksSession5::OnConnected(SocketChannel* channel, HRESULT result) {
+void SocksSession5::OnConnected(io::net::SocketChannel* channel,
+                                HRESULT result) {
   DCHECK(channel == remote_.get());
 
   auto request = reinterpret_cast<const SOCKS5::REQUEST*>(message_.data());
@@ -368,7 +373,7 @@ void SocksSession5::OnConnected(SocketChannel* channel, HRESULT result) {
       break;
 
     case SOCKS5::DOMAINNAME:
-      delete static_cast<SocketResolver*>(end_point_);
+      delete static_cast<io::net::SocketResolver*>(end_point_);
       break;
 
     case SOCKS5::IP_V6:
@@ -381,7 +386,7 @@ void SocksSession5::OnConnected(SocketChannel* channel, HRESULT result) {
   }
 
   SOCKS5::CODE code;
-  if (SUCCEEDED(result) && TunnelingService::Bind(client_, remote_))
+  if (SUCCEEDED(result) && misc::TunnelingService::Bind(client_, remote_))
     code = SOCKS5::SUCCEEDED;
   else
     code = SOCKS5::GENERAL_FAILURE;
@@ -443,6 +448,10 @@ void SocksSession5::OnConnected(SocketChannel* channel, HRESULT result) {
   buffer.release();
 }
 
-void SocksSession5::OnClosed(SocketChannel* channel, HRESULT result) {
+void SocksSession5::OnClosed(io::net::SocketChannel* channel, HRESULT result) {
   LOG(FATAL) << "channel: " << channel << ", result: 0x" << std::hex << result;
 }
+
+}  // namespace socks
+}  // namespace service
+}  // namespace juno

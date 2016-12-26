@@ -16,6 +16,11 @@
 #include "res/resource.h"
 #include "service/http/http_proxy_config.h"
 
+namespace juno {
+namespace service {
+namespace http {
+namespace ui {
+
 class HttpHeaderFilterDialog : public CDialogImpl<HttpHeaderFilterDialog>,
                                public CWinDataExchange<HttpHeaderFilterDialog> {
  public:
@@ -57,5 +62,10 @@ class HttpHeaderFilterDialog : public CDialogImpl<HttpHeaderFilterDialog>,
   HttpHeaderFilterDialog(const HttpHeaderFilterDialog&) = delete;
   HttpHeaderFilterDialog& operator=(const HttpHeaderFilterDialog&) = delete;
 };
+
+}  // namespace ui
+}  // namespace http
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_HTTP_UI_HTTP_HEADER_FILTER_DIALOG_H_

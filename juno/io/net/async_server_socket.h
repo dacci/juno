@@ -10,6 +10,10 @@
 
 #include "io/net/server_socket.h"
 
+namespace juno {
+namespace io {
+namespace net {
+
 class AsyncServerSocket : public ServerSocket {
  public:
   class Context;
@@ -83,5 +87,9 @@ class AsyncServerSocket : public ServerSocket {
   AsyncServerSocket(const AsyncServerSocket&) = delete;
   AsyncServerSocket& operator=(const AsyncServerSocket&) = delete;
 };
+
+}  // namespace net
+}  // namespace io
+}  // namespace juno
 
 #endif  // JUNO_IO_NET_ASYNC_SERVER_SOCKET_H_

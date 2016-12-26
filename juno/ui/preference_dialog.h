@@ -12,6 +12,9 @@
 
 #include "service/service_manager.h"
 
+namespace juno {
+namespace ui {
+
 class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
  public:
   PreferenceDialog();
@@ -22,8 +25,8 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
     CHAIN_MSG_MAP(CPropertySheetImpl)
   END_MSG_MAP()
 
-  ServiceConfigMap service_configs_;
-  ServerConfigMap server_configs_;
+  service::ServiceConfigMap service_configs_;
+  service::ServerConfigMap server_configs_;
 
  private:
   void OnShowWindow(BOOL show, UINT status);
@@ -33,5 +36,8 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
   PreferenceDialog(const PreferenceDialog&) = delete;
   PreferenceDialog& operator=(const PreferenceDialog&) = delete;
 };
+
+}  // namespace ui
+}  // namespace juno
 
 #endif  // JUNO_UI_PREFERENCE_DIALOG_H_

@@ -10,6 +10,10 @@
 #include <string>
 #include <utility>
 
+namespace juno {
+namespace service {
+namespace http {
+
 const std::string HttpHeaders::kNotFound;
 
 HttpHeaders::HttpHeaders() {}
@@ -211,3 +215,7 @@ void HttpHeaders::AddHeaders(const phr_header* headers, size_t count) {
                                    std::move(value)));
   }
 }
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno

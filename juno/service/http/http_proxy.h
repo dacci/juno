@@ -13,6 +13,10 @@
 
 #include "service/service.h"
 
+namespace juno {
+namespace service {
+namespace http {
+
 class HttpHeaders;
 class HttpProxyConfig;
 class HttpProxySession;
@@ -29,8 +33,8 @@ class HttpProxy : public Service {
 
   void EndSession(HttpProxySession* session);
 
-  void OnAccepted(const ChannelPtr& client) override;
-  void OnReceivedFrom(const DatagramPtr& datagram) override;
+  void OnAccepted(const io::ChannelPtr& client) override;
+  void OnReceivedFrom(const io::net::DatagramPtr& datagram) override;
   void OnError(HRESULT /*result*/) override {}
 
  private:
@@ -50,5 +54,9 @@ class HttpProxy : public Service {
   HttpProxy(const HttpProxy&) = delete;
   HttpProxy& operator=(const HttpProxy&) = delete;
 };
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_PROXY_H_

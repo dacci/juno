@@ -19,12 +19,32 @@
 #include "io/net/socket_resolver.h"
 #include "service/service.h"
 
+namespace juno {
+namespace io {
+namespace net {
+
 class DatagramChannel;
+
+}  // namespace net
+}  // namespace io
+
+namespace misc {
+namespace schannel {
+
 class SchannelCredential;
-class ScissorsConfig;
+
+}  // namespace schannel
+}  // namespace misc
+
+namespace service {
+
 class ServiceConfig;
 
-class Scissors : public Service, private SocketChannel::Listener {
+namespace scissors {
+
+class ScissorsConfig;
+
+class Scissors : public Service, private io::net::SocketChannel::Listener {
  public:
   class Session {
    public:
@@ -42,7 +62,7 @@ class Scissors : public Service, private SocketChannel::Listener {
     explicit UdpSession(Scissors* service) : Session(service) {}
     virtual ~UdpSession() {}
 
-    virtual void OnReceived(const DatagramPtr& datagram) = 0;
+    virtual void OnReceived(const io::net::DatagramPtr& datagram) = 0;
   };
 
   Scissors();
@@ -54,11 +74,11 @@ class Scissors : public Service, private SocketChannel::Listener {
   bool StartSession(std::unique_ptr<Session>&& session);
   void EndSession(Session* session);
 
-  std::shared_ptr<DatagramChannel> CreateSocket();
+  std::shared_ptr<io::net::DatagramChannel> CreateSocket();
 
-  ChannelPtr CreateChannel(const ChannelPtr& channel);
-  HRESULT ConnectSocket(SocketChannel* channel,
-                        SocketChannel::Listener* listener);
+  io::ChannelPtr CreateChannel(const io::ChannelPtr& channel);
+  HRESULT ConnectSocket(io::net::SocketChannel* channel,
+                        io::net::SocketChannel::Listener* listener);
 
   ScissorsConfig* config() const {
     return config_.get();
@@ -88,20 +108,22 @@ class Scissors : public Service, private SocketChannel::Listener {
                                       void* param);
   void EndSessionImpl(Session* session);
 
-  void OnAccepted(const ChannelPtr& client) override;
-  void OnReceivedFrom(const DatagramPtr& datagram) override;
+  void OnAccepted(const io::ChannelPtr& client) override;
+  void OnReceivedFrom(const io::net::DatagramPtr& datagram) override;
   void OnError(HRESULT /*result*/) override {}
 
-  void OnConnected(SocketChannel* socket, HRESULT result) override;
-  void OnClosed(SocketChannel* /*channel*/, HRESULT /*result*/) override {}
+  void OnConnected(io::net::SocketChannel* socket, HRESULT result) override;
+  void OnClosed(io::net::SocketChannel* /*channel*/,
+                HRESULT /*result*/) override {}
 
   bool stopped_;
   std::shared_ptr<ScissorsConfig> config_;
-  std::unique_ptr<SchannelCredential> credential_;
+  std::unique_ptr<misc::schannel::SchannelCredential> credential_;
   base::Lock lock_;
 
-  SocketResolver resolver_;
-  std::map<SocketChannel*, SocketChannel::Listener*> connecting_;
+  io::net::SocketResolver resolver_;
+  std::map<io::net::SocketChannel*, io::net::SocketChannel::Listener*>
+      connecting_;
   base::ConditionVariable not_connecting_;
 
   std::vector<std::unique_ptr<Session>> sessions_;
@@ -112,5 +134,9 @@ class Scissors : public Service, private SocketChannel::Listener {
   Scissors(const Scissors&) = delete;
   Scissors& operator=(const Scissors&) = delete;
 };
+
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_H_

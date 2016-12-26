@@ -7,6 +7,10 @@
 
 #include <memory>
 
+namespace juno {
+namespace io {
+namespace net {
+
 class DatagramChannel;
 
 struct Datagram {
@@ -20,5 +24,9 @@ struct Datagram {
 #ifndef JUNO_NO_DATAGRAM_PTR
 typedef std::shared_ptr<Datagram> DatagramPtr;
 #endif  // JUNO_NO_DATAGRAM_PTR
+
+}  // namespace net
+}  // namespace io
+}  // namespace juno
 
 #endif  // JUNO_IO_NET_DATAGRAM_H_

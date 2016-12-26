@@ -5,6 +5,10 @@
 
 #include <string>
 
+namespace juno {
+namespace service {
+namespace http {
+
 class HttpDigest {
  public:
   HttpDigest();
@@ -37,5 +41,9 @@ class HttpDigest {
   HttpDigest(const HttpDigest&) = delete;
   HttpDigest& operator=(const HttpDigest&) = delete;
 };
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_DIGEST_H_

@@ -14,6 +14,10 @@
 
 #include <vector>
 
+namespace juno {
+namespace misc {
+namespace schannel {
+
 class SchannelCredential {
  public:
   SchannelCredential() : auth_data_(), expiry_() {
@@ -82,5 +86,9 @@ class SchannelCredential {
   SchannelCredential(const SchannelCredential&) = delete;
   SchannelCredential& operator=(const SchannelCredential&) = delete;
 };
+
+}  // namespace schannel
+}  // namespace misc
+}  // namespace juno
 
 #endif  // JUNO_MISC_SCHANNEL_SCHANNEL_CREDENTIAL_H_

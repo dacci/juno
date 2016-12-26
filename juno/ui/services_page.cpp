@@ -10,14 +10,19 @@
 #include "ui/preference_dialog.h"
 #include "ui/provider_dialog.h"
 
-ServicesPage::ServicesPage(PreferenceDialog* parent, ServiceConfigMap* configs)
+namespace juno {
+namespace ui {
+
+ServicesPage::ServicesPage(PreferenceDialog* parent,
+                           service::ServiceConfigMap* configs)
     : parent_(parent), configs_(configs), initialized_() {}
 
 void ServicesPage::OnPageRelease() {
   delete this;
 }
 
-void ServicesPage::AddServiceItem(const ServiceConfigPtr& config, int index) {
+void ServicesPage::AddServiceItem(const service::ServiceConfigPtr& config,
+                                  int index) {
   if (index == -1)
     index = service_list_.GetItemCount();
 
@@ -57,7 +62,7 @@ void ServicesPage::OnAddService(UINT /*notify_code*/, int /*id*/,
   if (provider_dialog.DoModal(m_hWnd) != IDOK)
     return;
 
-  auto provider = ServiceManager::GetInstance()->GetProvider(
+  auto provider = service::ServiceManager::GetInstance()->GetProvider(
       provider_dialog.GetProviderName());
   if (provider == nullptr)
     return;
@@ -87,8 +92,8 @@ void ServicesPage::OnEditService(UINT /*notify_code*/, int /*id*/,
   CStringA name(name_unicode);
   auto& config = configs_->at(name.GetString());
 
-  auto provider =
-      ServiceManager::GetInstance()->GetProvider(config->provider_name_);
+  auto provider = service::ServiceManager::GetInstance()->GetProvider(
+      config->provider_name_);
   if (provider->Configure(config, *parent_) != IDOK)
     return;
 
@@ -135,3 +140,6 @@ LRESULT ServicesPage::OnServiceListDoubleClicked(LPNMHDR header) {
 
   return 0;
 }
+
+}  // namespace ui
+}  // namespace juno

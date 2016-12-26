@@ -18,15 +18,23 @@
 #include "res/resource.h"
 #include "service/service_manager.h"
 
-class PreferenceDialog;
+namespace juno {
+namespace service {
+
 class ServiceConfig;
+
+}  // namespace service
+
+namespace ui {
+
+class PreferenceDialog;
 
 class ServicesPage : public CPropertyPageImpl<ServicesPage>,
                      public CWinDataExchange<ServicesPage> {
  public:
   static const UINT IDD = IDD_SERVICES_PAGE;
 
-  ServicesPage(PreferenceDialog* parent, ServiceConfigMap* configs);
+  ServicesPage(PreferenceDialog* parent, service::ServiceConfigMap* configs);
 
   void OnPageRelease();
 
@@ -51,7 +59,7 @@ class ServicesPage : public CPropertyPageImpl<ServicesPage>,
   END_DDX_MAP()
 
  private:
-  void AddServiceItem(const ServiceConfigPtr& config, int index);
+  void AddServiceItem(const service::ServiceConfigPtr& config, int index);
 
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 
@@ -63,7 +71,7 @@ class ServicesPage : public CPropertyPageImpl<ServicesPage>,
   LRESULT OnServiceListDoubleClicked(LPNMHDR header);
 
   PreferenceDialog* const parent_;
-  ServiceConfigMap* const configs_;
+  service::ServiceConfigMap* const configs_;
   bool initialized_;
 
   CListViewCtrl service_list_;
@@ -74,5 +82,8 @@ class ServicesPage : public CPropertyPageImpl<ServicesPage>,
   ServicesPage(const ServicesPage&) = delete;
   ServicesPage& operator=(const ServicesPage&) = delete;
 };
+
+}  // namespace ui
+}  // namespace juno
 
 #endif  // JUNO_UI_SERVICES_PAGE_H_

@@ -7,6 +7,10 @@
 
 #include "misc/schannel/schannel_credential.h"
 
+namespace juno {
+namespace misc {
+namespace schannel {
+
 class SchannelContext {
  public:
   explicit SchannelContext(SchannelCredential* credential)
@@ -110,5 +114,9 @@ class SchannelContext {
   SchannelContext(const SchannelContext&) = delete;
   SchannelContext& operator=(const SchannelContext&) = delete;
 };
+
+}  // namespace schannel
+}  // namespace misc
+}  // namespace juno
 
 #endif  // JUNO_MISC_SCHANNEL_SCHANNEL_CONTEXT_H_

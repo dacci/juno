@@ -18,8 +18,16 @@
 #include "res/resource.h"
 #include "ui/dialog_impl_ex.h"
 
-class PreferenceDialog;
+namespace juno {
+namespace service {
+
 class ServiceProvider;
+
+}  // namespace service
+
+namespace ui {
+
+class PreferenceDialog;
 
 class ProviderDialog : public DialogImplEx<ProviderDialog>,
                        public CWinDataExchange<ProviderDialog> {
@@ -66,5 +74,8 @@ class ProviderDialog : public DialogImplEx<ProviderDialog>,
   ProviderDialog(const ProviderDialog&) = delete;
   ProviderDialog& operator=(const ProviderDialog&) = delete;
 };
+
+}  // namespace ui
+}  // namespace juno
 
 #endif  // JUNO_UI_PROVIDER_DIALOG_H_

@@ -7,6 +7,11 @@
 #include "io/net/datagram.h"
 #include "service/service.h"
 
+namespace juno {
+namespace service {
+
+using ::juno::io::net::DatagramChannel;
+
 UdpServer::UdpServer() : service_(), empty_(&lock_) {}
 
 UdpServer::~UdpServer() {
@@ -69,7 +74,7 @@ void UdpServer::Stop() {
     empty_.Wait();
 }
 
-void UdpServer::OnRead(Channel* /*socket*/, HRESULT /*result*/,
+void UdpServer::OnRead(io::Channel* /*socket*/, HRESULT /*result*/,
                        void* /*buffer*/, int /*length*/) {
   DCHECK(FALSE) << "This must not occurr.";
 }
@@ -78,7 +83,7 @@ void UdpServer::OnRead(DatagramChannel* socket, HRESULT result, void* buffer,
                        int length, const void* from, int from_length) {
   if (SUCCEEDED(result)) {
     do {
-      auto datagram = std::make_shared<Datagram>();
+      auto datagram = std::make_shared<io::net::Datagram>();
       if (datagram == nullptr) {
         result = E_OUTOFMEMORY;
         break;
@@ -114,7 +119,7 @@ void UdpServer::OnRead(DatagramChannel* socket, HRESULT result, void* buffer,
   }
 }
 
-void UdpServer::OnWritten(Channel* /*channel*/, HRESULT /*result*/,
+void UdpServer::OnWritten(io::Channel* /*channel*/, HRESULT /*result*/,
                           void* /*buffer*/, int /*length*/) {
   DLOG(ERROR) << "This must not occurr.";
 }
@@ -161,3 +166,6 @@ void UdpServer::DeleteServerImpl(DatagramChannel* server) {
   if (removed_server != nullptr)
     removed_server->Close();
 }
+
+}  // namespace service
+}  // namespace juno

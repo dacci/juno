@@ -124,7 +124,7 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
     return S_FALSE;
   }
 
-  frame_ = new MainFrame();
+  frame_ = new ui::MainFrame();
   if (frame_ == nullptr) {
     LOG(ERROR) << "Failed to allocate main frame.";
     TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,

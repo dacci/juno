@@ -6,6 +6,11 @@
 
 #include "service/scissors/scissors_config.h"
 
+namespace juno {
+namespace service {
+namespace scissors {
+namespace ui {
+
 ScissorsDialog::ScissorsDialog(ServiceConfig* config)
     : config_(static_cast<ScissorsConfig*>(config)), port_(0) {}
 
@@ -71,3 +76,8 @@ void ScissorsDialog::OnCancel(UINT /*notify_code*/, int /*id*/,
                               CWindow /*control*/) {
   EndDialog(IDCANCEL);
 }
+
+}  // namespace ui
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno

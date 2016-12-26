@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 
+namespace juno {
+namespace io {
 namespace {
 
 enum ContentType : uint8_t {
@@ -53,7 +55,7 @@ struct SecureChannel::Request {
   Channel::Listener* listener;
 };
 
-SecureChannel::SecureChannel(SchannelCredential* credential,
+SecureChannel::SecureChannel(misc::schannel::SchannelCredential* credential,
                              const std::shared_ptr<Channel>& channel,
                              bool inbound)
     : context_(credential),
@@ -624,3 +626,6 @@ void SecureChannel::OnWrite() {
     }
   }
 }
+
+}  // namespace io
+}  // namespace juno

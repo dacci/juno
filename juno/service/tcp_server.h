@@ -15,13 +15,18 @@
 #include "service/server.h"
 #include "service/service.h"
 
+namespace juno {
+namespace service {
+
+using ::juno::io::net::AsyncServerSocket;
+
 class TcpServer : public Server, private AsyncServerSocket::Listener {
  public:
   class __declspec(novtable) ChannelCustomizer {
    public:
     virtual ~ChannelCustomizer() {}
 
-    virtual ChannelPtr Customize(const ChannelPtr& channel) = 0;
+    virtual io::ChannelPtr Customize(const io::ChannelPtr& channel) = 0;
   };
 
   TcpServer();
@@ -52,7 +57,7 @@ class TcpServer : public Server, private AsyncServerSocket::Listener {
                   AsyncServerSocket::Context* context) override;
 
   ChannelCustomizer* channel_customizer_;
-  SocketResolver resolver_;
+  io::net::SocketResolver resolver_;
   std::vector<std::unique_ptr<AsyncServerSocket>> servers_;
   Service* service_;
 
@@ -62,5 +67,8 @@ class TcpServer : public Server, private AsyncServerSocket::Listener {
   TcpServer(const TcpServer&) = delete;
   TcpServer& operator=(const TcpServer&) = delete;
 };
+
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_TCP_SERVER_H_

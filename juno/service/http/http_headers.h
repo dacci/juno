@@ -9,6 +9,10 @@
 
 struct phr_header;
 
+namespace juno {
+namespace service {
+namespace http {
+
 class HttpHeaders {
  public:
   typedef std::pair<std::string, std::string> Pair;
@@ -87,5 +91,9 @@ class HttpHeaders {
   HttpHeaders(const HttpHeaders&) = delete;
   HttpHeaders& operator=(const HttpHeaders&) = delete;
 };
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_HEADERS_H_

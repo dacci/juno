@@ -2,7 +2,9 @@
 
 #include "service/http/http_status.h"
 
-namespace HTTP {
+namespace juno {
+namespace service {
+namespace http {
 namespace {
 
 typedef struct STATUS_MESSAGE {
@@ -96,4 +98,6 @@ const char* GetStatusMessage(StatusCode status) {
   return entry->message;
 }
 
-}  // namespace HTTP
+}  // namespace http
+}  // namespace service
+}  // namespace juno

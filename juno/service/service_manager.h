@@ -11,6 +11,9 @@
 #include "service/server_config.h"
 #include "service/service_provider.h"
 
+namespace juno {
+namespace service {
+
 class Server;
 
 typedef std::map<std::string, ServiceProviderPtr> ProviderMap;
@@ -53,13 +56,15 @@ class ServiceManager {
   typedef std::map<std::string, ServicePtr> ServiceMap;
   typedef std::map<std::string, ServerPtr> ServerMap;
 
-  bool LoadService(const RegistryKey& parent, const std::string& key_name);
-  bool SaveService(const RegistryKey& parent, const ServiceConfigPtr& config);
+  bool LoadService(const misc::RegistryKey& parent,
+                   const std::string& key_name);
+  bool SaveService(const misc::RegistryKey& parent,
+                   const ServiceConfigPtr& config);
   bool CreateService(const std::string& name);
 
-  bool LoadServer(const RegistryKey& parent, const std::string& key_name);
+  bool LoadServer(const misc::RegistryKey& parent, const std::string& key_name);
   bool CreateServer(const std::string& name);
-  static bool SaveServer(const RegistryKey& parent,
+  static bool SaveServer(const misc::RegistryKey& parent,
                          const ServerConfigPtr& config);
 
   static ServiceManager* instance_;
@@ -73,5 +78,8 @@ class ServiceManager {
   ServiceManager(const ServiceManager&) = delete;
   ServiceManager& operator=(const ServiceManager&) = delete;
 };
+
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SERVICE_MANAGER_H_

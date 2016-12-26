@@ -7,6 +7,9 @@
 
 #include <cryptuiapi.h>
 
+namespace juno {
+namespace misc {
+
 class CertificateStore {
  public:
   explicit CertificateStore(const wchar_t* store_name) : store_handle_() {
@@ -67,5 +70,8 @@ class CertificateStore {
   CertificateStore(const CertificateStore&) = delete;
   CertificateStore& operator=(const CertificateStore&) = delete;
 };
+
+}  // namespace misc
+}  // namespace juno
 
 #endif  // JUNO_MISC_CERTIFICATE_STORE_H_

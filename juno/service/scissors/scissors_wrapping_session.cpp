@@ -7,11 +7,15 @@
 #include "io/net/datagram.h"
 #include "io/net/datagram_channel.h"
 
-ScissorsWrappingSession::ScissorsWrappingSession(Scissors* service,
-                                                 const Datagram* datagram)
+namespace juno {
+namespace service {
+namespace scissors {
+
+ScissorsWrappingSession::ScissorsWrappingSession(
+    Scissors* service, const io::net::Datagram* datagram)
     : UdpSession(service),
       connected_(false),
-      timer_(TimerService::GetDefault()->Create(this)),
+      timer_(misc::TimerService::GetDefault()->Create(this)),
       address_length_(0) {
   if (datagram == nullptr)
     return;
@@ -41,7 +45,7 @@ bool ScissorsWrappingSession::Start() {
     return false;
   }
 
-  auto remote = std::make_shared<SocketChannel>();
+  auto remote = std::make_shared<io::net::SocketChannel>();
   if (remote == nullptr) {
     LOG(ERROR) << "Failed to create socket.";
     return false;
@@ -70,7 +74,7 @@ void ScissorsWrappingSession::Stop() {
     stream_->Close();
 }
 
-void ScissorsWrappingSession::OnReceived(const DatagramPtr& datagram) {
+void ScissorsWrappingSession::OnReceived(const io::net::DatagramPtr& datagram) {
   timer_->Start(kTimeout, 0);
 
   if (datagram->data_length <= kDataSize) {
@@ -81,7 +85,7 @@ void ScissorsWrappingSession::OnReceived(const DatagramPtr& datagram) {
   SendDatagram();
 }
 
-void ScissorsWrappingSession::OnRead(Channel* /*channel*/, HRESULT result,
+void ScissorsWrappingSession::OnRead(io::Channel* /*channel*/, HRESULT result,
                                      void* /*buffer*/, int length) {
   auto succeeded = false;
 
@@ -140,7 +144,7 @@ void ScissorsWrappingSession::OnRead(Channel* /*channel*/, HRESULT result,
     service_->EndSession(this);
 }
 
-void ScissorsWrappingSession::OnWritten(Channel* channel, HRESULT result,
+void ScissorsWrappingSession::OnWritten(io::Channel* channel, HRESULT result,
                                         void* buffer, int /*length*/) {
   delete[] static_cast<char*>(buffer);
 
@@ -154,7 +158,7 @@ void ScissorsWrappingSession::OnWritten(Channel* channel, HRESULT result,
   }
 }
 
-void ScissorsWrappingSession::OnConnected(SocketChannel* /*channel*/,
+void ScissorsWrappingSession::OnConnected(io::net::SocketChannel* /*channel*/,
                                           HRESULT result) {
   if (FAILED(result)) {
     LOG(ERROR) << "Failed to connect: 0x" << std::hex << result;
@@ -236,3 +240,7 @@ void ScissorsWrappingSession::SendDatagram() {
   if (failed)
     service_->EndSession(this);
 }
+
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno

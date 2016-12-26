@@ -8,6 +8,10 @@
 #include "service/http/http_proxy_config.h"
 #include "service/http/http_proxy_session.h"
 
+namespace juno {
+namespace service {
+namespace http {
+
 HttpProxy::HttpProxy() : empty_(&lock_), stopped_() {}
 
 HttpProxy::~HttpProxy() {
@@ -43,7 +47,7 @@ void HttpProxy::EndSession(HttpProxySession* session) {
   }
 }
 
-void HttpProxy::OnAccepted(const ChannelPtr& client) {
+void HttpProxy::OnAccepted(const io::ChannelPtr& client) {
   auto session = std::make_unique<HttpProxySession>(this, config_, client);
   if (session == nullptr)
     return;
@@ -57,7 +61,7 @@ void HttpProxy::OnAccepted(const ChannelPtr& client) {
     sessions_.push_back(std::move(session));
 }
 
-void HttpProxy::OnReceivedFrom(const DatagramPtr& /*datagram*/) {
+void HttpProxy::OnReceivedFrom(const io::net::DatagramPtr& /*datagram*/) {
   // Do nothing
 }
 
@@ -84,3 +88,7 @@ void HttpProxy::EndSessionImpl(HttpProxySession* session) {
     }
   }
 }
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno

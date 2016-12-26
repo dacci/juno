@@ -7,6 +7,9 @@
 #include <string>
 #include <utility>
 
+namespace juno {
+namespace misc {
+
 std::string GenerateGUID() {
   GUID guid;
   auto result = CoCreateGuid(&guid);
@@ -28,3 +31,6 @@ std::string GenerateGUID() {
 
   return std::move(guid_string);
 }
+
+}  // namespace misc
+}  // namespace juno

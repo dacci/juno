@@ -9,8 +9,12 @@
 #include "io/net/socket_channel.h"
 #include "misc/tunneling_service.h"
 
+namespace juno {
+namespace service {
+namespace scissors {
+
 ScissorsTcpSession::ScissorsTcpSession(Scissors* service,
-                                       const ChannelPtr& source)
+                                       const io::ChannelPtr& source)
     : Session(service), source_(source) {
   DLOG(INFO) << this << " session created";
 }
@@ -22,7 +26,7 @@ ScissorsTcpSession::~ScissorsTcpSession() {
 }
 
 bool ScissorsTcpSession::Start() {
-  auto socket = std::make_shared<SocketChannel>();
+  auto socket = std::make_shared<io::net::SocketChannel>();
   if (socket == nullptr) {
     LOG(ERROR) << this << " failed to create socket";
     return false;
@@ -50,7 +54,7 @@ void ScissorsTcpSession::Stop() {
     source_->Close();
 }
 
-void ScissorsTcpSession::OnConnected(SocketChannel* /*channel*/,
+void ScissorsTcpSession::OnConnected(io::net::SocketChannel* /*channel*/,
                                      HRESULT result) {
   do {
     if (FAILED(result)) {
@@ -64,7 +68,7 @@ void ScissorsTcpSession::OnConnected(SocketChannel* /*channel*/,
       break;
     }
 
-    if (!TunnelingService::Bind(source_, sink_)) {
+    if (!misc::TunnelingService::Bind(source_, sink_)) {
       LOG(ERROR) << this << " failed to bind channels";
       break;
     }
@@ -75,3 +79,7 @@ void ScissorsTcpSession::OnConnected(SocketChannel* /*channel*/,
 
   service_->EndSession(this);
 }
+
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno

@@ -4,6 +4,10 @@
 
 #include <mswsock.h>
 
+namespace juno {
+namespace io {
+namespace net {
+
 class AsyncServerSocket::Context : public OVERLAPPED {
  public:
   Context(AsyncServerSocket* server, Listener* listener)
@@ -210,3 +214,7 @@ void AsyncServerSocket::OnCompleted(PTP_CALLBACK_INSTANCE /*callback*/,
   if (instance->queue_.size() == 1)
     SubmitThreadpoolWork(instance->work_);
 }
+
+}  // namespace net
+}  // namespace io
+}  // namespace juno

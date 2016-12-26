@@ -15,6 +15,10 @@
 #include "service/scissors/scissors_unwrapping_session.h"
 #include "service/scissors/scissors_wrapping_session.h"
 
+namespace juno {
+namespace service {
+namespace scissors {
+
 Scissors::Scissors() : stopped_(), not_connecting_(&lock_), empty_(&lock_) {}
 
 Scissors::~Scissors() {
@@ -43,7 +47,7 @@ bool Scissors::UpdateConfig(const ServiceConfigPtr& config) {
   }
 
   if (config_->remote_ssl() && credential_ == nullptr) {
-    credential_.reset(new SchannelCredential());
+    credential_.reset(new misc::schannel::SchannelCredential());
     if (credential_ == nullptr)
       return false;
 
@@ -93,8 +97,8 @@ void Scissors::EndSession(Session* session) {
     EndSessionImpl(session);
 }
 
-std::shared_ptr<DatagramChannel> Scissors::CreateSocket() {
-  auto socket = std::make_shared<DatagramChannel>();
+std::shared_ptr<io::net::DatagramChannel> Scissors::CreateSocket() {
+  auto socket = std::make_shared<io::net::DatagramChannel>();
   if (socket == nullptr)
     return nullptr;
 
@@ -111,7 +115,7 @@ std::shared_ptr<DatagramChannel> Scissors::CreateSocket() {
   return socket;
 }
 
-ChannelPtr Scissors::CreateChannel(const ChannelPtr& channel) {
+io::ChannelPtr Scissors::CreateChannel(const io::ChannelPtr& channel) {
   if (channel == nullptr)
     return channel;
 
@@ -121,7 +125,7 @@ ChannelPtr Scissors::CreateChannel(const ChannelPtr& channel) {
     return channel;
 
   auto secure_channel =
-      std::make_shared<SecureChannel>(credential_.get(), channel, false);
+      std::make_shared<io::SecureChannel>(credential_.get(), channel, false);
   if (secure_channel == nullptr)
     return channel;
 
@@ -130,8 +134,8 @@ ChannelPtr Scissors::CreateChannel(const ChannelPtr& channel) {
   return secure_channel;
 }
 
-HRESULT Scissors::ConnectSocket(SocketChannel* channel,
-                                SocketChannel::Listener* listener) {
+HRESULT Scissors::ConnectSocket(io::net::SocketChannel* channel,
+                                io::net::SocketChannel::Listener* listener) {
   base::AutoLock guard(lock_);
 
   connecting_.insert({channel, listener});
@@ -168,7 +172,7 @@ void Scissors::EndSessionImpl(Session* session) {
   }
 }
 
-void Scissors::OnAccepted(const ChannelPtr& client) {
+void Scissors::OnAccepted(const io::ChannelPtr& client) {
   if (stopped_)
     return;
 
@@ -178,7 +182,7 @@ void Scissors::OnAccepted(const ChannelPtr& client) {
     StartSession(std::make_unique<ScissorsTcpSession>(this, client));
 }
 
-void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
+void Scissors::OnReceivedFrom(const io::net::DatagramPtr& datagram) {
   if (stopped_)
     return;
 
@@ -221,7 +225,7 @@ void Scissors::OnReceivedFrom(const DatagramPtr& datagram) {
     udp_session->OnReceived(datagram);
 }
 
-void Scissors::OnConnected(SocketChannel* socket, HRESULT result) {
+void Scissors::OnConnected(io::net::SocketChannel* socket, HRESULT result) {
   LOG_IF(ERROR, FAILED(result))
       << "failed to connect to " << config_->remote_address() << ":"
       << config_->remote_port() << " (error: 0x" << std::hex << result << ")";
@@ -237,3 +241,7 @@ void Scissors::OnConnected(SocketChannel* socket, HRESULT result) {
 
   listener->OnConnected(socket, result);
 }
+
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno

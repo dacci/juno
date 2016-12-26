@@ -3,6 +3,9 @@
 #ifndef JUNO_SERVICE_SERVER_H_
 #define JUNO_SERVICE_SERVER_H_
 
+namespace juno {
+namespace service {
+
 class Service;
 
 class __declspec(novtable) Server {
@@ -15,5 +18,8 @@ class __declspec(novtable) Server {
 
   virtual void SetService(Service* service) = 0;
 };
+
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SERVER_H_

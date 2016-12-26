@@ -16,8 +16,16 @@
 #include "res/resource.h"
 #include "ui/preference_dialog.h"
 
-class ScissorsConfig;
+namespace juno {
+namespace service {
+
 class ServiceConfig;
+
+namespace scissors {
+
+class ScissorsConfig;
+
+namespace ui {
 
 class ScissorsDialog : public CDialogImpl<ScissorsDialog>,
                        public CWinDataExchange<ScissorsDialog> {
@@ -64,5 +72,10 @@ class ScissorsDialog : public CDialogImpl<ScissorsDialog>,
   ScissorsDialog(const ScissorsDialog&) = delete;
   ScissorsDialog& operator=(const ScissorsDialog&) = delete;
 };
+
+}  // namespace ui
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SCISSORS_UI_SCISSORS_DIALOG_H_

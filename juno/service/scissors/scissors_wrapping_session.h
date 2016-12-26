@@ -11,25 +11,30 @@
 #include "misc/timer_service.h"
 #include "service/scissors/scissors.h"
 
+namespace juno {
+namespace service {
+namespace scissors {
+
 class ScissorsWrappingSession : public Scissors::UdpSession,
-                                public Channel::Listener,
-                                public SocketChannel::Listener,
-                                public TimerService::Callback {
+                                public io::Channel::Listener,
+                                public io::net::SocketChannel::Listener,
+                                public misc::TimerService::Callback {
  public:
-  ScissorsWrappingSession(Scissors* service, const Datagram* datagram);
+  ScissorsWrappingSession(Scissors* service, const io::net::Datagram* datagram);
   ~ScissorsWrappingSession();
 
   bool Start() override;
   void Stop() override;
 
-  void OnReceived(const DatagramPtr& datagram) override;
-  void OnRead(Channel* channel, HRESULT result, void* buffer,
+  void OnReceived(const io::net::DatagramPtr& datagram) override;
+  void OnRead(io::Channel* channel, HRESULT result, void* buffer,
               int length) override;
-  void OnWritten(Channel* channel, HRESULT result, void* buffer,
+  void OnWritten(io::Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
-  void OnConnected(SocketChannel* channel, HRESULT result) override;
-  void OnClosed(SocketChannel* /*channel*/, HRESULT /*result*/) override {}
+  void OnConnected(io::net::SocketChannel* channel, HRESULT result) override;
+  void OnClosed(io::net::SocketChannel* /*channel*/,
+                HRESULT /*result*/) override {}
 
   void OnTimeout() override;
 
@@ -46,20 +51,24 @@ class ScissorsWrappingSession : public Scissors::UdpSession,
   void SendDatagram();
 
   base::Lock lock_;
-  std::list<DatagramPtr> queue_;
+  std::list<io::net::DatagramPtr> queue_;
   bool connected_;
-  TimerService::TimerObject timer_;
+  misc::TimerService::TimerObject timer_;
 
-  std::shared_ptr<Channel> stream_;
+  std::shared_ptr<io::Channel> stream_;
   char stream_buffer_[4096];
   std::string stream_message_;
 
-  std::shared_ptr<DatagramChannel> datagram_;
+  std::shared_ptr<io::net::DatagramChannel> datagram_;
   int address_length_;
   sockaddr_storage address_;
 
   ScissorsWrappingSession(const ScissorsWrappingSession&) = delete;
   ScissorsWrappingSession& operator=(const ScissorsWrappingSession&) = delete;
 };
+
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_WRAPPING_SESSION_H_

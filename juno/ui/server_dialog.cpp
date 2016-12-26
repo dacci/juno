@@ -13,6 +13,11 @@
 #include "service/server_config.h"
 #include "ui/preference_dialog.h"
 
+namespace juno {
+namespace ui {
+
+using ::juno::service::ServerConfig;
+
 ServerDialog::ServerDialog(PreferenceDialog* parent, ServerConfig* entry)
     : parent_(parent), entry_(entry), listen_(0), enabled_(TRUE) {}
 
@@ -112,7 +117,7 @@ void ServerDialog::OnDetailSetting(UINT /*notify_code*/, int /*id*/,
                                    CWindow /*control*/) {
   switch (type_combo_.GetCurSel() + 1) {
     case ServerConfig::TLS: {
-      CertificateStore store(L"MY");
+      misc::CertificateStore store(L"MY");
       auto cert = store.SelectCertificate(m_hWnd, nullptr, nullptr, 0);
       if (cert == nullptr)
         break;
@@ -165,7 +170,7 @@ void ServerDialog::OnOk(UINT /*notify_code*/, int /*id*/, CWindow /*control*/) {
   }
 
   if (entry_->name_.empty()) {
-    entry_->name_ = GenerateGUID();
+    entry_->name_ = misc::GenerateGUID();
     if (entry_->name_.empty()) {
       TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_UNEXPECTED, TDCBF_OK_BUTTON,
                  TD_ERROR_ICON, nullptr);
@@ -191,3 +196,6 @@ void ServerDialog::OnCancel(UINT /*notify_code*/, int /*id*/,
                             CWindow /*control*/) {
   EndDialog(IDCANCEL);
 }
+
+}  // namespace ui
+}  // namespace juno

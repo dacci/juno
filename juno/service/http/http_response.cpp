@@ -6,6 +6,10 @@
 
 #include <string>
 
+namespace juno {
+namespace service {
+namespace http {
+
 HttpResponse::HttpResponse() : minor_version_(0), status_(0) {}
 
 int HttpResponse::Parse(const char* data, size_t length) {
@@ -47,3 +51,7 @@ void HttpResponse::Serialize(std::string* output) {
   SerializeHeaders(output);
   output->append("\x0D\x0A");
 }
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno

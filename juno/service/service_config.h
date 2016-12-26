@@ -6,6 +6,9 @@
 #include <memory>
 #include <string>
 
+namespace juno {
+namespace service {
+
 class ServiceConfig {
  public:
   // ServiceConfig(const ServiceConfig& other) = default;
@@ -16,5 +19,8 @@ class ServiceConfig {
 };
 
 typedef std::shared_ptr<ServiceConfig> ServiceConfigPtr;
+
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SERVICE_CONFIG_H_

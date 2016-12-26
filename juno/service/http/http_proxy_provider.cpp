@@ -8,16 +8,20 @@
 #include "service/http/http_proxy_config.h"
 #include "ui/http_proxy_dialog.h"
 
+namespace juno {
+namespace service {
+namespace http {
+
 ServiceConfigPtr HttpProxyProvider::CreateConfig() {
   return std::make_shared<HttpProxyConfig>();
 }
 
-ServiceConfigPtr HttpProxyProvider::LoadConfig(const RegistryKey& key) {
+ServiceConfigPtr HttpProxyProvider::LoadConfig(const misc::RegistryKey& key) {
   return HttpProxyConfig::Load(key);
 }
 
 bool HttpProxyProvider::SaveConfig(const ServiceConfigPtr& config,
-                                   RegistryKey* key) {
+                                   misc::RegistryKey* key) {
   return static_cast<HttpProxyConfig*>(config.get())->Save(key);
 }
 
@@ -39,5 +43,9 @@ ServicePtr HttpProxyProvider::CreateService(const ServiceConfigPtr& config) {
 
 INT_PTR HttpProxyProvider::Configure(const ServiceConfigPtr& config,
                                      HWND parent) {
-  return HttpProxyDialog(config).DoModal(parent);
+  return ui::HttpProxyDialog(config).DoModal(parent);
 }
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno

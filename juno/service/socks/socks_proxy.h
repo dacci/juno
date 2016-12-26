@@ -12,12 +12,16 @@
 
 #include "service/service.h"
 
+namespace juno {
+namespace service {
+namespace socks {
+
 class SocksProxy;
 class SocksProxyConfig;
 
 class __declspec(novtable) SocksSession {
  public:
-  SocksSession(SocksProxy* proxy, const ChannelPtr& channel)
+  SocksSession(SocksProxy* proxy, const io::ChannelPtr& channel)
       : proxy_(proxy), client_(channel) {}
   virtual ~SocksSession() {}
 
@@ -26,13 +30,13 @@ class __declspec(novtable) SocksSession {
 
  protected:
   SocksProxy* const proxy_;
-  ChannelPtr client_;
+  io::ChannelPtr client_;
 
   SocksSession(const SocksSession&) = delete;
   SocksSession& operator=(const SocksSession&) = delete;
 };
 
-class SocksProxy : public Service, private Channel::Listener {
+class SocksProxy : public Service, private io::Channel::Listener {
  public:
   SocksProxy();
   ~SocksProxy();
@@ -44,8 +48,8 @@ class SocksProxy : public Service, private Channel::Listener {
   void Stop() override;
   void EndSession(SocksSession* session);
 
-  void OnAccepted(const ChannelPtr& client) override;
-  void OnReceivedFrom(const DatagramPtr& /*datagram*/) override {}
+  void OnAccepted(const io::ChannelPtr& client) override;
+  void OnReceivedFrom(const io::net::DatagramPtr& /*datagram*/) override {}
   void OnError(HRESULT /*result*/) override {}
 
  private:
@@ -56,9 +60,9 @@ class SocksProxy : public Service, private Channel::Listener {
   void CheckEmpty();
   void WaitEmpty();
 
-  void OnRead(Channel* channel, HRESULT result, void* buffer,
+  void OnRead(io::Channel* channel, HRESULT result, void* buffer,
               int length) override;
-  void OnWritten(Channel* channel, HRESULT result, void* buffer,
+  void OnWritten(io::Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
   static void CALLBACK EndSessionImpl(PTP_CALLBACK_INSTANCE instance,
@@ -67,12 +71,16 @@ class SocksProxy : public Service, private Channel::Listener {
 
   base::Lock lock_;
   base::ConditionVariable empty_;
-  std::list<ChannelPtr> candidates_;
+  std::list<io::ChannelPtr> candidates_;
   std::list<std::unique_ptr<SocksSession>> sessions_;
   bool stopped_;
 
   SocksProxy(const SocksProxy&) = delete;
   SocksProxy& operator=(const SocksProxy&) = delete;
 };
+
+}  // namespace socks
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SOCKS_SOCKS_PROXY_H_

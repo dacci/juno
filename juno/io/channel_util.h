@@ -5,6 +5,9 @@
 
 #include "io/channel.h"
 
+namespace juno {
+namespace io {
+
 enum ChannelEvent {
   Invalid,
   Read,
@@ -18,5 +21,7 @@ void FireEvent(Channel::Listener* listener, ChannelEvent event,
                int length);
 
 }  // namespace channel_util
+}  // namespace io
+}  // namespace juno
 
 #endif  // JUNO_IO_CHANNEL_UTIL_H_

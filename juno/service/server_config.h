@@ -9,6 +9,9 @@
 #include <string>
 #include <vector>
 
+namespace juno {
+namespace service {
+
 class ServerConfig {
  public:
   enum Protocol {
@@ -41,5 +44,8 @@ class ServerConfig {
 };
 
 typedef std::shared_ptr<ServerConfig> ServerConfigPtr;
+
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SERVER_CONFIG_H_

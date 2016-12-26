@@ -6,6 +6,12 @@
 
 #include "io/channel.h"
 
+namespace juno {
+namespace misc {
+
+using ::juno::io::Channel;
+using ::juno::io::ChannelPtr;
+
 TunnelingService* TunnelingService::instance_ = nullptr;
 
 class TunnelingService::Session : public Channel::Listener {
@@ -157,3 +163,6 @@ void TunnelingService::Session::OnWritten(Channel* /*channel*/, HRESULT result,
 
   service_->EndSession(this);
 }
+
+}  // namespace misc
+}  // namespace juno

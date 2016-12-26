@@ -7,6 +7,8 @@
 #include "service/service_manager.h"
 #include "ui/preference_dialog.h"
 
+namespace juno {
+namespace ui {
 namespace {
 
 const std::string kEmptyString;
@@ -26,7 +28,7 @@ const std::string& ProviderDialog::GetProviderName() const {
 BOOL ProviderDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   DoDataExchange();
 
-  for (auto& provider : ServiceManager::GetInstance()->providers()) {
+  for (auto& provider : service::ServiceManager::GetInstance()->providers()) {
     provider_names_.push_back(provider.first);
     provider_combo_.AddString(CString(provider.first.c_str()));
   }
@@ -74,3 +76,6 @@ void ProviderDialog::OnCancel(UINT /*notify_code*/, int /*id*/,
                               CWindow /*control*/) {
   EndDialog(IDCANCEL);
 }
+
+}  // namespace ui
+}  // namespace juno

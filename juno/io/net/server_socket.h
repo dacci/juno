@@ -9,6 +9,10 @@
 #include "io/net/abstract_socket.h"
 #include "io/net/socket.h"
 
+namespace juno {
+namespace io {
+namespace net {
+
 class ServerSocket : public AbstractSocket {
  public:
   ServerSocket() : listening_(false) {}
@@ -77,5 +81,9 @@ class ServerSocket : public AbstractSocket {
   ServerSocket(const ServerSocket&) = delete;
   ServerSocket& operator=(const ServerSocket&) = delete;
 };
+
+}  // namespace net
+}  // namespace io
+}  // namespace juno
 
 #endif  // JUNO_IO_NET_SERVER_SOCKET_H_

@@ -4,11 +4,16 @@
 
 #include <string>
 
+namespace juno {
+namespace service {
+namespace scissors {
 namespace {
+
 const char kRemoteAddress[] = "RemoteAddress";
 const char kRemotePort[] = "RemotePort";
 const char kRemoteSSL[] = "RemoteSSL";
 const char kRemoteUDP[] = "RemoteUDP";
+
 }  // namespace
 
 ScissorsConfig::ScissorsConfig()
@@ -21,7 +26,8 @@ ScissorsConfig::ScissorsConfig(const ScissorsConfig& other)
       remote_ssl_(other.remote_ssl_),
       remote_udp_(other.remote_udp_) {}
 
-std::shared_ptr<ScissorsConfig> ScissorsConfig::Load(const RegistryKey& key) {
+std::shared_ptr<ScissorsConfig> ScissorsConfig::Load(
+    const misc::RegistryKey& key) {
   auto config = std::make_shared<ScissorsConfig>();
   if (config == nullptr)
     return config;
@@ -45,7 +51,7 @@ std::shared_ptr<ScissorsConfig> ScissorsConfig::Load(const RegistryKey& key) {
   return config;
 }
 
-bool ScissorsConfig::Save(RegistryKey* key) const {
+bool ScissorsConfig::Save(misc::RegistryKey* key) const {
   key->SetString(kRemoteAddress, remote_address_);
   key->SetInteger(kRemotePort, remote_port_);
   key->SetInteger(kRemoteSSL, remote_ssl_);
@@ -53,3 +59,7 @@ bool ScissorsConfig::Save(RegistryKey* key) const {
 
   return true;
 }
+
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno

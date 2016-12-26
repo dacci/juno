@@ -11,22 +11,33 @@
 #include "misc/timer_service.h"
 #include "service/scissors/scissors.h"
 
+namespace juno {
+namespace io {
+namespace net {
+
 class DatagramChannel;
+
+}  // namespace net
+}  // namespace io
+
+namespace service {
+namespace scissors {
+
 class Scissors;
 
 class ScissorsUnwrappingSession : public Scissors::Session,
-                                  public Channel::Listener,
-                                  public TimerService::Callback {
+                                  public io::Channel::Listener,
+                                  public misc::TimerService::Callback {
  public:
-  ScissorsUnwrappingSession(Scissors* service, const ChannelPtr& source);
+  ScissorsUnwrappingSession(Scissors* service, const io::ChannelPtr& source);
   ~ScissorsUnwrappingSession();
 
   bool Start() override;
   void Stop() override;
 
-  void OnRead(Channel* channel, HRESULT result, void* buffer,
+  void OnRead(io::Channel* channel, HRESULT result, void* buffer,
               int length) override;
-  void OnWritten(Channel* channel, HRESULT result, void* buffer,
+  void OnWritten(io::Channel* channel, HRESULT result, void* buffer,
                  int length) override;
 
   void OnTimeout() override;
@@ -41,22 +52,27 @@ class ScissorsUnwrappingSession : public Scissors::Session,
   static const int kDataSize = 0xFFFF;
   static const int kTimeout = 60 * 1000;
 
-  bool OnStreamRead(Channel* channel, HRESULT result, void* buffer, int length);
-  bool OnDatagramReceived(Channel* channel, HRESULT result, void* buffer,
+  bool OnStreamRead(io::Channel* channel, HRESULT result, void* buffer,
+                    int length);
+  bool OnDatagramReceived(io::Channel* channel, HRESULT result, void* buffer,
                           int length);
 
-  TimerService::TimerObject timer_;
+  misc::TimerService::TimerObject timer_;
 
-  std::shared_ptr<Channel> stream_;
+  std::shared_ptr<io::Channel> stream_;
   char stream_buffer_[4096];
   std::string stream_message_;
 
-  std::shared_ptr<DatagramChannel> datagram_;
+  std::shared_ptr<io::net::DatagramChannel> datagram_;
   char datagram_buffer_[kDataSize];
 
   ScissorsUnwrappingSession(const ScissorsUnwrappingSession&) = delete;
   ScissorsUnwrappingSession& operator=(const ScissorsUnwrappingSession&) =
       delete;
 };
+
+}  // namespace scissors
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SCISSORS_SCISSORS_UNWRAPPING_SESSION_H_

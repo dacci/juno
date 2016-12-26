@@ -19,23 +19,28 @@
 #include "service/http/http_proxy_config.h"
 #include "service/http/http_util.h"
 
+namespace juno {
+namespace service {
+namespace http {
 namespace {
+
 const std::string kConnection("Connection");
 const std::string kContentLength("Content-Length");
 const std::string kExpect("Expect");
 const std::string kKeepAlive("Keep-Alive");
 const std::string kProxyAuthenticate("Proxy-Authenticate");
 const std::string kProxyAuthorization("Proxy-Authorization");
+
 }  // namespace
 
 HttpProxySession::HttpProxySession(
     HttpProxy* proxy, const std::shared_ptr<HttpProxyConfig>& config,
-    const ChannelPtr& client)
+    const io::ChannelPtr& client)
     : proxy_(proxy),
       config_(config),
       ref_count_(0),
       free_(&lock_),
-      timer_(TimerService::GetDefault()->Create(this)),
+      timer_(misc::TimerService::GetDefault()->Create(this)),
       state_(Idle),
       tunnel_(),
       last_port_(-1),
@@ -112,7 +117,7 @@ void HttpProxySession::ProcessRequest() {
     return;
   } else {
     close_client_ = true;
-    SendError(HTTP::BAD_REQUEST);
+    SendError(BAD_REQUEST);
     return;
   }
 
@@ -129,7 +134,7 @@ void HttpProxySession::ProcessRequest() {
   if (request_.method().compare("CONNECT") == 0) {
     if (request_chunked_ || request_length_ > 0) {
       close_client_ = true;
-      SendError(HTTP::BAD_REQUEST);
+      SendError(BAD_REQUEST);
       return;
     }
 
@@ -153,13 +158,13 @@ void HttpProxySession::DispatchRequest() {
   } else {
     url = GURL(request_.path());
     if (!url.is_valid() || !url.has_host()) {
-      SetError(HTTP::BAD_REQUEST);
+      SetError(BAD_REQUEST);
       return;
     }
 
     if (!config_->use_remote_proxy()) {
       if (!url.SchemeIs("http")) {
-        SetError(HTTP::NOT_IMPLEMENTED);
+        SetError(NOT_IMPLEMENTED);
         return;
       }
 
@@ -178,7 +183,7 @@ void HttpProxySession::DispatchRequest() {
   }
 
   if (new_port <= 0 || 65536 <= new_port) {
-    SetError(HTTP::BAD_REQUEST);
+    SetError(BAD_REQUEST);
     return;
   }
 
@@ -192,13 +197,13 @@ void HttpProxySession::DispatchRequest() {
 
   auto result = resolver_.Resolve(last_host_, last_port_);
   if (FAILED(result)) {
-    SetError(HTTP::BAD_GATEWAY);
+    SetError(BAD_GATEWAY);
     return;
   }
 
-  remote_ = std::make_shared<SocketChannel>();
+  remote_ = std::make_shared<io::net::SocketChannel>();
   if (remote_ == nullptr) {
-    SetError(HTTP::INTERNAL_SERVER_ERROR);
+    SetError(INTERNAL_SERVER_ERROR);
     return;
   }
 
@@ -217,7 +222,7 @@ void HttpProxySession::SendRequest() {
       remote_->WriteAsync(buffer_, static_cast<int>(message.size()), this);
   if (FAILED(result)) {
     LOG(ERROR) << this << " failed to send to remote: 0x" << std::hex << result;
-    SendError(HTTP::INTERNAL_SERVER_ERROR);
+    SendError(INTERNAL_SERVER_ERROR);
   }
 }
 
@@ -229,7 +234,7 @@ void HttpProxySession::ProcessRequestChunk() {
     ReceiveRequest();
   } else {
     LOG(ERROR) << this << " invalid request chunk";
-    SetError(HTTP::BAD_REQUEST);
+    SetError(BAD_REQUEST);
   }
 }
 
@@ -242,17 +247,17 @@ void HttpProxySession::EndRequest() {
     remote_buffer_.clear();
     response_.Clear();
     response_length_ = 0;
-    response_chunked_ = 0;
+    response_chunked_ = false;
     close_remote_ = false;
 
     auto result = ReceiveResponse();
     if (FAILED(result)) {
       LOG(ERROR) << this << " failed to receive response: 0x" << std::hex
                  << result;
-      SendError(HTTP::INTERNAL_SERVER_ERROR);
+      SendError(INTERNAL_SERVER_ERROR);
     }
   } else {
-    SendError(static_cast<HTTP::StatusCode>(status_code_));
+    SendError(static_cast<StatusCode>(status_code_));
   }
 }
 
@@ -269,11 +274,11 @@ void HttpProxySession::ProcessResponse() {
     if (FAILED(result)) {
       LOG(ERROR) << this << " failed to receive response: 0x" << std::hex
                  << result;
-      SendError(HTTP::INTERNAL_SERVER_ERROR);
+      SendError(INTERNAL_SERVER_ERROR);
     }
     return;
   } else {
-    SendError(HTTP::BAD_GATEWAY);
+    SendError(BAD_GATEWAY);
     return;
   }
 
@@ -281,8 +286,8 @@ void HttpProxySession::ProcessResponse() {
 
   DLOG(INFO) << this << " " << status << " " << response_.message();
 
-  if (status / 100 == 1 || status == HTTP::NO_CONTENT ||
-      status == HTTP::NOT_MODIFIED || request_.method().compare("HEAD") == 0) {
+  if (status / 100 == 1 || status == NO_CONTENT || status == NOT_MODIFIED ||
+      request_.method().compare("HEAD") == 0) {
     response_length_ = 0;
   } else {
     response_length_ = http_util::GetContentLength(response_);
@@ -295,9 +300,8 @@ void HttpProxySession::ProcessResponse() {
     }
   }
 
-  if (tunnel_ && status == HTTP::OK &&
-      (response_chunked_ || response_length_ > 0)) {
-    SendError(HTTP::BAD_GATEWAY);
+  if (tunnel_ && status == OK && (response_chunked_ || response_length_ > 0)) {
+    SendError(BAD_GATEWAY);
     return;
   }
 
@@ -305,7 +309,7 @@ void HttpProxySession::ProcessResponse() {
     close_remote_ = true;
 
   switch (status) {
-    case HTTP::PROXY_AUTHENTICATION_REQUIRED:
+    case PROXY_AUTHENTICATION_REQUIRED:
       retry_ = !retry_;
       break;
 
@@ -346,9 +350,9 @@ void HttpProxySession::ProcessResponse() {
     return;
   }
 
-  if (tunnel_ && status == HTTP::OK) {
-    if (!TunnelingService::Bind(client_, remote_)) {
-      SendError(HTTP::INTERNAL_SERVER_ERROR);
+  if (tunnel_ && status == OK) {
+    if (!misc::TunnelingService::Bind(client_, remote_)) {
+      SendError(INTERNAL_SERVER_ERROR);
       return;
     }
   }
@@ -424,7 +428,7 @@ void HttpProxySession::EndResponse() {
     if (FAILED(result)) {
       LOG(ERROR) << this << " failed to receive response: 0x" << std::hex
                  << result;
-      SendError(HTTP::INTERNAL_SERVER_ERROR);
+      SendError(INTERNAL_SERVER_ERROR);
     }
 
     return;
@@ -457,7 +461,7 @@ void HttpProxySession::EndResponse() {
     ProcessRequest();
 }
 
-void HttpProxySession::SetError(HTTP::StatusCode status) {
+void HttpProxySession::SetError(StatusCode status) {
   DLOG(INFO) << this << " setting error: " << status;
 
   status_code_ = status;
@@ -486,7 +490,7 @@ void HttpProxySession::SetError(HTTP::StatusCode status) {
   }
 }
 
-void HttpProxySession::SendError(HTTP::StatusCode status) {
+void HttpProxySession::SendError(StatusCode status) {
   DLOG(INFO) << this << " sending error: " << status;
 
   tunnel_ = false;
@@ -494,7 +498,7 @@ void HttpProxySession::SendError(HTTP::StatusCode status) {
 
   response_.Clear();
   response_length_ = 0;
-  response_chunked_ = 0;
+  response_chunked_ = false;
   close_remote_ = true;
 
   response_.SetStatus(status);
@@ -505,14 +509,14 @@ void HttpProxySession::SendError(HTTP::StatusCode status) {
 
 void HttpProxySession::SendToRemote(const void* buffer, int length) {
   if (status_code_ != 0) {
-    channel_util::FireEvent(this, ChannelEvent::Write, remote_.get(), S_OK,
-                            buffer, length);
+    io::channel_util::FireEvent(this, io::ChannelEvent::Write, remote_.get(),
+                                S_OK, buffer, length);
   } else {
     auto result = remote_->WriteAsync(buffer, length, this);
     if (FAILED(result)) {
       LOG(ERROR) << this << " failed to send to remote: 0x" << std::hex
                  << result;
-      SendError(HTTP::INTERNAL_SERVER_ERROR);
+      SendError(INTERNAL_SERVER_ERROR);
     }
   }
 }
@@ -523,7 +527,7 @@ void HttpProxySession::OnTimeout() {
   proxy_->EndSession(this);
 }
 
-void HttpProxySession::OnRead(Channel* /*channel*/, HRESULT result,
+void HttpProxySession::OnRead(io::Channel* /*channel*/, HRESULT result,
                               void* /*buffer*/, int length) {
   base::AtomicRefCountInc(&ref_count_);
 
@@ -555,7 +559,7 @@ void HttpProxySession::OnRead(Channel* /*channel*/, HRESULT result,
     free_.Broadcast();
 }
 
-void HttpProxySession::OnWritten(Channel* /*channel*/, HRESULT result,
+void HttpProxySession::OnWritten(io::Channel* /*channel*/, HRESULT result,
                                  void* /*buffer*/, int length) {
   base::AtomicRefCountInc(&ref_count_);
 
@@ -587,7 +591,8 @@ void HttpProxySession::OnWritten(Channel* /*channel*/, HRESULT result,
     free_.Broadcast();
 }
 
-void HttpProxySession::OnClosed(SocketChannel* socket, HRESULT /*result*/) {
+void HttpProxySession::OnClosed(io::net::SocketChannel* socket,
+                                HRESULT /*result*/) {
   base::AtomicRefCountInc(&ref_count_);
 
   base::AutoLock guard(lock_);
@@ -617,7 +622,8 @@ void HttpProxySession::OnRequestReceived(HRESULT result, int length) {
   ProcessRequest();
 }
 
-void HttpProxySession::OnConnected(SocketChannel* socket, HRESULT result) {
+void HttpProxySession::OnConnected(io::net::SocketChannel* socket,
+                                   HRESULT result) {
   base::AtomicRefCountInc(&ref_count_);
 
   base::AutoLock guard(lock_);
@@ -627,20 +633,20 @@ void HttpProxySession::OnConnected(SocketChannel* socket, HRESULT result) {
       socket->MonitorConnection(this);
 
     if (tunnel_ && !config_->use_remote_proxy()) {
-      if (TunnelingService::Bind(client_, remote_)) {
+      if (misc::TunnelingService::Bind(client_, remote_)) {
         response_.Clear();
-        response_.SetStatus(HTTP::OK, "Connection Established");
+        response_.SetStatus(OK, "Connection Established");
         response_.SetHeader(kContentLength, "0");
         SendResponse();
       } else {
-        SendError(HTTP::INTERNAL_SERVER_ERROR);
+        SendError(INTERNAL_SERVER_ERROR);
       }
     } else {
       SendRequest();
     }
   } else {
     LOG(ERROR) << this << " failed to connect: 0x" << std::hex << result;
-    SendError(HTTP::BAD_GATEWAY);
+    SendError(BAD_GATEWAY);
   }
 
   if (!base::AtomicRefCountDec(&ref_count_))
@@ -651,7 +657,7 @@ void HttpProxySession::OnRequestSent(HRESULT result, int length) {
   if (FAILED(result) || length == 0) {
     LOG_IF(ERROR, FAILED(result)) << this << " failed to send request: 0x"
                                   << std::hex << result;
-    SendError(HTTP::BAD_GATEWAY);
+    SendError(BAD_GATEWAY);
     return;
   }
 
@@ -697,7 +703,7 @@ void HttpProxySession::OnRequestBodySent(HRESULT result, int length) {
   if (FAILED(result) || length == 0) {
     LOG_IF(ERROR, FAILED(result)) << this << " failed to send request body: 0x"
                                   << std::hex << result;
-    SendError(HTTP::BAD_GATEWAY);
+    SendError(BAD_GATEWAY);
     return;
   }
 
@@ -720,7 +726,7 @@ void HttpProxySession::OnResponseReceived(HRESULT result, int length) {
   if (FAILED(result) || length == 0) {
     LOG_IF(ERROR, FAILED(result)) << this << " failed to receive response: 0x"
                                   << std::hex << result;
-    SendError(HTTP::BAD_GATEWAY);
+    SendError(BAD_GATEWAY);
     return;
   }
 
@@ -829,3 +835,7 @@ void HttpProxySession::OnResponseBodySent(HRESULT result, int length) {
     EndResponse();
   }
 }
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno

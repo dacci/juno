@@ -8,6 +8,8 @@
 
 #include <memory>
 
+namespace juno {
+namespace io {
 namespace {
 
 typedef struct {
@@ -68,3 +70,5 @@ void FireEvent(Channel::Listener* listener, ChannelEvent event,
 }
 
 }  // namespace channel_util
+}  // namespace io
+}  // namespace juno

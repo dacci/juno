@@ -16,7 +16,14 @@
 
 #include "res/resource.h"
 
+namespace juno {
+namespace service {
+
 class ServiceManager;
+
+}  // namespace service
+
+namespace ui {
 
 class MainFrame : public CFrameWindowImpl<MainFrame> {
  public:
@@ -59,10 +66,13 @@ class MainFrame : public CFrameWindowImpl<MainFrame> {
   NOTIFYICONDATA notify_icon_;
   bool configuring_;
 
-  std::unique_ptr<ServiceManager> service_manager_;
+  std::unique_ptr<service::ServiceManager> service_manager_;
 
   MainFrame(const MainFrame&) = delete;
   MainFrame& operator=(const MainFrame&) = delete;
 };
+
+}  // namespace ui
+}  // namespace juno
 
 #endif  // JUNO_UI_MAIN_FRAME_H_

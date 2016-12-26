@@ -15,7 +15,13 @@
 
 #include "res/resource.h"
 
+namespace juno {
+namespace service {
+
 class ServiceConfig;
+
+namespace socks {
+namespace ui {
 
 class SocksProxyDialog : public CDialogImpl<SocksProxyDialog>,
                          public CWinDataExchange<SocksProxyDialog> {
@@ -45,5 +51,10 @@ class SocksProxyDialog : public CDialogImpl<SocksProxyDialog>,
   SocksProxyDialog(const SocksProxyDialog&) = delete;
   SocksProxyDialog& operator=(const SocksProxyDialog&) = delete;
 };
+
+}  // namespace ui
+}  // namespace socks
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SOCKS_UI_SOCKS_PROXY_DIALOG_H_

@@ -2,6 +2,8 @@
 
 #include "misc/timer_service.h"
 
+namespace juno {
+namespace misc {
 namespace {
 
 void CALLBACK TimerCallback(PTP_CALLBACK_INSTANCE /*instance*/, void* context,
@@ -59,3 +61,6 @@ bool TimerService::Timer::IsStarted() const {
 
 TimerService::Timer::Timer(PTP_TIMER timer, Callback* callback)
     : timer_(timer), callback_(callback) {}
+
+}  // namespace misc
+}  // namespace juno

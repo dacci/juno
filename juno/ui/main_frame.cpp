@@ -12,6 +12,9 @@
 #include "service/service_manager.h"
 #include "ui/preference_dialog.h"
 
+namespace juno {
+namespace ui {
+
 const UINT MainFrame::WM_TASKBARCREATED =
     RegisterWindowMessage(_T("TaskbarCreated"));
 
@@ -80,7 +83,7 @@ int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
     }
   }
 
-  if (!TunnelingService::Init()) {
+  if (!misc::TunnelingService::Init()) {
     ATLASSERT(false);
     LOG(ERROR) << "TunnelingService::Init failed";
     message.LoadString(IDS_ERR_INIT_FAILED);
@@ -88,7 +91,7 @@ int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
     return -1;
   }
 
-  service_manager_.reset(new ServiceManager());
+  service_manager_.reset(new service::ServiceManager());
   ATLASSERT(service_manager_ != nullptr);
   if (service_manager_ == nullptr) {
     LOG(ERROR) << "ServiceManager cannot be allocated";
@@ -135,7 +138,7 @@ void MainFrame::OnDestroy() {
   if (service_manager_)
     service_manager_->StopServices();
 
-  TunnelingService::Term();
+  misc::TunnelingService::Term();
 }
 
 void MainFrame::OnEndSession(BOOL ending, UINT /*log_off*/) {
@@ -217,3 +220,6 @@ void MainFrame::OnAppExit(UINT /*notify_code*/, int /*id*/,
                           CWindow /*control*/) {
   PostMessage(WM_CLOSE);
 }
+
+}  // namespace ui
+}  // namespace juno

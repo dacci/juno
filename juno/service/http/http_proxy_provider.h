@@ -5,13 +5,18 @@
 
 #include "service/service_provider.h"
 
+namespace juno {
+namespace service {
+namespace http {
+
 class HttpProxyProvider : public ServiceProvider {
  public:
   HttpProxyProvider() {}
 
   ServiceConfigPtr CreateConfig() override;
-  ServiceConfigPtr LoadConfig(const RegistryKey& key) override;
-  bool SaveConfig(const ServiceConfigPtr& config, RegistryKey* key) override;
+  ServiceConfigPtr LoadConfig(const misc::RegistryKey& key) override;
+  bool SaveConfig(const ServiceConfigPtr& config,
+                  misc::RegistryKey* key) override;
   ServiceConfigPtr CopyConfig(const ServiceConfigPtr& config) override;
 
   ServicePtr CreateService(const ServiceConfigPtr& config) override;
@@ -22,5 +27,9 @@ class HttpProxyProvider : public ServiceProvider {
   HttpProxyProvider(const HttpProxyProvider&) = delete;
   HttpProxyProvider& operator=(const HttpProxyProvider&) = delete;
 };
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_HTTP_HTTP_PROXY_PROVIDER_H_

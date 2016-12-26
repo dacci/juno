@@ -15,9 +15,12 @@
 #include "io/channel.h"
 #include "misc/schannel/schannel_context.h"
 
+namespace juno {
+namespace io {
+
 class SecureChannel : public Channel, private Channel::Listener {
  public:
-  SecureChannel(SchannelCredential* credential,
+  SecureChannel(misc::schannel::SchannelCredential* credential,
                 const std::shared_ptr<Channel>& channel, bool inbound);
   virtual ~SecureChannel();
 
@@ -27,11 +30,11 @@ class SecureChannel : public Channel, private Channel::Listener {
   HRESULT WriteAsync(const void* buffer, int length,
                      Channel::Listener* listener) override;
 
-  SchannelContext* context() {
+  misc::schannel::SchannelContext* context() {
     return &context_;
   }
 
-  const SchannelContext* context() const {
+  const misc::schannel::SchannelContext* context() const {
     return &context_;
   }
 
@@ -65,7 +68,7 @@ class SecureChannel : public Channel, private Channel::Listener {
                                PTP_WORK work);
   void OnWrite();
 
-  SchannelContext context_;
+  misc::schannel::SchannelContext context_;
   std::shared_ptr<Channel> channel_;
   const bool inbound_;
 
@@ -89,5 +92,8 @@ class SecureChannel : public Channel, private Channel::Listener {
   SecureChannel(const SecureChannel&) = delete;
   SecureChannel& operator=(const SecureChannel&) = delete;
 };
+
+}  // namespace io
+}  // namespace juno
 
 #endif  // JUNO_IO_SECURE_CHANNEL_H_

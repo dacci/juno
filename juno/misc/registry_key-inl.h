@@ -7,6 +7,9 @@
 
 #include <string>
 
+namespace juno {
+namespace misc {
+
 inline bool RegistryKey::Create(HKEY parent, const std::string& name) {
   return Create(parent, name.c_str());
 }
@@ -128,5 +131,8 @@ inline bool RegistryKey::DeleteKey(const std::string& sub_key) {
 inline bool RegistryKey::DeleteKey(const std::wstring& sub_key) {
   return DeleteKey(sub_key.c_str());
 }
+
+}  // namespace misc
+}  // namespace juno
 
 #endif  // JUNO_MISC_REGISTRY_KEY_INL_H_

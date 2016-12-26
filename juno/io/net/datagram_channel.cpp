@@ -2,6 +2,9 @@
 
 #include "io/net/datagram_channel.h"
 
+namespace juno {
+namespace io {
+namespace net {
 namespace {
 
 enum Command {
@@ -310,3 +313,7 @@ void DatagramChannel::OnCompleted(PTP_CALLBACK_INSTANCE /*callback*/,
   if (instance->queue_.size() == 1)
     SubmitThreadpoolWork(instance->work_);
 }
+
+}  // namespace net
+}  // namespace io
+}  // namespace juno

@@ -5,6 +5,9 @@
 #include "io/net/socket_channel.h"
 #include "service/service.h"
 
+namespace juno {
+namespace service {
+
 TcpServer::TcpServer()
     : channel_customizer_(nullptr), service_(nullptr), empty_(&lock_) {}
 
@@ -102,8 +105,8 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, HRESULT result,
     if (FAILED(result))
       break;
 
-    std::shared_ptr<Channel> channel =
-        server->EndAccept<SocketChannel>(context, &result);
+    std::shared_ptr<io::Channel> channel =
+        server->EndAccept<io::net::SocketChannel>(context, &result);
     if (channel == nullptr)
       break;
 
@@ -124,3 +127,6 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, HRESULT result,
     DeleteServer(server);
   }
 }
+
+}  // namespace service
+}  // namespace juno

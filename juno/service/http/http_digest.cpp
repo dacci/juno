@@ -9,6 +9,9 @@
 #include <memory>
 #include <string>
 
+namespace juno {
+namespace service {
+namespace http {
 namespace {
 
 class CryptHash {
@@ -420,3 +423,7 @@ void HttpDigest::Reset() {
   qop_.clear();
   algorithm_.clear();
 }
+
+}  // namespace http
+}  // namespace service
+}  // namespace juno

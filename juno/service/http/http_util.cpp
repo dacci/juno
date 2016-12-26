@@ -6,7 +6,11 @@
 
 #include <string>
 
+namespace juno {
+namespace service {
+namespace http {
 namespace {
+
 const std::string kConnection("Connection");
 const std::string kContentLength("Content-Length");
 const std::string kKeepAlive("Keep-Alive");
@@ -14,6 +18,7 @@ const std::string kProxyAuthenticate("Proxy-Authenticate");
 const std::string kProxyAuthorization("Proxy-Authorization");
 const std::string kProxyConnection("Proxy-Connection");
 const std::string kTransferEncoding("Transfer-Encoding");
+
 }  // namespace
 
 namespace http_util {
@@ -112,3 +117,6 @@ bool ProcessHopByHopHeaders(HttpHeaders* headers) {
 }
 
 }  // namespace http_util
+}  // namespace http
+}  // namespace service
+}  // namespace juno

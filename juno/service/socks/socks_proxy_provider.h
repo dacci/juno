@@ -6,6 +6,10 @@
 #include "service/service_config.h"
 #include "service/service_provider.h"
 
+namespace juno {
+namespace service {
+namespace socks {
+
 class SocksProxyConfig : public ServiceConfig {};
 
 class SocksProxyProvider : public ServiceProvider {
@@ -16,12 +20,12 @@ class SocksProxyProvider : public ServiceProvider {
     return std::make_shared<SocksProxyConfig>();
   }
 
-  ServiceConfigPtr LoadConfig(const RegistryKey& /*key*/) override {
+  ServiceConfigPtr LoadConfig(const misc::RegistryKey& /*key*/) override {
     return CreateConfig();
   }
 
   bool SaveConfig(const ServiceConfigPtr& /*config*/,
-                  RegistryKey* /*key*/) override {
+                  misc::RegistryKey* /*key*/) override {
     return true;
   }
 
@@ -38,5 +42,9 @@ class SocksProxyProvider : public ServiceProvider {
   SocksProxyProvider(const SocksProxyProvider&) = delete;
   SocksProxyProvider& operator=(const SocksProxyProvider&) = delete;
 };
+
+}  // namespace socks
+}  // namespace service
+}  // namespace juno
 
 #endif  // JUNO_SERVICE_SOCKS_SOCKS_PROXY_PROVIDER_H_

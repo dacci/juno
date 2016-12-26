@@ -6,6 +6,9 @@
 
 #include <base/logging.h>
 
+namespace juno {
+namespace io {
+namespace net {
 namespace {
 
 enum Command {
@@ -407,3 +410,7 @@ void SocketChannel::OnCompleted(PTP_CALLBACK_INSTANCE /*callback*/,
   if (instance->queue_.size() == 1)
     SubmitThreadpoolWork(instance->work_);
 }
+
+}  // namespace net
+}  // namespace io
+}  // namespace juno

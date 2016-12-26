@@ -15,15 +15,23 @@
 #include "res/resource.h"
 #include "ui/dialog_impl_ex.h"
 
-class PreferenceDialog;
+namespace juno {
+namespace service {
+
 class ServerConfig;
+
+}  // namespace service
+
+namespace ui {
+
+class PreferenceDialog;
 
 class ServerDialog : public DialogImplEx<ServerDialog>,
                      public CWinDataExchange<ServerDialog> {
  public:
   static const UINT IDD = IDD_SERVER;
 
-  ServerDialog(PreferenceDialog* parent, ServerConfig* entry);
+  ServerDialog(PreferenceDialog* parent, service::ServerConfig* entry);
 
   BEGIN_MSG_MAP(ServerDialog)
     MSG_WM_INITDIALOG(OnInitDialog)
@@ -60,7 +68,7 @@ class ServerDialog : public DialogImplEx<ServerDialog>,
   void OnCancel(UINT notify_code, int id, CWindow control);
 
   PreferenceDialog* const parent_;
-  ServerConfig* const entry_;
+  service::ServerConfig* const entry_;
 
   CString bind_;
   CComboBox bind_combo_;
@@ -75,5 +83,8 @@ class ServerDialog : public DialogImplEx<ServerDialog>,
   ServerDialog(const ServerDialog&) = delete;
   ServerDialog& operator=(const ServerDialog&) = delete;
 };
+
+}  // namespace ui
+}  // namespace juno
 
 #endif  // JUNO_UI_SERVER_DIALOG_H_

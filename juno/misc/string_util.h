@@ -29,6 +29,12 @@ inline std::wstring to_wstring(const std::string& string) {
   return std::wstring(string.begin(), string.end());
 }
 
+namespace juno {
+namespace misc {
+
 std::string GenerateGUID();
+
+}  // namespace misc
+}  // namespace juno
 
 #endif  // JUNO_MISC_STRING_UTIL_H_

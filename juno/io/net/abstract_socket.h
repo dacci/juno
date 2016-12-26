@@ -5,6 +5,10 @@
 
 #include <ws2tcpip.h>
 
+namespace juno {
+namespace io {
+namespace net {
+
 class AbstractSocket {
  public:
   bool Create(int family, int type, int protocol) {
@@ -103,5 +107,9 @@ class AbstractSocket {
   AbstractSocket(const AbstractSocket&) = delete;
   AbstractSocket& operator=(const AbstractSocket&) = delete;
 };
+
+}  // namespace net
+}  // namespace io
+}  // namespace juno
 
 #endif  // JUNO_IO_NET_ABSTRACT_SOCKET_H_

@@ -7,10 +7,18 @@
 #include "misc/string_util.h"
 #include "service/http/ui/http_header_filter_dialog.h"
 
-static const TCHAR* kActions[] = {
+namespace juno {
+namespace service {
+namespace http {
+namespace ui {
+namespace {
+
+const TCHAR* kActions[] = {
     _T("Set"),   _T("Append"), _T("Add"),   _T("Unset"),
     _T("Merge"), _T("Edit"),   _T("Edit*"),
 };
+
+}  // namespace
 
 HttpProxyDialog::HttpProxyDialog(const ServiceConfigPtr& entry)
     : config_(std::static_pointer_cast<HttpProxyConfig>(entry)),
@@ -201,3 +209,8 @@ LRESULT HttpProxyDialog::OnFilterListDoubleClicked(LPNMHDR header) {
 
   return 0;
 }
+
+}  // namespace ui
+}  // namespace http
+}  // namespace service
+}  // namespace juno

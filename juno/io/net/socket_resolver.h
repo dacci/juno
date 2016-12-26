@@ -10,6 +10,10 @@
 #include <string>
 #include <vector>
 
+namespace juno {
+namespace io {
+namespace net {
+
 class SocketAddress : public addrinfo {
  public:
   explicit SocketAddress(const addrinfo& end_point);
@@ -84,5 +88,9 @@ class SocketResolver {
   SocketResolver(const SocketResolver&) = delete;
   SocketResolver& operator=(const SocketResolver&) = delete;
 };
+
+}  // namespace net
+}  // namespace io
+}  // namespace juno
 
 #endif  // JUNO_IO_NET_SOCKET_RESOLVER_H_

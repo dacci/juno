@@ -5,6 +5,10 @@
 
 #include "io/net/abstract_socket.h"
 
+namespace juno {
+namespace io {
+namespace net {
+
 class Socket : public AbstractSocket {
  public:
   Socket() : connected_(false) {}
@@ -87,5 +91,9 @@ class Socket : public AbstractSocket {
   Socket(const Socket&) = delete;
   Socket& operator=(const Socket&) = delete;
 };
+
+}  // namespace net
+}  // namespace io
+}  // namespace juno
 
 #endif  // JUNO_IO_NET_SOCKET_H_

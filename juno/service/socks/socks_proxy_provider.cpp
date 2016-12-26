@@ -4,6 +4,10 @@
 
 #include "service/socks/socks_proxy.h"
 
+namespace juno {
+namespace service {
+namespace socks {
+
 ServiceConfigPtr SocksProxyProvider::CopyConfig(
     const ServiceConfigPtr& config) {
   return std::make_shared<SocksProxyConfig>(
@@ -14,3 +18,7 @@ ServicePtr SocksProxyProvider::CreateService(
     const ServiceConfigPtr& /*config*/) {
   return std::make_unique<SocksProxy>();
 }
+
+}  // namespace socks
+}  // namespace service
+}  // namespace juno
