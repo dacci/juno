@@ -20,7 +20,7 @@ ScissorsTcpSession::ScissorsTcpSession(Scissors* service,
 }
 
 ScissorsTcpSession::~ScissorsTcpSession() {
-  Stop();
+  ScissorsTcpSession::Stop();
 
   DLOG(INFO) << this << " session destroyed";
 }

@@ -91,7 +91,7 @@ class AbstractSocket {
   AbstractSocket() : descriptor_(INVALID_SOCKET), bound_(false) {}
 
   virtual ~AbstractSocket() {
-    Close();
+    AbstractSocket::Close();
   }
 
   virtual void Close() {

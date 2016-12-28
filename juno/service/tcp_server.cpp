@@ -12,7 +12,7 @@ TcpServer::TcpServer()
     : channel_customizer_(nullptr), service_(nullptr), empty_(&lock_) {}
 
 TcpServer::~TcpServer() {
-  Stop();
+  TcpServer::Stop();
 }
 
 bool TcpServer::Setup(const char* address, int port) {

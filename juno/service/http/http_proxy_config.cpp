@@ -39,9 +39,9 @@ const std::string kProxyAuthorization("Proxy-Authorization");
 using ::juno::misc::RegistryKey;
 
 HttpProxyConfig::HttpProxyConfig()
-    : use_remote_proxy_(0),
+    : use_remote_proxy_(false),
       remote_proxy_port_(0),
-      auth_remote_proxy_(0),
+      auth_remote_proxy_(false),
       auth_digest_(false),
       auth_basic_(false) {}
 

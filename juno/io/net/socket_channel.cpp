@@ -62,7 +62,7 @@ SocketChannel::SocketChannel()
 }
 
 SocketChannel::~SocketChannel() {
-  Close();
+  SocketChannel::Close();
 
   base::AutoLock guard(lock_);
 

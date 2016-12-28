@@ -109,7 +109,7 @@ void CALLBACK TunnelingService::EndSessionImpl(
     PTP_CALLBACK_INSTANCE /*instance*/, void* param) {
   auto pair = static_cast<ServiceSessionPair*>(param);
   pair->first->EndSessionImpl(pair->second);
-  delete param;
+  delete pair;
 }
 
 void TunnelingService::EndSessionImpl(Session* session) {

@@ -18,7 +18,7 @@ class ServerSocket : public AbstractSocket {
   ServerSocket() : listening_(false) {}
 
   virtual ~ServerSocket() {
-    Close();
+    ServerSocket::Close();
   }
 
   void Close() override {

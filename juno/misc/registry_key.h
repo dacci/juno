@@ -14,7 +14,7 @@ class RegistryKey {
  public:
   RegistryKey();
   explicit RegistryKey(HKEY key);
-  RegistryKey(RegistryKey&& other);
+  RegistryKey(RegistryKey&& other) noexcept;
 
   virtual ~RegistryKey();
 
@@ -81,7 +81,7 @@ class RegistryKey {
   bool DeleteKey(const wchar_t* sub_key);
   bool DeleteKey(const std::wstring& sub_key);
 
-  RegistryKey& operator=(RegistryKey&& other);
+  RegistryKey& operator=(RegistryKey&& other) noexcept;
 
   operator bool() const {
     return key_ != NULL;

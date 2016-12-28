@@ -19,7 +19,7 @@ ScissorsUnwrappingSession::ScissorsUnwrappingSession(
       stream_(source) {}
 
 ScissorsUnwrappingSession::~ScissorsUnwrappingSession() {
-  Stop();
+  ScissorsUnwrappingSession::Stop();
 }
 
 bool ScissorsUnwrappingSession::Start() {
@@ -71,7 +71,7 @@ void ScissorsUnwrappingSession::Stop() {
 
 void ScissorsUnwrappingSession::OnRead(Channel* channel, HRESULT result,
                                        void* buffer, int length) {
-  auto succeeded = false;
+  bool succeeded;
   if (channel == stream_.get())
     succeeded = OnStreamRead(channel, result, buffer, length);
   else

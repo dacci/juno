@@ -14,7 +14,7 @@ class Socket : public AbstractSocket {
   Socket() : connected_(false) {}
 
   virtual ~Socket() {
-    Close();
+    Socket::Close();
   }
 
   void Close() override {

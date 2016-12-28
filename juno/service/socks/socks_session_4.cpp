@@ -17,7 +17,7 @@ SocksSession4::SocksSession4(SocksProxy* proxy, const io::ChannelPtr& channel)
     : SocksSession(proxy, channel), end_point_(nullptr) {}
 
 SocksSession4::~SocksSession4() {
-  Stop();
+  SocksSession4::Stop();
 }
 
 HRESULT SocksSession4::Start(std::unique_ptr<char[]>&& request, int length) {

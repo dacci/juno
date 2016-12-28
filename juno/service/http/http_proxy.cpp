@@ -15,7 +15,7 @@ namespace http {
 HttpProxy::HttpProxy() : empty_(&lock_), stopped_() {}
 
 HttpProxy::~HttpProxy() {
-  Stop();
+  HttpProxy::Stop();
 }
 
 bool HttpProxy::UpdateConfig(const ServiceConfigPtr& config) {

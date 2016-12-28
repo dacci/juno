@@ -15,7 +15,7 @@ using ::juno::io::net::DatagramChannel;
 UdpServer::UdpServer() : service_(), empty_(&lock_) {}
 
 UdpServer::~UdpServer() {
-  Stop();
+  UdpServer::Stop();
 }
 
 bool UdpServer::Setup(const char* address, int port) {

@@ -93,7 +93,7 @@ SecureChannel::SecureChannel(misc::schannel::SchannelCredential* credential,
 }
 
 SecureChannel::~SecureChannel() {
-  Close();
+  SecureChannel::Close();
 
   base::AutoLock guard(lock_);
 

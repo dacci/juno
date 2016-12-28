@@ -13,7 +13,7 @@ RegistryKey::RegistryKey(HKEY key) : key_() {
   Attach(key);
 }
 
-RegistryKey::RegistryKey(RegistryKey&& other) : key_() {
+RegistryKey::RegistryKey(RegistryKey&& other) noexcept : key_() {
   *this = std::move(other);
 }
 
@@ -288,7 +288,7 @@ bool RegistryKey::DeleteKey(const wchar_t* sub_key) {
   return RegDeleteTreeW(key_, sub_key) == ERROR_SUCCESS;
 }
 
-RegistryKey& RegistryKey::operator=(RegistryKey&& other) {
+RegistryKey& RegistryKey::operator=(RegistryKey&& other) noexcept {
   if (&other != this) {
     Close();
 

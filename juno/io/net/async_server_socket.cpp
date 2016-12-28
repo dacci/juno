@@ -39,7 +39,7 @@ AsyncServerSocket::AsyncServerSocket()
       protocol_() {}
 
 AsyncServerSocket::~AsyncServerSocket() {
-  Close();
+  AsyncServerSocket::Close();
 
   base::AutoLock guard(lock_);
 

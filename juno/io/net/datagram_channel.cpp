@@ -33,7 +33,7 @@ DatagramChannel::DatagramChannel()
     : work_(CreateThreadpoolWork(OnRequested, this, nullptr)), io_(nullptr) {}
 
 DatagramChannel::~DatagramChannel() {
-  Close();
+  DatagramChannel::Close();
 
   base::AutoLock guard(lock_);
 

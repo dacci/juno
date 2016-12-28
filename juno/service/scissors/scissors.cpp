@@ -22,7 +22,7 @@ namespace scissors {
 Scissors::Scissors() : stopped_(), not_connecting_(&lock_), empty_(&lock_) {}
 
 Scissors::~Scissors() {
-  Stop();
+  Scissors::Stop();
 }
 
 bool Scissors::UpdateConfig(const ServiceConfigPtr& config) {
@@ -186,7 +186,7 @@ void Scissors::OnReceivedFrom(const io::net::DatagramPtr& datagram) {
   if (stopped_)
     return;
 
-  UdpSession* udp_session = nullptr;
+  UdpSession* udp_session;
 
   sockaddr_storage key;
   memset(&key, 0, sizeof(key));

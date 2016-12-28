@@ -20,7 +20,7 @@ SocksSession5::SocksSession5(SocksProxy* proxy, const io::ChannelPtr& channel)
     : SocksSession(proxy, channel), state_(State::Init), end_point_(nullptr) {}
 
 SocksSession5::~SocksSession5() {
-  Stop();
+  SocksSession5::Stop();
 }
 
 HRESULT SocksSession5::Start(std::unique_ptr<char[]>&& request, int length) {

@@ -26,7 +26,7 @@ ScissorsWrappingSession::ScissorsWrappingSession(
 }
 
 ScissorsWrappingSession::~ScissorsWrappingSession() {
-  Stop();
+  ScissorsWrappingSession::Stop();
 }
 
 bool ScissorsWrappingSession::Start() {
