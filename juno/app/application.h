@@ -23,6 +23,11 @@ class Application : public CAtlExeModuleT<Application> {
   Application();
   ~Application();
 
+  static HRESULT InstallService();
+  static HRESULT UninstallService();
+
+  int WinMain(int show_mode) throw();
+
   bool ParseCommandLine(LPCTSTR command_line, HRESULT* result) throw();
   HRESULT PreMessageLoop(int show_mode) throw();
   HRESULT PostMessageLoop() throw();
@@ -42,7 +47,22 @@ class Application : public CAtlExeModuleT<Application> {
   }
 
  private:
+  HRESULT SetServiceStatus(DWORD current_state);
+  HRESULT RunService() const;
+
+  static void CALLBACK ServiceMain(DWORD argc, LPTSTR* argv);
+  void ServiceMain();
+  static DWORD CALLBACK ServiceHandler(DWORD control, DWORD type, void* data,
+                                       void* context);
+  DWORD ServiceHandler(DWORD control, DWORD type, void* data) const;
+
   base::AtExitManager at_exit_manager_;
+  bool service_mode_;
+  bool foreground_mode_;
+  DWORD main_thread_id_;
+
+  SERVICE_STATUS_HANDLE status_handle_;
+  SERVICE_STATUS service_status_;
 
   HANDLE mutex_;
   CMessageLoop* message_loop_;

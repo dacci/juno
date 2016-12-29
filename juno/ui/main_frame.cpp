@@ -19,7 +19,10 @@ const UINT MainFrame::WM_TASKBARCREATED =
     RegisterWindowMessage(_T("TaskbarCreated"));
 
 MainFrame::MainFrame()
-    : old_windows_(false), notify_icon_(), configuring_(false) {}
+    : old_windows_(false), notify_icon_(), configuring_(false) {
+  if (!AtlInitCommonControls(0xFFFF))  // all classes
+    LOG(ERROR) << "Failed to initialize common controls.";
+}
 
 MainFrame::~MainFrame() {}
 
