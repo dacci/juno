@@ -7,6 +7,7 @@
 #include <base/command_line.h>
 #include <base/logging.h>
 
+#include "app/application.h"
 #include "app/constants.h"
 #include "misc/tunneling_service.h"
 #include "service/service_manager.h"
@@ -40,7 +41,7 @@ void MainFrame::TrackTrayMenu(int x, int y) {
 }
 
 int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
-  CString message;
+  auto application = app::GetApplication();
 
   if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kForeground)) {
@@ -57,8 +58,7 @@ int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
                                  &notify_icon_.hIcon);
     if (FAILED(result)) {
       LOG(ERROR) << "LoadIconMetric() failed: 0x" << std::hex << result;
-      message.LoadString(IDS_ERR_INIT_FAILED);
-      MessageBox(message, nullptr, MB_ICONERROR);
+      application->ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
       return -1;
     }
 
@@ -66,16 +66,14 @@ int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
                                 _countof(notify_icon_.szTip));
     if (length == 0) {
       LOG(ERROR) << "LoadString() failed: " << GetLastError();
-      message.LoadString(IDS_ERR_INIT_FAILED);
-      MessageBox(message, nullptr, MB_ICONERROR);
+      application->ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
       return -1;
     }
 
     Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
     if (!Shell_NotifyIcon(NIM_ADD, &notify_icon_)) {
       LOG(ERROR) << "Shell_NotifyIcon failed";
-      message.LoadString(IDS_ERR_INIT_FAILED);
-      MessageBox(message, nullptr, MB_ICONERROR);
+      application->ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
       return -1;
     }
 
@@ -89,8 +87,7 @@ int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
   if (!misc::TunnelingService::Init()) {
     ATLASSERT(false);
     LOG(ERROR) << "TunnelingService::Init failed";
-    message.LoadString(IDS_ERR_INIT_FAILED);
-    MessageBox(message, nullptr, MB_ICONERROR);
+    application->ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
     return -1;
   }
 
@@ -98,14 +95,12 @@ int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
   ATLASSERT(service_manager_ != nullptr);
   if (service_manager_ == nullptr) {
     LOG(ERROR) << "ServiceManager cannot be allocated";
-    message.LoadString(IDS_ERR_OUT_OF_MEMORY);
-    MessageBox(message, nullptr, MB_ICONERROR);
+    application->ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_OUT_OF_MEMORY);
     return -1;
   }
 
   if (!service_manager_->LoadServices()) {
-    message.LoadString(IDS_ERR_INIT_FAILED);
-    MessageBox(message, nullptr, MB_ICONERROR);
+    application->ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
     return -1;
   }
 
@@ -118,8 +113,7 @@ int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
     some_failed = true;
 
   if (some_failed) {
-    message.LoadString(IDS_ERR_START_FAILED);
-    MessageBox(message, nullptr, MB_ICONEXCLAMATION);
+    application->ReportEvent(EVENTLOG_WARNING_TYPE, IDS_ERR_START_FAILED);
   }
 
   return 0;
@@ -213,9 +207,8 @@ void MainFrame::OnFileNew(UINT /*notify_code*/, int /*id*/,
   auto succeeded = service_manager_->UpdateConfiguration(
       std::move(dialog.service_configs_), std::move(dialog.server_configs_));
   if (!succeeded) {
-    CString message;
-    message.LoadString(IDS_ERR_START_FAILED);
-    MessageBox(message, nullptr, MB_ICONERROR);
+    app::GetApplication()->ReportEvent(EVENTLOG_WARNING_TYPE,
+                                       IDS_ERR_START_FAILED);
   }
 }
 

@@ -33,14 +33,7 @@ class Application : public CAtlExeModuleT<Application> {
   HRESULT PostMessageLoop() throw();
   void RunMessageLoop() throw();
 
-  static HRESULT TaskDialog(_U_STRINGorID title, PCWSTR main_instruction,
-                            _U_STRINGorID content,
-                            TASKDIALOG_COMMON_BUTTON_FLAGS buttons,
-                            _U_STRINGorID icon, int* button) {
-    return ::TaskDialog(NULL, ModuleHelper::GetResourceInstance(),
-                        title.m_lpstr, main_instruction, content.m_lpstr,
-                        buttons, icon.m_lpstr, button);
-  }
+  void ReportEvent(WORD type, DWORD message_id);
 
   CMessageLoop* GetMessageLoop() const {
     return message_loop_;
@@ -63,6 +56,7 @@ class Application : public CAtlExeModuleT<Application> {
 
   SERVICE_STATUS_HANDLE status_handle_;
   SERVICE_STATUS service_status_;
+  HANDLE event_source_;
 
   HANDLE mutex_;
   CMessageLoop* message_loop_;
@@ -71,6 +65,10 @@ class Application : public CAtlExeModuleT<Application> {
   Application(const Application&) = delete;
   Application& operator=(const Application&) = delete;
 };
+
+inline Application* GetApplication() {
+  return static_cast<Application*>(_pAtlModule);
+}
 
 }  // namespace app
 }  // namespace juno

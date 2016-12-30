@@ -2,6 +2,8 @@
 
 #include "app/application.h"
 
+#include <atlstr.h>
+
 #include <base/command_line.h>
 #include <base/logging.h>
 
@@ -25,6 +27,7 @@ Application::Application()
       main_thread_id_(0),
       status_handle_(NULL),
       service_status_(),
+      event_source_(NULL),
       mutex_(NULL),
       message_loop_(nullptr),
       frame_(nullptr) {
@@ -53,7 +56,7 @@ HRESULT Application::InstallService() {
 
     service = OpenService(manager, kServiceName, SERVICE_ALL_ACCESS);
     if (service != NULL) {
-      result = HRESULT_FROM_WIN32(ERROR_ALREADY_REGISTERED);
+      result = S_FALSE;
       LOG(INFO) << "Service already installed.";
       break;
     }
@@ -77,10 +80,29 @@ HRESULT Application::InstallService() {
       break;
     }
 
+    CString key_path;
+    key_path.Format(
+        L"SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\%s",
+        kServiceName);
+
+    auto value = path.value();
+    auto length = (value.size() + 1) * sizeof(wchar_t);
+
+    auto status = SHSetValue(HKEY_LOCAL_MACHINE, key_path, L"EventMessageFile",
+                             REG_SZ, value.c_str(), static_cast<DWORD>(length));
+    if (status != ERROR_SUCCESS) {
+      result = HRESULT_FROM_WIN32(status);
+      LOG(ERROR) << "Failed to install event source: " << status;
+      break;
+    }
+
     result = S_OK;
   } while (false);
 
   if (service != NULL) {
+    if (FAILED(result))
+      DeleteService(service);
+
     CloseServiceHandle(service);
     service = NULL;
   }
@@ -118,6 +140,18 @@ HRESULT Application::UninstallService() {
     if (!DeleteService(service)) {
       result = HRESULT_FROM_WIN32(GetLastError());
       LOG(ERROR) << "Failed to delete service: 0x" << std::hex << result;
+      break;
+    }
+
+    CString key_path;
+    key_path.Format(
+        L"SYSTEM\\CurrentControlSet\\Services\\EventLog\\Application\\%s",
+        kServiceName);
+
+    auto status = SHDeleteKey(HKEY_LOCAL_MACHINE, key_path);
+    if (status != ERROR_SUCCESS) {
+      result = HRESULT_FROM_WIN32(status);
+      LOG(ERROR) << "Failed to remove event source: " << status;
       break;
     }
 
@@ -167,8 +201,7 @@ bool Application::ParseCommandLine(LPCTSTR /*command_line*/,
   if (!succeeded) {
     *result = E_FAIL;
     OutputDebugString(L"Failed to initialize command line.\n");
-    TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
-               TD_ERROR_ICON, nullptr);
+    ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
     return false;
   }
 
@@ -179,8 +212,7 @@ bool Application::ParseCommandLine(LPCTSTR /*command_line*/,
   if (!succeeded) {
     *result = E_FAIL;
     OutputDebugString(L"Failed to initialize logging.\n");
-    TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
-               TD_ERROR_ICON, nullptr);
+    ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
     return false;
   }
 
@@ -210,22 +242,26 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
     return result;
   }
 
+  event_source_ = RegisterEventSource(nullptr, kServiceName);
+  if (event_source_ == NULL) {
+    LOG(ERROR) << "Failed to register event source: " << GetLastError();
+    return S_FALSE;
+  }
+
   if (!service_mode_ && !foreground_mode_) {
     wchar_t mutex_name[40];
     auto count = StringFromGUID2(GUID_JUNO_APPLICATION, mutex_name,
                                  _countof(mutex_name));
     if (count == 0) {
       LOG(ERROR) << "StringFromGUID2() failed.";
-      TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
-                 TD_ERROR_ICON, nullptr);
+      ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
       return S_FALSE;
     }
 
     mutex_ = CreateMutex(nullptr, FALSE, mutex_name);
     if (mutex_ == NULL) {
       LOG(ERROR) << "Failed to create mutex: " << GetLastError();
-      TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
-                 TD_ERROR_ICON, nullptr);
+      ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
       return S_FALSE;
     }
 
@@ -240,8 +276,7 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
         LOG(ERROR) << "Failed to get status of the mutex: " << GetLastError();
       }
 
-      TaskDialog(IDR_MAIN_FRAME, nullptr, message_id, TDCBF_OK_BUTTON,
-                 TD_ERROR_ICON, nullptr);
+      ReportEvent(EVENTLOG_ERROR_TYPE, message_id);
       return S_FALSE;
     }
   }
@@ -252,8 +287,7 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
     DLOG(INFO) << wsa_data.szDescription << " " << wsa_data.szSystemStatus;
   } else {
     LOG(ERROR) << "WinSock startup failed: " << error;
-    TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
-               TD_ERROR_ICON, nullptr);
+    ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
     return S_FALSE;
   }
 
@@ -262,8 +296,7 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
   message_loop_ = new CMessageLoop();
   if (message_loop_ == nullptr) {
     LOG(ERROR) << "Failed to allocate message loop.";
-    TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
-               TD_ERROR_ICON, nullptr);
+    ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
     return S_FALSE;
   }
 
@@ -271,15 +304,13 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
     frame_ = new ui::MainFrame();
     if (frame_ == nullptr) {
       LOG(ERROR) << "Failed to allocate main frame.";
-      TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
-                 TD_ERROR_ICON, nullptr);
+      ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
       return S_FALSE;
     }
 
     if (frame_->CreateEx() == NULL) {
       LOG(ERROR) << "Failed to create main frame.";
-      TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_INIT_FAILED, TDCBF_OK_BUTTON,
-                 TD_ERROR_ICON, nullptr);
+      ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
       return S_FALSE;
     }
 
@@ -312,6 +343,11 @@ HRESULT Application::PostMessageLoop() throw() {
     mutex_ = NULL;
   }
 
+  if (event_source_ != NULL) {
+    DeregisterEventSource(event_source_);
+    event_source_ = NULL;
+  }
+
   return CAtlExeModuleT::PostMessageLoop();
 }
 
@@ -319,6 +355,71 @@ void Application::RunMessageLoop() throw() {
   CHECK(message_loop_ != nullptr) << "Something wrong.";
   main_thread_id_ = GetCurrentThreadId();
   message_loop_->Run();
+}
+
+void Application::ReportEvent(WORD type, DWORD message_id) {
+  CString message;
+  message.LoadString(message_id);
+
+  if (service_mode_) {
+    if (event_source_ != NULL) {
+      DWORD event_id;
+      switch (type) {
+        case EVENTLOG_ERROR_TYPE:
+        case EVENTLOG_AUDIT_FAILURE:
+          event_id = 3;
+          break;
+
+        case EVENTLOG_WARNING_TYPE:
+          event_id = 2;
+          break;
+
+        case EVENTLOG_INFORMATION_TYPE:
+        default:
+          event_id = 1;
+          break;
+
+        case EVENTLOG_SUCCESS:
+        case EVENTLOG_AUDIT_SUCCESS:
+          event_id = 0;
+          break;
+      }
+
+      auto pointer = message.GetString();
+      ::ReportEvent(event_source_, type, 0, event_id, nullptr, 1, 0, &pointer,
+                    nullptr);
+    }
+  } else {
+    PCTSTR icon;
+    switch (type) {
+      case EVENTLOG_ERROR_TYPE:
+      case EVENTLOG_AUDIT_FAILURE:
+        icon = TD_ERROR_ICON;
+        break;
+
+      case EVENTLOG_WARNING_TYPE:
+        icon = TD_WARNING_ICON;
+        break;
+
+      case EVENTLOG_SUCCESS:
+      case EVENTLOG_INFORMATION_TYPE:
+      case EVENTLOG_AUDIT_SUCCESS:
+        icon = TD_INFORMATION_ICON;
+        break;
+
+      default:
+        icon = nullptr;
+        break;
+    }
+
+    HWND parent = NULL;
+    if (foreground_mode_ && frame_ != nullptr)
+      parent = frame_->m_hWnd;
+
+    TaskDialog(parent, ModuleHelper::GetResourceInstance(),
+               MAKEINTRESOURCE(IDR_MAIN_FRAME), nullptr,
+               MAKEINTRESOURCE(message_id), TDCBF_OK_BUTTON, icon, nullptr);
+  }
 }
 
 HRESULT Application::SetServiceStatus(DWORD current_state) {
