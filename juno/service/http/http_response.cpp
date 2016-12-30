@@ -43,7 +43,7 @@ void HttpResponse::Clear() {
   ClearHeaders();
 }
 
-void HttpResponse::Serialize(std::string* output) {
+void HttpResponse::Serialize(std::string* output) const {
   char status[14];
   sprintf_s(status, "HTTP/1.%d %d ", minor_version_, status_);
 

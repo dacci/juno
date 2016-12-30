@@ -26,7 +26,7 @@ class HttpResponse : public HttpHeaders {
 
   void Clear();
 
-  void Serialize(std::string* output);
+  void Serialize(std::string* output) const;
 
   int minor_version() const {
     return minor_version_;

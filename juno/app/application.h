@@ -39,7 +39,7 @@ class Application : public CAtlExeModuleT<Application> {
   HRESULT PostMessageLoop() throw();
   void RunMessageLoop() throw();
 
-  void ReportEvent(WORD type, DWORD message_id);
+  void ReportEvent(WORD type, DWORD message_id) const;
 
   bool IsService() const {
     return service_mode_;

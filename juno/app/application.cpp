@@ -315,7 +315,6 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
 
   service_manager_ = new service::ServiceManager();
   if (service_manager_ == nullptr) {
-    result = E_OUTOFMEMORY;
     LOG(ERROR) << "Failed to allocate ServiceManager.";
     ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_OUT_OF_MEMORY);
     return S_FALSE;
@@ -408,7 +407,7 @@ void Application::RunMessageLoop() throw() {
   message_loop_->Run();
 }
 
-void Application::ReportEvent(WORD type, DWORD message_id) {
+void Application::ReportEvent(WORD type, DWORD message_id) const {
   CString message;
   message.LoadString(message_id);
 

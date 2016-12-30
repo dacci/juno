@@ -121,6 +121,10 @@ LRESULT MainFrame::OnTrayNotify(UINT message, WPARAM wParam, LPARAM lParam) {
     case WM_CONTEXTMENU:
       TrackTrayMenu(GET_X_LPARAM(wParam), GET_Y_LPARAM(wParam));
       break;
+
+    default:
+      SetMsgHandled(FALSE);
+      break;
   }
 
   return 0;
@@ -140,6 +144,10 @@ LRESULT MainFrame::OnOldTrayNotify(UINT /*message*/, WPARAM /*wParam*/,
       TrackTrayMenu(point.x, point.y);
       break;
     }
+
+    default:
+      SetMsgHandled(FALSE);
+      break;
   }
 
   return 0;
