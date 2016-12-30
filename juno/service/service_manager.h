@@ -69,6 +69,8 @@ class ServiceManager {
 
   static ServiceManager* instance_;
 
+  HKEY root_key_;
+
   ProviderMap providers_;
   ServiceConfigMap service_configs_;
   ServerConfigMap server_configs_;

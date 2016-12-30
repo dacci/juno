@@ -10,6 +10,7 @@
 #include <string>
 #include <vector>
 
+#include "app/application.h"
 #include "io/secure_channel.h"
 #include "misc/certificate_store.h"
 #include "misc/registry_key-inl.h"
@@ -54,9 +55,12 @@ using ::juno::misc::RegistryKey;
 
 ServiceManager* ServiceManager::instance_ = nullptr;
 
-ServiceManager::ServiceManager() {
+ServiceManager::ServiceManager() : root_key_(NULL) {
   DCHECK(instance_ == nullptr);
   instance_ = this;
+
+  root_key_ = app::GetApplication()->IsService() ? HKEY_LOCAL_MACHINE
+                                                 : HKEY_CURRENT_USER;
 
 #define PROVIDER_ENTRY(key, ns) \
   providers_.insert(std::make_pair(#key, std::make_shared<ns::key##Provider>()))
@@ -92,7 +96,7 @@ ServiceManager::~ServiceManager() {
 
 bool ServiceManager::LoadServices() {
   RegistryKey app_key;
-  if (!app_key.Create(HKEY_CURRENT_USER, kConfigKeyName))
+  if (!app_key.Create(root_key_, kConfigKeyName))
     return false;
 
   RegistryKey services_key;
@@ -120,7 +124,7 @@ void ServiceManager::StopServices() {
 
 bool ServiceManager::LoadServers() {
   RegistryKey app_key;
-  if (!app_key.Create(HKEY_CURRENT_USER, kConfigKeyName))
+  if (!app_key.Create(root_key_, kConfigKeyName))
     return false;
 
   RegistryKey servers_key;
@@ -196,7 +200,7 @@ bool ServiceManager::UpdateConfiguration(
     ServiceConfigMap&& new_services,  // NOLINT(whitespace/operators)
     ServerConfigMap&& new_servers) {  // NOLINT(whitespace/operators)
   RegistryKey config_key;
-  if (!config_key.Create(HKEY_CURRENT_USER, kConfigKeyName))
+  if (!config_key.Create(root_key_, kConfigKeyName))
     return false;
 
   RegistryKey services_key;
