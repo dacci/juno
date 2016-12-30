@@ -10,6 +10,12 @@
 #include <base/at_exit.h>
 
 namespace juno {
+namespace service {
+
+class ServiceManager;
+
+}  // namespace service
+
 namespace ui {
 
 class MainFrame;
@@ -35,8 +41,20 @@ class Application : public CAtlExeModuleT<Application> {
 
   void ReportEvent(WORD type, DWORD message_id);
 
+  bool IsService() const {
+    return service_mode_;
+  }
+
+  bool IsForeground() const {
+    return foreground_mode_;
+  }
+
   CMessageLoop* GetMessageLoop() const {
     return message_loop_;
+  }
+
+  service::ServiceManager* GetServiceManager() const {
+    return service_manager_;
   }
 
  private:
@@ -60,6 +78,7 @@ class Application : public CAtlExeModuleT<Application> {
 
   HANDLE mutex_;
   CMessageLoop* message_loop_;
+  service::ServiceManager* service_manager_;
   ui::MainFrame* frame_;
 
   Application(const Application&) = delete;

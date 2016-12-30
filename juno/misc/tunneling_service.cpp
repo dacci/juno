@@ -37,11 +37,14 @@ class TunnelingService::Session : public Channel::Listener {
   Session& operator=(const Session&) = delete;
 };
 
-bool TunnelingService::Init() {
+HRESULT TunnelingService::Init() {
   Term();
 
   instance_ = new TunnelingService();
-  return instance_ != nullptr;
+  if (instance_ == nullptr)
+    return E_OUTOFMEMORY;
+
+  return S_OK;
 }
 
 void TunnelingService::Term() {

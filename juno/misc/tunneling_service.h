@@ -19,7 +19,7 @@ namespace misc {
 
 class TunnelingService {
  public:
-  static bool Init();
+  static HRESULT Init();
   static void Term();
   static bool Bind(const io::ChannelPtr& a, const io::ChannelPtr& b);
 

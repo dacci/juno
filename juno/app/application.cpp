@@ -16,6 +16,8 @@
 #include <url/url_util.h>
 
 #include "app/constants.h"
+#include "misc/tunneling_service.h"
+#include "service/service_manager.h"
 #include "ui/main_frame.h"
 
 namespace juno {
@@ -30,6 +32,7 @@ Application::Application()
       event_source_(NULL),
       mutex_(NULL),
       message_loop_(nullptr),
+      service_manager_(nullptr),
       frame_(nullptr) {
   service_status_.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
   service_status_.dwControlsAccepted = SERVICE_ACCEPT_STOP;
@@ -69,11 +72,11 @@ HRESULT Application::InstallService() {
     base::CommandLine service_command(path);
     service_command.AppendSwitch(switches::kService);
 
-    service = CreateService(manager, kServiceName, kServiceName,
-                            SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS,
-                            SERVICE_DEMAND_START, SERVICE_ERROR_IGNORE,
-                            service_command.GetCommandLineString().c_str(),
-                            nullptr, nullptr, L"tcpip\0", nullptr, nullptr);
+    service = CreateServiceW(manager, kServiceName, kServiceName,
+                             SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS,
+                             SERVICE_DEMAND_START, SERVICE_ERROR_IGNORE,
+                             service_command.GetCommandLineString().c_str(),
+                             nullptr, nullptr, L"tcpip\0", nullptr, nullptr);
     if (service == NULL) {
       result = HRESULT_FROM_WIN32(GetLastError());
       LOG(ERROR) << "Failed to create service: 0x" << std::hex << result;
@@ -242,10 +245,19 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
     return result;
   }
 
-  event_source_ = RegisterEventSource(nullptr, kServiceName);
-  if (event_source_ == NULL) {
-    LOG(ERROR) << "Failed to register event source: " << GetLastError();
+  message_loop_ = new CMessageLoop();
+  if (message_loop_ == nullptr) {
+    LOG(ERROR) << "Failed to allocate message loop.";
+    ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
     return S_FALSE;
+  }
+
+  if (service_mode_) {
+    event_source_ = RegisterEventSource(nullptr, kServiceName);
+    if (event_source_ == NULL) {
+      LOG(ERROR) << "Failed to register event source: " << GetLastError();
+      return S_FALSE;
+    }
   }
 
   if (!service_mode_ && !foreground_mode_) {
@@ -293,12 +305,42 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
 
   url::Initialize();
 
-  message_loop_ = new CMessageLoop();
-  if (message_loop_ == nullptr) {
-    LOG(ERROR) << "Failed to allocate message loop.";
+  result = misc::TunnelingService::Init();
+  if (FAILED(result)) {
+    LOG(ERROR) << "Failed to initialize TunnelingService: 0x" << std::hex
+               << result;
     ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
     return S_FALSE;
   }
+
+  service_manager_ = new service::ServiceManager();
+  if (service_manager_ == nullptr) {
+    result = E_OUTOFMEMORY;
+    LOG(ERROR) << "Failed to allocate ServiceManager.";
+    ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_OUT_OF_MEMORY);
+    return S_FALSE;
+  }
+
+  if (!service_manager_->LoadServices()) {
+    LOG(ERROR) << "Failed to load services.";
+    ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
+    return S_FALSE;
+  }
+
+  auto some_failed = false;
+
+  if (!service_manager_->LoadServers()) {
+    LOG(WARNING) << "Failed to load some of the servers.";
+    some_failed = true;
+  }
+
+  if (!service_manager_->StartServers()) {
+    LOG(WARNING) << "Failed to start some of the servers.";
+    some_failed = true;
+  }
+
+  if (some_failed)
+    ReportEvent(EVENTLOG_WARNING_TYPE, IDS_ERR_START_FAILED);
 
   if (!service_mode_) {
     frame_ = new ui::MainFrame();
@@ -329,11 +371,15 @@ HRESULT Application::PostMessageLoop() throw() {
     frame_ = nullptr;
   }
 
-  if (message_loop_ != nullptr) {
-    delete message_loop_;
-    message_loop_ = nullptr;
+  if (service_manager_ != nullptr) {
+    service_manager_->StopServers();
+    service_manager_->StopServices();
+
+    delete service_manager_;
+    service_manager_ = nullptr;
   }
 
+  misc::TunnelingService::Term();
   url::Shutdown();
   WSACleanup();
 
@@ -346,6 +392,11 @@ HRESULT Application::PostMessageLoop() throw() {
   if (event_source_ != NULL) {
     DeregisterEventSource(event_source_);
     event_source_ = NULL;
+  }
+
+  if (message_loop_ != nullptr) {
+    delete message_loop_;
+    message_loop_ = nullptr;
   }
 
   return CAtlExeModuleT::PostMessageLoop();

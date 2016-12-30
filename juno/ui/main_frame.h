@@ -17,18 +17,11 @@
 #include "res/resource.h"
 
 namespace juno {
-namespace service {
-
-class ServiceManager;
-
-}  // namespace service
-
 namespace ui {
 
-class MainFrame : public CFrameWindowImpl<MainFrame> {
+class MainFrame : public CFrameWindowImpl<MainFrame>, private CMessageFilter {
  public:
   MainFrame();
-  ~MainFrame();  // Required as ServiceManager is incomplete.
 
   DECLARE_FRAME_WND_CLASS(nullptr, IDR_MAIN_FRAME)
 
@@ -52,6 +45,8 @@ class MainFrame : public CFrameWindowImpl<MainFrame> {
 
   void TrackTrayMenu(int x, int y);
 
+  BOOL PreTranslateMessage(MSG* message) override;
+
   int OnCreate(CREATESTRUCT* create_struct);
   void OnDestroy();
   void OnEndSession(BOOL ending, UINT log_off);
@@ -65,8 +60,6 @@ class MainFrame : public CFrameWindowImpl<MainFrame> {
   bool old_windows_;
   NOTIFYICONDATA notify_icon_;
   bool configuring_;
-
-  std::unique_ptr<service::ServiceManager> service_manager_;
 
   MainFrame(const MainFrame&) = delete;
   MainFrame& operator=(const MainFrame&) = delete;

@@ -9,8 +9,6 @@
 
 #include "app/application.h"
 #include "app/constants.h"
-#include "misc/tunneling_service.h"
-#include "service/service_manager.h"
 #include "ui/preference_dialog.h"
 
 namespace juno {
@@ -25,8 +23,6 @@ MainFrame::MainFrame()
     LOG(ERROR) << "Failed to initialize common controls.";
 }
 
-MainFrame::~MainFrame() {}
-
 void MainFrame::TrackTrayMenu(int x, int y) {
   if (configuring_)
     return;
@@ -40,11 +36,22 @@ void MainFrame::TrackTrayMenu(int x, int y) {
   PostMessage(WM_NULL);
 }
 
+BOOL MainFrame::PreTranslateMessage(MSG* message) {
+  if (CFrameWindowImpl::PreTranslateMessage(message))
+    return TRUE;
+
+  return FALSE;
+}
+
 int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
   auto application = app::GetApplication();
 
-  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
-          switches::kForeground)) {
+  if (!application->GetMessageLoop()->AddMessageFilter(this)) {
+    LOG(ERROR) << "Failed to add message filter.";
+    return -1;
+  }
+
+  if (!application->IsForeground()) {
     notify_icon_.cbSize = sizeof(notify_icon_);
     notify_icon_.hWnd = m_hWnd;
     notify_icon_.uFlags =
@@ -84,58 +91,16 @@ int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
     }
   }
 
-  if (!misc::TunnelingService::Init()) {
-    ATLASSERT(false);
-    LOG(ERROR) << "TunnelingService::Init failed";
-    application->ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
-    return -1;
-  }
-
-  service_manager_.reset(new service::ServiceManager());
-  ATLASSERT(service_manager_ != nullptr);
-  if (service_manager_ == nullptr) {
-    LOG(ERROR) << "ServiceManager cannot be allocated";
-    application->ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_OUT_OF_MEMORY);
-    return -1;
-  }
-
-  if (!service_manager_->LoadServices()) {
-    application->ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
-    return -1;
-  }
-
-  auto some_failed = false;
-
-  if (!service_manager_->LoadServers())
-    some_failed = true;
-
-  if (!service_manager_->StartServers())
-    some_failed = true;
-
-  if (some_failed) {
-    application->ReportEvent(EVENTLOG_WARNING_TYPE, IDS_ERR_START_FAILED);
-  }
-
   return 0;
 }
 
 void MainFrame::OnDestroy() {
   SetMsgHandled(FALSE);
 
-  LoadIconMetric(ModuleHelper::GetResourceInstance(),
-                 MAKEINTRESOURCE(IDR_TRAY_MENU), LIM_SMALL,
-                 &notify_icon_.hIcon);
-  Shell_NotifyIcon(NIM_MODIFY, &notify_icon_);
-
-  if (service_manager_)
-    service_manager_->StopServers();
-
   Shell_NotifyIcon(NIM_DELETE, &notify_icon_);
 
-  if (service_manager_)
-    service_manager_->StopServices();
-
-  misc::TunnelingService::Term();
+  if (!app::GetApplication()->GetMessageLoop()->RemoveMessageFilter(this))
+    LOG(WARNING) << "Failed to remove message filter.";
 }
 
 void MainFrame::OnEndSession(BOOL ending, UINT /*log_off*/) {
@@ -193,23 +158,20 @@ void MainFrame::OnFileNew(UINT /*notify_code*/, int /*id*/,
   if (configuring_)
     return;
 
-  auto foreground =
-      base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kForeground);
+  auto application = app::GetApplication();
   PreferenceDialog dialog;
 
   configuring_ = true;
-  auto result = dialog.DoModal(foreground ? m_hWnd : NULL);
+  auto result = dialog.DoModal(application->IsForeground() ? m_hWnd : NULL);
   configuring_ = false;
 
   if (result != IDOK)
     return;
 
-  auto succeeded = service_manager_->UpdateConfiguration(
+  auto succeeded = application->GetServiceManager()->UpdateConfiguration(
       std::move(dialog.service_configs_), std::move(dialog.server_configs_));
-  if (!succeeded) {
-    app::GetApplication()->ReportEvent(EVENTLOG_WARNING_TYPE,
-                                       IDS_ERR_START_FAILED);
-  }
+  if (!succeeded)
+    application->ReportEvent(EVENTLOG_WARNING_TYPE, IDS_ERR_START_FAILED);
 }
 
 void MainFrame::OnAppExit(UINT /*notify_code*/, int /*id*/,
