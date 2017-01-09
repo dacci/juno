@@ -224,6 +224,9 @@
     <ClCompile Include="service\http\http_util.cpp" />
     <ClCompile Include="service\http\ui\http_header_filter_dialog.cpp" />
     <ClCompile Include="service\http\ui\http_proxy_dialog.cpp" />
+    <ClCompile Include="service\rpc\rpc_client.cpp" />
+    <ClCompile Include="service\rpc\rpc_common.cpp" />
+    <ClCompile Include="service\rpc\rpc_service.cpp" />
     <ClCompile Include="service\scissors\scissors.cpp" />
     <ClCompile Include="service\scissors\scissors_config.cpp" />
     <ClCompile Include="service\scissors\scissors_provider.cpp" />
@@ -283,6 +286,9 @@
     <ClInclude Include="service\http\http_util.h" />
     <ClInclude Include="service\http\ui\http_header_filter_dialog.h" />
     <ClInclude Include="service\http\ui\http_proxy_dialog.h" />
+    <ClInclude Include="service\rpc\rpc_client.h" />
+    <ClInclude Include="service\rpc\rpc_common.h" />
+    <ClInclude Include="service\rpc\rpc_service.h" />
     <ClInclude Include="service\scissors\scissors.h" />
     <ClInclude Include="service\scissors\scissors_config.h" />
     <ClInclude Include="service\scissors\scissors_provider.h" />
