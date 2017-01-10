@@ -11,7 +11,6 @@
 #include <algorithm>
 #include <string>
 
-#include "io/channel_util.h"
 #include "io/net/socket_channel.h"
 #include "misc/tunneling_service.h"
 
@@ -509,15 +508,14 @@ void HttpProxySession::SendError(StatusCode status) {
 
 void HttpProxySession::SendToRemote(const void* buffer, int length) {
   if (status_code_ != 0) {
-    io::channel_util::FireEvent(this, io::ChannelEvent::Write, remote_.get(),
-                                S_OK, buffer, length);
-  } else {
-    auto result = remote_->WriteAsync(buffer, length, this);
-    if (FAILED(result)) {
-      LOG(ERROR) << this << " failed to send to remote: 0x" << std::hex
-                 << result;
-      SendError(INTERNAL_SERVER_ERROR);
-    }
+    buffer = nullptr;
+    length = 0;
+  }
+
+  auto result = remote_->WriteAsync(buffer, length, this);
+  if (FAILED(result)) {
+    LOG(ERROR) << this << " failed to send to remote: 0x" << std::hex << result;
+    SendError(INTERNAL_SERVER_ERROR);
   }
 }
 
