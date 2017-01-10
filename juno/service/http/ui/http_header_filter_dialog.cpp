@@ -28,7 +28,7 @@ BOOL HttpHeaderFilterDialog::OnInitDialog(CWindow /*focus*/,
 
   request_check_.SetCheck(filter_->request);
   response_check_.SetCheck(filter_->response);
-  action_combo_.SetCurSel(filter_->action);
+  action_combo_.SetCurSel(static_cast<int>(filter_->action));
   name_edit_.SetWindowText(CString(filter_->name.c_str()));
   value_edit_.SetWindowText(CString(filter_->value.c_str()));
   replace_edit_.SetWindowText(CString(filter_->replace.c_str()));

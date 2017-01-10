@@ -386,16 +386,16 @@ bool ServiceManager::CreateServer(const std::string& name) {
     return false;
 
   ServerPtr server;
-  switch (config->type_) {
-    case ServerConfig::TCP:
+  switch (static_cast<ServerConfig::Protocol>(config->type_)) {
+    case ServerConfig::Protocol::kTCP:
       server = std::make_unique<TcpServer>();
       break;
 
-    case ServerConfig::UDP:
+    case ServerConfig::Protocol::kUDP:
       server = std::make_unique<UdpServer>();
       break;
 
-    case ServerConfig::TLS: {
+    case ServerConfig::Protocol::kTLS: {
       auto factory = std::make_unique<SecureChannelCustomizer>();
       if (factory == nullptr)
         break;

@@ -29,14 +29,14 @@ class HttpResponse;
 
 class HttpProxyConfig : public ServiceConfig {
  public:
-  enum FilterAction {
-    Set,
-    Append,
-    Add,
-    Unset,
-    Merge,
-    Edit,
-    EditR,
+  enum class FilterAction {
+    kSet,
+    kAppend,
+    kAdd,
+    kUnset,
+    kMerge,
+    kEdit,
+    kEditR,
   };
 
   struct HeaderFilter {

@@ -83,13 +83,13 @@ BOOL ServerDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   listen_spin_.SetRange32(0, 65535);
   type_combo_.SetCurSel(entry_->type_ - 1);
 
-  switch (entry_->type_) {
-    case ServerConfig::TCP:
-    case ServerConfig::UDP:
+  switch (static_cast<ServerConfig::Protocol>(entry_->type_)) {
+    case ServerConfig::Protocol::kTCP:
+    case ServerConfig::Protocol::kUDP:
       detail_button_.EnableWindow(FALSE);
       break;
 
-    case ServerConfig::TLS:
+    case ServerConfig::Protocol::kTLS:
       detail_button_.EnableWindow(TRUE);
       break;
   }
@@ -101,13 +101,13 @@ BOOL ServerDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
 
 void ServerDialog::OnTypeChange(UINT /*notify_code*/, int /*id*/,
                                 CWindow /*control*/) {
-  switch (type_combo_.GetCurSel() + 1) {
-    case ServerConfig::TCP:
-    case ServerConfig::UDP:
+  switch (static_cast<ServerConfig::Protocol>(type_combo_.GetCurSel() + 1)) {
+    case ServerConfig::Protocol::kTCP:
+    case ServerConfig::Protocol::kUDP:
       detail_button_.EnableWindow(FALSE);
       break;
 
-    case ServerConfig::TLS:
+    case ServerConfig::Protocol::kTLS:
       detail_button_.EnableWindow();
       break;
   }
@@ -115,8 +115,8 @@ void ServerDialog::OnTypeChange(UINT /*notify_code*/, int /*id*/,
 
 void ServerDialog::OnDetailSetting(UINT /*notify_code*/, int /*id*/,
                                    CWindow /*control*/) {
-  switch (type_combo_.GetCurSel() + 1) {
-    case ServerConfig::TLS: {
+  switch (static_cast<ServerConfig::Protocol>(type_combo_.GetCurSel() + 1)) {
+    case ServerConfig::Protocol::kTLS: {
       misc::CertificateStore store(L"MY");
       auto cert = store.SelectCertificate(m_hWnd, nullptr, nullptr, 0);
       if (cert == nullptr)

@@ -41,7 +41,7 @@ void HttpProxyDialog::AddFilterItem(const HttpProxyConfig::HeaderFilter& filter,
 
   filter_list_.InsertItem(LVIF_IMAGE | LVIF_PARAM, index, nullptr, 0, 0,
                           image - 1, filter_index);
-  filter_list_.AddItem(index, 1, kActions[filter.action]);
+  filter_list_.AddItem(index, 1, kActions[static_cast<int>(filter.action)]);
   filter_list_.AddItem(index, 2, CString(filter.name.c_str()));
   filter_list_.AddItem(index, 3, CString(filter.value.c_str()));
   filter_list_.AddItem(index, 4, CString(filter.replace.c_str()));

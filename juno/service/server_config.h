@@ -14,10 +14,10 @@ namespace service {
 
 class ServerConfig {
  public:
-  enum Protocol {
-    TCP = 1,
-    UDP,
-    TLS,
+  enum class Protocol {
+    kTCP = 1,
+    kUDP,
+    kTLS,
   };
 
   ServerConfig() : listen_(), type_(), enabled_(1) {}

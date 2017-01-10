@@ -32,6 +32,15 @@ const std::string kProxyAuthorization("Proxy-Authorization");
 
 }  // namespace
 
+enum class HttpProxySession::State {
+  kIdle,
+  kConnecting,
+  kRequestHeader,
+  kRequestBody,
+  kResponseHeader,
+  kResponseBody
+};
+
 HttpProxySession::HttpProxySession(
     HttpProxy* proxy, const std::shared_ptr<HttpProxyConfig>& config,
     const io::ChannelPtr& client)
@@ -40,7 +49,7 @@ HttpProxySession::HttpProxySession(
       ref_count_(0),
       free_(&lock_),
       timer_(misc::TimerService::GetDefault()->Create(this)),
-      state_(Idle),
+      state_(State::kIdle),
       tunnel_(),
       last_port_(-1),
       retry_(),
@@ -206,12 +215,12 @@ void HttpProxySession::DispatchRequest() {
     return;
   }
 
-  state_ = Connecting;
+  state_ = State::kConnecting;
   remote_->ConnectAsync(resolver_.begin()->get(), this);
 }
 
 void HttpProxySession::SendRequest() {
-  state_ = RequestHeader;
+  state_ = State::kRequestHeader;
 
   std::string message;
   request_.Serialize(&message);
@@ -241,7 +250,7 @@ void HttpProxySession::EndRequest() {
   DLOG(INFO) << this << " request completed";
 
   if (status_code_ == 0) {
-    state_ = ResponseHeader;
+    state_ = State::kResponseHeader;
 
     remote_buffer_.clear();
     response_.Clear();
@@ -322,7 +331,7 @@ void HttpProxySession::ProcessResponse() {
     config_->ProcessAuthenticate(&response_, &request_);
 
     if (response_chunked_ || response_length_ == -1 || response_length_ > 0) {
-      state_ = ResponseBody;
+      state_ = State::kResponseBody;
 
       if (response_chunked_) {
         ProcessResponseChunk();
@@ -394,7 +403,7 @@ void HttpProxySession::ProcessResponseChunk() {
 }
 
 void HttpProxySession::SendResponse() {
-  state_ = ResponseHeader;
+  state_ = State::kResponseHeader;
 
   std::string message;
   response_.Serialize(&message);
@@ -421,7 +430,7 @@ void HttpProxySession::EndResponse() {
   }
 
   if (response_.status() / 100 == 1) {
-    state_ = ResponseHeader;
+    state_ = State::kResponseHeader;
 
     auto result = ReceiveResponse();
     if (FAILED(result)) {
@@ -443,7 +452,7 @@ void HttpProxySession::EndResponse() {
     return;
   }
 
-  state_ = RequestHeader;
+  state_ = State::kRequestHeader;
   last_chunk_size_ = 0;
   tunnel_ = false;
   retry_ = false;
@@ -466,7 +475,7 @@ void HttpProxySession::SetError(StatusCode status) {
   status_code_ = status;
 
   if (request_chunked_) {
-    state_ = RequestBody;
+    state_ = State::kRequestBody;
 
     if (request_length_ < 0) {  // bad chunk
       close_client_ = true;
@@ -477,7 +486,7 @@ void HttpProxySession::SetError(StatusCode status) {
       ProcessRequestChunk();
     }
   } else if (request_length_ > 0) {
-    state_ = RequestBody;
+    state_ = State::kRequestBody;
 
     request_length_ -= client_buffer_.size();
     if (request_length_ > 0)
@@ -532,19 +541,19 @@ void HttpProxySession::OnRead(io::Channel* /*channel*/, HRESULT result,
   base::AutoLock guard(lock_);
 
   switch (state_) {
-    case RequestHeader:
+    case State::kRequestHeader:
       OnRequestReceived(result, length);
       break;
 
-    case RequestBody:
+    case State::kRequestBody:
       OnRequestBodyReceived(result, length);
       break;
 
-    case ResponseHeader:
+    case State::kResponseHeader:
       OnResponseReceived(result, length);
       break;
 
-    case ResponseBody:
+    case State::kResponseBody:
       OnResponseBodyReceived(result, length);
       break;
 
@@ -564,19 +573,19 @@ void HttpProxySession::OnWritten(io::Channel* /*channel*/, HRESULT result,
   base::AutoLock guard(lock_);
 
   switch (state_) {
-    case RequestHeader:
+    case State::kRequestHeader:
       OnRequestSent(result, length);
       break;
 
-    case RequestBody:
+    case State::kRequestBody:
       OnRequestBodySent(result, length);
       break;
 
-    case ResponseHeader:
+    case State::kResponseHeader:
       OnResponseSent(result, length);
       break;
 
-    case ResponseBody:
+    case State::kResponseBody:
       OnResponseBodySent(result, length);
       break;
 
@@ -660,7 +669,7 @@ void HttpProxySession::OnRequestSent(HRESULT result, int length) {
   }
 
   if (request_chunked_ || request_length_ > 0) {
-    state_ = RequestBody;
+    state_ = State::kRequestBody;
 
     if (request_chunked_) {
       ProcessRequestChunk();
@@ -745,7 +754,7 @@ void HttpProxySession::OnResponseSent(HRESULT result, int length) {
     return;
   }
 
-  state_ = ResponseBody;
+  state_ = State::kResponseBody;
 
   if (response_chunked_) {
     ProcessResponseChunk();

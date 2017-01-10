@@ -40,14 +40,7 @@ class HttpProxySession : private io::Channel::Listener,
   void Stop();
 
  private:
-  enum State {
-    Idle,
-    Connecting,
-    RequestHeader,
-    RequestBody,
-    ResponseHeader,
-    ResponseBody
-  };
+  enum class State;
 
   static const size_t kBufferSize = 8 * 1024;  // 8 KiB
   static const int kTimeout = 15 * 1000;       // 15 sec

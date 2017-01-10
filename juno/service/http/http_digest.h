@@ -20,7 +20,7 @@ class HttpDigest {
   void SetCredential(const std::string& username, const std::string& password);
 
  private:
-  enum Algorithm { MD5SESS, MD5 };
+  enum class Algorithm;
 
   void Reset();
 

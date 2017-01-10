@@ -208,6 +208,8 @@ bool GetPair(const char* input, std::string* name, std::string* value,
 
 static CryptProvider crypt_provider;
 
+enum class HttpDigest::Algorithm { kMD5SESS, kMD5 };
+
 HttpDigest::HttpDigest() {
   Reset();
 }
@@ -261,9 +263,9 @@ bool HttpDigest::Input(const std::string& input) {
         qop_ = "auth-int";
     } else if (name.compare("algorithm") == 0) {
       if (value.compare("MD5-sess") == 0)
-        digest_ = MD5SESS;
+        digest_ = Algorithm::kMD5SESS;
       else if (value.compare("MD5") == 0)
-        digest_ = MD5;
+        digest_ = Algorithm::kMD5;
       else
         return false;
 
@@ -320,7 +322,7 @@ bool HttpDigest::Output(const std::string& method, const std::string& path,
     ha1 = hash->Complete();
   }
 
-  if (digest_ == MD5SESS) {
+  if (digest_ == Algorithm::kMD5SESS) {
     auto hash = crypt_provider.CreateHash(CALG_MD5);
     hash->Hash(ha1);
     hash->Hash(":");
@@ -413,7 +415,7 @@ void HttpDigest::SetCredential(const std::string& username,
 
 void HttpDigest::Reset() {
   nonce_count_ = 0;
-  digest_ = MD5;
+  digest_ = Algorithm::kMD5;
   stale_ = false;
 
   nonce_.clear();

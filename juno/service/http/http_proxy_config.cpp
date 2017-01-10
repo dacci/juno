@@ -170,7 +170,7 @@ bool HttpProxyConfig::Save(RegistryKey* key) {
 
     filter_key.SetInteger(kRequest, filter.request);
     filter_key.SetInteger(kResponse, filter.response);
-    filter_key.SetInteger(kAction, filter.action);
+    filter_key.SetInteger(kAction, static_cast<int>(filter.action));
     filter_key.SetString(kName, filter.name);
     filter_key.SetString(kValue, filter.value);
     filter_key.SetString(kReplace, filter.replace);
@@ -183,31 +183,31 @@ void HttpProxyConfig::FilterHeaders(HttpHeaders* headers, bool request) const {
   for (auto& filter : header_filters_) {
     if (request && filter.request || !request && filter.response) {
       switch (filter.action) {
-        case Set:
+        case FilterAction::kSet:
           headers->SetHeader(filter.name, filter.value);
           break;
 
-        case Append:
+        case FilterAction::kAppend:
           headers->AppendHeader(filter.name, filter.value);
           break;
 
-        case Add:
+        case FilterAction::kAdd:
           headers->AddHeader(filter.name, filter.value);
           break;
 
-        case Unset:
+        case FilterAction::kUnset:
           headers->RemoveHeader(filter.name);
           break;
 
-        case Merge:
+        case FilterAction::kMerge:
           headers->MergeHeader(filter.name, filter.value);
           break;
 
-        case Edit:
+        case FilterAction::kEdit:
           headers->EditHeader(filter.name, filter.value, filter.replace, false);
           break;
 
-        case EditR:
+        case FilterAction::kEditR:
           headers->EditHeader(filter.name, filter.value, filter.replace, true);
           break;
       }
