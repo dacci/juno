@@ -7,9 +7,9 @@
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
 
-#include <list>
 #include <map>
 #include <memory>
+#include <queue>
 #include <string>
 
 #include "io/channel.h"
@@ -40,8 +40,7 @@ class SecureChannel : public Channel, private Channel::Listener {
 
  private:
   struct Request;
-
-  enum Status { kNegotiate, kData, kError, kClosing, kClosed };
+  enum class Status;
 
   static const size_t kBufferSize = 16 * 1024;
 
@@ -81,11 +80,11 @@ class SecureChannel : public Channel, private Channel::Listener {
   SecPkgContext_StreamSizes stream_sizes_;
 
   std::string decrypted_;
-  std::list<std::unique_ptr<Request>> pending_reads_;
+  std::queue<std::unique_ptr<Request>> pending_reads_;
   base::AtomicRefCount reads_;
   PTP_WORK read_work_;
 
-  std::list<std::unique_ptr<Request>> pending_writes_;
+  std::queue<std::unique_ptr<Request>> pending_writes_;
   std::map<void*, std::unique_ptr<Request>> writes_;
   PTP_WORK write_work_;
 

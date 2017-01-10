@@ -12,7 +12,7 @@ namespace juno {
 namespace io {
 namespace {
 
-enum ContentType : uint8_t {
+enum class ContentType : uint8_t {
   kChangeCipherSpec = 20,
   kAlert = 21,
   kHandshake = 22,
@@ -55,6 +55,14 @@ struct SecureChannel::Request {
   Channel::Listener* listener;
 };
 
+enum class SecureChannel::Status {
+  kNegotiate,
+  kData,
+  kError,
+  kClosing,
+  kClosed
+};
+
 SecureChannel::SecureChannel(misc::schannel::SchannelCredential* credential,
                              const std::shared_ptr<Channel>& channel,
                              bool inbound)
@@ -63,7 +71,7 @@ SecureChannel::SecureChannel(misc::schannel::SchannelCredential* credential,
       inbound_(inbound),
       deletable_(&lock_),
       ref_count_(0),
-      status_(kNegotiate),
+      status_(Status::kNegotiate),
       stream_sizes_(),
       reads_(0),
       read_work_(CreateThreadpoolWork(OnRead, this, nullptr)),
@@ -88,7 +96,7 @@ SecureChannel::SecureChannel(misc::schannel::SchannelCredential* credential,
   if (SUCCEEDED(result))
     return;
 
-  status_ = kError;
+  status_ = Status::kError;
   channel_->Close();
 }
 
@@ -131,14 +139,14 @@ void SecureChannel::Close() {
   do {
     base::AutoLock guard(lock_);
 
-    if (status_ == kError || status_ == kClosed)
+    if (status_ == Status::kError || status_ == Status::kClosed)
       break;
 
     result = context_.ApplyControlToken(SCHANNEL_SHUTDOWN);
     if (FAILED(result))
       break;
 
-    status_ = kClosing;
+    status_ = Status::kClosing;
     message_.clear();
 
     result = Negotiate();
@@ -151,7 +159,7 @@ void SecureChannel::Close() {
 
   if (FAILED(result)) {
     base::AutoLock guard(lock_);
-    status_ = kError;
+    status_ = Status::kError;
     channel_->Close();
   }
 }
@@ -175,7 +183,7 @@ HRESULT SecureChannel::ReadAsync(void* buffer, int length,
     if (read_work_ == nullptr)
       return E_HANDLE;
 
-    pending_reads_.push_back(std::move(request));
+    pending_reads_.push(std::move(request));
     if (pending_reads_.size() == 1)
       SubmitThreadpoolWork(read_work_);
   } catch (...) {
@@ -204,7 +212,7 @@ HRESULT SecureChannel::WriteAsync(const void* buffer, int length,
     if (write_work_ == nullptr)
       return E_HANDLE;
 
-    pending_writes_.push_back(std::move(request));
+    pending_writes_.push(std::move(request));
     if (pending_writes_.size() == 1)
       SubmitThreadpoolWork(write_work_);
   } catch (...) {
@@ -226,14 +234,14 @@ HRESULT SecureChannel::CheckMessage() const {
     return SEC_E_ILLEGAL_MESSAGE;
 
   switch (record->type) {
-    case kChangeCipherSpec:
-    case kAlert:
-    case kHandshake:
+    case ContentType::kChangeCipherSpec:
+    case ContentType::kAlert:
+    case ContentType::kHandshake:
       if (record->length == 0)
         return SEC_E_ILLEGAL_MESSAGE;
       break;
 
-    case kApplicationData:
+    case ContentType::kApplicationData:
       break;
 
     default:
@@ -285,10 +293,10 @@ HRESULT SecureChannel::Negotiate() {
       break;
 
     if (result == SEC_E_OK) {
-      if (status_ == kClosing)
-        status_ = kClosed;
+      if (status_ == Status::kClosing)
+        status_ = Status::kClosed;
       else
-        status_ = kData;
+        status_ = Status::kData;
     }
 
     if (FAILED(result)) {
@@ -305,7 +313,7 @@ HRESULT SecureChannel::Negotiate() {
   if (!response.empty())
     result = WriteAsyncImpl(response, nullptr);
 
-  if (status_ == kData)
+  if (status_ == Status::kData)
     context_.QueryAttributes(SECPKG_ATTR_STREAM_SIZES, &stream_sizes_);
 
   return result;
@@ -328,15 +336,15 @@ HRESULT SecureChannel::Decrypt() {
 
     if (SUCCEEDED(result)) {
       if (result == SEC_I_CONTEXT_EXPIRED) {
-        status_ = kClosing;
+        status_ = Status::kClosing;
         result = context_.ApplyControlToken(SCHANNEL_SHUTDOWN);
         if (FAILED(result))
           return result;
       } else if (result == SEC_I_RENEGOTIATE) {
-        status_ = kNegotiate;
+        status_ = Status::kNegotiate;
       }
 
-      if (status_ != kData)
+      if (status_ != Status::kData)
         return Negotiate();
     } else if (result == SEC_E_INCOMPLETE_MESSAGE) {
       return S_OK;
@@ -415,7 +423,7 @@ HRESULT SecureChannel::EnsureReading() {
     base::AtomicRefCountInc(&ref_count_);
     base::AtomicRefCountInc(&reads_);
   } else {
-    status_ = kError;
+    status_ = Status::kError;
     channel_->Close();
   }
 
@@ -444,7 +452,7 @@ HRESULT SecureChannel::WriteAsyncImpl(std::unique_ptr<char[]>&& buffer,
     buffer.release();
   } else {
     channel_->Close();
-    status_ = kError;
+    status_ = Status::kError;
   }
 
   return result;
@@ -461,9 +469,9 @@ void SecureChannel::OnRead(Channel* /*channel*/, HRESULT result,
 
     result = CheckMessage();
     if (SUCCEEDED(result)) {
-      if (status_ == kNegotiate)
+      if (status_ == Status::kNegotiate)
         result = Negotiate();
-      else if (status_ == kData)
+      else if (status_ == Status::kData)
         result = Decrypt();
       else
         result = E_FAIL;
@@ -480,9 +488,9 @@ void SecureChannel::OnRead(Channel* /*channel*/, HRESULT result,
 
   if (FAILED(result) || length <= 0) {
     if (FAILED(result))
-      status_ = kError;
+      status_ = Status::kError;
     else
-      status_ = kClosed;
+      status_ = Status::kClosed;
 
     channel_->Close();
 
@@ -504,9 +512,9 @@ void SecureChannel::OnWritten(Channel* /*channel*/, HRESULT result,
 
   if (FAILED(result) || length <= 0) {
     if (FAILED(result))
-      status_ = kError;
+      status_ = Status::kError;
     else
-      status_ = kClosed;
+      status_ = Status::kClosed;
 
     channel_->Close();
   }
@@ -539,14 +547,14 @@ void SecureChannel::OnRead() {
   while (true) {
     lock_.Acquire();
 
-    if (pending_reads_.empty() || status_ == kNegotiate ||
-        status_ == kData && decrypted_.empty()) {
+    if (pending_reads_.empty() || status_ == Status::kNegotiate ||
+        status_ == Status::kData && decrypted_.empty()) {
       lock_.Release();
       break;
     }
 
     auto request = std::move(pending_reads_.front());
-    pending_reads_.pop_front();
+    pending_reads_.pop();
 
     auto result = S_OK;
     if (!decrypted_.empty()) {
@@ -554,7 +562,7 @@ void SecureChannel::OnRead() {
       memcpy(request->buffer, decrypted_.data(), size);
       decrypted_.erase(0, size);
       request->length = static_cast<int>(size);
-    } else if (status_ == kError) {
+    } else if (status_ == Status::kError) {
       result = E_FAIL;
       request->length = -1;
     } else {
@@ -568,7 +576,7 @@ void SecureChannel::OnRead() {
 
   auto result = EnsureReading();
   if (FAILED(result)) {
-    status_ = kError;
+    status_ = Status::kError;
     channel_->Close();
   }
 }
@@ -583,16 +591,16 @@ void SecureChannel::OnWrite() {
   while (true) {
     base::AutoLock guard(lock_);
 
-    if (status_ == kNegotiate || pending_writes_.empty())
+    if (status_ == Status::kNegotiate || pending_writes_.empty())
       return;
 
     auto request = std::move(pending_writes_.front());
-    pending_writes_.pop_front();
+    pending_writes_.pop();
 
     auto result = E_UNEXPECTED;
 
     switch (status_) {
-      case kData: {
+      case Status::kData: {
         std::string message;
         result = Encrypt(request->buffer, request->length, &message);
         if (SUCCEEDED(result)) {
@@ -605,18 +613,19 @@ void SecureChannel::OnWrite() {
         break;
       }
 
-      case kError:
+      case Status::kError:
         result = E_FAIL;
         request->length = -1;
         break;
 
-      case kClosing:
-      case kClosed:
+      case Status::kClosing:
+      case Status::kClosed:
         request->length = 0;
         break;
 
       default:
-        DCHECK(false) << "This must not occur.";
+        LOG(FATAL) << "Invalid status: " << static_cast<int>(status_);
+        break;
     }
 
     {

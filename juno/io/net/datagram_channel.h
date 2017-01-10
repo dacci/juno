@@ -5,8 +5,8 @@
 
 #include <base/synchronization/lock.h>
 
-#include <list>
 #include <memory>
+#include <queue>
 
 #include "io/channel.h"
 #include "io/net/socket.h"
@@ -26,7 +26,7 @@ class DatagramChannel : public Socket, public Channel {
   };
 
   DatagramChannel();
-  virtual ~DatagramChannel();
+  ~DatagramChannel();
 
   void Close() override;
   HRESULT ReadAsync(void* buffer, int length,
@@ -40,6 +40,8 @@ class DatagramChannel : public Socket, public Channel {
  private:
   struct Request;
 
+  HRESULT DispatchRequest(std::unique_ptr<Request>&& request);
+
   static void CALLBACK OnRequested(PTP_CALLBACK_INSTANCE callback,
                                    void* instance, PTP_WORK work);
   void OnRequested(PTP_WORK work);
@@ -47,10 +49,11 @@ class DatagramChannel : public Socket, public Channel {
   static void CALLBACK OnCompleted(PTP_CALLBACK_INSTANCE callback,
                                    void* context, void* overlapped, ULONG error,
                                    ULONG_PTR bytes, PTP_IO io);
+  void OnCompleted(OVERLAPPED* overlapped, ULONG error, ULONG_PTR bytes);
 
   base::Lock lock_;
   PTP_WORK work_;
-  std::list<std::unique_ptr<Request>> queue_;
+  std::queue<std::unique_ptr<Request>> queue_;
   PTP_IO io_;
 
   DatagramChannel(const DatagramChannel&) = delete;

@@ -4,6 +4,10 @@
 
 #include <mswsock.h>
 
+#include <base/logging.h>
+
+#include <base/memory/ptr_util.h>
+
 namespace juno {
 namespace io {
 namespace net {
@@ -47,9 +51,11 @@ AsyncServerSocket::~AsyncServerSocket() {
     auto local_work = work_;
     work_ = nullptr;
 
-    base::AutoUnlock unlock(lock_);
+    {
+      base::AutoUnlock unlock(lock_);
+      WaitForThreadpoolWorkCallbacks(local_work, FALSE);
+    }
 
-    WaitForThreadpoolWorkCallbacks(local_work, FALSE);
     CloseThreadpoolWork(local_work);
   }
 }
@@ -63,9 +69,11 @@ void AsyncServerSocket::Close() {
     auto local_io = io_;
     io_ = nullptr;
 
-    base::AutoUnlock unlock(lock_);
+    {
+      base::AutoUnlock unlock(lock_);
+      WaitForThreadpoolIoCallbacks(local_io, FALSE);
+    }
 
-    WaitForThreadpoolIoCallbacks(local_io, FALSE);
     CloseThreadpoolIo(local_io);
   }
 }
@@ -74,25 +82,33 @@ HRESULT AsyncServerSocket::AcceptAsync(Listener* listener) {
   if (listener == nullptr)
     return E_INVALIDARG;
 
+  auto request = std::make_unique<Context>(this, listener);
+  if (request == nullptr)
+    return E_OUTOFMEMORY;
+
+  base::AutoLock guard(lock_);
+
+  if (!listening_)
+    return HRESULT_FROM_WIN32(WSAEINVAL);
+
+  return DispatchRequest(std::move(request));
+}
+
+HRESULT AsyncServerSocket::DispatchRequest(std::unique_ptr<Context>&& request) {
+  lock_.AssertAcquired();
+
   try {
-    auto request = std::make_unique<Context>(this, listener);
-    if (request == nullptr)
-      return E_OUTOFMEMORY;
-
-    base::AutoLock guard(lock_);
-
-    if (work_ == nullptr || !IsValid() || !listening_)
+    if (work_ == nullptr)
       return E_HANDLE;
 
-    queue_.push_back(std::move(request));
-
+    queue_.push(std::move(request));
     if (queue_.size() == 1)
       SubmitThreadpoolWork(work_);
-  } catch (...) {
-    return E_FAIL;
-  }
 
-  return S_OK;
+    return S_OK;
+  } catch (...) {
+    return E_UNEXPECTED;
+  }
 }
 
 SOCKET AsyncServerSocket::EndAcceptImpl(Context* context, HRESULT* result) {
@@ -144,7 +160,7 @@ void AsyncServerSocket::OnRequested(PTP_WORK work) {
   lock_.Acquire();
 
   auto request = std::move(queue_.front());
-  queue_.pop_front();
+  queue_.pop();
   if (!queue_.empty())
     SubmitThreadpoolWork(work);
 
@@ -201,18 +217,22 @@ void AsyncServerSocket::OnRequested(PTP_WORK work) {
 
 void AsyncServerSocket::OnCompleted(PTP_CALLBACK_INSTANCE /*callback*/,
                                     void* context, void* overlapped,
-                                    ULONG error, ULONG_PTR /*bytes*/,
+                                    ULONG error, ULONG_PTR bytes,
                                     PTP_IO /*io*/) {
-  std::unique_ptr<Context> request(
-      static_cast<Context*>(static_cast<OVERLAPPED*>(overlapped)));
+  static_cast<AsyncServerSocket*>(context)->OnCompleted(
+      static_cast<OVERLAPPED*>(overlapped), error, bytes);
+}
+
+void AsyncServerSocket::OnCompleted(OVERLAPPED* overlapped, ULONG error,
+                                    ULONG_PTR /*bytes*/) {
+  auto request = base::WrapUnique(static_cast<Context*>(overlapped));
   request->completed = true;
   request->result = HRESULT_FROM_WIN32(error);
 
-  auto instance = static_cast<AsyncServerSocket*>(context);
-  base::AutoLock guard(instance->lock_);
-  instance->queue_.push_back(std::move(request));
-  if (instance->queue_.size() == 1)
-    SubmitThreadpoolWork(instance->work_);
+  base::AutoLock guard(lock_);
+  auto result = DispatchRequest(std::move(request));
+  LOG_IF(FATAL, FAILED(result)) << "Unrecoverable Error: 0x" << std::hex
+                                << result;
 }
 
 }  // namespace net

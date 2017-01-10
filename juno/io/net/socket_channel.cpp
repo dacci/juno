@@ -6,12 +6,14 @@
 
 #include <base/logging.h>
 
+#include <base/memory/ptr_util.h>
+
 namespace juno {
 namespace io {
 namespace net {
 namespace {
 
-enum Command {
+enum class Command {
   kInvalid,
   kReadAsync,
   kWriteAsync,
@@ -30,6 +32,7 @@ struct SocketChannel::Request : OVERLAPPED, WSABUF {
   const addrinfo* end_point;
   Channel::Listener* channel_listener;
   Listener* listener;
+
   Command completed_command;
   HRESULT result;
 };
@@ -46,7 +49,7 @@ class SocketChannel::Monitor : public Request {
   void Reset() {
     len = sizeof(buffer_);
     flags = MSG_PEEK;
-    command = kMonitorConnection;
+    command = Command::kMonitorConnection;
   }
 
   char buffer_[16];
@@ -70,9 +73,11 @@ SocketChannel::~SocketChannel() {
     auto local_work = work_;
     work_ = nullptr;
 
-    base::AutoUnlock unlock(lock_);
+    {
+      base::AutoUnlock unlock(lock_);
+      WaitForThreadpoolWorkCallbacks(local_work, FALSE);
+    }
 
-    WaitForThreadpoolWorkCallbacks(local_work, FALSE);
     CloseThreadpoolWork(local_work);
   }
 }
@@ -90,9 +95,11 @@ void SocketChannel::Close() {
     auto local_io = io_;
     io_ = nullptr;
 
-    base::AutoUnlock unlock(lock_);
+    {
+      base::AutoUnlock unlock(lock_);
+      WaitForThreadpoolIoCallbacks(local_io, FALSE);
+    }
 
-    WaitForThreadpoolIoCallbacks(local_io, FALSE);
     CloseThreadpoolIo(local_io);
   }
 }
@@ -102,30 +109,22 @@ HRESULT SocketChannel::ReadAsync(void* buffer, int length,
   if (buffer == nullptr && length != 0 || length < 0 || listener == nullptr)
     return E_INVALIDARG;
 
-  try {
-    auto request = std::make_unique<Request>();
-    if (request == nullptr)
-      return E_OUTOFMEMORY;
+  auto request = std::make_unique<Request>();
+  if (request == nullptr)
+    return E_OUTOFMEMORY;
 
-    memset(request.get(), 0, sizeof(*request));
-    request->len = length;
-    request->buf = static_cast<char*>(buffer);
-    request->command = kReadAsync;
-    request->channel_listener = listener;
+  memset(request.get(), 0, sizeof(*request));
+  request->len = length;
+  request->buf = static_cast<char*>(buffer);
+  request->command = Command::kReadAsync;
+  request->channel_listener = listener;
 
-    base::AutoLock guard(lock_);
+  base::AutoLock guard(lock_);
 
-    if (work_ == nullptr || !IsValid() || !connected_)
-      return E_HANDLE;
+  if (!connected_)
+    return HRESULT_FROM_WIN32(WSAENOTCONN);
 
-    queue_.push_back(std::move(request));
-    if (queue_.size() == 1)
-      SubmitThreadpoolWork(work_);
-  } catch (...) {
-    return E_FAIL;
-  }
-
-  return S_OK;
+  return DispatchRequest(std::move(request));
 }
 
 HRESULT SocketChannel::WriteAsync(const void* buffer, int length,
@@ -133,30 +132,22 @@ HRESULT SocketChannel::WriteAsync(const void* buffer, int length,
   if (buffer == nullptr && length != 0 || length < 0 || listener == nullptr)
     return E_INVALIDARG;
 
-  try {
-    auto request = std::make_unique<Request>();
-    if (request == nullptr)
-      return E_OUTOFMEMORY;
+  auto request = std::make_unique<Request>();
+  if (request == nullptr)
+    return E_OUTOFMEMORY;
 
-    memset(request.get(), 0, sizeof(*request));
-    request->len = length;
-    request->buf = const_cast<char*>(static_cast<const char*>(buffer));
-    request->command = kWriteAsync;
-    request->channel_listener = listener;
+  memset(request.get(), 0, sizeof(*request));
+  request->len = length;
+  request->buf = const_cast<char*>(static_cast<const char*>(buffer));
+  request->command = Command::kWriteAsync;
+  request->channel_listener = listener;
 
-    base::AutoLock guard(lock_);
+  base::AutoLock guard(lock_);
 
-    if (work_ == nullptr || !IsValid() || !connected_)
-      return E_HANDLE;
+  if (!connected_)
+    return HRESULT_FROM_WIN32(WSAENOTCONN);
 
-    queue_.push_back(std::move(request));
-    if (queue_.size() == 1)
-      SubmitThreadpoolWork(work_);
-  } catch (...) {
-    return E_FAIL;
-  }
-
-  return S_OK;
+  return DispatchRequest(std::move(request));
 }
 
 HRESULT SocketChannel::ConnectAsync(const addrinfo* end_point,
@@ -170,55 +161,53 @@ HRESULT SocketChannel::ConnectAsync(const addrinfo* end_point,
   if (ConnectEx == nullptr)
     return E_HANDLE;
 
-  try {
-    auto request = std::make_unique<Request>();
-    if (request == nullptr)
-      return E_OUTOFMEMORY;
+  auto request = std::make_unique<Request>();
+  if (request == nullptr)
+    return E_OUTOFMEMORY;
 
-    memset(request.get(), 0, sizeof(*request));
-    request->command = kConnectAsync;
-    request->end_point = end_point;
-    request->listener = listener;
+  memset(request.get(), 0, sizeof(*request));
+  request->command = Command::kConnectAsync;
+  request->end_point = end_point;
+  request->listener = listener;
 
-    base::AutoLock guard(lock_);
+  base::AutoLock guard(lock_);
 
-    if (work_ == nullptr)
-      return E_HANDLE;
+  abort_ = false;
 
-    abort_ = false;
-
-    queue_.push_back(std::move(request));
-    if (queue_.size() == 1)
-      SubmitThreadpoolWork(work_);
-  } catch (...) {
-    return E_FAIL;
-  }
-
-  return S_OK;
+  return DispatchRequest(std::move(request));
 }
 
 HRESULT SocketChannel::MonitorConnection(Listener* listener) {
   if (listener == nullptr)
     return E_INVALIDARG;
 
+  auto request = std::make_unique<Monitor>(listener);
+  if (request == nullptr)
+    return E_OUTOFMEMORY;
+
+  base::AutoLock guard(lock_);
+
+  if (!connected_)
+    return HRESULT_FROM_WIN32(WSAENOTCONN);
+
+  return DispatchRequest(std::move(request));
+}
+
+HRESULT SocketChannel::DispatchRequest(std::unique_ptr<Request>&& request) {
+  lock_.AssertAcquired();
+
   try {
-    auto request = std::make_unique<Monitor>(listener);
-    if (request == nullptr)
-      return E_OUTOFMEMORY;
-
-    base::AutoLock guard(lock_);
-
-    if (work_ == nullptr || !IsValid() || !connected_)
+    if (work_ == nullptr)
       return E_HANDLE;
 
-    queue_.push_back(std::move(request));
+    queue_.push(std::move(request));
     if (queue_.size() == 1)
       SubmitThreadpoolWork(work_);
-  } catch (...) {
-    return E_FAIL;
-  }
 
-  return S_OK;
+    return S_OK;
+  } catch (...) {
+    return E_UNEXPECTED;
+  }
 }
 
 BOOL SocketChannel::OnInitialize(INIT_ONCE* /*init_once*/, void* /*param*/,
@@ -256,15 +245,15 @@ void SocketChannel::OnRequested(PTP_WORK work) {
   lock_.Acquire();
 
   auto request = std::move(queue_.front());
-  queue_.pop_front();
+  queue_.pop();
   if (!queue_.empty())
     SubmitThreadpoolWork(work);
 
   do {
     base::AutoLock guard(lock_, base::AutoLock::AlreadyAcquired());
 
-    if (request->command == kNotify) {
-      if (request->completed_command != kConnectAsync)
+    if (request->command == Command::kNotify) {
+      if (request->completed_command != Command::kConnectAsync)
         break;
 
       if (SUCCEEDED(request->result)) {
@@ -279,12 +268,12 @@ void SocketChannel::OnRequested(PTP_WORK work) {
       if (request->end_point->ai_next == nullptr)
         break;
 
-      request->command = kConnectAsync;
+      request->command = Command::kConnectAsync;
       request->end_point = request->end_point->ai_next;
       request->result = S_OK;
     }
 
-    if (request->command == kConnectAsync) {
+    if (request->command == Command::kConnectAsync) {
       if (abort_) {
         request->result = E_ABORT;
         break;
@@ -324,25 +313,28 @@ void SocketChannel::OnRequested(PTP_WORK work) {
 
     auto succeeded = false;
     switch (request->command) {
-      case kReadAsync:
-      case kMonitorConnection:
+      case Command::kReadAsync:
+      case Command::kMonitorConnection:
         succeeded = WSARecv(descriptor_, request.get(), 1, nullptr,
                             &request->flags, request.get(), nullptr) == 0;
         break;
 
-      case kWriteAsync:
+      case Command::kWriteAsync:
         succeeded = WSASend(descriptor_, request.get(), 1, nullptr,
                             request->flags, request.get(), nullptr) == 0;
         break;
 
-      case kConnectAsync:
+      case Command::kConnectAsync:
         succeeded = ConnectEx(descriptor_, request->end_point->ai_addr,
                               static_cast<int>(request->end_point->ai_addrlen),
                               nullptr, 0, nullptr, request.get()) != FALSE;
         break;
 
       default:
-        DCHECK(false) << "This must not occur.";
+        LOG(FATAL) << "Invalid command: " << static_cast<int>(request->command);
+        succeeded = false;
+        WSASetLastError(-1);
+        break;
     }
 
     auto error = WSAGetLastError();
@@ -355,60 +347,64 @@ void SocketChannel::OnRequested(PTP_WORK work) {
     request->result = HRESULT_FROM_WIN32(error);
   } while (false);
 
-  if (request->command != kNotify) {
+  if (request->command != Command::kNotify) {
     request->completed_command = request->command;
-    request->command = kNotify;
+    request->command = Command::kNotify;
   }
 
   switch (request->completed_command) {
-    case kReadAsync:
+    case Command::kReadAsync:
       request->channel_listener->OnRead(this, request->result, request->buf,
                                         request->len);
       break;
 
-    case kWriteAsync:
+    case Command::kWriteAsync:
       request->channel_listener->OnWritten(this, request->result, request->buf,
                                            request->len);
       break;
 
-    case kConnectAsync:
+    case Command::kConnectAsync:
       request->listener->OnConnected(this, request->result);
       break;
 
-    case kMonitorConnection:
+    case Command::kMonitorConnection:
       if (SUCCEEDED(request->result) && request->len > 0) {
         static_cast<Monitor*>(request.get())->Reset();
-
         base::AutoLock guard(lock_);
-
-        queue_.push_back(std::move(request));
-        if (queue_.size() == 1)
-          SubmitThreadpoolWork(work);
+        auto result = DispatchRequest(std::move(request));
+        LOG_IF(FATAL, FAILED(result)) << "Unrecoverable Error: 0x" << std::hex
+                                      << result;
       } else {
         request->listener->OnClosed(this, request->result);
       }
       break;
 
     default:
-      DCHECK(false) << "This must not occur.";
+      LOG(FATAL) << "Invalid command: "
+                 << static_cast<int>(request->completed_command);
+      break;
   }
 }
 
 void SocketChannel::OnCompleted(PTP_CALLBACK_INSTANCE /*callback*/,
                                 void* context, void* overlapped, ULONG error,
                                 ULONG_PTR bytes, PTP_IO /*io*/) {
-  std::unique_ptr<Request> request(
-      static_cast<Request*>(static_cast<OVERLAPPED*>(overlapped)));
+  static_cast<SocketChannel*>(context)->OnCompleted(
+      static_cast<OVERLAPPED*>(overlapped), error, bytes);
+}
+
+void SocketChannel::OnCompleted(OVERLAPPED* overlapped, ULONG error,
+                                ULONG_PTR bytes) {
+  auto request = base::WrapUnique(static_cast<Request*>(overlapped));
   request->len = static_cast<ULONG>(bytes);
   request->completed_command = request->command;
-  request->command = kNotify;
+  request->command = Command::kNotify;
   request->result = HRESULT_FROM_WIN32(error);
 
-  auto instance = static_cast<SocketChannel*>(context);
-  base::AutoLock guard(instance->lock_);
-  instance->queue_.push_back(std::move(request));
-  if (instance->queue_.size() == 1)
-    SubmitThreadpoolWork(instance->work_);
+  base::AutoLock guard(lock_);
+  auto result = DispatchRequest(std::move(request));
+  LOG_IF(FATAL, FAILED(result)) << "Unrecoverable Error: 0x" << std::hex
+                                << result;
 }
 
 }  // namespace net

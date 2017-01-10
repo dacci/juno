@@ -5,8 +5,8 @@
 
 #include <base/synchronization/lock.h>
 
-#include <list>
 #include <memory>
+#include <queue>
 
 #include "io/channel.h"
 #include "io/net/socket.h"
@@ -26,7 +26,7 @@ class SocketChannel : public Socket, public Channel {
   };
 
   SocketChannel();
-  virtual ~SocketChannel();
+  ~SocketChannel();
 
   void Close() override;
   HRESULT ReadAsync(void* buffer, int length,
@@ -41,6 +41,8 @@ class SocketChannel : public Socket, public Channel {
   struct Request;
   class Monitor;
 
+  HRESULT DispatchRequest(std::unique_ptr<Request>&& request);
+
   static BOOL CALLBACK OnInitialize(INIT_ONCE* init_once, void* param,
                                     void** context);
 
@@ -51,12 +53,13 @@ class SocketChannel : public Socket, public Channel {
   static void CALLBACK OnCompleted(PTP_CALLBACK_INSTANCE callback,
                                    void* context, void* overlapped, ULONG error,
                                    ULONG_PTR bytes, PTP_IO io);
+  void OnCompleted(OVERLAPPED* overlapped, ULONG error, ULONG_PTR bytes);
 
   static INIT_ONCE init_once_;
 
   base::Lock lock_;
   PTP_WORK work_;
-  std::list<std::unique_ptr<Request>> queue_;
+  std::queue<std::unique_ptr<Request>> queue_;
   PTP_IO io_;
   bool abort_;
 

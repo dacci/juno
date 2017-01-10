@@ -25,7 +25,7 @@ class NamedPipeChannel : public Channel {
                               void* input, void* output, int length) = 0;
   };
 
-  enum EndPoint { kUnknown, kServer, kClient };
+  enum class EndPoint { kUnknown, kServer, kClient };
 
   NamedPipeChannel();
   ~NamedPipeChannel();

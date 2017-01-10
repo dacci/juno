@@ -5,7 +5,8 @@
 
 #include <base/synchronization/lock.h>
 
-#include <list>
+#include <memory>
+#include <queue>
 #include <type_traits>
 
 #include "io/net/server_socket.h"
@@ -27,7 +28,7 @@ class AsyncServerSocket : public ServerSocket {
   };
 
   AsyncServerSocket();
-  virtual ~AsyncServerSocket();
+  ~AsyncServerSocket();
 
   void Close() override;
 
@@ -68,6 +69,7 @@ class AsyncServerSocket : public ServerSocket {
  private:
   static const DWORD kAddressBufferSize = sizeof(sockaddr_storage) + 16;
 
+  HRESULT DispatchRequest(std::unique_ptr<Context>&& request);
   SOCKET EndAcceptImpl(Context* context, HRESULT* result);
 
   static void CALLBACK OnRequested(PTP_CALLBACK_INSTANCE callback,
@@ -77,10 +79,11 @@ class AsyncServerSocket : public ServerSocket {
   static void CALLBACK OnCompleted(PTP_CALLBACK_INSTANCE callback,
                                    void* context, void* overlapped, ULONG error,
                                    ULONG_PTR bytes, PTP_IO io);
+  void OnCompleted(OVERLAPPED* overlapped, ULONG error, ULONG_PTR bytes);
 
   base::Lock lock_;
   PTP_WORK work_;
-  std::list<std::unique_ptr<Context>> queue_;
+  std::queue<std::unique_ptr<Context>> queue_;
   PTP_IO io_;
   WSAPROTOCOL_INFO protocol_;
 

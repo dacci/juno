@@ -2,6 +2,10 @@
 
 #include "io/named_pipe_channel.h"
 
+#include <base/logging.h>
+
+#include <base/memory/ptr_util.h>
+
 #include <string>
 
 namespace juno {
@@ -39,7 +43,7 @@ NamedPipeChannel::NamedPipeChannel()
     : work_(CreateThreadpoolWork(OnRequested, this, nullptr)),
       handle_(INVALID_HANDLE_VALUE),
       io_(nullptr),
-      end_point_(kUnknown) {}
+      end_point_(EndPoint::kUnknown) {}
 
 NamedPipeChannel::~NamedPipeChannel() {
   NamedPipeChannel::Close();
@@ -81,7 +85,7 @@ HRESULT NamedPipeChannel::Create(const base::StringPiece16& name, DWORD mode,
   if (io_ == nullptr)
     return HRESULT_FROM_WIN32(GetLastError());
 
-  end_point_ = kServer;
+  end_point_ = EndPoint::kServer;
 
   return S_OK;
 }
@@ -100,7 +104,7 @@ HRESULT NamedPipeChannel::ConnectAsync(Listener* listener) {
 
   base::AutoLock guard(lock_);
 
-  if (end_point_ != kServer)
+  if (end_point_ != EndPoint::kServer)
     return E_HANDLE;
 
   return DispatchRequest(std::move(request));
@@ -109,7 +113,7 @@ HRESULT NamedPipeChannel::ConnectAsync(Listener* listener) {
 HRESULT NamedPipeChannel::Disconnect() {
   base::AutoLock guard(lock_);
 
-  if (end_point_ != kServer)
+  if (end_point_ != EndPoint::kServer)
     return E_HANDLE;
 
   if (!DisconnectNamedPipe(handle_))
@@ -121,7 +125,7 @@ HRESULT NamedPipeChannel::Disconnect() {
 HRESULT NamedPipeChannel::Impersonate() {
   base::AutoLock guard(lock_);
 
-  if (end_point_ != kServer)
+  if (end_point_ != EndPoint::kServer)
     return E_HANDLE;
 
   if (!ImpersonateNamedPipeClient(handle_))
@@ -151,7 +155,7 @@ HRESULT NamedPipeChannel::Open(const base::StringPiece16& name, DWORD timeout) {
   if (io_ == nullptr)
     return HRESULT_FROM_WIN32(GetLastError());
 
-  end_point_ = kClient;
+  end_point_ = EndPoint::kClient;
 
   return S_OK;
 }
@@ -162,7 +166,7 @@ void NamedPipeChannel::Close() {
   if (handle_ != INVALID_HANDLE_VALUE) {
     CloseHandle(handle_);
     handle_ = INVALID_HANDLE_VALUE;
-    end_point_ = kUnknown;
+    end_point_ = EndPoint::kUnknown;
   }
 
   if (io_ != nullptr) {
@@ -360,16 +364,16 @@ HRESULT NamedPipeChannel::GetClientUserName(wchar_t* user_name,
   if (user_name == nullptr)
     return E_POINTER;
 
-  if (end_point_ != kServer)
+  if (end_point_ != EndPoint::kServer)
     return E_HANDLE;
 
   return GetHandleState(nullptr, nullptr, user_name, user_name_size);
 }
 
 HRESULT NamedPipeChannel::DispatchRequest(std::unique_ptr<Request>&& request) {
-  try {
-    lock_.AssertAcquired();
+  lock_.AssertAcquired();
 
+  try {
     if (work_ == nullptr)
       return E_HANDLE;
 
@@ -513,7 +517,7 @@ void NamedPipeChannel::OnCompleted(PTP_CALLBACK_INSTANCE /*callback*/,
 
 void NamedPipeChannel::OnCompleted(OVERLAPPED* overlapped, ULONG error,
                                    ULONG_PTR bytes) {
-  std::unique_ptr<Request> request(reinterpret_cast<Request*>(overlapped));
+  auto request = base::WrapUnique(static_cast<Request*>(overlapped));
   request->completed_command = request->command;
   request->result = HRESULT_FROM_WIN32(error);
   request->length = static_cast<int>(bytes);
@@ -521,7 +525,8 @@ void NamedPipeChannel::OnCompleted(OVERLAPPED* overlapped, ULONG error,
 
   base::AutoLock guard(lock_);
   auto result = DispatchRequest(std::move(request));
-  LOG_IF(FATAL, FAILED(result));
+  LOG_IF(FATAL, FAILED(result)) << "Unrecoverable Error: 0x" << std::hex
+                                << result;
 }
 
 }  // namespace io
