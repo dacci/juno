@@ -18,9 +18,6 @@
 
 namespace juno {
 namespace service {
-
-class ServiceConfig;
-
 namespace scissors {
 
 class ScissorsConfig;
@@ -32,7 +29,7 @@ class ScissorsDialog : public CDialogImpl<ScissorsDialog>,
  public:
   static const UINT IDD = IDD_SCISSORS;
 
-  explicit ScissorsDialog(ServiceConfig* config);
+  explicit ScissorsDialog(ScissorsConfig* config);
 
   BEGIN_MSG_MAP(ScissorsDialog)
     MSG_WM_INITDIALOG(OnInitDialog)

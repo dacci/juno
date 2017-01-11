@@ -56,14 +56,13 @@ class ServiceManager {
   typedef std::map<std::string, ServicePtr> ServiceMap;
   typedef std::map<std::string, ServerPtr> ServerMap;
 
-  bool LoadService(const misc::RegistryKey& parent,
-                   const std::string& key_name);
+  bool LoadService(const misc::RegistryKey& parent, const std::string& id);
   bool SaveService(const misc::RegistryKey& parent,
                    const ServiceConfigPtr& config);
-  bool CreateService(const std::string& name);
+  bool CreateService(const std::string& id);
 
-  bool LoadServer(const misc::RegistryKey& parent, const std::string& key_name);
-  bool CreateServer(const std::string& name);
+  bool LoadServer(const misc::RegistryKey& parent, const std::string& id);
+  bool CreateServer(const std::string& id);
   static bool SaveServer(const misc::RegistryKey& parent,
                          const ServerConfigPtr& config);
 

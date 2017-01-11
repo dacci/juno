@@ -5,6 +5,7 @@
 #include <memory>
 #include <utility>
 
+#include "misc/string_util.h"
 #include "service/server_config.h"
 #include "ui/preference_dialog.h"
 #include "ui/server_dialog.h"
@@ -29,14 +30,11 @@ void ServersPage::OnPageRelease() {
   delete this;
 }
 
-void ServersPage::AddServerItem(const service::ServerConfigPtr& config,
-                                int index) {
+void ServersPage::AddServerItem(const ServerConfig* config, int index) {
   if (index < 0)
     index = server_list_.GetItemCount();
 
-  CString name(config->name_.c_str());
   CString bind(config->bind_.c_str());
-  CString service_name(config->service_name_.c_str());
 
   CString listen;
   listen.Format(_T("%u"), config->listen_);
@@ -44,9 +42,9 @@ void ServersPage::AddServerItem(const service::ServerConfigPtr& config,
   server_list_.InsertItem(index, bind);
   server_list_.AddItem(index, 1, listen);
   server_list_.AddItem(index, 2, kTypeNames[config->type_ - 1]);
-  server_list_.AddItem(index, 3, service_name);
+  server_list_.AddItem(index, 3, parent_->GetServiceName(config->service_));
   server_list_.SetCheckState(index, config->enabled_);
-  server_list_.SetItemData(index, reinterpret_cast<DWORD_PTR>(config.get()));
+  server_list_.SetItemData(index, reinterpret_cast<DWORD_PTR>(config));
 }
 
 BOOL ServersPage::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
@@ -74,7 +72,7 @@ BOOL ServersPage::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   server_list_.SetColumnWidth(3, 100);
 
   for (auto& config : *configs_)
-    AddServerItem(config.second, -1);
+    AddServerItem(config.second.get(), -1);
 
   edit_button_.EnableWindow(FALSE);
   delete_button_.EnableWindow(FALSE);
@@ -87,12 +85,16 @@ BOOL ServersPage::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
 void ServersPage::OnAddServer(UINT /*notify_code*/, int /*id*/,
                               CWindow /*control*/) {
   auto config = std::make_shared<ServerConfig>();
+  config->enabled_ = TRUE;
+
   ServerDialog dialog(parent_, config.get());
   if (dialog.DoModal(m_hWnd) != IDOK)
     return;
 
-  configs_->insert(std::make_pair(config->name_, config));
-  AddServerItem(config, -1);
+  config->id_ = misc::GenerateGUID();
+
+  configs_->insert({config->id_, config});
+  AddServerItem(config.get(), -1);
   server_list_.SelectItem(server_list_.GetItemCount());
 }
 
@@ -102,17 +104,14 @@ void ServersPage::OnEditServer(UINT /*notify_code*/, int /*id*/,
   if (index == CB_ERR)
     return;
 
-  auto pointer =
+  auto config =
       reinterpret_cast<ServerConfig*>(server_list_.GetItemData(index));
-  ServerDialog dialog(parent_, pointer);
+  ServerDialog dialog(parent_, config);
   if (dialog.DoModal(m_hWnd) != IDOK)
     return;
 
   server_list_.DeleteItem(index);
-
-  auto& config = configs_->at(pointer->name_);
   AddServerItem(config, index);
-
   server_list_.SelectItem(index);
 }
 
@@ -124,9 +123,10 @@ void ServersPage::OnDeleteServer(UINT /*notify_code*/, int /*id*/,
 
   auto config =
       reinterpret_cast<ServerConfig*>(server_list_.GetItemData(index));
-  configs_->erase(config->name_);
 
   server_list_.DeleteItem(index);
+  configs_->erase(config->id_);
+
   server_list_.SelectItem(index);
 }
 

@@ -20,14 +20,14 @@ ServiceConfigPtr HttpProxyProvider::LoadConfig(const misc::RegistryKey& key) {
   return HttpProxyConfig::Load(key);
 }
 
-bool HttpProxyProvider::SaveConfig(const ServiceConfigPtr& config,
+bool HttpProxyProvider::SaveConfig(const ServiceConfig* config,
                                    misc::RegistryKey* key) {
-  return static_cast<HttpProxyConfig*>(config.get())->Save(key);
+  return static_cast<const HttpProxyConfig*>(config)->Save(key);
 }
 
-ServiceConfigPtr HttpProxyProvider::CopyConfig(const ServiceConfigPtr& config) {
+ServiceConfigPtr HttpProxyProvider::CopyConfig(const ServiceConfig* config) {
   return std::make_shared<HttpProxyConfig>(
-      *static_cast<HttpProxyConfig*>(config.get()));
+      *static_cast<const HttpProxyConfig*>(config));
 }
 
 ServicePtr HttpProxyProvider::CreateService(const ServiceConfigPtr& config) {
@@ -41,9 +41,9 @@ ServicePtr HttpProxyProvider::CreateService(const ServiceConfigPtr& config) {
   return std::move(service);
 }
 
-INT_PTR HttpProxyProvider::Configure(const ServiceConfigPtr& config,
-                                     HWND parent) {
-  return ui::HttpProxyDialog(config).DoModal(parent);
+INT_PTR HttpProxyProvider::Configure(ServiceConfig* config, HWND parent) {
+  return ui::HttpProxyDialog(static_cast<HttpProxyConfig*>(config))
+      .DoModal(parent);
 }
 
 }  // namespace http

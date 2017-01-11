@@ -2,9 +2,12 @@
 
 #include "ui/services_page.h"
 
+#include <base/logging.h>
+
 #include <memory>
 #include <utility>
 
+#include "misc/string_util.h"
 #include "service/service_config.h"
 #include "service/service_provider.h"
 #include "ui/preference_dialog.h"
@@ -21,13 +24,14 @@ void ServicesPage::OnPageRelease() {
   delete this;
 }
 
-void ServicesPage::AddServiceItem(const service::ServiceConfigPtr& config,
+void ServicesPage::AddServiceItem(const service::ServiceConfig* config,
                                   int index) {
   if (index == -1)
     index = service_list_.GetItemCount();
 
   service_list_.InsertItem(index, CString(config->name_.c_str()));
-  service_list_.AddItem(index, 1, CString(config->provider_name_.c_str()));
+  service_list_.AddItem(index, 1, CString(config->provider_.c_str()));
+  service_list_.SetItemData(index, reinterpret_cast<DWORD_PTR>(config));
 }
 
 BOOL ServicesPage::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
@@ -46,7 +50,7 @@ BOOL ServicesPage::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   service_list_.SetColumnWidth(1, 90);
 
   for (auto& pair : *configs_)
-    AddServiceItem(pair.second, -1);
+    AddServiceItem(pair.second.get(), -1);
 
   edit_button_.EnableWindow(FALSE);
   delete_button_.EnableWindow(FALSE);
@@ -68,15 +72,16 @@ void ServicesPage::OnAddService(UINT /*notify_code*/, int /*id*/,
     return;
 
   auto config = provider->CreateConfig();
+  config->id_ = misc::GenerateGUID();
   config->name_ = provider_dialog.name();
-  config->provider_name_ = provider_dialog.GetProviderName();
+  config->provider_ = provider_dialog.GetProviderName();
 
-  auto dialog_result = provider->Configure(config, *parent_);
+  auto dialog_result = provider->Configure(config.get(), *parent_);
   if (dialog_result != IDOK)
     return;
 
-  configs_->insert(std::make_pair(config->name_, config));
-  AddServiceItem(config, -1);
+  configs_->insert({config->id_, config});
+  AddServiceItem(config.get(), -1);
   service_list_.SelectItem(service_list_.GetItemCount());
 }
 
@@ -86,14 +91,12 @@ void ServicesPage::OnEditService(UINT /*notify_code*/, int /*id*/,
   if (index == CB_ERR)
     return;
 
-  CString name_unicode;
-  service_list_.GetItemText(index, 0, name_unicode);
+  auto config = reinterpret_cast<service::ServiceConfig*>(
+      service_list_.GetItemData(index));
+  DCHECK(config != nullptr);
 
-  CStringA name(name_unicode);
-  auto& config = configs_->at(name.GetString());
-
-  auto provider = service::ServiceManager::GetInstance()->GetProvider(
-      config->provider_name_);
+  auto provider =
+      service::ServiceManager::GetInstance()->GetProvider(config->provider_);
   if (provider->Configure(config, *parent_) != IDOK)
     return;
 
@@ -108,14 +111,12 @@ void ServicesPage::OnDeleteService(UINT /*notify_code*/, int /*id*/,
   if (index == CB_ERR)
     return;
 
-  CString name_unicode;
-  service_list_.GetItemText(index, 0, name_unicode);
-
-  CStringA name(name_unicode);
-  auto& config = configs_->at(name.GetString());
+  auto config = reinterpret_cast<service::ServiceConfig*>(
+      service_list_.GetItemData(index));
+  DCHECK(config != nullptr);
 
   service_list_.DeleteItem(index);
-  configs_->erase(config->name_);
+  configs_->erase(config->id_);
 
   service_list_.SelectItem(index);
 }

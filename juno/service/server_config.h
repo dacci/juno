@@ -12,35 +12,20 @@
 namespace juno {
 namespace service {
 
-class ServerConfig {
- public:
+struct ServerConfig {
   enum class Protocol {
     kTCP = 1,
     kUDP,
     kTLS,
   };
 
-  ServerConfig() : listen_(), type_(), enabled_(1) {}
-
-  ServerConfig(const ServerConfig& other)
-      : name_(other.name_),
-        bind_(other.bind_),
-        listen_(other.listen_),
-        type_(other.type_),
-        service_name_(other.service_name_),
-        enabled_(other.enabled_),
-        cert_hash_(other.cert_hash_) {}
-
-  std::string name_;
+  std::string id_;
   std::string bind_;
   int listen_;
   int type_;
-  std::string service_name_;
+  std::string service_;
   int enabled_;
   std::vector<uint8_t> cert_hash_;
-
- private:
-  ServerConfig& operator=(const ServerConfig&) = delete;
 };
 
 typedef std::shared_ptr<ServerConfig> ServerConfigPtr;

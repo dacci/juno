@@ -22,13 +22,13 @@ class __declspec(novtable) ServiceProvider {
 
   virtual ServiceConfigPtr CreateConfig() = 0;
   virtual ServiceConfigPtr LoadConfig(const misc::RegistryKey& key) = 0;
-  virtual bool SaveConfig(const ServiceConfigPtr& config,
+  virtual bool SaveConfig(const ServiceConfig* config,
                           misc::RegistryKey* key) = 0;
-  virtual ServiceConfigPtr CopyConfig(const ServiceConfigPtr& config) = 0;
+  virtual ServiceConfigPtr CopyConfig(const ServiceConfig* config) = 0;
 
   virtual ServicePtr CreateService(const ServiceConfigPtr& config) = 0;
 
-  virtual INT_PTR Configure(const ServiceConfigPtr& config, HWND parent) = 0;
+  virtual INT_PTR Configure(ServiceConfig* config, HWND parent) = 0;
 };
 
 typedef std::shared_ptr<ServiceProvider> ServiceProviderPtr;

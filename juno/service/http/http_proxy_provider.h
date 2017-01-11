@@ -15,13 +15,12 @@ class HttpProxyProvider : public ServiceProvider {
 
   ServiceConfigPtr CreateConfig() override;
   ServiceConfigPtr LoadConfig(const misc::RegistryKey& key) override;
-  bool SaveConfig(const ServiceConfigPtr& config,
-                  misc::RegistryKey* key) override;
-  ServiceConfigPtr CopyConfig(const ServiceConfigPtr& config) override;
+  bool SaveConfig(const ServiceConfig* config, misc::RegistryKey* key) override;
+  ServiceConfigPtr CopyConfig(const ServiceConfig* config) override;
 
   ServicePtr CreateService(const ServiceConfigPtr& config) override;
 
-  INT_PTR Configure(const ServiceConfigPtr& config, HWND parent) override;
+  INT_PTR Configure(ServiceConfig* config, HWND parent) override;
 
  private:
   HttpProxyProvider(const HttpProxyProvider&) = delete;

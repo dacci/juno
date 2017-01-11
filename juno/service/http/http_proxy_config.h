@@ -52,7 +52,7 @@ class HttpProxyConfig : public ServiceConfig {
   HttpProxyConfig(const HttpProxyConfig& other);
 
   static std::shared_ptr<HttpProxyConfig> Load(const misc::RegistryKey& key);
-  bool Save(misc::RegistryKey* key);
+  bool Save(misc::RegistryKey* key) const;
 
   void FilterHeaders(HttpHeaders* headers, bool request) const;
   void ProcessAuthenticate(HttpResponse* response, HttpRequest* request);

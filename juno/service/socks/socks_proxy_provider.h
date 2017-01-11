@@ -24,17 +24,16 @@ class SocksProxyProvider : public ServiceProvider {
     return CreateConfig();
   }
 
-  bool SaveConfig(const ServiceConfigPtr& /*config*/,
+  bool SaveConfig(const ServiceConfig* /*config*/,
                   misc::RegistryKey* /*key*/) override {
     return true;
   }
 
-  ServiceConfigPtr CopyConfig(const ServiceConfigPtr& config) override;
+  ServiceConfigPtr CopyConfig(const ServiceConfig* config) override;
 
   ServicePtr CreateService(const ServiceConfigPtr& config) override;
 
-  INT_PTR Configure(const ServiceConfigPtr& /*config*/,
-                    HWND /*parent*/) override {
+  INT_PTR Configure(ServiceConfig* /*config*/, HWND /*parent*/) override {
     return IDOK;
   }
 

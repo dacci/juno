@@ -18,7 +18,7 @@
 namespace juno {
 namespace service {
 
-class ServerConfig;
+struct ServerConfig;
 
 }  // namespace service
 
@@ -31,7 +31,7 @@ class ServerDialog : public DialogImplEx<ServerDialog>,
  public:
   static const UINT IDD = IDD_SERVER;
 
-  ServerDialog(PreferenceDialog* parent, service::ServerConfig* entry);
+  ServerDialog(PreferenceDialog* parent, service::ServerConfig* config);
 
   BEGIN_MSG_MAP(ServerDialog)
     MSG_WM_INITDIALOG(OnInitDialog)
@@ -68,7 +68,7 @@ class ServerDialog : public DialogImplEx<ServerDialog>,
   void OnCancel(UINT notify_code, int id, CWindow control);
 
   PreferenceDialog* const parent_;
-  service::ServerConfig* const entry_;
+  service::ServerConfig* const config_;
 
   CString bind_;
   CComboBox bind_combo_;

@@ -16,13 +16,11 @@
 #include <vector>
 
 #include "res/resource.h"
+
 #include "service/http/http_proxy_config.h"
 
 namespace juno {
 namespace service {
-
-class ServiceConfig;
-
 namespace http {
 namespace ui {
 
@@ -31,7 +29,7 @@ class HttpProxyDialog : public CDialogImpl<HttpProxyDialog>,
  public:
   static const UINT IDD = IDD_HTTP_PROXY;
 
-  explicit HttpProxyDialog(const ServiceConfigPtr& entry);
+  explicit HttpProxyDialog(HttpProxyConfig* config);
 
   BEGIN_MSG_MAP(HttpProxyDialog)
     MSG_WM_INITDIALOG(OnInitDialog)
@@ -80,7 +78,7 @@ class HttpProxyDialog : public CDialogImpl<HttpProxyDialog>,
 
   LRESULT OnFilterListDoubleClicked(LPNMHDR header);
 
-  std::shared_ptr<HttpProxyConfig> config_;
+  HttpProxyConfig* const config_;
   std::vector<HttpProxyConfig::HeaderFilter> filters_;
 
   CButton use_remote_proxy_check_;

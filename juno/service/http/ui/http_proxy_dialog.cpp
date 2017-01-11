@@ -5,6 +5,8 @@
 #include <string>
 
 #include "misc/string_util.h"
+
+#include "service/http/http_proxy_config.h"
 #include "service/http/ui/http_header_filter_dialog.h"
 
 namespace juno {
@@ -20,10 +22,8 @@ const TCHAR* kActions[] = {
 
 }  // namespace
 
-HttpProxyDialog::HttpProxyDialog(const ServiceConfigPtr& entry)
-    : config_(std::static_pointer_cast<HttpProxyConfig>(entry)),
-      filters_(config_->header_filters_),
-      port_(0) {
+HttpProxyDialog::HttpProxyDialog(HttpProxyConfig* config)
+    : config_(config), filters_(config_->header_filters_), port_(0) {
   image_list_.CreateFromImage(IDB_UPDOWN_ARROW, 16, 0, CLR_NONE, 0,
                               LR_CREATEDIBSECTION);
 }

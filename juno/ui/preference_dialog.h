@@ -4,11 +4,14 @@
 #define JUNO_UI_PREFERENCE_DIALOG_H_
 
 #include <atlbase.h>
+#include <atlstr.h>
 #include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atldlgs.h>
+
+#include <string>
 
 #include "service/service_manager.h"
 
@@ -18,6 +21,9 @@ namespace ui {
 class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
  public:
   PreferenceDialog();
+
+  CString GetServiceName(const std::string& id) const;
+  std::string GetServiceId(const CString& name) const;
 
   BEGIN_MSG_MAP(PreferenceDialog)
     MSG_WM_SHOWWINDOW(OnShowWindow)

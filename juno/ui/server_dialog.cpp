@@ -9,7 +9,6 @@
 #include <string>
 
 #include "misc/certificate_store.h"
-#include "misc/string_util.h"
 #include "service/server_config.h"
 #include "ui/preference_dialog.h"
 
@@ -18,8 +17,8 @@ namespace ui {
 
 using ::juno::service::ServerConfig;
 
-ServerDialog::ServerDialog(PreferenceDialog* parent, ServerConfig* entry)
-    : parent_(parent), entry_(entry), listen_(0), enabled_(TRUE) {}
+ServerDialog::ServerDialog(PreferenceDialog* parent, ServerConfig* config)
+    : parent_(parent), config_(config), listen_(0), enabled_(TRUE) {}
 
 void ServerDialog::FillBindCombo() {
   bind_combo_.Clear();
@@ -32,8 +31,12 @@ void ServerDialog::FillBindCombo() {
   auto addresses = static_cast<IP_ADAPTER_ADDRESSES*>(malloc(size));
   auto error = GetAdaptersAddresses(AF_UNSPEC, 0, nullptr, addresses, &size);
   ATLASSERT(error == ERROR_SUCCESS);
-  if (error != ERROR_SUCCESS)
+  if (error != ERROR_SUCCESS) {
+    if (addresses != nullptr)
+      free(addresses);
+
     return;
+  }
 
   for (auto pointer = addresses; pointer; pointer = pointer->Next) {
     for (auto address = pointer->FirstUnicastAddress; address;
@@ -58,14 +61,17 @@ void ServerDialog::FillBindCombo() {
 void ServerDialog::FillServiceCombo() {
   service_combo_.Clear();
 
-  for (auto& service : parent_->service_configs_)
-    service_combo_.AddString(CString(service.first.c_str()));
+  for (auto& service : parent_->service_configs_) {
+    auto config = service.second.get();
+    auto index = service_combo_.AddString(CString(config->name_.c_str()));
+    service_combo_.SetItemDataPtr(index, config);
+  }
 }
 
 BOOL ServerDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
-  bind_ = entry_->bind_.c_str();
-  listen_ = entry_->listen_;
-  enabled_ = entry_->enabled_;
+  bind_ = config_->bind_.c_str();
+  listen_ = config_->listen_;
+  enabled_ = config_->enabled_;
 
   DoDataExchange();
 
@@ -78,12 +84,12 @@ BOOL ServerDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
 
   FillServiceCombo();
 
-  bind_combo_.SetWindowText(CString(entry_->bind_.c_str()));
+  bind_combo_.SetWindowText(CString(config_->bind_.c_str()));
   listen_edit_.SetLimitText(5);
   listen_spin_.SetRange32(0, 65535);
-  type_combo_.SetCurSel(entry_->type_ - 1);
+  type_combo_.SetCurSel(config_->type_ - 1);
 
-  switch (static_cast<ServerConfig::Protocol>(entry_->type_)) {
+  switch (static_cast<ServerConfig::Protocol>(config_->type_)) {
     case ServerConfig::Protocol::kTCP:
     case ServerConfig::Protocol::kUDP:
       detail_button_.EnableWindow(FALSE);
@@ -94,7 +100,7 @@ BOOL ServerDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
       break;
   }
 
-  service_combo_.SelectString(-1, CString(entry_->service_name_.c_str()));
+  service_combo_.SelectString(-1, parent_->GetServiceName(config_->service_));
 
   return TRUE;
 }
@@ -124,12 +130,12 @@ void ServerDialog::OnDetailSetting(UINT /*notify_code*/, int /*id*/,
         break;
 
       DWORD length = 20;
-      entry_->cert_hash_.resize(length);
-      if (CertGetCertificateContextProperty(cert, CERT_HASH_PROP_ID,
-                                            entry_->cert_hash_.data(), &length))
-        entry_->cert_hash_.resize(length);
+      config_->cert_hash_.resize(length);
+      if (CertGetCertificateContextProperty(
+              cert, CERT_HASH_PROP_ID, config_->cert_hash_.data(), &length))
+        config_->cert_hash_.resize(length);
       else
-        entry_->cert_hash_.clear();
+        config_->cert_hash_.clear();
 
       CertFreeCertificateContext(cert);
 
@@ -166,30 +172,21 @@ void ServerDialog::OnOk(UINT /*notify_code*/, int /*id*/, CWindow /*control*/) {
     return;
   }
 
-  if (service_combo_.GetCurSel() == CB_ERR) {
+  auto service_index = service_combo_.GetCurSel();
+  if (service_index == CB_ERR) {
     ShowBalloonTip(service_combo_, IDS_NOT_SPECIFIED);
     return;
   }
 
-  if (entry_->name_.empty()) {
-    entry_->name_ = misc::GenerateGUID();
-    if (entry_->name_.empty()) {
-      TaskDialog(IDR_MAIN_FRAME, nullptr, IDS_ERR_UNEXPECTED, TDCBF_OK_BUTTON,
-                 TD_ERROR_ICON, nullptr);
-      return;
-    }
-  }
+  config_->bind_ = CStringA(bind_);
 
-  entry_->bind_ = CStringA(bind_);
+  auto service = static_cast<service::ServiceConfig*>(
+      service_combo_.GetItemDataPtr(service_index));
+  config_->service_ = service->id_;
 
-  std::string temp;
-  temp.resize(service_combo_.GetWindowTextLength());
-  GetWindowTextA(service_combo_, &temp[0], static_cast<int>(temp.size() + 1));
-  entry_->service_name_ = temp;
-
-  entry_->listen_ = listen_;
-  entry_->type_ = type_combo_.GetCurSel() + 1;
-  entry_->enabled_ = enabled_;
+  config_->listen_ = listen_;
+  config_->type_ = type_combo_.GetCurSel() + 1;
+  config_->enabled_ = enabled_;
 
   EndDialog(IDOK);
 }

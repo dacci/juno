@@ -135,7 +135,7 @@ std::shared_ptr<HttpProxyConfig> HttpProxyConfig::Load(const RegistryKey& key) {
   return config;
 }
 
-bool HttpProxyConfig::Save(RegistryKey* key) {
+bool HttpProxyConfig::Save(RegistryKey* key) const {
   key->SetInteger(kUseRemoteProxy, use_remote_proxy_);
   key->SetString(kRemoteProxyHost, remote_proxy_host_);
   key->SetInteger(kRemoteProxyPort, remote_proxy_port_);
@@ -143,8 +143,9 @@ bool HttpProxyConfig::Save(RegistryKey* key) {
   key->SetString(kRemoteProxyUser, remote_proxy_user_);
 
   if (!remote_proxy_password_.empty()) {
-    DATA_BLOB decrypted{static_cast<DWORD>(remote_proxy_password_.size()),
-                        reinterpret_cast<BYTE*>(&remote_proxy_password_[0])};
+    auto password = remote_proxy_password_;
+    DATA_BLOB decrypted{static_cast<DWORD>(password.size()),
+                        reinterpret_cast<BYTE*>(&password[0])};
     DATA_BLOB encrypted{};
 
     if (CryptProtectData(&decrypted, nullptr, nullptr, nullptr, nullptr, 0,

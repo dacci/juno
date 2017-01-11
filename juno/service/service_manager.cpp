@@ -12,6 +12,7 @@
 #include "io/secure_channel.h"
 #include "misc/certificate_store.h"
 #include "misc/registry_key-inl.h"
+#include "misc/string_util.h"
 #include "service/service.h"
 #include "service/tcp_server.h"
 #include "service/udp_server.h"
@@ -27,6 +28,7 @@ namespace {
 const char kConfigKeyName[] = "Software\\dacci.org\\Juno";
 const char kServicesKeyName[] = "Services";
 const char kServersKeyName[] = "Servers";
+const char kNameValueName[] = "Name";
 const char kProviderValueName[] = "Provider";
 const char kEnabledValueName[] = "Enabled";
 const char kServiceValueName[] = "Service";
@@ -61,7 +63,7 @@ ServiceManager::ServiceManager() : root_key_(NULL) {
                                                  : HKEY_CURRENT_USER;
 
 #define PROVIDER_ENTRY(key, ns) \
-  providers_.insert(std::make_pair(#key, std::make_shared<ns::key##Provider>()))
+  providers_.insert({#key, std::make_shared<ns::key##Provider>()})
 
   PROVIDER_ENTRY(HttpProxy, service::http);
   PROVIDER_ENTRY(SocksProxy, service::socks);
@@ -182,21 +184,24 @@ ServiceConfigPtr ServiceManager::GetServiceConfig(
 void ServiceManager::CopyServiceConfigs(ServiceConfigMap* configs) const {
   for (auto& pair : service_configs_) {
     auto copy =
-        providers_.at(pair.second->provider_name_)->CopyConfig(pair.second);
-    configs->insert(std::make_pair(pair.first, std::move(copy)));
+        providers_.at(pair.second->provider_)->CopyConfig(pair.second.get());
+    configs->insert({pair.first, std::move(copy)});
   }
 }
 
 void ServiceManager::CopyServerConfigs(ServerConfigMap* configs) const {
   for (auto& pair : server_configs_) {
     auto copy = std::make_shared<ServerConfig>(*pair.second);
-    configs->insert(std::make_pair(pair.first, std::move(copy)));
+    configs->insert({pair.first, std::move(copy)});
   }
 }
 
 bool ServiceManager::UpdateConfiguration(
     ServiceConfigMap&& new_services,  // NOLINT(whitespace/operators)
     ServerConfigMap&& new_servers) {  // NOLINT(whitespace/operators)
+  if (SHDeleteKeyA(root_key_, kConfigKeyName) != ERROR_SUCCESS)
+    return false;
+
   RegistryKey config_key;
   if (!config_key.Create(root_key_, kConfigKeyName))
     return false;
@@ -217,20 +222,14 @@ bool ServiceManager::UpdateConfiguration(
   for (auto i = service_configs_.begin(), l = service_configs_.end(); i != l;) {
     auto updated = new_services.find(i->first);
     if (updated == new_services.end() ||
-        service_configs_[i->first]->provider_name_ !=
-            updated->second->provider_name_) {
-      if (services_key.DeleteKey(i->first.c_str())) {
-        services_.at(i->first)->Stop();
-        services_.erase(i->first);
+        service_configs_[i->first]->provider_ != updated->second->provider_) {
+      services_.at(i->first)->Stop();
+      services_.erase(i->first);
 
-        service_configs_.erase(i++);
-        continue;
-      }
-
-      succeeded = false;
+      service_configs_.erase(i++);
+    } else {
+      ++i;
     }
-
-    ++i;
   }
 
   // added or updated services
@@ -257,14 +256,10 @@ bool ServiceManager::UpdateConfiguration(
   // removed servers
   for (auto i = server_configs_.begin(), l = server_configs_.end(); i != l;) {
     auto updated = new_servers.find(i->first);
-    if (updated == new_servers.end()) {
-      if (servers_key.DeleteKey(i->first.c_str())) {
-        server_configs_.erase(i++);
-        continue;
-      }
-    }
-
-    ++i;
+    if (updated == new_servers.end())
+      server_configs_.erase(i++);
+    else
+      ++i;
   }
 
   // added or updated servers
@@ -294,9 +289,9 @@ bool ServiceManager::UpdateConfiguration(
 }
 
 bool ServiceManager::LoadService(const RegistryKey& parent,
-                                 const std::string& key_name) {
+                                 const std::string& id) {
   RegistryKey reg_key;
-  if (!reg_key.Open(parent, key_name))
+  if (!reg_key.Open(parent, id))
     return false;
 
   std::string provider_name;
@@ -311,53 +306,72 @@ bool ServiceManager::LoadService(const RegistryKey& parent,
   if (config == nullptr)
     return false;
 
-  config->name_ = key_name;
-  config->provider_name_ = provider_name;
+  // convert name to GUID
+  if (reg_key.QueryString(kNameValueName, &config->name_)) {
+    config->id_ = id;
+  } else {
+    config->id_ = misc::GenerateGUID();
+    config->name_ = id;
+  }
 
-  service_configs_.insert(std::make_pair(key_name, config));
+  config->provider_ = provider_name;
 
-  return CreateService(key_name);
+  service_configs_.insert({config->id_, config});
+
+  return CreateService(config->id_);
 }
 
 bool ServiceManager::SaveService(const RegistryKey& parent,
                                  const ServiceConfigPtr& config) {
   RegistryKey service_key;
-  if (!service_key.Create(parent, config->name_))
+  if (!service_key.Create(parent, config->id_))
     return false;
 
-  if (!service_key.SetString(kProviderValueName, config->provider_name_))
+  if (!service_key.SetString(kNameValueName, config->name_) ||
+      !service_key.SetString(kProviderValueName, config->provider_))
     return false;
 
-  return providers_.at(config->provider_name_)
-      ->SaveConfig(config, &service_key);
+  return providers_.at(config->provider_)
+      ->SaveConfig(config.get(), &service_key);
 }
 
-bool ServiceManager::CreateService(const std::string& name) {
-  DCHECK(service_configs_.find(name) != service_configs_.end());
-  auto& config = service_configs_.at(name);
-  auto service = providers_.at(config->provider_name_)->CreateService(config);
+bool ServiceManager::CreateService(const std::string& id) {
+  DCHECK(service_configs_.find(id) != service_configs_.end());
+
+  auto& config = service_configs_.at(id);
+  auto service = providers_.at(config->provider_)->CreateService(config);
   if (service == nullptr)
     return false;
 
-  services_.insert(std::make_pair(name, std::move(service)));
+  services_.insert({id, std::move(service)});
 
   return true;
 }
 
 bool ServiceManager::LoadServer(const RegistryKey& parent,
-                                const std::string& key_name) {
+                                const std::string& id) {
   RegistryKey reg_key;
-  if (!reg_key.Open(parent, key_name))
+  if (!reg_key.Open(parent, id))
     return false;
 
   auto config = std::make_shared<ServerConfig>();
-  config->name_ = key_name;
+  config->id_ = id;
 
   reg_key.QueryString(kBindValueName, &config->bind_);
   reg_key.QueryInteger(kListenValueName, &config->listen_);
   reg_key.QueryInteger(kTypeValueName, &config->type_);
-  reg_key.QueryString(kServiceValueName, &config->service_name_);
+  reg_key.QueryString(kServiceValueName, &config->service_);
   reg_key.QueryInteger(kEnabledValueName, &config->enabled_);
+
+  // convert name to GUID
+  if (service_configs_.find(config->service_) == service_configs_.end()) {
+    for (const auto& pair : service_configs_) {
+      if (pair.second->name_ == config->service_) {
+        config->service_ = pair.second->id_;
+        break;
+      }
+    }
+  }
 
   auto length = 20;
   config->cert_hash_.resize(length);
@@ -365,21 +379,21 @@ bool ServiceManager::LoadServer(const RegistryKey& parent,
                       &length);
   config->cert_hash_.resize(length);
 
-  server_configs_.insert(std::make_pair(key_name, config));
+  server_configs_.insert({id, config});
 
-  return CreateServer(key_name);
+  return CreateServer(config->id_);
 }
 
-bool ServiceManager::CreateServer(const std::string& name) {
-  DCHECK(server_configs_.find(name) != server_configs_.end());
+bool ServiceManager::CreateServer(const std::string& id) {
+  DCHECK(server_configs_.find(id) != server_configs_.end());
 
-  auto& config = server_configs_.at(name);
+  auto& config = server_configs_.at(id);
   DCHECK(config != nullptr);
 
   if (!config->enabled_)
     return true;
 
-  auto service = services_.find(config->service_name_);
+  auto service = services_.find(config->service_);
   if (service == services_.end())
     return false;
 
@@ -439,7 +453,7 @@ bool ServiceManager::CreateServer(const std::string& name) {
 
   server->SetService(service->second.get());
 
-  servers_.insert(std::make_pair(name, std::move(server)));
+  servers_.insert({id, std::move(server)});
 
   return true;
 }
@@ -447,13 +461,13 @@ bool ServiceManager::CreateServer(const std::string& name) {
 bool ServiceManager::SaveServer(const RegistryKey& parent,
                                 const ServerConfigPtr& config) {
   RegistryKey key;
-  if (!key.Create(parent, config->name_))
+  if (!key.Create(parent, config->id_))
     return false;
 
   key.SetString(kBindValueName, config->bind_);
   key.SetInteger(kListenValueName, config->listen_);
   key.SetInteger(kTypeValueName, config->type_);
-  key.SetString(kServiceValueName, config->service_name_);
+  key.SetString(kServiceValueName, config->service_);
   key.SetInteger(kEnabledValueName, config->enabled_);
   key.SetBinary(kCertificateValueName, config->cert_hash_.data(),
                 static_cast<int>(config->cert_hash_.size()));

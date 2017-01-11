@@ -14,8 +14,9 @@ class ServiceConfig {
   // ServiceConfig(const ServiceConfig& other) = default;
   virtual ~ServiceConfig() {}
 
+  std::string id_;
   std::string name_;
-  std::string provider_name_;
+  std::string provider_;
 };
 
 typedef std::shared_ptr<ServiceConfig> ServiceConfigPtr;

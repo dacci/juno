@@ -59,7 +59,7 @@ class ServicesPage : public CPropertyPageImpl<ServicesPage>,
   END_DDX_MAP()
 
  private:
-  void AddServiceItem(const service::ServiceConfigPtr& config, int index);
+  void AddServiceItem(const service::ServiceConfig* config, int index);
 
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 

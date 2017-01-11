@@ -19,7 +19,7 @@
 namespace juno {
 namespace service {
 
-class ServerConfig;
+struct ServerConfig;
 
 }  // namespace service
 
@@ -57,7 +57,7 @@ class ServersPage : public CPropertyPageImpl<ServersPage>,
   END_DDX_MAP()
 
  private:
-  void AddServerItem(const service::ServerConfigPtr& entry, int index);
+  void AddServerItem(const service::ServerConfig* config, int index);
 
   BOOL OnInitDialog(CWindow focus, LPARAM init_param);
 

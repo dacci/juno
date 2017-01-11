@@ -11,8 +11,8 @@ namespace service {
 namespace scissors {
 namespace ui {
 
-ScissorsDialog::ScissorsDialog(ServiceConfig* config)
-    : config_(static_cast<ScissorsConfig*>(config)), port_(0) {}
+ScissorsDialog::ScissorsDialog(ScissorsConfig* config)
+    : config_(config), port_(0) {}
 
 BOOL ScissorsDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   port_ = config_->remote_port();
