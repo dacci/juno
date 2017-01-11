@@ -74,7 +74,8 @@ void CALLBACK HttpProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE /*instance*/,
 
 void HttpProxy::EndSessionImpl(HttpProxySession* session) {
   std::unique_ptr<HttpProxySession> removed;
-  base::AutoLock guard(lock_);
+
+  lock_.Acquire();
 
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
     if (i->get() == session) {
@@ -87,6 +88,10 @@ void HttpProxy::EndSessionImpl(HttpProxySession* session) {
       break;
     }
   }
+
+  lock_.Release();
+
+  removed.reset();
 }
 
 }  // namespace http

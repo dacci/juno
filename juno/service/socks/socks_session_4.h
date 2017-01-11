@@ -3,6 +3,7 @@
 #ifndef JUNO_SERVICE_SOCKS_SOCKS_SESSION_4_H_
 #define JUNO_SERVICE_SOCKS_SOCKS_SESSION_4_H_
 
+#include <memory>
 #include <string>
 
 #include "io/net/socket_channel.h"

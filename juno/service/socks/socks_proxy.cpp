@@ -146,18 +146,24 @@ void CALLBACK SocksProxy::EndSessionImpl(PTP_CALLBACK_INSTANCE /*instance*/,
 
 void SocksProxy::EndSessionImpl(SocksSession* session) {
   std::unique_ptr<SocksSession> removed;
-  base::AutoLock guard(lock_);
+
+  lock_.Acquire();
 
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
     if (i->get() == session) {
       removed = std::move(*i);
       sessions_.erase(i);
       CheckEmpty();
-      return;
+      break;
     }
   }
 
-  DLOG(WARNING) << "Session not found.";
+  lock_.Release();
+
+  if (removed == nullptr)
+    DLOG(WARNING) << "Session not found.";
+
+  removed.reset();
 }
 
 }  // namespace socks

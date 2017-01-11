@@ -121,19 +121,20 @@ class CryptProvider {
     };
 
     HCRYPTHASH hash = NULL;
-    if (CryptCreateHash(handle_, algorithm, NULL, 0, &hash))
-      return std::make_unique<Wrapper>(hash);
-    else
+    if (!CryptCreateHash(handle_, algorithm, NULL, 0, &hash))
       return nullptr;
+
+    return std::make_unique<Wrapper>(hash);
   }
 
   std::unique_ptr<BYTE[]> GenerateRandom(DWORD length) {
     auto random = std::make_unique<BYTE[]>(length);
-    if (random) {
-      auto succeeded = CryptGenRandom(handle_, length, random.get());
-      if (!succeeded)
-        random.reset(nullptr);
-    }
+    if (random == nullptr)
+      return nullptr;
+
+    auto succeeded = CryptGenRandom(handle_, length, random.get());
+    if (!succeeded)
+      return nullptr;
 
     return random;
   }

@@ -84,7 +84,8 @@ void CALLBACK TcpServer::DeleteServerImpl(PTP_CALLBACK_INSTANCE /*instance*/,
 
 void TcpServer::DeleteServerImpl(AsyncServerSocket* server) {
   std::unique_ptr<AsyncServerSocket> removed;
-  base::AutoLock guard(lock_);
+
+  lock_.Acquire();
 
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
     if (i->get() == server) {
@@ -97,6 +98,10 @@ void TcpServer::DeleteServerImpl(AsyncServerSocket* server) {
       break;
     }
   }
+
+  lock_.Release();
+
+  removed.reset();
 }
 
 void TcpServer::OnAccepted(AsyncServerSocket* server, HRESULT result,

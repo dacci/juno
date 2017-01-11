@@ -11,6 +11,7 @@
 #pragma warning(disable : 4244)
 #include <base/files/file_path.h>
 #include <base/files/file_util.h>
+#include <base/win/scoped_handle.h>
 #pragma warning(pop)
 
 #include <url/url_util.h>
@@ -22,6 +23,33 @@
 
 namespace juno {
 namespace app {
+namespace {
+
+class ServiceHandleTraits {
+ public:
+  typedef SC_HANDLE Handle;
+
+  static bool CloseHandle(Handle handle) {
+    return CloseServiceHandle(handle) != FALSE;
+  }
+
+  static bool IsHandleValid(Handle handle) {
+    return handle != NULL;
+  }
+
+  static Handle NullHandle() {
+    return NULL;
+  }
+
+ private:
+  DISALLOW_IMPLICIT_CONSTRUCTORS(ServiceHandleTraits);
+};
+
+typedef base::win::GenericScopedHandle<ServiceHandleTraits,
+                                       base::win::VerifierTraits>
+    ScopedServiceHandle;
+
+}  // namespace
 
 Application::Application()
     : service_mode_(false),
@@ -45,20 +73,19 @@ Application::~Application() {
 HRESULT Application::InstallService() {
   HRESULT result;
 
-  SC_HANDLE manager = NULL;
-  SC_HANDLE service = NULL;
-
   do {
-    manager = OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
-    if (manager == NULL) {
+    ScopedServiceHandle manager(
+        OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
+    if (!manager.IsValid()) {
       result = HRESULT_FROM_WIN32(GetLastError());
       LOG(ERROR) << "Failed to open service control manager: 0x" << std::hex
                  << result;
       break;
     }
 
-    service = OpenService(manager, kServiceName, SERVICE_ALL_ACCESS);
-    if (service != NULL) {
+    ScopedServiceHandle service(
+        OpenService(manager.Get(), kServiceName, SERVICE_ALL_ACCESS));
+    if (service.IsValid()) {
       result = S_FALSE;
       LOG(INFO) << "Service already installed.";
       break;
@@ -72,12 +99,12 @@ HRESULT Application::InstallService() {
     base::CommandLine service_command(path);
     service_command.AppendSwitch(switches::kService);
 
-    service = CreateServiceW(manager, kServiceName, kServiceName,
-                             SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS,
-                             SERVICE_DEMAND_START, SERVICE_ERROR_IGNORE,
-                             service_command.GetCommandLineString().c_str(),
-                             nullptr, nullptr, L"tcpip\0", nullptr, nullptr);
-    if (service == NULL) {
+    service.Set(CreateServiceW(manager.Get(), kServiceName, kServiceName,
+                               SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS,
+                               SERVICE_DEMAND_START, SERVICE_ERROR_IGNORE,
+                               service_command.GetCommandLineString().c_str(),
+                               nullptr, nullptr, L"tcpip\0", nullptr, nullptr));
+    if (!service.IsValid()) {
       result = HRESULT_FROM_WIN32(GetLastError());
       LOG(ERROR) << "Failed to create service: 0x" << std::hex << result;
       break;
@@ -102,45 +129,31 @@ HRESULT Application::InstallService() {
     result = S_OK;
   } while (false);
 
-  if (service != NULL) {
-    if (FAILED(result))
-      DeleteService(service);
-
-    CloseServiceHandle(service);
-    service = NULL;
-  }
-
-  if (manager != NULL) {
-    CloseServiceHandle(manager);
-    service = NULL;
-  }
-
   return result;
 }
 
 HRESULT Application::UninstallService() {
   HRESULT result;
 
-  SC_HANDLE manager = NULL;
-  SC_HANDLE service = NULL;
-
   do {
-    manager = OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS);
-    if (manager == NULL) {
+    ScopedServiceHandle manager(
+        OpenSCManager(nullptr, nullptr, SC_MANAGER_ALL_ACCESS));
+    if (!manager.IsValid()) {
       result = HRESULT_FROM_WIN32(GetLastError());
       LOG(ERROR) << "Failed to open service control manager: 0x" << std::hex
                  << result;
       break;
     }
 
-    service = OpenService(manager, kServiceName, SERVICE_ALL_ACCESS);
-    if (service == NULL) {
+    ScopedServiceHandle service(
+        OpenService(manager.Get(), kServiceName, SERVICE_ALL_ACCESS));
+    if (!service.IsValid()) {
       result = HRESULT_FROM_WIN32(GetLastError());
       LOG(INFO) << "Failed to open service: 0x" << std::hex << result;
       break;
     }
 
-    if (!DeleteService(service)) {
+    if (!DeleteService(service.Get())) {
       result = HRESULT_FROM_WIN32(GetLastError());
       LOG(ERROR) << "Failed to delete service: 0x" << std::hex << result;
       break;
@@ -160,16 +173,6 @@ HRESULT Application::UninstallService() {
 
     result = S_OK;
   } while (false);
-
-  if (service != NULL) {
-    CloseServiceHandle(service);
-    service = NULL;
-  }
-
-  if (manager != NULL) {
-    CloseServiceHandle(manager);
-    service = NULL;
-  }
 
   return result;
 }

@@ -150,7 +150,8 @@ void CALLBACK Scissors::EndSessionImpl(PTP_CALLBACK_INSTANCE /*instance*/,
 
 void Scissors::EndSessionImpl(Session* session) {
   std::unique_ptr<Session> removed;
-  base::AutoLock guard(lock_);
+
+  lock_.Acquire();
 
   for (auto i = sessions_.begin(), l = sessions_.end(); i != l; ++i) {
     if (i->get() == session) {
@@ -170,6 +171,10 @@ void Scissors::EndSessionImpl(Session* session) {
       break;
     }
   }
+
+  lock_.Release();
+
+  removed.reset();
 }
 
 void Scissors::OnAccepted(const io::ChannelPtr& client) {

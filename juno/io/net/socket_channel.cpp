@@ -311,7 +311,7 @@ void SocketChannel::OnRequested(PTP_WORK work) {
 
     StartThreadpoolIo(io_);
 
-    auto succeeded = false;
+    bool succeeded;
     switch (request->command) {
       case Command::kReadAsync:
       case Command::kMonitorConnection:

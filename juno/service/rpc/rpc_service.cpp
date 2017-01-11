@@ -224,13 +224,13 @@ void RpcService::OnRead(io::Channel* channel, HRESULT result, void* memory,
 void RpcService::OnWritten(io::Channel* channel, HRESULT result, void* memory,
                            int /*length*/) {
   auto pipe = static_cast<io::NamedPipeChannel*>(channel);
-  std::unique_ptr<char[]> buffer(static_cast<char*>(memory));
+  static_cast<std::unique_ptr<char[]>>(static_cast<char*>(memory));
 
   do {
     if (FAILED(result)) {
       LOG(ERROR) << "Failed to write: 0x" << std::hex << result;
     } else {
-      buffer = std::make_unique<char[]>(kBufferSize);
+      auto buffer = std::make_unique<char[]>(kBufferSize);
       if (buffer == nullptr) {
         LOG(ERROR) << "Failed to allocate buffer.";
         break;

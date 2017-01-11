@@ -146,11 +146,16 @@ void UdpServer::DeleteServerImpl(DatagramChannel* server) {
 
   lock_.Acquire();
 
+  for (auto i = buffers_.begin(), l = buffers_.end(); i != l; ++i) {
+    if (i->first == server) {
+      removed_buffer = std::move(i->second);
+      buffers_.erase(i);
+      break;
+    }
+  }
+
   for (auto i = servers_.begin(), l = servers_.end(); i != l; ++i) {
     if (i->get() == server) {
-      removed_buffer = std::move(buffers_.at(server));
-      buffers_.erase(server);
-
       removed_server = std::move(*i);
       servers_.erase(i);
 
@@ -165,6 +170,9 @@ void UdpServer::DeleteServerImpl(DatagramChannel* server) {
 
   if (removed_server != nullptr)
     removed_server->Close();
+
+  removed_server.reset();
+  removed_buffer.reset();
 }
 
 }  // namespace service

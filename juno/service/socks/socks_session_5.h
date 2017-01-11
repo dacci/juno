@@ -5,6 +5,7 @@
 
 #include "service/socks/socks_proxy.h"
 
+#include <memory>
 #include <string>
 
 #include "io/net/socket_channel.h"
