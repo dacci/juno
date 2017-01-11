@@ -2,8 +2,6 @@
 
 #include "service/http/http_proxy_session.h"
 
-#include <assert.h>
-
 #include <base/logging.h>
 
 #include <url/gurl.h>

@@ -494,12 +494,12 @@ HRESULT Application::RunService() const {
 }
 
 void Application::ServiceMain(DWORD /*argc*/, LPTSTR* /*argv*/) {
-  static_cast<Application*>(_pAtlModule)->ServiceMain();
+  GetApplication()->ServiceMain();
 }
 
 void Application::ServiceMain() {
   status_handle_ =
-      RegisterServiceCtrlHandlerEx(kServiceName, ServiceHandler, this);
+      RegisterServiceCtrlHandlerEx(kServiceName, ServiceHandler, nullptr);
   if (status_handle_ == NULL) {
     LOG(ERROR) << "Failed to register service ctrl handler: 0x" << std::hex
                << GetLastError();
@@ -538,9 +538,8 @@ void Application::ServiceMain() {
 }
 
 DWORD Application::ServiceHandler(DWORD control, DWORD type, void* data,
-                                  void* context) {
-  return static_cast<Application*>(context)->ServiceHandler(control, type,
-                                                            data);
+                                  void* /*context*/) {
+  return GetApplication()->ServiceHandler(control, type, data);
 }
 
 DWORD Application::ServiceHandler(DWORD control, DWORD /*type*/,

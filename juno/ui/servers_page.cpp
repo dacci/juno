@@ -2,8 +2,6 @@
 
 #include "ui/servers_page.h"
 
-#include <assert.h>
-
 #include <memory>
 #include <utility>
 

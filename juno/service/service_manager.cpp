@@ -2,8 +2,6 @@
 
 #include "service/service_manager.h"
 
-#include <assert.h>
-
 #include <base/logging.h>
 
 #include <memory>
@@ -335,7 +333,7 @@ bool ServiceManager::SaveService(const RegistryKey& parent,
 }
 
 bool ServiceManager::CreateService(const std::string& name) {
-  assert(service_configs_.find(name) != service_configs_.end());
+  DCHECK(service_configs_.find(name) != service_configs_.end());
   auto& config = service_configs_.at(name);
   auto service = providers_.at(config->provider_name_)->CreateService(config);
   if (service == nullptr)
@@ -373,10 +371,10 @@ bool ServiceManager::LoadServer(const RegistryKey& parent,
 }
 
 bool ServiceManager::CreateServer(const std::string& name) {
-  assert(server_configs_.find(name) != server_configs_.end());
+  DCHECK(server_configs_.find(name) != server_configs_.end());
 
   auto& config = server_configs_.at(name);
-  assert(config != nullptr);
+  DCHECK(config != nullptr);
 
   if (!config->enabled_)
     return true;

@@ -2,9 +2,9 @@
 
 #include "ui/server_dialog.h"
 
-#include <assert.h>
-
 #include <iphlpapi.h>
+
+#include <base/logging.h>
 
 #include <string>
 
@@ -115,7 +115,8 @@ void ServerDialog::OnTypeChange(UINT /*notify_code*/, int /*id*/,
 
 void ServerDialog::OnDetailSetting(UINT /*notify_code*/, int /*id*/,
                                    CWindow /*control*/) {
-  switch (static_cast<ServerConfig::Protocol>(type_combo_.GetCurSel() + 1)) {
+  auto protocol = type_combo_.GetCurSel() + 1;
+  switch (static_cast<ServerConfig::Protocol>(protocol)) {
     case ServerConfig::Protocol::kTLS: {
       misc::CertificateStore store(L"MY");
       auto cert = store.SelectCertificate(m_hWnd, nullptr, nullptr, 0);
@@ -136,7 +137,8 @@ void ServerDialog::OnDetailSetting(UINT /*notify_code*/, int /*id*/,
     }
 
     default:
-      assert(false);
+      DLOG(FATAL) << "Invalid protocol: " << protocol;
+      break;
   }
 }
 
