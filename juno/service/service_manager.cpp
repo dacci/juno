@@ -9,10 +9,13 @@
 #include <vector>
 
 #include "app/application.h"
+#include "app/constants.h"
 #include "io/secure_channel.h"
 #include "misc/certificate_store.h"
 #include "misc/registry_key-inl.h"
 #include "misc/string_util.h"
+#include "service/rpc/rpc_common.h"
+#include "service/rpc/rpc_service.h"
 #include "service/service.h"
 #include "service/tcp_server.h"
 #include "service/udp_server.h"
@@ -28,14 +31,25 @@ namespace {
 const char kConfigKeyName[] = "Software\\dacci.org\\Juno";
 const char kServicesKeyName[] = "Services";
 const char kServersKeyName[] = "Servers";
+
 const char kNameValueName[] = "Name";
 const char kProviderValueName[] = "Provider";
-const char kEnabledValueName[] = "Enabled";
-const char kServiceValueName[] = "Service";
-const char kListenValueName[] = "Listen";
 const char kBindValueName[] = "Bind";
+const char kListenValueName[] = "Listen";
 const char kTypeValueName[] = "Type";
+const char kServiceValueName[] = "Service";
+const char kEnabledValueName[] = "Enabled";
 const char kCertificateValueName[] = "Certificate";
+
+const char kIdJson[] = "id";
+const char kNameJson[] = "name";
+const char kProviderJson[] = "provider";
+const char kBindJson[] = "bind";
+const char kListenJson[] = "listen";
+const char kTypeJson[] = "type";
+const char kServiceJson[] = "service";
+const char kEnabledJson[] = "enabled";
+const char kCertificateJson[] = "certificate";
 
 class SecureChannelCustomizer : public TcpServer::ChannelCustomizer {
  public:
@@ -70,11 +84,23 @@ ServiceManager::ServiceManager() : root_key_(NULL) {
   PROVIDER_ENTRY(Scissors, service::scissors);
 
 #undef PROVIDER_ENTRY
+
+  auto rpc_service = app::GetApplication()->GetRpcService();
+  if (rpc_service != nullptr) {
+    rpc_service->RegisterMethod(kConfigGetMethod, GetConfig, this);
+    rpc_service->RegisterMethod(kConfigSetMethod, SetConfig, this);
+  }
 }
 
 ServiceManager::~ServiceManager() {
   StopServers();
   StopServices();
+
+  auto rpc_service = app::GetApplication()->GetRpcService();
+  if (rpc_service != nullptr) {
+    rpc_service->UnregisterMethod(kConfigGetMethod);
+    rpc_service->UnregisterMethod(kConfigSetMethod);
+  }
 }
 
 bool ServiceManager::LoadServices() {
@@ -263,6 +289,56 @@ bool ServiceManager::UpdateConfiguration(
   return succeeded;
 }
 
+std::unique_ptr<base::DictionaryValue> ServiceManager::ConvertConfig(
+    const ServerConfig* config) {
+  if (config == nullptr)
+    return nullptr;
+
+  auto value = std::make_unique<base::DictionaryValue>();
+  if (value == nullptr)
+    return nullptr;
+
+  value->SetString(kIdJson, config->id_);
+  value->SetString(kBindJson, config->bind_);
+  value->SetInteger(kListenJson, config->listen_);
+  value->SetInteger(kTypeJson, config->type_);
+  value->SetString(kServiceJson, config->service_);
+  value->SetInteger(kEnabledJson, config->enabled_);
+
+  if (!config->cert_hash_.empty()) {
+    auto cert_hash = base::BinaryValue::CreateWithCopiedBuffer(
+        config->cert_hash_.data(), config->cert_hash_.size());
+    if (cert_hash != nullptr)
+      value->Set(kCertificateJson, std::move(cert_hash));
+  }
+
+  return std::move(value);
+}
+
+std::unique_ptr<ServerConfig> ServiceManager::ConvertConfig(
+    const base::DictionaryValue* value) {
+  if (value == nullptr)
+    return nullptr;
+
+  auto config = std::make_unique<ServerConfig>();
+  if (config == nullptr)
+    return nullptr;
+
+  value->GetString(kIdJson, &config->id_);
+  value->GetString(kBindJson, &config->bind_);
+  value->GetInteger(kListenJson, &config->listen_);
+  value->GetInteger(kTypeJson, &config->type_);
+  value->GetString(kServiceJson, &config->service_);
+  value->GetInteger(kEnabledJson, &config->enabled_);
+
+  const base::BinaryValue* cert_hash;
+  if (value->GetBinary(kCertificateJson, &cert_hash) &&
+      cert_hash->GetSize() > 0)
+    config->cert_hash_.assign(cert_hash->GetBuffer(), cert_hash->GetSize());
+
+  return std::move(config);
+}
+
 bool ServiceManager::LoadService(const RegistryKey& parent,
                                  const std::string& id) {
   RegistryKey reg_key;
@@ -350,8 +426,7 @@ bool ServiceManager::LoadServer(const RegistryKey& parent,
 
   auto length = 20;
   config->cert_hash_.resize(length);
-  reg_key.QueryBinary(kCertificateValueName, config->cert_hash_.data(),
-                      &length);
+  reg_key.QueryBinary(kCertificateValueName, &config->cert_hash_[0], &length);
   config->cert_hash_.resize(length);
 
   server_configs_.insert({id, std::move(config)});
@@ -391,8 +466,9 @@ bool ServiceManager::CreateServer(const std::string& id) {
       credential.SetEnabledProtocols(SP_PROT_SSL3TLS1_X_SERVERS);
       credential.SetFlags(SCH_CRED_MANUAL_CRED_VALIDATION);
 
-      CRYPT_HASH_BLOB hash_blob{static_cast<DWORD>(config->cert_hash_.size()),
-                                config->cert_hash_.data()};
+      CRYPT_HASH_BLOB hash_blob{
+          static_cast<DWORD>(config->cert_hash_.size()),
+          reinterpret_cast<BYTE*>(&config->cert_hash_[0])};
       auto cert = certificate_store.FindCertificate(
           X509_ASN_ENCODING | PKCS_7_ASN_ENCODING, 0, CERT_FIND_HASH,
           &hash_blob, nullptr);
@@ -448,6 +524,151 @@ bool ServiceManager::SaveServer(const RegistryKey& parent,
                 static_cast<int>(config->cert_hash_.size()));
 
   return true;
+}
+
+void ServiceManager::GetConfig(void* context, const base::Value* /*params*/,
+                               base::DictionaryValue* response) {
+  if (response == nullptr) {
+    LOG(ERROR) << "Method called as notification.";
+    return;
+  }
+
+  auto manager = static_cast<const ServiceManager*>(context);
+  auto result = S_OK;
+
+  do {
+    auto services = std::make_unique<base::ListValue>();
+    auto servers = std::make_unique<base::ListValue>();
+    if (services == nullptr || servers == nullptr) {
+      result = E_OUTOFMEMORY;
+      break;
+    }
+
+    for (auto& pair : manager->service_configs_) {
+      auto provider = manager->GetProvider(pair.second->provider_);
+      auto config = provider->ConvertConfig(pair.second.get());
+      if (config != nullptr) {
+        config->SetString(kIdJson, pair.second->id_);
+        config->SetString(kNameJson, pair.second->name_);
+        config->SetString(kProviderJson, pair.second->provider_);
+        services->Append(std::move(config));
+      } else {
+        result = E_OUTOFMEMORY;
+        break;
+      }
+    }
+    if (FAILED(result))
+      break;
+
+    for (auto& pair : manager->server_configs_) {
+      auto config = ConvertConfig(pair.second.get());
+      if (config != nullptr) {
+        servers->Append(std::move(config));
+      } else {
+        result = E_OUTOFMEMORY;
+        break;
+      }
+    }
+    if (FAILED(result))
+      break;
+
+    response->Set("result.services", std::move(services));
+    response->Set("result.servers", std::move(servers));
+
+    return;
+  } while (false);
+
+  response->SetInteger(rpc::properties::kErrorCode, rpc::codes::kServerError);
+  response->SetString(rpc::properties::kErrorMessage,
+                      rpc::messages::kServerError);
+  response->SetInteger(rpc::properties::kErrorData, result);
+}
+
+void ServiceManager::SetConfig(void* context, const base::Value* params,
+                               base::DictionaryValue* response) {
+  if (response == nullptr) {
+    LOG(ERROR) << "Method called as notification.";
+    return;
+  }
+
+  if (params == nullptr || !params->IsType(base::Value::TYPE_DICTIONARY)) {
+    response->SetInteger(rpc::properties::kErrorCode,
+                         rpc::codes::kInvalidParams);
+    response->SetString(rpc::properties::kErrorMessage,
+                        rpc::messages::kInvalidParams);
+    return;
+  }
+
+  const base::DictionaryValue* object;
+  params->GetAsDictionary(&object);
+
+  auto manager = static_cast<ServiceManager*>(context);
+  auto result = S_OK;
+
+  do {
+    const base::ListValue* services = nullptr;
+    const base::ListValue* servers = nullptr;
+    if (!object->GetList("services", &services) ||
+        !object->GetList("servers", &servers)) {
+      result = E_INVALIDARG;
+      break;
+    }
+
+    ServiceConfigMap new_services;
+    for (size_t i = 0, l = services->GetSize(); i < l; ++i) {
+      const base::DictionaryValue* service;
+      if (!services->GetDictionary(i, &service)) {
+        result = E_INVALIDARG;
+        break;
+      }
+
+      std::string provider;
+      if (!service->GetString(kProviderJson, &provider)) {
+        result = E_INVALIDARG;
+        break;
+      }
+
+      auto config = manager->GetProvider(provider)->ConvertConfig(service);
+      if (config != nullptr) {
+        new_services[config->id_] = std::move(config);
+      } else {
+        result = E_OUTOFMEMORY;
+        break;
+      }
+    }
+    if (FAILED(result))
+      break;
+
+    ServerConfigMap new_servers;
+    for (size_t i = 0, l = servers->GetSize(); i < l; ++i) {
+      const base::DictionaryValue* server;
+      if (!servers->GetDictionary(i, &server)) {
+        result = E_INVALIDARG;
+        break;
+      }
+
+      auto config = ConvertConfig(server);
+      if (config != nullptr) {
+        new_servers[config->id_] = std::move(config);
+      } else {
+        result = E_OUTOFMEMORY;
+        break;
+      }
+    }
+    if (FAILED(result))
+      break;
+
+    response->SetBoolean(rpc::properties::kResult,
+                         manager->UpdateConfiguration(std::move(new_services),
+                                                      std::move(new_servers)));
+
+    return;
+  } while (false);
+
+  response->SetInteger(rpc::properties::kErrorCode, rpc::codes::kServerError);
+  response->SetString(rpc::properties::kErrorMessage,
+                      rpc::messages::kServerError);
+  response->SetInteger(rpc::properties::kErrorData, result);
 }
 
 }  // namespace service

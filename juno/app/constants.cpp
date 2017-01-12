@@ -5,6 +5,10 @@
 #include "app/constants.h"
 
 const wchar_t kServiceName[] = L"Juno";
+const wchar_t kRpcServiceName[] = L"juno.rpc";
+
+const char kConfigGetMethod[] = "config.get";
+const char kConfigSetMethod[] = "config.set";
 
 namespace switches {
 

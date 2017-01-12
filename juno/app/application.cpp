@@ -18,6 +18,7 @@
 
 #include "app/constants.h"
 #include "misc/tunneling_service.h"
+#include "service/rpc/rpc_service.h"
 #include "service/service_manager.h"
 #include "ui/main_frame.h"
 
@@ -261,6 +262,20 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
       LOG(ERROR) << "Failed to register event source: " << GetLastError();
       return S_FALSE;
     }
+
+    rpc_service_ = new service::rpc::RpcService();
+    if (rpc_service_ == nullptr) {
+      LOG(ERROR) << "Failed to allocate RpcService.";
+      ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
+      return S_FALSE;
+    }
+
+    result = rpc_service_->Start(kRpcServiceName);
+    if (FAILED(result)) {
+      LOG(ERROR) << "Failed to start RPC service: 0x" << std::hex << result;
+      ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
+      return S_FALSE;
+    }
   }
 
   if (!service_mode_ && !foreground_mode_) {
@@ -389,6 +404,12 @@ HRESULT Application::PostMessageLoop() throw() {
     ReleaseMutex(mutex_);
     CloseHandle(mutex_);
     mutex_ = NULL;
+  }
+
+  if (rpc_service_ != nullptr) {
+    rpc_service_->Stop();
+    delete rpc_service_;
+    rpc_service_ = nullptr;
   }
 
   if (event_source_ != NULL) {

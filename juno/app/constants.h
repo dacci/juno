@@ -10,6 +10,10 @@ DEFINE_GUID(GUID_JUNO_APPLICATION, 0x303373e4, 0x6763, 0x4780, 0xb1, 0x99, 0x53,
             0x25, 0xdf, 0xaf, 0xef, 0xdd);
 
 extern const wchar_t kServiceName[];
+extern const wchar_t kRpcServiceName[];
+
+extern const char kConfigGetMethod[];
+extern const char kConfigSetMethod[];
 
 namespace switches {
 

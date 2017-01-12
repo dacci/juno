@@ -14,6 +14,11 @@ namespace service {
 
 class ServiceManager;
 
+namespace rpc {
+
+class RpcService;
+
+}  // namespace rpc
 }  // namespace service
 
 namespace ui {
@@ -57,6 +62,10 @@ class Application : public CAtlExeModuleT<Application> {
     return service_manager_;
   }
 
+  service::rpc::RpcService* GetRpcService() const {
+    return rpc_service_;
+  }
+
  private:
   HRESULT SetServiceStatus(DWORD current_state);
   HRESULT RunService() const;
@@ -79,6 +88,7 @@ class Application : public CAtlExeModuleT<Application> {
   HANDLE mutex_;
   CMessageLoop* message_loop_;
   service::ServiceManager* service_manager_;
+  service::rpc::RpcService* rpc_service_;
   ui::MainFrame* frame_;
 
   Application(const Application&) = delete;

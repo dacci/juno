@@ -3,6 +3,8 @@
 #ifndef JUNO_SERVICE_SERVICE_MANAGER_H_
 #define JUNO_SERVICE_SERVICE_MANAGER_H_
 
+#include <base/values.h>
+
 #include <map>
 #include <memory>
 #include <string>
@@ -45,6 +47,11 @@ class ServiceManager {
       ServiceConfigMap&& service_configs,  // NOLINT(whitespace/operators)
       ServerConfigMap&& server_configs);   // NOLINT(whitespace/operators)
 
+  static std::unique_ptr<base::DictionaryValue> ConvertConfig(
+      const ServerConfig* config);
+  static std::unique_ptr<ServerConfig> ConvertConfig(
+      const base::DictionaryValue* value);
+
   const ProviderMap& providers() const {
     return providers_;
   }
@@ -62,6 +69,11 @@ class ServiceManager {
   bool CreateServer(const std::string& id);
   static bool SaveServer(const misc::RegistryKey& parent,
                          const ServerConfig* config);
+
+  static void GetConfig(void* context, const base::Value* params,
+                        base::DictionaryValue* response);
+  static void SetConfig(void* context, const base::Value* params,
+                        base::DictionaryValue* response);
 
   static ServiceManager* instance_;
 

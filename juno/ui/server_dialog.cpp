@@ -131,8 +131,8 @@ void ServerDialog::OnDetailSetting(UINT /*notify_code*/, int /*id*/,
 
       DWORD length = 20;
       config_->cert_hash_.resize(length);
-      if (CertGetCertificateContextProperty(
-              cert, CERT_HASH_PROP_ID, config_->cert_hash_.data(), &length))
+      if (CertGetCertificateContextProperty(cert, CERT_HASH_PROP_ID,
+                                            &config_->cert_hash_[0], &length))
         config_->cert_hash_.resize(length);
       else
         config_->cert_hash_.clear();
