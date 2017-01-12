@@ -26,11 +26,11 @@ ScissorsConfig::ScissorsConfig(const ScissorsConfig& other)
       remote_ssl_(other.remote_ssl_),
       remote_udp_(other.remote_udp_) {}
 
-std::shared_ptr<ScissorsConfig> ScissorsConfig::Load(
+std::unique_ptr<ScissorsConfig> ScissorsConfig::Load(
     const misc::RegistryKey& key) {
-  auto config = std::make_shared<ScissorsConfig>();
+  auto config = std::make_unique<ScissorsConfig>();
   if (config == nullptr)
-    return config;
+    return nullptr;
 
   int int_value;
   std::string string_value;
@@ -48,7 +48,7 @@ std::shared_ptr<ScissorsConfig> ScissorsConfig::Load(
   if (key.QueryInteger(kRemoteUDP, &int_value))
     config->remote_udp_ = int_value != 0;
 
-  return config;
+  return std::move(config);
 }
 
 bool ScissorsConfig::Save(misc::RegistryKey* key) const {

@@ -18,7 +18,7 @@
 namespace juno {
 namespace service {
 
-class ServiceConfig;
+struct ServiceConfig;
 
 namespace socks {
 namespace ui {

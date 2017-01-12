@@ -16,11 +16,12 @@ class SocksProxyProvider : public ServiceProvider {
  public:
   SocksProxyProvider() {}
 
-  ServiceConfigPtr CreateConfig() override {
-    return std::make_shared<SocksProxyConfig>();
+  std::unique_ptr<ServiceConfig> CreateConfig() override {
+    return std::make_unique<SocksProxyConfig>();
   }
 
-  ServiceConfigPtr LoadConfig(const misc::RegistryKey& /*key*/) override {
+  std::unique_ptr<ServiceConfig> LoadConfig(
+      const misc::RegistryKey& /*key*/) override {
     return CreateConfig();
   }
 
@@ -29,9 +30,10 @@ class SocksProxyProvider : public ServiceProvider {
     return true;
   }
 
-  ServiceConfigPtr CopyConfig(const ServiceConfig* config) override;
+  std::unique_ptr<ServiceConfig> CopyConfig(
+      const ServiceConfig* config) override;
 
-  ServicePtr CreateService(const ServiceConfigPtr& config) override;
+  std::unique_ptr<Service> CreateService(const ServiceConfig* config) override;
 
   INT_PTR Configure(ServiceConfig* /*config*/, HWND /*parent*/) override {
     return IDOK;

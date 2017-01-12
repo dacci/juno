@@ -38,7 +38,7 @@ class SchannelCredential;
 
 namespace service {
 
-class ServiceConfig;
+struct ServiceConfig;
 
 namespace scissors {
 
@@ -68,7 +68,7 @@ class Scissors : public Service, private io::net::SocketChannel::Listener {
   Scissors();
   ~Scissors();
 
-  bool UpdateConfig(const ServiceConfigPtr& config) override;
+  bool UpdateConfig(const ServiceConfig* config) override;
   void Stop() override;
 
   bool StartSession(std::unique_ptr<Session>&& session);
@@ -80,8 +80,8 @@ class Scissors : public Service, private io::net::SocketChannel::Listener {
   HRESULT ConnectSocket(io::net::SocketChannel* channel,
                         io::net::SocketChannel::Listener* listener);
 
-  ScissorsConfig* config() const {
-    return config_.get();
+  const ScissorsConfig* config() const {
+    return config_;
   }
 
  private:
@@ -117,7 +117,7 @@ class Scissors : public Service, private io::net::SocketChannel::Listener {
                 HRESULT /*result*/) override {}
 
   bool stopped_;
-  std::shared_ptr<ScissorsConfig> config_;
+  const ScissorsConfig* config_;
   std::unique_ptr<misc::schannel::SchannelCredential> credential_;
   base::Lock lock_;
 

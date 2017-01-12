@@ -13,15 +13,13 @@
 #include <atlddx.h>
 #include <atldlgs.h>
 
-#include <map>
-
 #include "res/resource.h"
 #include "service/service_manager.h"
 
 namespace juno {
 namespace service {
 
-class ServiceConfig;
+struct ServiceConfig;
 
 }  // namespace service
 

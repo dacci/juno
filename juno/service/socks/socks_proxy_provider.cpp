@@ -8,13 +8,14 @@ namespace juno {
 namespace service {
 namespace socks {
 
-ServiceConfigPtr SocksProxyProvider::CopyConfig(const ServiceConfig* config) {
-  return std::make_shared<SocksProxyConfig>(
+std::unique_ptr<ServiceConfig> SocksProxyProvider::CopyConfig(
+    const ServiceConfig* config) {
+  return std::make_unique<SocksProxyConfig>(
       *static_cast<const SocksProxyConfig*>(config));
 }
 
-ServicePtr SocksProxyProvider::CreateService(
-    const ServiceConfigPtr& /*config*/) {
+std::unique_ptr<Service> SocksProxyProvider::CreateService(
+    const ServiceConfig* /*config*/) {
   return std::make_unique<SocksProxy>();
 }
 

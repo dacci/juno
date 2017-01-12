@@ -72,16 +72,17 @@ void ServicesPage::OnAddService(UINT /*notify_code*/, int /*id*/,
     return;
 
   auto config = provider->CreateConfig();
-  config->id_ = misc::GenerateGUID();
-  config->name_ = provider_dialog.name();
-  config->provider_ = provider_dialog.GetProviderName();
-
   auto dialog_result = provider->Configure(config.get(), *parent_);
   if (dialog_result != IDOK)
     return;
 
-  configs_->insert({config->id_, config});
+  config->id_ = misc::GenerateGUID();
+  config->name_ = provider_dialog.name();
+  config->provider_ = provider_dialog.GetProviderName();
+
   AddServiceItem(config.get(), -1);
+  configs_->insert({config->id_, std::move(config)});
+
   service_list_.SelectItem(service_list_.GetItemCount());
 }
 

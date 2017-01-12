@@ -41,7 +41,7 @@ class SocksProxy : public Service, private io::Channel::Listener {
   SocksProxy();
   ~SocksProxy();
 
-  bool UpdateConfig(const ServiceConfigPtr& /*config*/) override {
+  bool UpdateConfig(const ServiceConfig* /*config*/) override {
     return true;
   }
 

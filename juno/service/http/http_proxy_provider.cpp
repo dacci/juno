@@ -12,11 +12,12 @@ namespace juno {
 namespace service {
 namespace http {
 
-ServiceConfigPtr HttpProxyProvider::CreateConfig() {
-  return std::make_shared<HttpProxyConfig>();
+std::unique_ptr<ServiceConfig> HttpProxyProvider::CreateConfig() {
+  return std::make_unique<HttpProxyConfig>();
 }
 
-ServiceConfigPtr HttpProxyProvider::LoadConfig(const misc::RegistryKey& key) {
+std::unique_ptr<ServiceConfig> HttpProxyProvider::LoadConfig(
+    const misc::RegistryKey& key) {
   return HttpProxyConfig::Load(key);
 }
 
@@ -25,12 +26,14 @@ bool HttpProxyProvider::SaveConfig(const ServiceConfig* config,
   return static_cast<const HttpProxyConfig*>(config)->Save(key);
 }
 
-ServiceConfigPtr HttpProxyProvider::CopyConfig(const ServiceConfig* config) {
-  return std::make_shared<HttpProxyConfig>(
+std::unique_ptr<ServiceConfig> HttpProxyProvider::CopyConfig(
+    const ServiceConfig* config) {
+  return std::make_unique<HttpProxyConfig>(
       *static_cast<const HttpProxyConfig*>(config));
 }
 
-ServicePtr HttpProxyProvider::CreateService(const ServiceConfigPtr& config) {
+std::unique_ptr<Service> HttpProxyProvider::CreateService(
+    const ServiceConfig* config) {
   auto service = std::make_unique<HttpProxy>();
   if (service == nullptr)
     return nullptr;

@@ -19,19 +19,20 @@ namespace juno {
 namespace service {
 namespace scissors {
 
-Scissors::Scissors() : stopped_(), not_connecting_(&lock_), empty_(&lock_) {}
+Scissors::Scissors()
+    : stopped_(), config_(nullptr), not_connecting_(&lock_), empty_(&lock_) {}
 
 Scissors::~Scissors() {
   Scissors::Stop();
 }
 
-bool Scissors::UpdateConfig(const ServiceConfigPtr& config) {
+bool Scissors::UpdateConfig(const ServiceConfig* config) {
   base::AutoLock guard(lock_);
 
   while (!connecting_.empty())
     not_connecting_.Wait();
 
-  config_ = std::static_pointer_cast<ScissorsConfig>(config);
+  config_ = static_cast<const ScissorsConfig*>(config);
 
   if (config_->remote_udp())
     resolver_.SetType(SOCK_DGRAM);

@@ -59,10 +59,10 @@ HttpProxyConfig::HttpProxyConfig(const HttpProxyConfig& other)
   SetCredential();
 }
 
-std::shared_ptr<HttpProxyConfig> HttpProxyConfig::Load(const RegistryKey& key) {
-  auto config = std::make_shared<HttpProxyConfig>();
+std::unique_ptr<HttpProxyConfig> HttpProxyConfig::Load(const RegistryKey& key) {
+  auto config = std::make_unique<HttpProxyConfig>();
   if (config == nullptr)
-    return config;
+    return nullptr;
 
   int int_value;
   std::string string_value;
@@ -91,18 +91,16 @@ std::shared_ptr<HttpProxyConfig> HttpProxyConfig::Load(const RegistryKey& key) {
 
   int length;
   if (key.QueryBinary(kRemoteProxyPassword, nullptr, &length)) {
-    auto buffer = new BYTE[length];
-    key.QueryBinary(kRemoteProxyPassword, buffer, &length);
+    auto buffer = std::make_unique<BYTE[]>(length);
+    key.QueryBinary(kRemoteProxyPassword, buffer.get(), &length);
 
-    DATA_BLOB encrypted{static_cast<DWORD>(length), buffer}, decrypted{};
+    DATA_BLOB encrypted{static_cast<DWORD>(length), buffer.get()}, decrypted{};
     if (CryptUnprotectData(&encrypted, nullptr, nullptr, nullptr, nullptr, 0,
                            &decrypted)) {
       config->remote_proxy_password_.assign(
           reinterpret_cast<char*>(decrypted.pbData), decrypted.cbData);
       LocalFree(decrypted.pbData);
     }
-
-    delete[] buffer;
   }
 
   config->SetCredential();
@@ -132,7 +130,7 @@ std::shared_ptr<HttpProxyConfig> HttpProxyConfig::Load(const RegistryKey& key) {
     filters_key.Close();
   }
 
-  return config;
+  return std::move(config);
 }
 
 bool HttpProxyConfig::Save(RegistryKey* key) const {
@@ -214,20 +212,6 @@ void HttpProxyConfig::FilterHeaders(HttpHeaders* headers, bool request) const {
       }
     }
   }
-}
-
-void HttpProxyConfig::ProcessAuthenticate(HttpResponse* response,
-                                          HttpRequest* request) {
-  base::AutoLock guard(lock_);
-
-  DoProcessAuthenticate(response);
-  DoProcessAuthorization(request);
-}
-
-void HttpProxyConfig::ProcessAuthorization(HttpRequest* request) {
-  base::AutoLock guard(lock_);
-
-  DoProcessAuthorization(request);
 }
 
 void HttpProxyConfig::SetCredential() {

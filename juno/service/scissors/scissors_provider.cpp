@@ -12,11 +12,12 @@ namespace juno {
 namespace service {
 namespace scissors {
 
-ServiceConfigPtr ScissorsProvider::CreateConfig() {
-  return std::make_shared<ScissorsConfig>();
+std::unique_ptr<ServiceConfig> ScissorsProvider::CreateConfig() {
+  return std::make_unique<ScissorsConfig>();
 }
 
-ServiceConfigPtr ScissorsProvider::LoadConfig(const misc::RegistryKey& key) {
+std::unique_ptr<ServiceConfig> ScissorsProvider::LoadConfig(
+    const misc::RegistryKey& key) {
   return ScissorsConfig::Load(key);
 }
 
@@ -25,12 +26,14 @@ bool ScissorsProvider::SaveConfig(const ServiceConfig* config,
   return static_cast<const ScissorsConfig*>(config)->Save(key);
 }
 
-ServiceConfigPtr ScissorsProvider::CopyConfig(const ServiceConfig* config) {
-  return std::make_shared<ScissorsConfig>(
+std::unique_ptr<ServiceConfig> ScissorsProvider::CopyConfig(
+    const ServiceConfig* config) {
+  return std::make_unique<ScissorsConfig>(
       *static_cast<const ScissorsConfig*>(config));
 }
 
-ServicePtr ScissorsProvider::CreateService(const ServiceConfigPtr& config) {
+std::unique_ptr<Service> ScissorsProvider::CreateService(
+    const ServiceConfig* config) {
   auto service = std::make_unique<Scissors>();
   if (service == nullptr)
     return nullptr;

@@ -4,6 +4,7 @@
 #define JUNO_SERVICE_SERVICE_MANAGER_H_
 
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -16,9 +17,9 @@ namespace service {
 
 class Server;
 
-typedef std::map<std::string, ServiceProviderPtr> ProviderMap;
-typedef std::map<std::string, ServiceConfigPtr> ServiceConfigMap;
-typedef std::map<std::string, ServerConfigPtr> ServerConfigMap;
+typedef std::map<std::string, std::unique_ptr<ServiceProvider>> ProviderMap;
+typedef std::map<std::string, std::unique_ptr<ServiceConfig>> ServiceConfigMap;
+typedef std::map<std::string, std::unique_ptr<ServerConfig>> ServerConfigMap;
 
 class ServiceManager {
  public:
@@ -36,11 +37,8 @@ class ServiceManager {
   bool StartServers();
   void StopServers();
 
-  ServiceProviderPtr GetProvider(const std::string& name) const;
-
-  ServiceConfigPtr GetServiceConfig(const std::string& name) const;
+  ServiceProvider* GetProvider(const std::string& name) const;
   void CopyServiceConfigs(ServiceConfigMap* configs) const;
-
   void CopyServerConfigs(ServerConfigMap* configs) const;
 
   bool UpdateConfiguration(
@@ -52,19 +50,18 @@ class ServiceManager {
   }
 
  private:
-  typedef std::unique_ptr<Server> ServerPtr;
-  typedef std::map<std::string, ServicePtr> ServiceMap;
-  typedef std::map<std::string, ServerPtr> ServerMap;
+  typedef std::map<std::string, std::unique_ptr<Service>> ServiceMap;
+  typedef std::map<std::string, std::unique_ptr<Server>> ServerMap;
 
   bool LoadService(const misc::RegistryKey& parent, const std::string& id);
   bool SaveService(const misc::RegistryKey& parent,
-                   const ServiceConfigPtr& config);
+                   const ServiceConfig* config);
   bool CreateService(const std::string& id);
 
   bool LoadServer(const misc::RegistryKey& parent, const std::string& id);
   bool CreateServer(const std::string& id);
   static bool SaveServer(const misc::RegistryKey& parent,
-                         const ServerConfigPtr& config);
+                         const ServerConfig* config);
 
   static ServiceManager* instance_;
 

@@ -12,16 +12,16 @@ namespace juno {
 namespace service {
 namespace http {
 
-HttpProxy::HttpProxy() : empty_(&lock_), stopped_() {}
+HttpProxy::HttpProxy() : config_(nullptr), empty_(&lock_), stopped_() {}
 
 HttpProxy::~HttpProxy() {
   HttpProxy::Stop();
 }
 
-bool HttpProxy::UpdateConfig(const ServiceConfigPtr& config) {
+bool HttpProxy::UpdateConfig(const ServiceConfig* config) {
   base::AutoLock guard(lock_);
 
-  config_ = std::static_pointer_cast<HttpProxyConfig>(config);
+  config_ = static_cast<const HttpProxyConfig*>(config);
 
   return true;
 }
@@ -45,6 +45,22 @@ void HttpProxy::EndSession(HttpProxySession* session) {
     delete pair;
     EndSessionImpl(session);
   }
+}
+
+void HttpProxy::ProcessAuthenticate(HttpResponse* response,
+                                    HttpRequest* request) {
+  base::AutoLock guard(lock_);
+
+  auto config = const_cast<HttpProxyConfig*>(config_);
+  config->DoProcessAuthenticate(response);
+  config->DoProcessAuthorization(request);
+}
+
+void HttpProxy::ProcessAuthorization(HttpRequest* request) {
+  base::AutoLock guard(lock_);
+
+  auto config = const_cast<HttpProxyConfig*>(config_);
+  config->DoProcessAuthorization(request);
 }
 
 void HttpProxy::OnAccepted(const io::ChannelPtr& client) {

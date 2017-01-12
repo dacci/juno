@@ -5,8 +5,6 @@
 
 #include <winerror.h>
 
-#include <memory>
-
 #include "io/channel.h"
 #include "io/net/datagram.h"
 #include "service/service_config.h"
@@ -18,17 +16,13 @@ class __declspec(novtable) Service {
  public:
   virtual ~Service() {}
 
-  virtual bool UpdateConfig(const ServiceConfigPtr& config) = 0;
+  virtual bool UpdateConfig(const ServiceConfig* config) = 0;
   virtual void Stop() = 0;
 
   virtual void OnAccepted(const io::ChannelPtr& client) = 0;
   virtual void OnReceivedFrom(const io::net::DatagramPtr& datagram) = 0;
   virtual void OnError(HRESULT result) = 0;
 };
-
-#ifndef JUNO_NO_SERVICE_PTR
-typedef std::unique_ptr<Service> ServicePtr;
-#endif  // JUNO_NO_SERVICE_PTR
 
 }  // namespace service
 }  // namespace juno

@@ -28,10 +28,13 @@ class HttpProxy : public Service {
   HttpProxy();
   ~HttpProxy();
 
-  bool UpdateConfig(const ServiceConfigPtr& config) override;
+  bool UpdateConfig(const ServiceConfig* config) override;
   void Stop() override;
 
   void EndSession(HttpProxySession* session);
+
+  void ProcessAuthenticate(HttpResponse* response, HttpRequest* request);
+  void ProcessAuthorization(HttpRequest* request);
 
   void OnAccepted(const io::ChannelPtr& client) override;
   void OnReceivedFrom(const io::net::DatagramPtr& datagram) override;
@@ -44,7 +47,7 @@ class HttpProxy : public Service {
                                       void* param);
   void EndSessionImpl(HttpProxySession* session);
 
-  std::shared_ptr<HttpProxyConfig> config_;
+  const HttpProxyConfig* config_;
 
   base::Lock lock_;
   base::ConditionVariable empty_;

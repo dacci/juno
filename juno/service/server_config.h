@@ -5,7 +5,6 @@
 
 #include <stdint.h>
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -27,8 +26,6 @@ struct ServerConfig {
   int enabled_;
   std::vector<uint8_t> cert_hash_;
 };
-
-typedef std::shared_ptr<ServerConfig> ServerConfigPtr;
 
 }  // namespace service
 }  // namespace juno

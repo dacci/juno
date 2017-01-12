@@ -84,7 +84,7 @@ BOOL ServersPage::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
 
 void ServersPage::OnAddServer(UINT /*notify_code*/, int /*id*/,
                               CWindow /*control*/) {
-  auto config = std::make_shared<ServerConfig>();
+  auto config = std::make_unique<ServerConfig>();
   config->enabled_ = TRUE;
 
   ServerDialog dialog(parent_, config.get());
@@ -93,8 +93,9 @@ void ServersPage::OnAddServer(UINT /*notify_code*/, int /*id*/,
 
   config->id_ = misc::GenerateGUID();
 
-  configs_->insert({config->id_, config});
   AddServerItem(config.get(), -1);
+  configs_->insert({config->id_, std::move(config)});
+
   server_list_.SelectItem(server_list_.GetItemCount());
 }
 

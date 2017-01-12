@@ -13,12 +13,14 @@ class ScissorsProvider : public ServiceProvider {
  public:
   ScissorsProvider() {}
 
-  ServiceConfigPtr CreateConfig() override;
-  ServiceConfigPtr LoadConfig(const misc::RegistryKey& key) override;
+  std::unique_ptr<ServiceConfig> CreateConfig() override;
+  std::unique_ptr<ServiceConfig> LoadConfig(
+      const misc::RegistryKey& key) override;
   bool SaveConfig(const ServiceConfig* config, misc::RegistryKey* key) override;
-  ServiceConfigPtr CopyConfig(const ServiceConfig* config) override;
+  std::unique_ptr<ServiceConfig> CopyConfig(
+      const ServiceConfig* config) override;
 
-  ServicePtr CreateService(const ServiceConfigPtr& config) override;
+  std::unique_ptr<Service> CreateService(const ServiceConfig* config) override;
 
   INT_PTR Configure(ServiceConfig* config, HWND parent) override;
 

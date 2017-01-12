@@ -3,23 +3,16 @@
 #ifndef JUNO_SERVICE_SERVICE_CONFIG_H_
 #define JUNO_SERVICE_SERVICE_CONFIG_H_
 
-#include <memory>
 #include <string>
 
 namespace juno {
 namespace service {
 
-class ServiceConfig {
- public:
-  // ServiceConfig(const ServiceConfig& other) = default;
-  virtual ~ServiceConfig() {}
-
+struct ServiceConfig {
   std::string id_;
   std::string name_;
   std::string provider_;
 };
-
-typedef std::shared_ptr<ServiceConfig> ServiceConfigPtr;
 
 }  // namespace service
 }  // namespace juno

@@ -3,6 +3,7 @@
 #ifndef JUNO_SERVICE_SCISSORS_SCISSORS_CONFIG_H_
 #define JUNO_SERVICE_SCISSORS_SCISSORS_CONFIG_H_
 
+#include <memory>
 #include <string>
 
 #include "misc/registry_key.h"
@@ -22,7 +23,7 @@ class ScissorsConfig : public ServiceConfig {
   ScissorsConfig();
   ScissorsConfig(const ScissorsConfig& other);
 
-  static std::shared_ptr<ScissorsConfig> Load(const misc::RegistryKey& key);
+  static std::unique_ptr<ScissorsConfig> Load(const misc::RegistryKey& key);
   bool Save(misc::RegistryKey* key) const;
 
   std::string remote_address() const {

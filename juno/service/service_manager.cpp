@@ -63,7 +63,7 @@ ServiceManager::ServiceManager() : root_key_(NULL) {
                                                  : HKEY_CURRENT_USER;
 
 #define PROVIDER_ENTRY(key, ns) \
-  providers_.insert({#key, std::make_shared<ns::key##Provider>()})
+  providers_.insert({#key, std::make_unique<ns::key##Provider>()})
 
   PROVIDER_ENTRY(HttpProxy, service::http);
   PROVIDER_ENTRY(SocksProxy, service::socks);
@@ -75,23 +75,6 @@ ServiceManager::ServiceManager() : root_key_(NULL) {
 ServiceManager::~ServiceManager() {
   StopServers();
   StopServices();
-
-#ifdef _DEBUG
-  for (auto& pair : server_configs_) {
-    if (!pair.second.unique())
-      abort();
-  }
-
-  for (auto& pair : service_configs_) {
-    if (!pair.second.unique())
-      abort();
-  }
-
-  for (auto& pair : providers_) {
-    if (!pair.second.unique())
-      abort();
-  }
-#endif  // _DEBUG
 }
 
 bool ServiceManager::LoadServices() {
@@ -134,11 +117,11 @@ bool ServiceManager::LoadServers() {
   auto all_succeeded = true;
 
   for (DWORD i = 0;; ++i) {
-    std::string name;
-    if (!servers_key.EnumerateKey(i, &name))
+    std::string id;
+    if (!servers_key.EnumerateKey(i, &id))
       break;
 
-    if (!LoadServer(servers_key, name))
+    if (!LoadServer(servers_key, id))
       all_succeeded = false;
   }
 
@@ -164,21 +147,12 @@ void ServiceManager::StopServers() {
   channel_customizers.clear();
 }
 
-ServiceProviderPtr ServiceManager::GetProvider(const std::string& name) const {
+ServiceProvider* ServiceManager::GetProvider(const std::string& name) const {
   auto pair = providers_.find(name);
   if (pair == providers_.end())
     return nullptr;
 
-  return pair->second;
-}
-
-ServiceConfigPtr ServiceManager::GetServiceConfig(
-    const std::string& name) const {
-  auto pair = service_configs_.find(name);
-  if (pair == service_configs_.end())
-    return nullptr;
-
-  return pair->second;
+  return pair->second.get();
 }
 
 void ServiceManager::CopyServiceConfigs(ServiceConfigMap* configs) const {
@@ -191,7 +165,7 @@ void ServiceManager::CopyServiceConfigs(ServiceConfigMap* configs) const {
 
 void ServiceManager::CopyServerConfigs(ServerConfigMap* configs) const {
   for (auto& pair : server_configs_) {
-    auto copy = std::make_shared<ServerConfig>(*pair.second);
+    auto copy = std::make_unique<ServerConfig>(*pair.second);
     configs->insert({pair.first, std::move(copy)});
   }
 }
@@ -234,21 +208,21 @@ bool ServiceManager::UpdateConfiguration(
 
   // added or updated services
   for (auto i = new_services.begin(), l = new_services.end(); i != l; ++i) {
-    if (!SaveService(services_key, i->second))
+    if (!SaveService(services_key, i->second.get()))
       continue;
 
     auto existing = service_configs_.find(i->first);
     if (existing == service_configs_.end()) {
       // added service
-      service_configs_.insert(*i);
+      service_configs_.insert({i->first, std::move(i->second)});
 
       if (!CreateService(i->first))
         succeeded = false;
     } else {
       // updated service
-      existing->second = i->second;
-
-      if (!services_.at(i->first)->UpdateConfig(i->second))
+      if (services_[i->first]->UpdateConfig(i->second.get()))
+        existing->second = std::move(i->second);
+      else
         succeeded = false;
     }
   }
@@ -264,11 +238,11 @@ bool ServiceManager::UpdateConfiguration(
 
   // added or updated servers
   for (auto i = new_servers.begin(), l = new_servers.end(); i != l; ++i) {
-    if (SaveServer(servers_key, i->second)) {
+    if (SaveServer(servers_key, i->second.get())) {
       auto existing = server_configs_.find(i->first);
       if (existing == server_configs_.end()) {
         // added server
-        server_configs_.insert(*i);
+        server_configs_.insert({i->first, std::move(i->second)});
       } else {
         // updated server
         existing->second = std::move(i->second);
@@ -278,9 +252,10 @@ bool ServiceManager::UpdateConfiguration(
     }
   }
 
-  for (auto& pair : server_configs_)
+  for (auto& pair : server_configs_) {
     if (!CreateServer(pair.first))
       succeeded = false;
+  }
 
   if (!StartServers())
     succeeded = false;
@@ -316,13 +291,14 @@ bool ServiceManager::LoadService(const RegistryKey& parent,
 
   config->provider_ = provider_name;
 
-  service_configs_.insert({config->id_, config});
+  auto service_id = config->id_;
+  service_configs_.insert({service_id, std::move(config)});
 
-  return CreateService(config->id_);
+  return CreateService(service_id);
 }
 
 bool ServiceManager::SaveService(const RegistryKey& parent,
-                                 const ServiceConfigPtr& config) {
+                                 const ServiceConfig* config) {
   RegistryKey service_key;
   if (!service_key.Create(parent, config->id_))
     return false;
@@ -331,15 +307,14 @@ bool ServiceManager::SaveService(const RegistryKey& parent,
       !service_key.SetString(kProviderValueName, config->provider_))
     return false;
 
-  return providers_.at(config->provider_)
-      ->SaveConfig(config.get(), &service_key);
+  return providers_.at(config->provider_)->SaveConfig(config, &service_key);
 }
 
 bool ServiceManager::CreateService(const std::string& id) {
   DCHECK(service_configs_.find(id) != service_configs_.end());
 
   auto& config = service_configs_.at(id);
-  auto service = providers_.at(config->provider_)->CreateService(config);
+  auto service = providers_.at(config->provider_)->CreateService(config.get());
   if (service == nullptr)
     return false;
 
@@ -354,7 +329,7 @@ bool ServiceManager::LoadServer(const RegistryKey& parent,
   if (!reg_key.Open(parent, id))
     return false;
 
-  auto config = std::make_shared<ServerConfig>();
+  auto config = std::make_unique<ServerConfig>();
   config->id_ = id;
 
   reg_key.QueryString(kBindValueName, &config->bind_);
@@ -379,9 +354,9 @@ bool ServiceManager::LoadServer(const RegistryKey& parent,
                       &length);
   config->cert_hash_.resize(length);
 
-  server_configs_.insert({id, config});
+  server_configs_.insert({id, std::move(config)});
 
-  return CreateServer(config->id_);
+  return CreateServer(id);
 }
 
 bool ServiceManager::CreateServer(const std::string& id) {
@@ -397,7 +372,7 @@ bool ServiceManager::CreateServer(const std::string& id) {
   if (service == services_.end())
     return false;
 
-  ServerPtr server;
+  std::unique_ptr<Server> server;
   switch (static_cast<ServerConfig::Protocol>(config->type_)) {
     case ServerConfig::Protocol::kTCP:
       server = std::make_unique<TcpServer>();
@@ -459,7 +434,7 @@ bool ServiceManager::CreateServer(const std::string& id) {
 }
 
 bool ServiceManager::SaveServer(const RegistryKey& parent,
-                                const ServerConfigPtr& config) {
+                                const ServerConfig* config) {
   RegistryKey key;
   if (!key.Create(parent, config->id_))
     return false;

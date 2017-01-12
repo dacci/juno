@@ -31,8 +31,7 @@ class HttpProxySession : private io::Channel::Listener,
                          private io::net::SocketChannel::Listener,
                          private misc::TimerService::Callback {
  public:
-  HttpProxySession(HttpProxy* proxy,
-                   const std::shared_ptr<HttpProxyConfig>& config,
+  HttpProxySession(HttpProxy* proxy, const HttpProxyConfig* config,
                    const io::ChannelPtr& client);
   ~HttpProxySession();
 
@@ -85,7 +84,7 @@ class HttpProxySession : private io::Channel::Listener,
   void OnResponseBodySent(HRESULT result, int length);
 
   HttpProxy* const proxy_;
-  std::shared_ptr<HttpProxyConfig> config_;
+  const HttpProxyConfig* config_;
 
   base::AtomicRefCount ref_count_;
   base::Lock lock_;

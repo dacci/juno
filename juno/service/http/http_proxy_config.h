@@ -3,8 +3,7 @@
 #ifndef JUNO_SERVICE_HTTP_HTTP_PROXY_CONFIG_H_
 #define JUNO_SERVICE_HTTP_HTTP_PROXY_CONFIG_H_
 
-#include <base/synchronization/lock.h>
-
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -16,7 +15,6 @@
 namespace juno {
 namespace service {
 namespace http {
-
 namespace ui {
 
 class HttpProxyDialog;
@@ -51,12 +49,10 @@ class HttpProxyConfig : public ServiceConfig {
   HttpProxyConfig();
   HttpProxyConfig(const HttpProxyConfig& other);
 
-  static std::shared_ptr<HttpProxyConfig> Load(const misc::RegistryKey& key);
+  static std::unique_ptr<HttpProxyConfig> Load(const misc::RegistryKey& key);
   bool Save(misc::RegistryKey* key) const;
 
   void FilterHeaders(HttpHeaders* headers, bool request) const;
-  void ProcessAuthenticate(HttpResponse* response, HttpRequest* request);
-  void ProcessAuthorization(HttpRequest* request);
 
   bool use_remote_proxy() const {
     return use_remote_proxy_;
@@ -87,6 +83,7 @@ class HttpProxyConfig : public ServiceConfig {
   }
 
  private:
+  friend class HttpProxy;
   friend class ui::HttpProxyDialog;
 
   void SetCredential();
@@ -102,7 +99,6 @@ class HttpProxyConfig : public ServiceConfig {
   std::string remote_proxy_password_;
   std::vector<HeaderFilter> header_filters_;
 
-  base::Lock lock_;
   bool auth_digest_;
   bool auth_basic_;
   HttpDigest digest_;

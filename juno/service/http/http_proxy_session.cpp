@@ -39,9 +39,9 @@ enum class HttpProxySession::State {
   kResponseBody
 };
 
-HttpProxySession::HttpProxySession(
-    HttpProxy* proxy, const std::shared_ptr<HttpProxyConfig>& config,
-    const io::ChannelPtr& client)
+HttpProxySession::HttpProxySession(HttpProxy* proxy,
+                                   const HttpProxyConfig* config,
+                                   const io::ChannelPtr& client)
     : proxy_(proxy),
       config_(config),
       ref_count_(0),
@@ -151,7 +151,7 @@ void HttpProxySession::ProcessRequest() {
     close_client_ = true;
 
   config_->FilterHeaders(&request_, true);
-  config_->ProcessAuthorization(&request_);
+  proxy_->ProcessAuthorization(&request_);
 
   DispatchRequest();
 }
@@ -326,7 +326,7 @@ void HttpProxySession::ProcessResponse() {
 
   if (retry_ && config_->use_remote_proxy() && config_->auth_remote_proxy()) {
     request_.RemoveHeader(kProxyAuthorization);
-    config_->ProcessAuthenticate(&response_, &request_);
+    proxy_->ProcessAuthenticate(&response_, &request_);
 
     if (response_chunked_ || response_length_ == -1 || response_length_ > 0) {
       state_ = State::kResponseBody;
