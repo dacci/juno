@@ -15,14 +15,14 @@ ScissorsDialog::ScissorsDialog(ScissorsConfig* config)
     : config_(config), port_(0) {}
 
 BOOL ScissorsDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
-  port_ = config_->remote_port();
+  port_ = config_->remote_port_;
 
   DoDataExchange();
 
-  address_edit_.SetWindowText(CString(config_->remote_address().c_str()));
+  address_edit_.SetWindowText(CString(config_->remote_address_.c_str()));
   port_spin_.SetRange32(0, 65535);
-  use_ssl_check_.SetCheck(config_->remote_ssl());
-  use_udp_check_.SetCheck(config_->remote_udp());
+  use_ssl_check_.SetCheck(config_->remote_ssl_);
+  use_udp_check_.SetCheck(config_->remote_udp_);
 
   return TRUE;
 }

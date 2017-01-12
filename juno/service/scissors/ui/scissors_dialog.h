@@ -20,7 +20,7 @@ namespace juno {
 namespace service {
 namespace scissors {
 
-class ScissorsConfig;
+struct ScissorsConfig;
 
 namespace ui {
 

@@ -13,12 +13,15 @@
 
 #include "service/service.h"
 
+#include "service/http/http_digest.h"
+
 namespace juno {
 namespace service {
 namespace http {
 
+struct HttpProxyConfig;
+
 class HttpHeaders;
-class HttpProxyConfig;
 class HttpProxySession;
 class HttpRequest;
 class HttpResponse;
@@ -33,6 +36,7 @@ class HttpProxy : public Service {
 
   void EndSession(HttpProxySession* session);
 
+  void FilterHeaders(HttpHeaders* headers, bool request) const;
   void ProcessAuthenticate(HttpResponse* response, HttpRequest* request);
   void ProcessAuthorization(HttpRequest* request);
 
@@ -47,12 +51,21 @@ class HttpProxy : public Service {
                                       void* param);
   void EndSessionImpl(HttpProxySession* session);
 
+  void SetCredential();
+  void DoProcessAuthenticate(HttpResponse* response);
+  void DoProcessAuthorization(HttpRequest* request);
+
   const HttpProxyConfig* config_;
 
   base::Lock lock_;
   base::ConditionVariable empty_;
   bool stopped_;
   std::vector<std::unique_ptr<HttpProxySession>> sessions_;
+
+  bool auth_digest_;
+  bool auth_basic_;
+  HttpDigest digest_;
+  std::string basic_credential_;
 
   HttpProxy(const HttpProxy&) = delete;
   HttpProxy& operator=(const HttpProxy&) = delete;

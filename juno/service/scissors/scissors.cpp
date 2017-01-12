@@ -7,7 +7,6 @@
 #include "io/net/datagram.h"
 #include "io/net/socket_channel.h"
 #include "io/secure_channel.h"
-#include "misc/registry_key.h"
 #include "misc/schannel/schannel_credential.h"
 #include "service/scissors/scissors_config.h"
 #include "service/scissors/scissors_tcp_session.h"
@@ -34,20 +33,20 @@ bool Scissors::UpdateConfig(const ServiceConfig* config) {
 
   config_ = static_cast<const ScissorsConfig*>(config);
 
-  if (config_->remote_udp())
+  if (config_->remote_udp_)
     resolver_.SetType(SOCK_DGRAM);
   else
     resolver_.SetType(SOCK_STREAM);
 
   auto result =
-      resolver_.Resolve(config_->remote_address(), config_->remote_port());
+      resolver_.Resolve(config_->remote_address_, config_->remote_port_);
   if (FAILED(result)) {
-    LOG(ERROR) << "failed to resolve " << config_->remote_address() << ":"
-               << config_->remote_port();
+    LOG(ERROR) << "failed to resolve " << config_->remote_address_ << ":"
+               << config_->remote_port_;
     return false;
   }
 
-  if (config_->remote_ssl() && credential_ == nullptr) {
+  if (config_->remote_ssl_ && credential_ == nullptr) {
     credential_.reset(new misc::schannel::SchannelCredential());
     if (credential_ == nullptr)
       return false;
@@ -108,8 +107,8 @@ std::shared_ptr<io::net::DatagramChannel> Scissors::CreateSocket() {
       break;
   }
   if (!socket->connected()) {
-    LOG(ERROR) << "failed to connect to " << config_->remote_address() << ":"
-               << config_->remote_port();
+    LOG(ERROR) << "failed to connect to " << config_->remote_address_ << ":"
+               << config_->remote_port_;
     return nullptr;
   }
 
@@ -122,7 +121,7 @@ io::ChannelPtr Scissors::CreateChannel(const io::ChannelPtr& channel) {
 
   base::AutoLock guard(lock_);
 
-  if (!config_->remote_ssl())
+  if (!config_->remote_ssl_)
     return channel;
 
   auto secure_channel =
@@ -130,7 +129,7 @@ io::ChannelPtr Scissors::CreateChannel(const io::ChannelPtr& channel) {
   if (secure_channel == nullptr)
     return channel;
 
-  secure_channel->context()->set_target_name(config_->remote_address());
+  secure_channel->context()->set_target_name(config_->remote_address_);
 
   return secure_channel;
 }
@@ -182,7 +181,7 @@ void Scissors::OnAccepted(const io::ChannelPtr& client) {
   if (stopped_)
     return;
 
-  if (config_->remote_udp())
+  if (config_->remote_udp_)
     StartSession(std::make_unique<ScissorsUnwrappingSession>(this, client));
   else
     StartSession(std::make_unique<ScissorsTcpSession>(this, client));
@@ -208,7 +207,7 @@ void Scissors::OnReceivedFrom(const io::net::DatagramPtr& datagram) {
 
     std::unique_ptr<UdpSession> session;
 
-    if (config_->remote_udp())
+    if (config_->remote_udp_)
       session = std::make_unique<ScissorsUdpSession>(this, datagram->channel);
     else
       session = std::move(
@@ -233,8 +232,8 @@ void Scissors::OnReceivedFrom(const io::net::DatagramPtr& datagram) {
 
 void Scissors::OnConnected(io::net::SocketChannel* socket, HRESULT result) {
   LOG_IF(ERROR, FAILED(result))
-      << "failed to connect to " << config_->remote_address() << ":"
-      << config_->remote_port() << " (error: 0x" << std::hex << result << ")";
+      << "failed to connect to " << config_->remote_address_ << ":"
+      << config_->remote_port_ << " (error: 0x" << std::hex << result << ")";
 
   lock_.Acquire();
 

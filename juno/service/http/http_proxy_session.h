@@ -24,8 +24,9 @@ namespace juno {
 namespace service {
 namespace http {
 
+struct HttpProxyConfig;
+
 class HttpProxy;
-class HttpProxyConfig;
 
 class HttpProxySession : private io::Channel::Listener,
                          private io::net::SocketChannel::Listener,

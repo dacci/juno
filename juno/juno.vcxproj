@@ -214,7 +214,6 @@
     <ClCompile Include="service\http\http_digest.cpp" />
     <ClCompile Include="service\http\http_headers.cpp" />
     <ClCompile Include="service\http\http_proxy.cpp" />
-    <ClCompile Include="service\http\http_proxy_config.cpp" />
     <ClCompile Include="service\http\http_proxy_provider.cpp" />
     <ClCompile Include="service\http\http_proxy_session.cpp" />
     <ClCompile Include="service\http\http_request.cpp" />
@@ -227,7 +226,6 @@
     <ClCompile Include="service\rpc\rpc_common.cpp" />
     <ClCompile Include="service\rpc\rpc_service.cpp" />
     <ClCompile Include="service\scissors\scissors.cpp" />
-    <ClCompile Include="service\scissors\scissors_config.cpp" />
     <ClCompile Include="service\scissors\scissors_provider.cpp" />
     <ClCompile Include="service\scissors\scissors_tcp_session.cpp" />
     <ClCompile Include="service\scissors\scissors_udp_session.cpp" />

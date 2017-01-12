@@ -150,7 +150,7 @@ void HttpProxySession::ProcessRequest() {
   if (http_util::ProcessHopByHopHeaders(&request_))
     close_client_ = true;
 
-  config_->FilterHeaders(&request_, true);
+  proxy_->FilterHeaders(&request_, true);
   proxy_->ProcessAuthorization(&request_);
 
   DispatchRequest();
@@ -168,7 +168,7 @@ void HttpProxySession::DispatchRequest() {
       return;
     }
 
-    if (!config_->use_remote_proxy()) {
+    if (!config_->use_remote_proxy_) {
       if (!url.SchemeIs("http")) {
         SetError(NOT_IMPLEMENTED);
         return;
@@ -180,9 +180,9 @@ void HttpProxySession::DispatchRequest() {
 
   int new_port;
   std::string new_host;
-  if (config_->use_remote_proxy()) {
-    new_host = config_->remote_proxy_host();
-    new_port = config_->remote_proxy_port();
+  if (config_->use_remote_proxy_) {
+    new_host = config_->remote_proxy_host_;
+    new_port = config_->remote_proxy_port_;
   } else {
     new_host = url.host();
     new_port = url.EffectiveIntPort();
@@ -324,7 +324,7 @@ void HttpProxySession::ProcessResponse() {
       break;
   }
 
-  if (retry_ && config_->use_remote_proxy() && config_->auth_remote_proxy()) {
+  if (retry_ && config_->use_remote_proxy_ && config_->auth_remote_proxy_) {
     request_.RemoveHeader(kProxyAuthorization);
     proxy_->ProcessAuthenticate(&response_, &request_);
 
@@ -364,7 +364,7 @@ void HttpProxySession::ProcessResponse() {
   }
 
   if (!tunnel_) {
-    config_->FilterHeaders(&response_, false);
+    proxy_->FilterHeaders(&response_, false);
 
     if (close_client_)
       response_.SetHeader(kConnection, "close");
@@ -637,7 +637,7 @@ void HttpProxySession::OnConnected(io::net::SocketChannel* socket,
     if (!tunnel_)
       socket->MonitorConnection(this);
 
-    if (tunnel_ && !config_->use_remote_proxy()) {
+    if (tunnel_ && !config_->use_remote_proxy_) {
       if (misc::TunnelingService::Bind(client_, remote_)) {
         response_.Clear();
         response_.SetStatus(OK, "Connection Established");

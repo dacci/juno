@@ -13,6 +13,12 @@
 #undef CreateService
 #endif
 
+namespace base {
+
+class DictionaryValue;
+
+}  // namespace base
+
 namespace juno {
 namespace service {
 
@@ -23,15 +29,20 @@ class __declspec(novtable) ServiceProvider {
   virtual std::unique_ptr<ServiceConfig> CreateConfig() = 0;
   virtual std::unique_ptr<ServiceConfig> LoadConfig(
       const misc::RegistryKey& key) = 0;
-  virtual bool SaveConfig(const ServiceConfig* config,
+  virtual bool SaveConfig(const ServiceConfig* base_config,
                           misc::RegistryKey* key) = 0;
   virtual std::unique_ptr<ServiceConfig> CopyConfig(
-      const ServiceConfig* config) = 0;
+      const ServiceConfig* base_config) = 0;
+
+  virtual std::unique_ptr<base::DictionaryValue> ConvertConfig(
+      const ServiceConfig* base_config) = 0;
+  virtual std::unique_ptr<ServiceConfig> ConvertConfig(
+      const base::DictionaryValue* value) = 0;
 
   virtual std::unique_ptr<Service> CreateService(
-      const ServiceConfig* config) = 0;
+      const ServiceConfig* base_config) = 0;
 
-  virtual INT_PTR Configure(ServiceConfig* config, HWND parent) = 0;
+  virtual INT_PTR Configure(ServiceConfig* base_config, HWND parent) = 0;
 };
 
 }  // namespace service

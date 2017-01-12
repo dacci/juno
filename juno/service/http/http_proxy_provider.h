@@ -16,13 +16,20 @@ class HttpProxyProvider : public ServiceProvider {
   std::unique_ptr<ServiceConfig> CreateConfig() override;
   std::unique_ptr<ServiceConfig> LoadConfig(
       const misc::RegistryKey& key) override;
-  bool SaveConfig(const ServiceConfig* config, misc::RegistryKey* key) override;
+  bool SaveConfig(const ServiceConfig* base_config,
+                  misc::RegistryKey* key) override;
   std::unique_ptr<ServiceConfig> CopyConfig(
-      const ServiceConfig* config) override;
+      const ServiceConfig* base_config) override;
 
-  std::unique_ptr<Service> CreateService(const ServiceConfig* config) override;
+  std::unique_ptr<base::DictionaryValue> ConvertConfig(
+      const ServiceConfig* base_config) override;
+  std::unique_ptr<ServiceConfig> ConvertConfig(
+      const base::DictionaryValue* value) override;
 
-  INT_PTR Configure(ServiceConfig* config, HWND parent) override;
+  std::unique_ptr<Service> CreateService(
+      const ServiceConfig* base_config) override;
+
+  INT_PTR Configure(ServiceConfig* base_config, HWND parent) override;
 
  private:
   HttpProxyProvider(const HttpProxyProvider&) = delete;

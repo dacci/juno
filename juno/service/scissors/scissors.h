@@ -42,7 +42,7 @@ struct ServiceConfig;
 
 namespace scissors {
 
-class ScissorsConfig;
+struct ScissorsConfig;
 
 class Scissors : public Service, private io::net::SocketChannel::Listener {
  public:

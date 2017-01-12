@@ -16,28 +16,23 @@ class SocksProxyProvider : public ServiceProvider {
  public:
   SocksProxyProvider() {}
 
-  std::unique_ptr<ServiceConfig> CreateConfig() override {
-    return std::make_unique<SocksProxyConfig>();
-  }
-
+  std::unique_ptr<ServiceConfig> CreateConfig() override;
   std::unique_ptr<ServiceConfig> LoadConfig(
-      const misc::RegistryKey& /*key*/) override {
-    return CreateConfig();
-  }
-
-  bool SaveConfig(const ServiceConfig* /*config*/,
-                  misc::RegistryKey* /*key*/) override {
-    return true;
-  }
-
+      const misc::RegistryKey& key) override;
+  bool SaveConfig(const ServiceConfig* base_config,
+                  misc::RegistryKey* key) override;
   std::unique_ptr<ServiceConfig> CopyConfig(
-      const ServiceConfig* config) override;
+      const ServiceConfig* base_config) override;
 
-  std::unique_ptr<Service> CreateService(const ServiceConfig* config) override;
+  std::unique_ptr<base::DictionaryValue> ConvertConfig(
+      const ServiceConfig* base_config) override;
+  std::unique_ptr<ServiceConfig> ConvertConfig(
+      const base::DictionaryValue* value) override;
 
-  INT_PTR Configure(ServiceConfig* /*config*/, HWND /*parent*/) override {
-    return IDOK;
-  }
+  std::unique_ptr<Service> CreateService(
+      const ServiceConfig* base_config) override;
+
+  INT_PTR Configure(ServiceConfig* base_config, HWND parent) override;
 
  private:
   SocksProxyProvider(const SocksProxyProvider&) = delete;
