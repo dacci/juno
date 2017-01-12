@@ -197,7 +197,7 @@ bool ServiceManager::UpdateConfiguration(
     auto updated = new_services.find(i->first);
     if (updated == new_services.end() ||
         service_configs_[i->first]->provider_ != updated->second->provider_) {
-      services_.at(i->first)->Stop();
+      services_[i->first]->Stop();
       services_.erase(i->first);
 
       service_configs_.erase(i++);
@@ -307,14 +307,14 @@ bool ServiceManager::SaveService(const RegistryKey& parent,
       !service_key.SetString(kProviderValueName, config->provider_))
     return false;
 
-  return providers_.at(config->provider_)->SaveConfig(config, &service_key);
+  return providers_[config->provider_]->SaveConfig(config, &service_key);
 }
 
 bool ServiceManager::CreateService(const std::string& id) {
   DCHECK(service_configs_.find(id) != service_configs_.end());
 
-  auto& config = service_configs_.at(id);
-  auto service = providers_.at(config->provider_)->CreateService(config.get());
+  auto& config = service_configs_[id];
+  auto service = providers_[config->provider_]->CreateService(config.get());
   if (service == nullptr)
     return false;
 
@@ -362,7 +362,7 @@ bool ServiceManager::LoadServer(const RegistryKey& parent,
 bool ServiceManager::CreateServer(const std::string& id) {
   DCHECK(server_configs_.find(id) != server_configs_.end());
 
-  auto& config = server_configs_.at(id);
+  auto& config = server_configs_[id];
   DCHECK(config != nullptr);
 
   if (!config->enabled_)
