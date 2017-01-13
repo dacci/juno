@@ -289,7 +289,115 @@ bool ServiceManager::UpdateConfiguration(
   return succeeded;
 }
 
-std::unique_ptr<base::DictionaryValue> ServiceManager::ConvertConfig(
+std::unique_ptr<base::ListValue> ServiceManager::ConvertServiceConfig(
+    const ServiceConfigMap* configs) const {
+  if (configs == nullptr)
+    return nullptr;
+
+  auto list = std::make_unique<base::ListValue>();
+  if (list == nullptr)
+    return nullptr;
+
+  for (const auto& pair : *configs) {
+    auto value = ConvertServiceConfig(pair.second.get());
+    if (value == nullptr)
+      return nullptr;
+
+    list->Append(std::move(value));
+  }
+
+  return std::move(list);
+}
+
+std::unique_ptr<base::DictionaryValue> ServiceManager::ConvertServiceConfig(
+    const ServiceConfig* config) const {
+  if (config == nullptr)
+    return nullptr;
+
+  auto provider = GetProvider(config->provider_);
+  if (provider == nullptr)
+    return nullptr;
+
+  auto value = provider->ConvertConfig(config);
+  if (value == nullptr)
+    return nullptr;
+
+  value->SetString(kIdJson, config->id_);
+  value->SetString(kNameJson, config->name_);
+  value->SetString(kProviderJson, config->provider_);
+
+  return std::move(value);
+}
+
+bool ServiceManager::ConvertServiceConfig(const base::ListValue* values,
+                                          ServiceConfigMap* output) const {
+  if (values == nullptr || output == nullptr)
+    return false;
+
+  output->clear();
+
+  for (size_t i = 0, l = values->GetSize(); i < l; ++i) {
+    const base::DictionaryValue* value;
+    if (!values->GetDictionary(i, &value))
+      return false;
+
+    auto config = ConvertServiceConfig(value);
+    if (config == nullptr)
+      return false;
+
+    output->insert({config->id_, std::move(config)});
+  }
+
+  return true;
+}
+
+std::unique_ptr<ServiceConfig> ServiceManager::ConvertServiceConfig(
+    const base::DictionaryValue* value) const {
+  if (value == nullptr)
+    return nullptr;
+
+  std::string provider_name;
+  if (!value->GetString(kProviderJson, &provider_name))
+    return nullptr;
+
+  auto provider = GetProvider(provider_name);
+  if (provider == nullptr)
+    return nullptr;
+
+  auto config = provider->ConvertConfig(value);
+  if (config == nullptr)
+    return nullptr;
+
+  if (!value->GetString(kIdJson, &config->id_) ||
+      !value->GetString(kNameJson, &config->name_))
+    return nullptr;
+
+  config->provider_ = std::move(provider_name);
+
+  return std::move(config);
+}
+
+std::unique_ptr<base::ListValue> ServiceManager::ConvertServerConfig(
+    const ServerConfigMap* configs) {
+  if (configs == nullptr)
+    return nullptr;
+
+  auto list = std::make_unique<base::ListValue>();
+  if (list == nullptr)
+    return nullptr;
+
+  for (const auto& pair : *configs) {
+    auto value = ConvertServerConfig(pair.second.get());
+    if (value == nullptr)
+      return nullptr;
+
+    list->Append(std::move(value));
+  }
+
+  return std::move(list);
+}
+
+std::unique_ptr<base::DictionaryValue> ServiceManager::ConvertServerConfig(
     const ServerConfig* config) {
   if (config == nullptr)
     return nullptr;
@@ -315,7 +423,27 @@ std::unique_ptr<base::DictionaryValue> ServiceManager::ConvertConfig(
   return std::move(value);
 }
 
-std::unique_ptr<ServerConfig> ServiceManager::ConvertConfig(
+bool ServiceManager::ConvertServerConfig(const base::ListValue* values,
+                                         ServerConfigMap* output) {
+  if (values == nullptr || output == nullptr)
+    return false;
+
+  for (size_t i = 0, l = values->GetSize(); i < l; ++i) {
+    const base::DictionaryValue* value;
+    if (!values->GetDictionary(i, &value))
+      return false;
+
+    auto config = ConvertServerConfig(value);
+    if (config == nullptr)
+      return false;
+
+    output->insert({config->id_, std::move(config)});
+  }
+
+  return true;
+}
+
+std::unique_ptr<ServerConfig> ServiceManager::ConvertServerConfig(
     const base::DictionaryValue* value) {
   if (value == nullptr)
     return nullptr;
@@ -534,43 +662,15 @@ void ServiceManager::GetConfig(void* context, const base::Value* /*params*/,
   }
 
   auto manager = static_cast<const ServiceManager*>(context);
-  auto result = S_OK;
+  HRESULT result;
 
   do {
-    auto services = std::make_unique<base::ListValue>();
-    auto servers = std::make_unique<base::ListValue>();
+    auto services = manager->ConvertServiceConfig(&manager->service_configs_);
+    auto servers = ConvertServerConfig(&manager->server_configs_);
     if (services == nullptr || servers == nullptr) {
       result = E_OUTOFMEMORY;
       break;
     }
-
-    for (auto& pair : manager->service_configs_) {
-      auto provider = manager->GetProvider(pair.second->provider_);
-      auto config = provider->ConvertConfig(pair.second.get());
-      if (config != nullptr) {
-        config->SetString(kIdJson, pair.second->id_);
-        config->SetString(kNameJson, pair.second->name_);
-        config->SetString(kProviderJson, pair.second->provider_);
-        services->Append(std::move(config));
-      } else {
-        result = E_OUTOFMEMORY;
-        break;
-      }
-    }
-    if (FAILED(result))
-      break;
-
-    for (auto& pair : manager->server_configs_) {
-      auto config = ConvertConfig(pair.second.get());
-      if (config != nullptr) {
-        servers->Append(std::move(config));
-      } else {
-        result = E_OUTOFMEMORY;
-        break;
-      }
-    }
-    if (FAILED(result))
-      break;
 
     response->Set("result.services", std::move(services));
     response->Set("result.servers", std::move(servers));
@@ -603,7 +703,7 @@ void ServiceManager::SetConfig(void* context, const base::Value* params,
   params->GetAsDictionary(&object);
 
   auto manager = static_cast<ServiceManager*>(context);
-  auto result = S_OK;
+  HRESULT result;
 
   do {
     const base::ListValue* services = nullptr;
@@ -615,52 +715,16 @@ void ServiceManager::SetConfig(void* context, const base::Value* params,
     }
 
     ServiceConfigMap new_services;
-    for (size_t i = 0, l = services->GetSize(); i < l; ++i) {
-      const base::DictionaryValue* service;
-      if (!services->GetDictionary(i, &service)) {
-        result = E_INVALIDARG;
-        break;
-      }
-
-      std::string provider;
-      if (!service->GetString(kProviderJson, &provider)) {
-        result = E_INVALIDARG;
-        break;
-      }
-
-      auto config = manager->GetProvider(provider)->ConvertConfig(service);
-      if (config != nullptr) {
-        new_services[config->id_] = std::move(config);
-      } else {
-        result = E_OUTOFMEMORY;
-        break;
-      }
-    }
-    if (FAILED(result))
-      break;
-
     ServerConfigMap new_servers;
-    for (size_t i = 0, l = servers->GetSize(); i < l; ++i) {
-      const base::DictionaryValue* server;
-      if (!servers->GetDictionary(i, &server)) {
-        result = E_INVALIDARG;
-        break;
-      }
-
-      auto config = ConvertConfig(server);
-      if (config != nullptr) {
-        new_servers[config->id_] = std::move(config);
-      } else {
-        result = E_OUTOFMEMORY;
-        break;
-      }
-    }
-    if (FAILED(result))
+    if (!manager->ConvertServiceConfig(services, &new_services) ||
+        !ConvertServerConfig(servers, &new_servers)) {
+      result = E_UNEXPECTED;
       break;
+    }
 
-    response->SetBoolean(rpc::properties::kResult,
-                         manager->UpdateConfiguration(std::move(new_services),
-                                                      std::move(new_servers)));
+    auto succeeded = manager->UpdateConfiguration(std::move(new_services),
+                                                  std::move(new_servers));
+    response->SetBoolean(rpc::properties::kResult, succeeded);
 
     return;
   } while (false);

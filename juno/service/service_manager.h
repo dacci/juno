@@ -47,9 +47,22 @@ class ServiceManager {
       ServiceConfigMap&& service_configs,  // NOLINT(whitespace/operators)
       ServerConfigMap&& server_configs);   // NOLINT(whitespace/operators)
 
-  static std::unique_ptr<base::DictionaryValue> ConvertConfig(
+  std::unique_ptr<base::ListValue> ConvertServiceConfig(
+      const ServiceConfigMap* configs) const;
+  std::unique_ptr<base::DictionaryValue> ConvertServiceConfig(
+      const ServiceConfig* config) const;
+  bool ConvertServiceConfig(const base::ListValue* values,
+                            ServiceConfigMap* output) const;
+  std::unique_ptr<ServiceConfig> ConvertServiceConfig(
+      const base::DictionaryValue* value) const;
+
+  static std::unique_ptr<base::ListValue> ConvertServerConfig(
+      const ServerConfigMap* configs);
+  static std::unique_ptr<base::DictionaryValue> ConvertServerConfig(
       const ServerConfig* config);
-  static std::unique_ptr<ServerConfig> ConvertConfig(
+  static bool ConvertServerConfig(const base::ListValue* values,
+                                  ServerConfigMap* output);
+  static std::unique_ptr<ServerConfig> ConvertServerConfig(
       const base::DictionaryValue* value);
 
   const ProviderMap& providers() const {
