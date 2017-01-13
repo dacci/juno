@@ -8,7 +8,6 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "misc/registry_key.h"
 #include "service/server_config.h"

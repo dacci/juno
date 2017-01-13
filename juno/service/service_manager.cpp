@@ -42,15 +42,15 @@ const char kServiceValueName[] = "Service";
 const char kEnabledValueName[] = "Enabled";
 const char kCertificateValueName[] = "Certificate";
 
-const char kIdJson[] = "id";
-const char kNameJson[] = "name";
-const char kProviderJson[] = "provider";
-const char kBindJson[] = "bind";
-const char kListenJson[] = "listen";
-const char kTypeJson[] = "type";
-const char kServiceJson[] = "service";
-const char kEnabledJson[] = "enabled";
-const char kCertificateJson[] = "certificate";
+const std::string kIdJson = "id";
+const std::string kNameJson = "name";
+const std::string kProviderJson = "provider";
+const std::string kBindJson = "bind";
+const std::string kListenJson = "listen";
+const std::string kTypeJson = "type";
+const std::string kServiceJson = "service";
+const std::string kEnabledJson = "enabled";
+const std::string kCertificateJson = "certificate";
 
 class SecureChannelCustomizer : public TcpServer::ChannelCustomizer {
  public:

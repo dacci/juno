@@ -136,7 +136,7 @@ class CryptProvider {
     if (!succeeded)
       return nullptr;
 
-    return random;
+    return std::move(random);
   }
 
   bool IsValid() const {

@@ -4,6 +4,8 @@
 
 #include <base/logging.h>
 
+#include <memory>
+
 #include "io/net/datagram.h"
 #include "io/net/socket_channel.h"
 #include "io/secure_channel.h"
@@ -47,7 +49,7 @@ bool Scissors::UpdateConfig(const ServiceConfig* config) {
   }
 
   if (config_->remote_ssl_ && credential_ == nullptr) {
-    credential_.reset(new misc::schannel::SchannelCredential());
+    credential_ = std::make_unique<misc::schannel::SchannelCredential>();
     if (credential_ == nullptr)
       return false;
 

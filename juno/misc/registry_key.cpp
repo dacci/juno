@@ -2,6 +2,7 @@
 
 #include "misc/registry_key.h"
 
+#include <memory>
 #include <string>
 
 namespace juno {
@@ -91,24 +92,22 @@ bool RegistryKey::QueryString(const char* name, std::string* value) const {
   if (result != ERROR_SUCCESS || type != REG_SZ)
     return false;
 
-  auto buffer = new char[size];
+  auto buffer = std::make_unique<char[]>(size);
   if (buffer == nullptr)
     return false;
 
   result = RegQueryValueExA(key_, name, nullptr, nullptr,
-                            reinterpret_cast<BYTE*>(buffer), &size);
+                            reinterpret_cast<BYTE*>(buffer.get()), &size);
   if (result == ERROR_SUCCESS) {
-    auto end = buffer + size - 1;
-    while (end > buffer) {
+    auto end = buffer.get() + size - 1;
+    while (end > buffer.get()) {
       if (*end)
         break;
       --end;
     }
 
-    value->assign(buffer, end + 1);
+    value->assign(buffer.get(), end + 1);
   }
-
-  delete[] buffer;
 
   return true;
 }
@@ -119,24 +118,22 @@ bool RegistryKey::QueryString(const wchar_t* name, std::wstring* value) const {
   if (result != ERROR_SUCCESS || type != REG_SZ)
     return false;
 
-  auto buffer = new wchar_t[size / 2];
+  auto buffer = std::make_unique<wchar_t[]>(size / 2);
   if (buffer == nullptr)
     return false;
 
   result = RegQueryValueExW(key_, name, nullptr, nullptr,
-                            reinterpret_cast<BYTE*>(buffer), &size);
+                            reinterpret_cast<BYTE*>(buffer.get()), &size);
   if (result == ERROR_SUCCESS) {
-    auto end = buffer + size - 1;
-    while (end > buffer) {
+    auto end = buffer.get() + size - 1;
+    while (end > buffer.get()) {
       if (*end)
         break;
       --end;
     }
 
-    value->assign(buffer, end + 1);
+    value->assign(buffer.get(), end + 1);
   }
-
-  delete[] buffer;
 
   return true;
 }

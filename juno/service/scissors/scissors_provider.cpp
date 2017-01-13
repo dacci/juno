@@ -21,10 +21,10 @@ const char kRemotePort[] = "RemotePort";
 const char kRemoteSSL[] = "RemoteSSL";
 const char kRemoteUDP[] = "RemoteUDP";
 
-const char kRemoteAddressJson[] = "remote_address";
-const char kRemotePortJson[] = "remote_port";
-const char kRemoteSSLJson[] = "remote_ssl";
-const char kRemoteUDPJson[] = "remote_udp";
+const std::string kRemoteAddressJson = "remote_address";
+const std::string kRemotePortJson = "remote_port";
+const std::string kRemoteSSLJson = "remote_ssl";
+const std::string kRemoteUDPJson = "remote_udp";
 
 }  // namespace
 

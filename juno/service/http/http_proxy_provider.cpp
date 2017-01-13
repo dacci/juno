@@ -35,19 +35,19 @@ const char kName[] = "Name";
 const char kValue[] = "Value";
 const char kReplace[] = "Replace";
 
-const char kUseRemoteProxyJson[] = "use_remote_proxy";
-const char kRemoteProxyHostJson[] = "remote_proxy_host";
-const char kRemoteProxyPortJson[] = "remote_proxy_port";
-const char kAuthRemoteProxyJson[] = "auth_remote_proxy";
-const char kRemoteProxyUserJson[] = "remote_proxy_user";
-const char kRemoteProxyPasswordJson[] = "remote_proxy_password";
-const char kHeaderFiltersJson[] = "header_filters";
-const char kRequestJson[] = "request";
-const char kResponseJson[] = "response";
-const char kActionJson[] = "action";
-const char kNameJson[] = "name";
-const char kValueJson[] = "value";
-const char kReplaceJson[] = "replace";
+const std::string kUseRemoteProxyJson = "use_remote_proxy";
+const std::string kRemoteProxyHostJson = "remote_proxy_host";
+const std::string kRemoteProxyPortJson = "remote_proxy_port";
+const std::string kAuthRemoteProxyJson = "auth_remote_proxy";
+const std::string kRemoteProxyUserJson = "remote_proxy_user";
+const std::string kRemoteProxyPasswordJson = "remote_proxy_password";
+const std::string kHeaderFiltersJson = "header_filters";
+const std::string kRequestJson = "request";
+const std::string kResponseJson = "response";
+const std::string kActionJson = "action";
+const std::string kNameJson = "name";
+const std::string kValueJson = "value";
+const std::string kReplaceJson = "replace";
 
 }  // namespace
 
