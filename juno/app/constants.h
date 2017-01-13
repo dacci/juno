@@ -23,6 +23,8 @@ extern const char kService[];
 extern const char kInstall[];
 extern const char kUninstall[];
 
+extern const char kConfig[];
+
 }  // namespace switches
 
 #endif  // JUNO_APP_CONSTANTS_H_

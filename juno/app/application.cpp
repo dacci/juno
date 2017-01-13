@@ -17,6 +17,7 @@
 #include <url/url_util.h>
 
 #include "app/constants.h"
+#include "app/service_configurator.h"
 #include "misc/tunneling_service.h"
 #include "service/rpc/rpc_service.h"
 #include "service/service_manager.h"
@@ -53,8 +54,9 @@ typedef base::win::GenericScopedHandle<ServiceHandleTraits,
 }  // namespace
 
 Application::Application()
-    : service_mode_(false),
-      foreground_mode_(false),
+    : foreground_mode_(false),
+      service_mode_(false),
+      config_mode_(false),
       main_thread_id_(0),
       status_handle_(NULL),
       service_status_(),
@@ -62,6 +64,7 @@ Application::Application()
       mutex_(NULL),
       message_loop_(nullptr),
       service_manager_(nullptr),
+      rpc_service_(nullptr),
       frame_(nullptr) {
   service_status_.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
   service_status_.dwControlsAccepted = SERVICE_ACCEPT_STOP;
@@ -235,8 +238,9 @@ bool Application::ParseCommandLine(LPCTSTR /*command_line*/,
     return false;
   }
 
-  service_mode_ = command_line->HasSwitch(switches::kService);
   foreground_mode_ = command_line->HasSwitch(switches::kForeground);
+  service_mode_ = command_line->HasSwitch(switches::kService);
+  config_mode_ = command_line->HasSwitch(switches::kConfig);
 
   return true;
 }
@@ -318,6 +322,11 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
   } else {
     LOG(ERROR) << "WinSock startup failed: " << error;
     ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
+    return S_FALSE;
+  }
+
+  if (config_mode_) {
+    ServiceConfigurator().Configure();
     return S_FALSE;
   }
 

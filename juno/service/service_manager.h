@@ -15,6 +15,12 @@
 #include "service/service_provider.h"
 
 namespace juno {
+namespace app {
+
+class ServiceConfigurator;
+
+}  // namespace app
+
 namespace service {
 
 class Server;
@@ -70,6 +76,8 @@ class ServiceManager {
   }
 
  private:
+  friend class app::ServiceConfigurator;
+
   typedef std::map<std::string, std::unique_ptr<Service>> ServiceMap;
   typedef std::map<std::string, std::unique_ptr<Server>> ServerMap;
 

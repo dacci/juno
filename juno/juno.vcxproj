@@ -201,6 +201,7 @@
   <ItemGroup>
     <ClCompile Include="app\application.cpp" />
     <ClCompile Include="app\constants.cpp" />
+    <ClCompile Include="app\service_configurator.cpp" />
     <ClCompile Include="io\named_pipe_channel.cpp" />
     <ClCompile Include="io\net\async_server_socket.cpp" />
     <ClCompile Include="io\net\datagram_channel.cpp" />
@@ -250,6 +251,7 @@
   <ItemGroup>
     <ClInclude Include="app\application.h" />
     <ClInclude Include="app\constants.h" />
+    <ClInclude Include="app\service_configurator.h" />
     <ClInclude Include="io\channel.h" />
     <ClInclude Include="io\named_pipe_channel.h" />
     <ClInclude Include="io\net\abstract_socket.h" />

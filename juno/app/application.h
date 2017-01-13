@@ -77,8 +77,9 @@ class Application : public CAtlExeModuleT<Application> {
   DWORD ServiceHandler(DWORD control, DWORD type, void* data) const;
 
   base::AtExitManager at_exit_manager_;
-  bool service_mode_;
   bool foreground_mode_;
+  bool service_mode_;
+  bool config_mode_;
   DWORD main_thread_id_;
 
   SERVICE_STATUS_HANDLE status_handle_;

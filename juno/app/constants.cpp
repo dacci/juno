@@ -18,4 +18,6 @@ const char kService[] = "service";
 const char kInstall[] = "install";
 const char kUninstall[] = "uninstall";
 
+const char kConfig[] = "config";
+
 }  // namespace switches
