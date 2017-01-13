@@ -63,7 +63,7 @@ void ServerDialog::FillServiceCombo() {
 
   for (auto& service : parent_->service_configs_) {
     auto config = service.second.get();
-    auto index = service_combo_.AddString(CString(config->name_.c_str()));
+    auto index = service_combo_.AddString(config->name_.c_str());
     service_combo_.SetItemDataPtr(index, config);
   }
 }

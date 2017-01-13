@@ -52,20 +52,19 @@ void ProviderDialog::OnOk(UINT /*notify_code*/, int /*id*/,
     return;
   }
 
+  for (const auto& pair : parent_->service_configs_) {
+    auto new_name = name();
+    if (pair.second->name_ == new_name) {
+      message.LoadString(IDS_DUPLICATE_NAME);
+      balloon.pszText = message;
+      name_edit_.ShowBalloonTip(&balloon);
+      return;
+    }
+  }
+
   provider_index_ = provider_combo_.GetCurSel();
   if (provider_index_ == CB_ERR) {
     ShowBalloonTip(provider_combo_, IDS_NOT_SPECIFIED);
-    return;
-  }
-
-  name_.resize(::GetWindowTextLengthA(name_edit_));
-  GetWindowTextA(name_edit_, &name_[0], static_cast<int>(name_.size() + 1));
-
-  auto pair = parent_->service_configs_.find(name_);
-  if (pair != parent_->service_configs_.end()) {
-    message.LoadString(IDS_DUPLICATE_NAME);
-    balloon.pszText = message;
-    name_edit_.ShowBalloonTip(&balloon);
     return;
   }
 

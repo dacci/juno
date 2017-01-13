@@ -3,6 +3,7 @@
 #include "service/service_manager.h"
 
 #include <base/logging.h>
+#include <base/strings/sys_string_conversions.h>
 
 #include <memory>
 #include <string>
@@ -32,7 +33,7 @@ const char kConfigKeyName[] = "Software\\dacci.org\\Juno";
 const char kServicesKeyName[] = "Services";
 const char kServersKeyName[] = "Servers";
 
-const char kNameValueName[] = "Name";
+const wchar_t kNameValueName[] = L"Name";
 const char kProviderValueName[] = "Provider";
 const char kBindValueName[] = "Bind";
 const char kListenValueName[] = "Listen";
@@ -490,7 +491,7 @@ bool ServiceManager::LoadService(const RegistryKey& parent,
     config->id_ = id;
   } else {
     config->id_ = misc::GenerateGUID();
-    config->name_ = id;
+    config->name_ = base::SysNativeMBToWide(id);
   }
 
   config->provider_ = provider_name;
@@ -544,8 +545,9 @@ bool ServiceManager::LoadServer(const RegistryKey& parent,
 
   // convert name to GUID
   if (service_configs_.find(config->service_) == service_configs_.end()) {
+    auto service = base::SysNativeMBToWide(config->service_);
     for (const auto& pair : service_configs_) {
-      if (pair.second->name_ == config->service_) {
+      if (pair.second->name_ == service) {
         config->service_ = pair.second->id_;
         break;
       }

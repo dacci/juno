@@ -29,7 +29,7 @@ void ServicesPage::AddServiceItem(const service::ServiceConfig* config,
   if (index == -1)
     index = service_list_.GetItemCount();
 
-  service_list_.InsertItem(index, CString(config->name_.c_str()));
+  service_list_.InsertItem(index, config->name_.c_str());
   service_list_.AddItem(index, 1, CString(config->provider_.c_str()));
   service_list_.SetItemData(index, reinterpret_cast<DWORD_PTR>(config));
 }

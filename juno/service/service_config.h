@@ -10,7 +10,7 @@ namespace service {
 
 struct ServiceConfig {
   std::string id_;
-  std::string name_;
+  std::wstring name_;
   std::string provider_;
 };
 

@@ -38,8 +38,8 @@ class ProviderDialog : public DialogImplEx<ProviderDialog>,
 
   const std::string& GetProviderName() const;
 
-  const std::string& name() const {
-    return name_;
+  std::wstring name() const {
+    return name_.GetString();
   }
 
   BEGIN_MSG_MAP(ProviderDialog)
@@ -53,6 +53,7 @@ class ProviderDialog : public DialogImplEx<ProviderDialog>,
 
   BEGIN_DDX_MAP(ProviderDialog)
     DDX_CONTROL_HANDLE(IDC_NAME, name_edit_)
+    DDX_TEXT(IDC_NAME, name_)
     DDX_CONTROL_HANDLE(IDC_PROVIDER, provider_combo_)
   END_DDX_MAP()
 
@@ -65,9 +66,9 @@ class ProviderDialog : public DialogImplEx<ProviderDialog>,
   PreferenceDialog* const parent_;
 
   std::vector<std::string> provider_names_;
-  std::string name_;
 
   CEdit name_edit_;
+  CString name_;
   CComboBox provider_combo_;
   int provider_index_;
 

@@ -26,7 +26,7 @@ PreferenceDialog::PreferenceDialog()
 CString PreferenceDialog::GetServiceName(const std::string& id) const {
   for (auto& pair : service_configs_) {
     if (pair.second->id_ == id)
-      return CString(pair.second->name_.c_str());
+      return pair.second->name_.c_str();
   }
 
   return CString();
@@ -34,7 +34,7 @@ CString PreferenceDialog::GetServiceName(const std::string& id) const {
 
 std::string PreferenceDialog::GetServiceId(const CString& name) const {
   for (auto& pair : service_configs_) {
-    if (CString(pair.second->name_.c_str()) == name)
+    if (pair.second->name_.c_str() == name)
       return pair.second->id_;
   }
 
