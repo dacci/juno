@@ -52,7 +52,7 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDR_MAIN_FRAME          ICON                    "juno.ico"
+IDR_MAIN                ICON                    "juno.ico"
 
 IDR_TRAY_MENU           ICON                    "juno_g.ico"
 
@@ -101,7 +101,7 @@ END
 // Menu
 //
 
-IDR_MAIN_FRAME MENU
+IDR_MAIN MENU
 BEGIN
     POPUP "ÉÅÉjÉÖÅ["
     BEGIN
@@ -418,7 +418,7 @@ IDB_DOCUMENT_NEW        BITMAP                  "document-new.bmp"
 
 STRINGTABLE
 BEGIN
-    IDR_MAIN_FRAME          "Juno"
+    IDR_MAIN                "Juno Proxy Server"
 END
 
 STRINGTABLE

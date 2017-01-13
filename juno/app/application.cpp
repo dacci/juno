@@ -95,6 +95,9 @@ HRESULT Application::InstallService() {
       break;
     }
 
+    CString description;
+    description.LoadString(IDR_MAIN);
+
     auto command_line = base::CommandLine::ForCurrentProcess();
     auto path = command_line->GetProgram();
     if (!path.IsAbsolute())
@@ -103,7 +106,7 @@ HRESULT Application::InstallService() {
     base::CommandLine service_command(path);
     service_command.AppendSwitch(switches::kService);
 
-    service.Set(CreateServiceW(manager.Get(), kServiceName, kServiceName,
+    service.Set(CreateServiceW(manager.Get(), kServiceName, description,
                                SERVICE_ALL_ACCESS, SERVICE_WIN32_OWN_PROCESS,
                                SERVICE_DEMAND_START, SERVICE_ERROR_IGNORE,
                                service_command.GetCommandLineString().c_str(),
@@ -500,8 +503,8 @@ void Application::ReportEvent(WORD type, DWORD message_id) const {
       parent = frame_->m_hWnd;
 
     TaskDialog(parent, ModuleHelper::GetResourceInstance(),
-               MAKEINTRESOURCE(IDR_MAIN_FRAME), nullptr,
-               MAKEINTRESOURCE(message_id), TDCBF_OK_BUTTON, icon, nullptr);
+               MAKEINTRESOURCE(IDR_MAIN), nullptr, MAKEINTRESOURCE(message_id),
+               TDCBF_OK_BUTTON, icon, nullptr);
   }
 }
 

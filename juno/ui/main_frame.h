@@ -23,7 +23,7 @@ class MainFrame : public CFrameWindowImpl<MainFrame>, private CMessageFilter {
  public:
   MainFrame();
 
-  DECLARE_FRAME_WND_CLASS(nullptr, IDR_MAIN_FRAME)
+  DECLARE_FRAME_WND_CLASS(nullptr, IDR_MAIN)
 
   BEGIN_MSG_MAP(MainFrame)
     MSG_WM_CREATE(OnCreate)

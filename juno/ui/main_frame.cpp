@@ -61,7 +61,7 @@ int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
     notify_icon_.guidItem = GUID_JUNO_APPLICATION;
 
     auto result = LoadIconMetric(ModuleHelper::GetResourceInstance(),
-                                 MAKEINTRESOURCE(IDR_MAIN_FRAME), LIM_SMALL,
+                                 MAKEINTRESOURCE(IDR_MAIN), LIM_SMALL,
                                  &notify_icon_.hIcon);
     if (FAILED(result)) {
       LOG(ERROR) << "LoadIconMetric() failed: 0x" << std::hex << result;
@@ -69,7 +69,7 @@ int MainFrame::OnCreate(CREATESTRUCT* /*create_struct*/) {
       return -1;
     }
 
-    auto length = AtlLoadString(IDR_MAIN_FRAME, notify_icon_.szTip,
+    auto length = AtlLoadString(IDR_MAIN, notify_icon_.szTip,
                                 _countof(notify_icon_.szTip));
     if (length == 0) {
       LOG(ERROR) << "LoadString() failed: " << GetLastError();

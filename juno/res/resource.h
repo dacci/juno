@@ -2,7 +2,7 @@
 // Microsoft Visual C++ で生成されたインクルード ファイル。
 // resource.rc で使用
 //
-#define IDR_MAIN_FRAME                  1
+#define IDR_MAIN                        1
 #define IDR_TRAY_MENU                   101
 #define IDD_SERVICES_PAGE               102
 #define IDD_SERVERS_PAGE                103
