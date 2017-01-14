@@ -22,8 +22,8 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
  public:
   PreferenceDialog();
 
-  CString GetServiceName(const std::string& id) const;
-  std::string GetServiceId(const CString& name) const;
+  CString GetServiceName(const std::wstring& id) const;
+  const std::wstring& GetServiceId(const CString& name) const;
 
   BEGIN_MSG_MAP(PreferenceDialog)
     MSG_WM_SHOWWINDOW(OnShowWindow)

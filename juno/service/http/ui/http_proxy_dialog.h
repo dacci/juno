@@ -47,12 +47,15 @@ class HttpProxyDialog : public CDialogImpl<HttpProxyDialog>,
 
   BEGIN_DDX_MAP(HttpProxyDialog)
     DDX_CONTROL_HANDLE(IDC_USE_REMOTE_PROXY, use_remote_proxy_check_)
+    DDX_TEXT(IDC_ADDRESS, address_)
     DDX_CONTROL_HANDLE(IDC_ADDRESS, address_edit_)
     DDX_INT(IDC_PORT, port_)
     DDX_CONTROL_HANDLE(IDC_PORT, port_edit_)
     DDX_CONTROL_HANDLE(IDC_PORT_SPIN, port_spin_)
     DDX_CONTROL_HANDLE(IDC_AUTH_REMOTE, auth_remote_check_)
+    DDX_TEXT(IDC_REMOTE_USER, remote_user_)
     DDX_CONTROL_HANDLE(IDC_REMOTE_USER, remote_user_edit_)
+    DDX_TEXT(IDC_REMOTE_PASSWORD, remote_password_)
     DDX_CONTROL_HANDLE(IDC_REMOTE_PASSWORD, remote_password_edit_)
     DDX_CONTROL_HANDLE(IDC_FILTER_LIST, filter_list_)
     DDX_CONTROL_HANDLE(IDC_ADD_BUTTON, add_button_)
@@ -82,12 +85,15 @@ class HttpProxyDialog : public CDialogImpl<HttpProxyDialog>,
   std::vector<HttpProxyConfig::HeaderFilter> filters_;
 
   CButton use_remote_proxy_check_;
+  CString address_;
   CEdit address_edit_;
   int port_;
   CEdit port_edit_;
   CUpDownCtrl port_spin_;
   CButton auth_remote_check_;
+  CString remote_user_;
   CEdit remote_user_edit_;
+  CString remote_password_;
   CEdit remote_password_edit_;
   CListViewCtrl filter_list_;
   CImageList image_list_;

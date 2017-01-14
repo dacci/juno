@@ -15,9 +15,9 @@ class HttpProxyProvider : public ServiceProvider {
 
   std::unique_ptr<ServiceConfig> CreateConfig() override;
   std::unique_ptr<ServiceConfig> LoadConfig(
-      const misc::RegistryKey& key) override;
+      const base::win::RegKey& key) override;
   bool SaveConfig(const ServiceConfig* base_config,
-                  misc::RegistryKey* key) override;
+                  base::win::RegKey* key) override;
   std::unique_ptr<ServiceConfig> CopyConfig(
       const ServiceConfig* base_config) override;
 

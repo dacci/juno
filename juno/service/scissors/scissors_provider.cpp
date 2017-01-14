@@ -2,6 +2,7 @@
 
 #include "service/scissors/scissors_provider.h"
 
+#include <base/strings/sys_string_conversions.h>
 #include <base/values.h>
 
 #include <memory>
@@ -16,10 +17,10 @@ namespace service {
 namespace scissors {
 namespace {
 
-const char kRemoteAddress[] = "RemoteAddress";
-const char kRemotePort[] = "RemotePort";
-const char kRemoteSSL[] = "RemoteSSL";
-const char kRemoteUDP[] = "RemoteUDP";
+const wchar_t kRemoteAddressReg[] = L"RemoteAddress";
+const wchar_t kRemotePortReg[] = L"RemotePort";
+const wchar_t kRemoteSSLReg[] = L"RemoteSSL";
+const wchar_t kRemoteUDPReg[] = L"RemoteUDP";
 
 const std::string kRemoteAddressJson = "remote_address";
 const std::string kRemotePortJson = "remote_port";
@@ -33,41 +34,42 @@ std::unique_ptr<ServiceConfig> ScissorsProvider::CreateConfig() {
 }
 
 std::unique_ptr<ServiceConfig> ScissorsProvider::LoadConfig(
-    const misc::RegistryKey& key) {
+    const base::win::RegKey& key) {
   auto config = std::make_unique<ScissorsConfig>();
   if (config == nullptr)
     return nullptr;
 
-  int int_value;
-  std::string string_value;
+  DWORD int_value;
+  std::wstring string_value;
 
-  if (!key.QueryString(kRemoteAddress, &string_value) ||
-      !key.QueryInteger(kRemotePort, &int_value))
+  if (key.ReadValue(kRemoteAddressReg, &string_value) != ERROR_SUCCESS ||
+      key.ReadValueDW(kRemotePortReg, &int_value) != ERROR_SUCCESS)
     return nullptr;
 
-  config->remote_address_ = string_value;
+  config->remote_address_ = base::SysWideToNativeMB(string_value);
   config->remote_port_ = int_value;
 
-  if (key.QueryInteger(kRemoteSSL, &int_value))
+  if (key.ReadValueDW(kRemoteSSLReg, &int_value) == ERROR_SUCCESS)
     config->remote_ssl_ = int_value != 0;
 
-  if (key.QueryInteger(kRemoteUDP, &int_value))
+  if (key.ReadValueDW(kRemoteUDPReg, &int_value) == ERROR_SUCCESS)
     config->remote_udp_ = int_value != 0;
 
   return std::move(config);
 }
 
 bool ScissorsProvider::SaveConfig(const ServiceConfig* base_config,
-                                  misc::RegistryKey* key) {
+                                  base::win::RegKey* key) {
   if (base_config == nullptr || key == nullptr)
     return false;
 
   auto config = static_cast<const ScissorsConfig*>(base_config);
 
-  key->SetString(kRemoteAddress, config->remote_address_);
-  key->SetInteger(kRemotePort, config->remote_port_);
-  key->SetInteger(kRemoteSSL, config->remote_ssl_);
-  key->SetInteger(kRemoteUDP, config->remote_udp_);
+  key->WriteValue(kRemoteAddressReg,
+                  base::SysNativeMBToWide(config->remote_address_).c_str());
+  key->WriteValue(kRemotePortReg, config->remote_port_);
+  key->WriteValue(kRemoteSSLReg, config->remote_ssl_);
+  key->WriteValue(kRemoteUDPReg, config->remote_udp_);
 
   return true;
 }
@@ -108,7 +110,7 @@ std::unique_ptr<ServiceConfig> ScissorsProvider::ConvertConfig(
   if (config == nullptr)
     return nullptr;
 
-  value->GetString(kRemoteAddress, &config->remote_address_);
+  value->GetString(kRemoteAddressJson, &config->remote_address_);
   value->GetInteger(kRemotePortJson, &config->remote_port_);
   value->GetBoolean(kRemoteSSLJson, &config->remote_ssl_);
   value->GetBoolean(kRemoteUDPJson, &config->remote_udp_);

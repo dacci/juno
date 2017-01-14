@@ -3,9 +3,13 @@
 #ifndef JUNO_SERVICE_SERVICE_PROVIDER_H_
 #define JUNO_SERVICE_SERVICE_PROVIDER_H_
 
+#pragma warning(push, 3)
+#pragma warning(disable : 4244)
+#include <base/win/registry.h>
+#pragma warning(pop)
+
 #include <memory>
 
-#include "misc/registry_key.h"
 #include "service/service.h"
 #include "service/service_config.h"
 
@@ -28,9 +32,9 @@ class __declspec(novtable) ServiceProvider {
 
   virtual std::unique_ptr<ServiceConfig> CreateConfig() = 0;
   virtual std::unique_ptr<ServiceConfig> LoadConfig(
-      const misc::RegistryKey& key) = 0;
+      const base::win::RegKey& key) = 0;
   virtual bool SaveConfig(const ServiceConfig* base_config,
-                          misc::RegistryKey* key) = 0;
+                          base::win::RegKey* key) = 0;
   virtual std::unique_ptr<ServiceConfig> CopyConfig(
       const ServiceConfig* base_config) = 0;
 

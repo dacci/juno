@@ -39,8 +39,11 @@ class HttpHeaderFilterDialog : public CDialogImpl<HttpHeaderFilterDialog>,
     DDX_CONTROL_HANDLE(IDC_REQUEST, request_check_)
     DDX_CONTROL_HANDLE(IDC_RESPONSE, response_check_)
     DDX_CONTROL_HANDLE(IDC_ACTION, action_combo_)
+    DDX_TEXT(IDC_NAME, name_)
     DDX_CONTROL_HANDLE(IDC_NAME, name_edit_)
+    DDX_TEXT(IDC_VALUE, value_)
     DDX_CONTROL_HANDLE(IDC_VALUE, value_edit_)
+    DDX_TEXT(IDC_REPLACE, replace_)
     DDX_CONTROL_HANDLE(IDC_REPLACE, replace_edit_)
   END_DDX_MAP()
 
@@ -55,8 +58,11 @@ class HttpHeaderFilterDialog : public CDialogImpl<HttpHeaderFilterDialog>,
   CButton request_check_;
   CButton response_check_;
   CComboBox action_combo_;
+  CString name_;
   CEdit name_edit_;
+  CString value_;
   CEdit value_edit_;
+  CString replace_;
   CEdit replace_edit_;
 
   HttpHeaderFilterDialog(const HttpHeaderFilterDialog&) = delete;

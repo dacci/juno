@@ -350,11 +350,7 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
     return S_FALSE;
   }
 
-  if (!service_manager_->LoadServices()) {
-    LOG(ERROR) << "Failed to load services.";
-    ReportEvent(EVENTLOG_ERROR_TYPE, IDS_ERR_INIT_FAILED);
-    return S_FALSE;
-  }
+  service_manager_->LoadServices();
 
   auto some_failed = false;
 

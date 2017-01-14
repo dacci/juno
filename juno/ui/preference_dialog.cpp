@@ -2,6 +2,8 @@
 
 #include "ui/preference_dialog.h"
 
+#include <base/strings/string_util.h>
+
 #include <string>
 #include <utility>
 
@@ -23,7 +25,7 @@ PreferenceDialog::PreferenceDialog()
   AddPage(*new ServersPage(this, &server_configs_));
 }
 
-CString PreferenceDialog::GetServiceName(const std::string& id) const {
+CString PreferenceDialog::GetServiceName(const std::wstring& id) const {
   for (auto& pair : service_configs_) {
     if (pair.second->id_ == id)
       return pair.second->name_.c_str();
@@ -32,13 +34,13 @@ CString PreferenceDialog::GetServiceName(const std::string& id) const {
   return CString();
 }
 
-std::string PreferenceDialog::GetServiceId(const CString& name) const {
+const std::wstring& PreferenceDialog::GetServiceId(const CString& name) const {
   for (auto& pair : service_configs_) {
     if (pair.second->name_.c_str() == name)
       return pair.second->id_;
   }
 
-  return std::string();
+  return base::EmptyString16();
 }
 
 void PreferenceDialog::OnShowWindow(BOOL show, UINT /*status*/) {

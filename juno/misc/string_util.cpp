@@ -4,30 +4,29 @@
 
 #include <objbase.h>
 
+#include <base/strings/sys_string_conversions.h>
+
 #include <string>
-#include <utility>
 
 namespace juno {
 namespace misc {
 
 std::string GenerateGUID() {
+  return base::SysWideToNativeMB(GenerateGUID16());
+}
+
+std::wstring GenerateGUID16() {
   GUID guid;
   auto result = CoCreateGuid(&guid);
   if (FAILED(result))
-    return std::string();
+    return std::wstring();
 
-  wchar_t buffer[39];
-  auto length = StringFromGUID2(guid, buffer, _countof(buffer));
+  std::wstring guid_string;
+  guid_string.resize(38);
+  auto length = StringFromGUID2(guid, &guid_string[0],
+                                static_cast<int>(guid_string.capacity()));
   if (length != 39)
-    return std::string();
-
-  std::string guid_string;
-  guid_string.resize(length - 1);
-  length = WideCharToMultiByte(CP_ACP, 0, buffer, length - 1, &guid_string[0],
-                               static_cast<int>(guid_string.size()), nullptr,
-                               nullptr);
-  if (length == 0)
-    return std::string();
+    return std::wstring();
 
   return std::move(guid_string);
 }

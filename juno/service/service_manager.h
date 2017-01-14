@@ -9,7 +9,6 @@
 #include <memory>
 #include <string>
 
-#include "misc/registry_key.h"
 #include "service/server_config.h"
 #include "service/service_provider.h"
 
@@ -24,9 +23,9 @@ namespace service {
 
 class Server;
 
-typedef std::map<std::string, std::unique_ptr<ServiceProvider>> ProviderMap;
-typedef std::map<std::string, std::unique_ptr<ServiceConfig>> ServiceConfigMap;
-typedef std::map<std::string, std::unique_ptr<ServerConfig>> ServerConfigMap;
+typedef std::map<std::wstring, std::unique_ptr<ServiceProvider>> ProviderMap;
+typedef std::map<std::wstring, std::unique_ptr<ServiceConfig>> ServiceConfigMap;
+typedef std::map<std::wstring, std::unique_ptr<ServerConfig>> ServerConfigMap;
 
 class ServiceManager {
  public:
@@ -37,20 +36,20 @@ class ServiceManager {
     return instance_;
   }
 
-  bool LoadServices();
+  void LoadServices();
   void StopServices();
 
   bool LoadServers();
   bool StartServers();
   void StopServers();
 
-  ServiceProvider* GetProvider(const std::string& name) const;
+  ServiceProvider* GetProvider(const std::wstring& name) const;
   void CopyServiceConfigs(ServiceConfigMap* configs) const;
   void CopyServerConfigs(ServerConfigMap* configs) const;
 
   bool UpdateConfiguration(
-      ServiceConfigMap&& service_configs,  // NOLINT(whitespace/operators)
-      ServerConfigMap&& server_configs);   // NOLINT(whitespace/operators)
+      ServiceConfigMap&& new_service,  // NOLINT(whitespace/operators)
+      ServerConfigMap&& new_server);   // NOLINT(whitespace/operators)
 
   std::unique_ptr<base::ListValue> ConvertServiceConfig(
       const ServiceConfigMap* configs) const;
@@ -77,17 +76,17 @@ class ServiceManager {
  private:
   friend class app::ServiceConfigurator;
 
-  typedef std::map<std::string, std::unique_ptr<Service>> ServiceMap;
-  typedef std::map<std::string, std::unique_ptr<Server>> ServerMap;
+  typedef std::map<std::wstring, std::unique_ptr<Service>> ServiceMap;
+  typedef std::map<std::wstring, std::unique_ptr<Server>> ServerMap;
 
-  bool LoadService(const misc::RegistryKey& parent, const std::string& id);
-  bool SaveService(const misc::RegistryKey& parent,
+  bool LoadService(const base::win::RegKey& parent, const wchar_t* id);
+  bool SaveService(const base::win::RegKey& parent,
                    const ServiceConfig* config);
-  bool CreateService(const std::string& id);
+  bool CreateService(const std::wstring& id);
 
-  bool LoadServer(const misc::RegistryKey& parent, const std::string& id);
-  bool CreateServer(const std::string& id);
-  static bool SaveServer(const misc::RegistryKey& parent,
+  bool LoadServer(const base::win::RegKey& parent, const wchar_t* id);
+  bool CreateServer(const std::wstring& id);
+  static bool SaveServer(const base::win::RegKey& parent,
                          const ServerConfig* config);
 
   static void GetConfig(void* context, const base::Value* params,

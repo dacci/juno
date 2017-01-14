@@ -15,11 +15,11 @@ struct ServerConfig {
     kTLS,
   };
 
-  std::string id_;
+  std::wstring id_;
   std::string bind_;
   int listen_;
   int type_;
-  std::string service_;
+  std::wstring service_;
   int enabled_;
   std::string cert_hash_;
 };

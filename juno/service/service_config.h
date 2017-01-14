@@ -9,9 +9,9 @@ namespace juno {
 namespace service {
 
 struct ServiceConfig {
-  std::string id_;
+  std::wstring id_;
   std::wstring name_;
-  std::string provider_;
+  std::wstring provider_;
 };
 
 }  // namespace service

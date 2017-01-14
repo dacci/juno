@@ -2,6 +2,8 @@
 
 #include "service/scissors/ui/scissors_dialog.h"
 
+#include <base/strings/sys_string_conversions.h>
+
 #include <string>
 
 #include "service/scissors/scissors_config.h"
@@ -15,11 +17,11 @@ ScissorsDialog::ScissorsDialog(ScissorsConfig* config)
     : config_(config), port_(0) {}
 
 BOOL ScissorsDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
+  address_ = base::SysNativeMBToWide(config_->remote_address_).c_str();
   port_ = config_->remote_port_;
 
   DoDataExchange();
 
-  address_edit_.SetWindowText(CString(config_->remote_address_.c_str()));
   port_spin_.SetRange32(0, 65535);
   use_ssl_check_.SetCheck(config_->remote_ssl_);
   use_udp_check_.SetCheck(config_->remote_udp_);
@@ -42,7 +44,7 @@ void ScissorsDialog::OnUseUdp(UINT /*notify_code*/, int /*id*/,
 void ScissorsDialog::OnOk(UINT /*notify_code*/, int /*id*/,
                           CWindow /*control*/) {
   EDITBALLOONTIP balloon{sizeof(balloon)};
-  CStringW message;
+  CString message;
 
   DoDataExchange(DDX_SAVE);
 
@@ -60,11 +62,7 @@ void ScissorsDialog::OnOk(UINT /*notify_code*/, int /*id*/,
     return;
   }
 
-  std::string temp;
-  temp.resize(GetWindowTextLengthA(address_edit_));
-  GetWindowTextA(address_edit_, &temp[0], static_cast<int>(temp.size() + 1));
-
-  config_->remote_address_ = temp;
+  config_->remote_address_ = base::SysWideToNativeMB(address_.GetString());
   config_->remote_port_ = port_;
   config_->remote_ssl_ = use_ssl_check_.GetCheck() != FALSE;
   config_->remote_udp_ = use_udp_check_.GetCheck() != FALSE;

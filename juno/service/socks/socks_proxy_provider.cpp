@@ -15,12 +15,12 @@ std::unique_ptr<ServiceConfig> SocksProxyProvider::CreateConfig() {
 }
 
 std::unique_ptr<ServiceConfig> SocksProxyProvider::LoadConfig(
-    const misc::RegistryKey& /*key*/) {
+    const base::win::RegKey& /*key*/) {
   return CreateConfig();
 }
 
 bool SocksProxyProvider::SaveConfig(const ServiceConfig* base_config,
-                                    misc::RegistryKey* key) {
+                                    base::win::RegKey* key) {
   if (base_config == nullptr || key == nullptr)
     return false;
 

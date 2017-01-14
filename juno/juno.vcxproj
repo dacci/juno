@@ -208,7 +208,6 @@
     <ClCompile Include="io\net\socket_channel.cpp" />
     <ClCompile Include="io\net\socket_resolver.cpp" />
     <ClCompile Include="io\secure_channel.cpp" />
-    <ClCompile Include="misc\registry_key.cpp" />
     <ClCompile Include="misc\string_util.cpp" />
     <ClCompile Include="misc\timer_service.cpp" />
     <ClCompile Include="misc\tunneling_service.cpp" />
@@ -264,8 +263,6 @@
     <ClInclude Include="io\net\socket_resolver.h" />
     <ClInclude Include="io\secure_channel.h" />
     <ClInclude Include="misc\certificate_store.h" />
-    <ClInclude Include="misc\registry_key-inl.h" />
-    <ClInclude Include="misc\registry_key.h" />
     <ClInclude Include="misc\schannel\schannel_context.h" />
     <ClInclude Include="misc\schannel\schannel_credential.h" />
     <ClInclude Include="misc\string_util.h" />

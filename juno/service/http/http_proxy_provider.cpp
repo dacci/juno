@@ -6,12 +6,13 @@
 
 #include <wincrypt.h>
 
+#include <base/strings/string_number_conversions.h>
+#include <base/strings/sys_string_conversions.h>
 #include <base/values.h>
 
 #include <memory>
 #include <string>
 
-#include "misc/registry_key-inl.h"
 #include "service/http/http_proxy.h"
 #include "service/http/http_proxy_config.h"
 #include "ui/http_proxy_dialog.h"
@@ -21,19 +22,19 @@ namespace service {
 namespace http {
 namespace {
 
-const char kUseRemoteProxy[] = "UseRemoteProxy";
-const char kRemoteProxyHost[] = "RemoteProxyHost";
-const char kRemoteProxyPort[] = "RemoteProxyPort";
-const char kAuthRemoteProxy[] = "AuthRemoteProxy";
-const char kRemoteProxyUser[] = "RemoteProxyUser";
-const char kRemoteProxyPassword[] = "RemoteProxyPassword";
-const char kHeaderFilters[] = "HeaderFilters";
-const char kRequest[] = "Request";
-const char kResponse[] = "Response";
-const char kAction[] = "Action";
-const char kName[] = "Name";
-const char kValue[] = "Value";
-const char kReplace[] = "Replace";
+const wchar_t kUseRemoteProxyReg[] = L"UseRemoteProxy";
+const wchar_t kRemoteProxyHostReg[] = L"RemoteProxyHost";
+const wchar_t kRemoteProxyPortReg[] = L"RemoteProxyPort";
+const wchar_t kAuthRemoteProxyReg[] = L"AuthRemoteProxy";
+const wchar_t kRemoteProxyUserReg[] = L"RemoteProxyUser";
+const wchar_t kRemoteProxyPasswordReg[] = L"RemoteProxyPassword";
+const wchar_t kHeaderFiltersReg[] = L"HeaderFilters";
+const wchar_t kRequestReg[] = L"Request";
+const wchar_t kResponseReg[] = L"Response";
+const wchar_t kActionReg[] = L"Action";
+const wchar_t kNameReg[] = L"Name";
+const wchar_t kValueReg[] = L"Value";
+const wchar_t kReplaceReg[] = L"Replace";
 
 const std::string kUseRemoteProxyJson = "use_remote_proxy";
 const std::string kRemoteProxyHostJson = "remote_proxy_host";
@@ -51,45 +52,49 @@ const std::string kReplaceJson = "replace";
 
 }  // namespace
 
+using ::base::win::RegKey;
+using ::base::win::RegistryKeyIterator;
+
 std::unique_ptr<ServiceConfig> HttpProxyProvider::CreateConfig() {
   return std::make_unique<HttpProxyConfig>();
 }
 
 std::unique_ptr<ServiceConfig> HttpProxyProvider::LoadConfig(
-    const misc::RegistryKey& key) {
+    const RegKey& key) {
   auto config = std::make_unique<HttpProxyConfig>();
   if (config == nullptr)
     return nullptr;
 
-  int int_value;
-  std::string string_value;
+  DWORD int_value;
+  std::wstring string_value;
 
-  if (key.QueryInteger(kUseRemoteProxy, &int_value))
+  if (key.ReadValueDW(kUseRemoteProxyReg, &int_value) == ERROR_SUCCESS)
     config->use_remote_proxy_ = int_value != 0;
 
-  if (key.QueryString(kRemoteProxyHost, &string_value))
-    config->remote_proxy_host_ = string_value;
+  if (key.ReadValue(kRemoteProxyHostReg, &string_value) == ERROR_SUCCESS)
+    config->remote_proxy_host_ = base::SysWideToNativeMB(string_value);
   else
     config->use_remote_proxy_ = false;
 
-  key.QueryInteger(kRemoteProxyPort, &int_value);
+  key.ReadValueDW(kRemoteProxyPortReg, &int_value);
   if (0 < int_value && int_value < 65536)
     config->remote_proxy_port_ = int_value;
   else
     config->use_remote_proxy_ = false;
 
-  if (key.QueryInteger(kAuthRemoteProxy, &int_value))
+  if (key.ReadValueDW(kAuthRemoteProxyReg, &int_value) == ERROR_SUCCESS)
     config->auth_remote_proxy_ = int_value != 0;
 
-  if (key.QueryString(kRemoteProxyUser, &string_value))
-    config->remote_proxy_user_ = string_value;
+  if (key.ReadValue(kRemoteProxyUserReg, &string_value) == ERROR_SUCCESS)
+    config->remote_proxy_user_ = base::SysWideToNativeMB(string_value);
   else
     config->auth_remote_proxy_ = false;
 
-  int length;
-  if (key.QueryBinary(kRemoteProxyPassword, nullptr, &length)) {
+  DWORD length;
+  if (key.ReadValue(kRemoteProxyPasswordReg, nullptr, &length, nullptr) ==
+      ERROR_SUCCESS) {
     auto buffer = std::make_unique<BYTE[]>(length);
-    key.QueryBinary(kRemoteProxyPassword, buffer.get(), &length);
+    key.ReadValue(kRemoteProxyPasswordReg, buffer.get(), &length, nullptr);
 
     DATA_BLOB encrypted{static_cast<DWORD>(length), buffer.get()}, decrypted{};
     if (CryptUnprotectData(&encrypted, nullptr, nullptr, nullptr, nullptr, 0,
@@ -100,46 +105,51 @@ std::unique_ptr<ServiceConfig> HttpProxyProvider::LoadConfig(
     }
   }
 
-  misc::RegistryKey filters_key;
-  if (filters_key.Open(key, kHeaderFilters)) {
-    for (auto i = 0;; ++i) {
-      std::string name;
-      if (!filters_key.EnumerateKey(i, &name))
-        break;
+  RegKey filters_key(key.Handle(), kHeaderFiltersReg, KEY_ENUMERATE_SUB_KEYS);
+  if (filters_key.Valid()) {
+    for (RegistryKeyIterator i(filters_key.Handle(), nullptr); i.Valid(); ++i) {
+      RegKey filter_key(filters_key.Handle(), i.Name(), KEY_READ);
+      if (!filter_key.Valid())
+        continue;
 
-      misc::RegistryKey filter_key;
-      filter_key.Open(filters_key, name);
+      DWORD request, response, action;
+      std::wstring name, value, replace;
+      if (filter_key.ReadValueDW(kRequestReg, &request) != ERROR_SUCCESS ||
+          filter_key.ReadValueDW(kResponseReg, &response) != ERROR_SUCCESS ||
+          filter_key.ReadValueDW(kActionReg, &action) != ERROR_SUCCESS ||
+          filter_key.ReadValue(kNameReg, &name) != ERROR_SUCCESS ||
+          filter_key.ReadValue(kValueReg, &value) != ERROR_SUCCESS ||
+          filter_key.ReadValue(kReplaceReg, &replace) != ERROR_SUCCESS)
+        continue;
 
-      config->header_filters_.push_back(HttpProxyConfig::HeaderFilter());
-      auto& filter = config->header_filters_.back();
-
-      filter.request = filter_key.QueryInteger(kRequest) != 0;
-      filter.response = filter_key.QueryInteger(kResponse) != 0;
-      filter.action = static_cast<HttpProxyConfig::FilterAction>(
-          filter_key.QueryInteger(kAction));
-      filter_key.QueryString(kName, &filter.name);
-      filter_key.QueryString(kValue, &filter.value);
-      filter_key.QueryString(kReplace, &filter.replace);
+      HttpProxyConfig::HeaderFilter filter{};
+      filter.request = request != 0;
+      filter.response = response != 0;
+      filter.action = static_cast<HttpProxyConfig::FilterAction>(action);
+      filter.name = base::SysWideToUTF8(name);
+      filter.value = base::SysWideToUTF8(value);
+      filter.replace = base::SysWideToUTF8(replace);
+      config->header_filters_.push_back(std::move(filter));
     }
-
-    filters_key.Close();
   }
 
   return std::move(config);
 }
 
 bool HttpProxyProvider::SaveConfig(const ServiceConfig* base_config,
-                                   misc::RegistryKey* key) {
+                                   RegKey* key) {
   if (base_config == nullptr || key == nullptr)
     return false;
 
   auto config = static_cast<const HttpProxyConfig*>(base_config);
 
-  key->SetInteger(kUseRemoteProxy, config->use_remote_proxy_);
-  key->SetString(kRemoteProxyHost, config->remote_proxy_host_);
-  key->SetInteger(kRemoteProxyPort, config->remote_proxy_port_);
-  key->SetInteger(kAuthRemoteProxy, config->auth_remote_proxy_);
-  key->SetString(kRemoteProxyUser, config->remote_proxy_user_);
+  key->WriteValue(kUseRemoteProxyReg, config->use_remote_proxy_);
+  key->WriteValue(kRemoteProxyHostReg,
+                  base::SysNativeMBToWide(config->remote_proxy_host_).c_str());
+  key->WriteValue(kRemoteProxyPortReg, config->remote_proxy_port_);
+  key->WriteValue(kAuthRemoteProxyReg, config->auth_remote_proxy_);
+  key->WriteValue(kRemoteProxyUserReg,
+                  base::SysNativeMBToWide(config->remote_proxy_user_).c_str());
 
   if (!config->remote_proxy_password_.empty()) {
     auto password = config->remote_proxy_password_;
@@ -149,31 +159,32 @@ bool HttpProxyProvider::SaveConfig(const ServiceConfig* base_config,
 
     if (CryptProtectData(&decrypted, nullptr, nullptr, nullptr, nullptr, 0,
                          &encrypted)) {
-      key->SetBinary(kRemoteProxyPassword, encrypted.pbData, encrypted.cbData);
+      key->WriteValue(kRemoteProxyPasswordReg, encrypted.pbData,
+                      encrypted.cbData, REG_BINARY);
       LocalFree(encrypted.pbData);
     }
   }
 
-  key->DeleteKey(kHeaderFilters);
+  key->DeleteKey(kHeaderFiltersReg);
 
-  misc::RegistryKey filters_key;
-  filters_key.Create(*key, kHeaderFilters);
-  auto index = 0;
+  RegKey filters_key(key->Handle(), kHeaderFiltersReg, KEY_ALL_ACCESS);
+  auto index = 1;
 
-  char name[16];
+  for (const auto& filter : config->header_filters_) {
+    RegKey filter_key(filters_key.Handle(), base::IntToString16(index).c_str(),
+                      KEY_ALL_ACCESS);
+    if (!filter_key.Valid())
+      continue;
 
-  for (auto& filter : config->header_filters_) {
-    sprintf_s(name, "%d", index++);
+    filter_key.WriteValue(kRequestReg, filter.request);
+    filter_key.WriteValue(kResponseReg, filter.response);
+    filter_key.WriteValue(kActionReg, static_cast<int>(filter.action));
+    filter_key.WriteValue(kNameReg, base::SysUTF8ToWide(filter.name).c_str());
+    filter_key.WriteValue(kValueReg, base::SysUTF8ToWide(filter.value).c_str());
+    filter_key.WriteValue(kReplaceReg,
+                          base::SysUTF8ToWide(filter.replace).c_str());
 
-    misc::RegistryKey filter_key;
-    filter_key.Create(filters_key, name);
-
-    filter_key.SetInteger(kRequest, filter.request);
-    filter_key.SetInteger(kResponse, filter.response);
-    filter_key.SetInteger(kAction, static_cast<int>(filter.action));
-    filter_key.SetString(kName, filter.name);
-    filter_key.SetString(kValue, filter.value);
-    filter_key.SetString(kReplace, filter.replace);
+    ++index;
   }
 
   return true;

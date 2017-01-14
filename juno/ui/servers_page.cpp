@@ -2,6 +2,9 @@
 
 #include "ui/servers_page.h"
 
+#include <base/strings/string_number_conversions.h>
+#include <base/strings/sys_string_conversions.h>
+
 #include <memory>
 #include <utility>
 
@@ -34,13 +37,9 @@ void ServersPage::AddServerItem(const ServerConfig* config, int index) {
   if (index < 0)
     index = server_list_.GetItemCount();
 
-  CString bind(config->bind_.c_str());
-
-  CString listen;
-  listen.Format(_T("%u"), config->listen_);
-
-  server_list_.InsertItem(index, bind);
-  server_list_.AddItem(index, 1, listen);
+  server_list_.InsertItem(index,
+                          base::SysNativeMBToWide(config->bind_).c_str());
+  server_list_.AddItem(index, 1, base::IntToString16(config->listen_).c_str());
   server_list_.AddItem(index, 2, kTypeNames[config->type_ - 1]);
   server_list_.AddItem(index, 3, parent_->GetServiceName(config->service_));
   server_list_.SetCheckState(index, config->enabled_);
@@ -91,7 +90,7 @@ void ServersPage::OnAddServer(UINT /*notify_code*/, int /*id*/,
   if (dialog.DoModal(m_hWnd) != IDOK)
     return;
 
-  config->id_ = misc::GenerateGUID();
+  config->id_ = misc::GenerateGUID16();
 
   AddServerItem(config.get(), -1);
   configs_->insert({config->id_, std::move(config)});

@@ -36,7 +36,7 @@ class ProviderDialog : public DialogImplEx<ProviderDialog>,
 
   explicit ProviderDialog(PreferenceDialog* parent);
 
-  const std::string& GetProviderName() const;
+  const std::wstring& GetProviderName() const;
 
   std::wstring name() const {
     return name_.GetString();
@@ -65,7 +65,7 @@ class ProviderDialog : public DialogImplEx<ProviderDialog>,
 
   PreferenceDialog* const parent_;
 
-  std::vector<std::string> provider_names_;
+  std::vector<std::wstring> provider_names_;
 
   CEdit name_edit_;
   CString name_;

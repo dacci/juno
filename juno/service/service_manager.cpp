@@ -13,7 +13,6 @@
 #include "app/constants.h"
 #include "io/secure_channel.h"
 #include "misc/certificate_store.h"
-#include "misc/registry_key-inl.h"
 #include "misc/string_util.h"
 #include "service/rpc/rpc_common.h"
 #include "service/rpc/rpc_service.h"
@@ -29,18 +28,18 @@ namespace juno {
 namespace service {
 namespace {
 
-const char kConfigKeyName[] = "Software\\dacci.org\\Juno";
-const char kServicesKeyName[] = "Services";
-const char kServersKeyName[] = "Servers";
+const wchar_t kConfigKeyName[] = L"Software\\dacci.org\\Juno";
+const wchar_t kServicesKeyName[] = L"Services";
+const wchar_t kServersKeyName[] = L"Servers";
 
-const wchar_t kNameValueName[] = L"Name";
-const char kProviderValueName[] = "Provider";
-const char kBindValueName[] = "Bind";
-const char kListenValueName[] = "Listen";
-const char kTypeValueName[] = "Type";
-const char kServiceValueName[] = "Service";
-const char kEnabledValueName[] = "Enabled";
-const char kCertificateValueName[] = "Certificate";
+const wchar_t kNameReg[] = L"Name";
+const wchar_t kProviderReg[] = L"Provider";
+const wchar_t kBindReg[] = L"Bind";
+const wchar_t kListenReg[] = L"Listen";
+const wchar_t kTypeReg[] = L"Type";
+const wchar_t kServiceReg[] = L"Service";
+const wchar_t kEnabledReg[] = L"Enabled";
+const wchar_t kCertificateReg[] = L"Certificate";
 
 const std::string kIdJson = "id";
 const std::string kNameJson = "name";
@@ -66,7 +65,8 @@ std::vector<std::unique_ptr<SecureChannelCustomizer>> channel_customizers;
 
 }  // namespace
 
-using ::juno::misc::RegistryKey;
+using ::base::win::RegKey;
+using ::base::win::RegistryKeyIterator;
 
 ServiceManager* ServiceManager::instance_ = nullptr;
 
@@ -78,7 +78,7 @@ ServiceManager::ServiceManager() : root_key_(NULL) {
                                                  : HKEY_CURRENT_USER;
 
 #define PROVIDER_ENTRY(key, ns) \
-  providers_.insert({#key, std::make_unique<ns::key##Provider>()})
+  providers_.insert({L#key, std::make_unique<ns::key##Provider>()})
 
   PROVIDER_ENTRY(HttpProxy, service::http);
   PROVIDER_ENTRY(SocksProxy, service::socks);
@@ -104,24 +104,17 @@ ServiceManager::~ServiceManager() {
   }
 }
 
-bool ServiceManager::LoadServices() {
-  RegistryKey app_key;
-  if (!app_key.Create(root_key_, kConfigKeyName))
-    return false;
+void ServiceManager::LoadServices() {
+  RegKey app_key(root_key_, kConfigKeyName, KEY_READ);
+  if (!app_key.Valid())
+    return;
 
-  RegistryKey services_key;
-  if (!services_key.Create(app_key, kServicesKeyName))
-    return false;
+  RegKey services_key(app_key.Handle(), kServicesKeyName, KEY_READ);
+  if (!services_key.Valid())
+    return;
 
-  for (DWORD i = 0;; ++i) {
-    std::string name;
-    if (!services_key.EnumerateKey(i, &name))
-      break;
-
-    LoadService(services_key, name);
-  }
-
-  return true;
+  for (RegistryKeyIterator i(services_key.Handle(), nullptr); i.Valid(); ++i)
+    LoadService(services_key, i.Name());
 }
 
 void ServiceManager::StopServices() {
@@ -133,22 +126,18 @@ void ServiceManager::StopServices() {
 }
 
 bool ServiceManager::LoadServers() {
-  RegistryKey app_key;
-  if (!app_key.Create(root_key_, kConfigKeyName))
-    return false;
+  RegKey app_key(root_key_, kConfigKeyName, KEY_READ);
+  if (!app_key.Valid())
+    return true;
 
-  RegistryKey servers_key;
-  if (!servers_key.Create(app_key, kServersKeyName))
-    return false;
+  RegKey servers_key(app_key.Handle(), kServersKeyName, KEY_READ);
+  if (!servers_key.Valid())
+    return true;
 
   auto all_succeeded = true;
 
-  for (DWORD i = 0;; ++i) {
-    std::string id;
-    if (!servers_key.EnumerateKey(i, &id))
-      break;
-
-    if (!LoadServer(servers_key, id))
+  for (RegistryKeyIterator i(servers_key.Handle(), nullptr); i.Valid(); ++i) {
+    if (!LoadServer(servers_key, i.Name()))
       all_succeeded = false;
   }
 
@@ -174,7 +163,7 @@ void ServiceManager::StopServers() {
   channel_customizers.clear();
 }
 
-ServiceProvider* ServiceManager::GetProvider(const std::string& name) const {
+ServiceProvider* ServiceManager::GetProvider(const std::wstring& name) const {
   auto pair = providers_.find(name);
   if (pair == providers_.end())
     return nullptr;
@@ -200,19 +189,18 @@ void ServiceManager::CopyServerConfigs(ServerConfigMap* configs) const {
 bool ServiceManager::UpdateConfiguration(
     ServiceConfigMap&& new_services,  // NOLINT(whitespace/operators)
     ServerConfigMap&& new_servers) {  // NOLINT(whitespace/operators)
-  if (SHDeleteKeyA(root_key_, kConfigKeyName) != ERROR_SUCCESS)
+  SHDeleteKey(root_key_, kConfigKeyName);
+
+  RegKey config_key(root_key_, kConfigKeyName, KEY_ALL_ACCESS);
+  if (!config_key.Valid())
     return false;
 
-  RegistryKey config_key;
-  if (!config_key.Create(root_key_, kConfigKeyName))
+  RegKey services_key(config_key.Handle(), kServicesKeyName, KEY_ALL_ACCESS);
+  if (!services_key.Valid())
     return false;
 
-  RegistryKey services_key;
-  if (!services_key.Create(config_key, kServicesKeyName))
-    return false;
-
-  RegistryKey servers_key;
-  if (!servers_key.Create(config_key, kServersKeyName))
+  RegKey servers_key(config_key.Handle(), kServersKeyName, KEY_ALL_ACCESS);
+  if (!servers_key.Valid())
     return false;
 
   StopServers();
@@ -357,7 +345,7 @@ std::unique_ptr<ServiceConfig> ServiceManager::ConvertServiceConfig(
   if (value == nullptr)
     return nullptr;
 
-  std::string provider_name;
+  std::wstring provider_name;
   if (!value->GetString(kProviderJson, &provider_name))
     return nullptr;
 
@@ -468,14 +456,13 @@ std::unique_ptr<ServerConfig> ServiceManager::ConvertServerConfig(
   return std::move(config);
 }
 
-bool ServiceManager::LoadService(const RegistryKey& parent,
-                                 const std::string& id) {
-  RegistryKey reg_key;
-  if (!reg_key.Open(parent, id))
+bool ServiceManager::LoadService(const RegKey& parent, const wchar_t* id) {
+  RegKey reg_key(parent.Handle(), id, KEY_READ);
+  if (!reg_key.Valid())
     return false;
 
-  std::string provider_name;
-  if (!reg_key.QueryString(kProviderValueName, &provider_name))
+  std::wstring provider_name;
+  if (reg_key.ReadValue(kProviderReg, &provider_name) != ERROR_SUCCESS)
     return false;
 
   auto provider = GetProvider(provider_name);
@@ -487,11 +474,12 @@ bool ServiceManager::LoadService(const RegistryKey& parent,
     return false;
 
   // convert name to GUID
-  if (reg_key.QueryString(kNameValueName, &config->name_)) {
+  if (reg_key.HasValue(kNameReg)) {
     config->id_ = id;
+    reg_key.ReadValue(kNameReg, &config->name_);
   } else {
-    config->id_ = misc::GenerateGUID();
-    config->name_ = base::SysNativeMBToWide(id);
+    config->id_ = misc::GenerateGUID16();
+    config->name_ = id;
   }
 
   config->provider_ = provider_name;
@@ -502,20 +490,22 @@ bool ServiceManager::LoadService(const RegistryKey& parent,
   return CreateService(service_id);
 }
 
-bool ServiceManager::SaveService(const RegistryKey& parent,
+bool ServiceManager::SaveService(const RegKey& parent,
                                  const ServiceConfig* config) {
-  RegistryKey service_key;
-  if (!service_key.Create(parent, config->id_))
+  RegKey service_key(parent.Handle(), config->id_.c_str(), KEY_ALL_ACCESS);
+  if (!service_key.Valid())
     return false;
 
-  if (!service_key.SetString(kNameValueName, config->name_) ||
-      !service_key.SetString(kProviderValueName, config->provider_))
+  if (service_key.WriteValue(kNameReg, config->name_.c_str()) !=
+          ERROR_SUCCESS ||
+      service_key.WriteValue(kProviderReg, config->provider_.c_str()) !=
+          ERROR_SUCCESS)
     return false;
 
   return providers_[config->provider_]->SaveConfig(config, &service_key);
 }
 
-bool ServiceManager::CreateService(const std::string& id) {
+bool ServiceManager::CreateService(const std::wstring& id) {
   DCHECK(service_configs_.find(id) != service_configs_.end());
 
   auto& config = service_configs_[id];
@@ -528,43 +518,55 @@ bool ServiceManager::CreateService(const std::string& id) {
   return true;
 }
 
-bool ServiceManager::LoadServer(const RegistryKey& parent,
-                                const std::string& id) {
-  RegistryKey reg_key;
-  if (!reg_key.Open(parent, id))
+bool ServiceManager::LoadServer(const RegKey& parent, const wchar_t* id) {
+  RegKey reg_key(parent.Handle(), id, KEY_READ);
+  if (!reg_key.Valid())
+    return false;
+
+  std::wstring bind, service;
+  DWORD listen, type, enabled;
+  if (reg_key.ReadValue(kBindReg, &bind) != ERROR_SUCCESS ||
+      reg_key.ReadValueDW(kListenReg, &listen) != ERROR_SUCCESS ||
+      reg_key.ReadValueDW(kTypeReg, &type) != ERROR_SUCCESS ||
+      reg_key.ReadValue(kServiceReg, &service) != ERROR_SUCCESS ||
+      reg_key.ReadValueDW(kEnabledReg, &enabled) != ERROR_SUCCESS)
     return false;
 
   auto config = std::make_unique<ServerConfig>();
-  config->id_ = id;
+  config->bind_ = base::SysWideToNativeMB(bind);
+  config->listen_ = listen;
+  config->type_ = type;
+  config->service_ = std::move(service);
+  config->enabled_ = enabled;
 
-  reg_key.QueryString(kBindValueName, &config->bind_);
-  reg_key.QueryInteger(kListenValueName, &config->listen_);
-  reg_key.QueryInteger(kTypeValueName, &config->type_);
-  reg_key.QueryString(kServiceValueName, &config->service_);
-  reg_key.QueryInteger(kEnabledValueName, &config->enabled_);
+  // convert server name to GUID
+  if (reg_key.HasValue(L"Name"))
+    config->id_ = misc::GenerateGUID16();
+  else
+    config->id_ = id;
 
-  // convert name to GUID
+  // convert service name to GUID
   if (service_configs_.find(config->service_) == service_configs_.end()) {
-    auto service = base::SysNativeMBToWide(config->service_);
     for (const auto& pair : service_configs_) {
-      if (pair.second->name_ == service) {
+      if (pair.second->name_ == config->service_) {
         config->service_ = pair.second->id_;
         break;
       }
     }
   }
 
-  auto length = 20;
+  DWORD length = 20;
   config->cert_hash_.resize(length);
-  reg_key.QueryBinary(kCertificateValueName, &config->cert_hash_[0], &length);
+  reg_key.ReadValue(kCertificateReg, &config->cert_hash_[0], &length, nullptr);
   config->cert_hash_.resize(length);
 
-  server_configs_.insert({id, std::move(config)});
+  auto server_id = config->id_;
+  server_configs_.insert({server_id, std::move(config)});
 
-  return CreateServer(id);
+  return CreateServer(server_id);
 }
 
-bool ServiceManager::CreateServer(const std::string& id) {
+bool ServiceManager::CreateServer(const std::wstring& id) {
   DCHECK(server_configs_.find(id) != server_configs_.end());
 
   auto& config = server_configs_[id];
@@ -639,19 +641,21 @@ bool ServiceManager::CreateServer(const std::string& id) {
   return true;
 }
 
-bool ServiceManager::SaveServer(const RegistryKey& parent,
+bool ServiceManager::SaveServer(const RegKey& parent,
                                 const ServerConfig* config) {
-  RegistryKey key;
-  if (!key.Create(parent, config->id_))
+  RegKey key(parent.Handle(), config->id_.c_str(), KEY_ALL_ACCESS);
+  if (!key.Valid())
     return false;
 
-  key.SetString(kBindValueName, config->bind_);
-  key.SetInteger(kListenValueName, config->listen_);
-  key.SetInteger(kTypeValueName, config->type_);
-  key.SetString(kServiceValueName, config->service_);
-  key.SetInteger(kEnabledValueName, config->enabled_);
-  key.SetBinary(kCertificateValueName, config->cert_hash_.data(),
-                static_cast<int>(config->cert_hash_.size()));
+  key.WriteValue(kBindReg, base::SysNativeMBToWide(config->bind_).c_str());
+  key.WriteValue(kListenReg, config->listen_);
+  key.WriteValue(kTypeReg, config->type_);
+  key.WriteValue(kServiceReg, config->service_.c_str());
+  key.WriteValue(kEnabledReg, config->enabled_);
+
+  if (!config->cert_hash_.empty())
+    key.WriteValue(kCertificateReg, config->cert_hash_.data(),
+                   static_cast<DWORD>(config->cert_hash_.size()), REG_BINARY);
 
   return true;
 }

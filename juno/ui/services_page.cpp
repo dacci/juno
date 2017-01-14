@@ -30,7 +30,7 @@ void ServicesPage::AddServiceItem(const service::ServiceConfig* config,
     index = service_list_.GetItemCount();
 
   service_list_.InsertItem(index, config->name_.c_str());
-  service_list_.AddItem(index, 1, CString(config->provider_.c_str()));
+  service_list_.AddItem(index, 1, config->provider_.c_str());
   service_list_.SetItemData(index, reinterpret_cast<DWORD_PTR>(config));
 }
 
@@ -76,7 +76,7 @@ void ServicesPage::OnAddService(UINT /*notify_code*/, int /*id*/,
   if (dialog_result != IDOK)
     return;
 
-  config->id_ = misc::GenerateGUID();
+  config->id_ = misc::GenerateGUID16();
   config->name_ = provider_dialog.name();
   config->provider_ = provider_dialog.GetProviderName();
 

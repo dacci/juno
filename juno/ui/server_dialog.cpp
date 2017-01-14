@@ -5,6 +5,7 @@
 #include <iphlpapi.h>
 
 #include <base/logging.h>
+#include <base/strings/sys_string_conversions.h>
 
 #include <string>
 
@@ -84,7 +85,7 @@ BOOL ServerDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
 
   FillServiceCombo();
 
-  bind_combo_.SetWindowText(CString(config_->bind_.c_str()));
+  bind_combo_.SetWindowText(base::SysNativeMBToWide(config_->bind_).c_str());
   listen_edit_.SetLimitText(5);
   listen_spin_.SetRange32(0, 65535);
   type_combo_.SetCurSel(config_->type_ - 1);
@@ -178,7 +179,7 @@ void ServerDialog::OnOk(UINT /*notify_code*/, int /*id*/, CWindow /*control*/) {
     return;
   }
 
-  config_->bind_ = CStringA(bind_);
+  config_->bind_ = base::SysWideToNativeMB(bind_.GetString());
 
   auto service = static_cast<service::ServiceConfig*>(
       service_combo_.GetItemDataPtr(service_index));

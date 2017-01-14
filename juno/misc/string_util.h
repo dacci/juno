@@ -33,6 +33,7 @@ namespace juno {
 namespace misc {
 
 std::string GenerateGUID();
+std::wstring GenerateGUID16();
 
 }  // namespace misc
 }  // namespace juno

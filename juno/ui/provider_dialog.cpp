@@ -2,6 +2,8 @@
 
 #include "ui/provider_dialog.h"
 
+#include <base/strings/string_util.h>
+
 #include <string>
 
 #include "service/service_manager.h"
@@ -9,18 +11,13 @@
 
 namespace juno {
 namespace ui {
-namespace {
-
-const std::string kEmptyString;
-
-}  // namespace
 
 ProviderDialog::ProviderDialog(PreferenceDialog* parent)
     : parent_(parent), provider_index_(CB_ERR) {}
 
-const std::string& ProviderDialog::GetProviderName() const {
+const std::wstring& ProviderDialog::GetProviderName() const {
   if (provider_index_ == CB_ERR)
-    return kEmptyString;
+    return base::EmptyString16();
 
   return provider_names_.at(provider_index_);
 }
@@ -30,7 +27,7 @@ BOOL ProviderDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
 
   for (auto& provider : service::ServiceManager::GetInstance()->providers()) {
     provider_names_.push_back(provider.first);
-    provider_combo_.AddString(CString(provider.first.c_str()));
+    provider_combo_.AddString(provider.first.c_str());
   }
 
   return TRUE;
@@ -41,7 +38,7 @@ void ProviderDialog::OnOk(UINT /*notify_code*/, int /*id*/,
   HideBalloonTip();
 
   EDITBALLOONTIP balloon{sizeof(balloon)};
-  CStringW message;
+  CString message;
 
   DoDataExchange(DDX_SAVE);
 

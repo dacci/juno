@@ -2,6 +2,8 @@
 
 #include "service/http/ui/http_proxy_dialog.h"
 
+#include <base/strings/sys_string_conversions.h>
+
 #include <string>
 
 #include "misc/string_util.h"
@@ -42,13 +44,17 @@ void HttpProxyDialog::AddFilterItem(const HttpProxyConfig::HeaderFilter& filter,
   filter_list_.InsertItem(LVIF_IMAGE | LVIF_PARAM, index, nullptr, 0, 0,
                           image - 1, filter_index);
   filter_list_.AddItem(index, 1, kActions[static_cast<int>(filter.action)]);
-  filter_list_.AddItem(index, 2, CString(filter.name.c_str()));
-  filter_list_.AddItem(index, 3, CString(filter.value.c_str()));
-  filter_list_.AddItem(index, 4, CString(filter.replace.c_str()));
+  filter_list_.AddItem(index, 2, base::SysUTF8ToWide(filter.name).c_str());
+  filter_list_.AddItem(index, 3, base::SysUTF8ToWide(filter.value).c_str());
+  filter_list_.AddItem(index, 4, base::SysUTF8ToWide(filter.replace).c_str());
 }
 
 BOOL HttpProxyDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
+  address_ = base::SysNativeMBToWide(config_->remote_proxy_host_).c_str();
   port_ = config_->remote_proxy_port_;
+  remote_user_ = base::SysUTF8ToWide(config_->remote_proxy_user_).c_str();
+  remote_password_ =
+      base::SysUTF8ToWide(config_->remote_proxy_password_).c_str();
 
   DoDataExchange();
 
@@ -81,12 +87,8 @@ BOOL HttpProxyDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   down_button_.SetBitmap(AtlLoadBitmapImage(IDB_ARROW_DOWN));
 
   use_remote_proxy_check_.SetCheck(config_->use_remote_proxy_);
-  address_edit_.SetWindowText(CString(config_->remote_proxy_host_.c_str()));
   port_spin_.SetRange32(0, 65535);
   auth_remote_check_.SetCheck(config_->auth_remote_proxy_);
-  remote_user_edit_.SetWindowText(CString(config_->remote_proxy_user_.c_str()));
-  remote_password_edit_.SetWindowText(
-      CString(config_->remote_proxy_password_.c_str()));
 
   auto filter_index = 0;
   for (auto& filter : filters_)
@@ -149,7 +151,7 @@ void HttpProxyDialog::OnScrollDown(UINT /*notify_code*/, int /*id*/,
 void HttpProxyDialog::OnOk(UINT /*notify_code*/, int /*id*/,
                            CWindow /*control*/) {
   EDITBALLOONTIP balloon{sizeof(balloon)};
-  CStringW message;
+  CString message;
 
   DoDataExchange(DDX_SAVE);
 
@@ -170,26 +172,12 @@ void HttpProxyDialog::OnOk(UINT /*notify_code*/, int /*id*/,
   }
 
   config_->use_remote_proxy_ = use_remote_proxy_check_.GetCheck() != FALSE;
-
-  std::string temp;
-
-  temp.resize(GetWindowTextLengthA(address_edit_));
-  GetWindowTextA(address_edit_, &temp[0], static_cast<int>(temp.size() + 1));
-  config_->remote_proxy_host_ = temp;
-
+  config_->remote_proxy_host_ = base::SysWideToNativeMB(address_.GetString());
   config_->remote_proxy_port_ = port_;
   config_->auth_remote_proxy_ = auth_remote_check_.GetCheck() != FALSE;
-
-  temp.resize(GetWindowTextLengthA(remote_user_edit_));
-  GetWindowTextA(remote_user_edit_, &temp[0],
-                 static_cast<int>(temp.size() + 1));
-  config_->remote_proxy_user_ = temp;
-
-  temp.resize(GetWindowTextLengthA(remote_password_edit_));
-  GetWindowTextA(remote_password_edit_, &temp[0],
-                 static_cast<int>(temp.size() + 1));
-  config_->remote_proxy_password_ = temp;
-
+  config_->remote_proxy_user_ = base::SysWideToUTF8(remote_user_.GetString());
+  config_->remote_proxy_password_ =
+      base::SysWideToUTF8(remote_password_.GetString());
   config_->header_filters_ = std::move(filters_);
 
   EndDialog(IDOK);

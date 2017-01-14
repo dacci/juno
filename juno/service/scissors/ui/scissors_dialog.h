@@ -41,6 +41,7 @@ class ScissorsDialog : public CDialogImpl<ScissorsDialog>,
   END_MSG_MAP()
 
   BEGIN_DDX_MAP(ScissorsDialog)
+    DDX_TEXT(IDC_ADDRESS, address_)
     DDX_CONTROL_HANDLE(IDC_ADDRESS, address_edit_)
     DDX_INT(IDC_PORT, port_)
     DDX_CONTROL_HANDLE(IDC_PORT, port_edit_)
@@ -59,6 +60,7 @@ class ScissorsDialog : public CDialogImpl<ScissorsDialog>,
 
   ScissorsConfig* const config_;
 
+  CString address_;
   CEdit address_edit_;
   int port_;
   CEdit port_edit_;
