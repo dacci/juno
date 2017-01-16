@@ -285,7 +285,7 @@ HRESULT Application::PreMessageLoop(int show_mode) throw() {
     }
   }
 
-  if (!service_mode_ && !foreground_mode_) {
+  if (!foreground_mode_ && !service_mode_ && !config_mode_) {
     wchar_t mutex_name[40];
     auto count = StringFromGUID2(GUID_JUNO_APPLICATION, mutex_name,
                                  _countof(mutex_name));

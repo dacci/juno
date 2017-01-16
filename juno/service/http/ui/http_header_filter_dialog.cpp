@@ -47,6 +47,8 @@ void HttpHeaderFilterDialog::OnOk(UINT /*notify_code*/, int /*id*/,
   EDITBALLOONTIP balloon{sizeof(balloon)};
   balloon.pszText = message;
 
+  DoDataExchange(DDX_SAVE);
+
   if (name_.IsEmpty()) {
     name_edit_.ShowBalloonTip(&balloon);
     return;
