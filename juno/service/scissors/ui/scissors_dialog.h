@@ -4,16 +4,17 @@
 #define JUNO_SERVICE_SCISSORS_UI_SCISSORS_DIALOG_H_
 
 #include <atlbase.h>
-#include <atlstr.h>
 #include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atlctrls.h>
-#include <atlddx.h>
 #include <atldlgs.h>
 
+#include <string>
+
 #include "res/resource.h"
+#include "ui/data_exchange_ex.h"
 #include "ui/preference_dialog.h"
 
 #include "service/scissors/scissors_config.h"
@@ -24,7 +25,7 @@ namespace scissors {
 namespace ui {
 
 class ScissorsDialog : public CDialogImpl<ScissorsDialog>,
-                       public CWinDataExchange<ScissorsDialog> {
+                       public juno::ui::DataExchangeEx<ScissorsDialog> {
  public:
   static const UINT IDD = IDD_SCISSORS;
 
@@ -59,7 +60,7 @@ class ScissorsDialog : public CDialogImpl<ScissorsDialog>,
 
   ScissorsConfig* const config_;
 
-  CString address_;
+  std::wstring address_;
   CEdit address_edit_;
   int port_;
   CEdit port_edit_;

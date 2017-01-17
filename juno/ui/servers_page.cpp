@@ -2,6 +2,8 @@
 
 #include "ui/servers_page.h"
 
+#include <atlstr.h>
+
 #include <base/strings/string_number_conversions.h>
 #include <base/strings/sys_string_conversions.h>
 

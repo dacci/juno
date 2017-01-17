@@ -2,6 +2,8 @@
 
 #include "ui/server_dialog.h"
 
+#include <atlstr.h>
+
 #include <iphlpapi.h>
 
 #include <base/logging.h>
@@ -69,7 +71,7 @@ void ServerDialog::FillServiceCombo() {
 }
 
 BOOL ServerDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
-  bind_ = config_->bind_.c_str();
+  bind_ = base::SysNativeMBToWide(config_->bind_);
   listen_ = config_->listen_;
   enabled_ = config_->enabled_;
 
@@ -84,7 +86,7 @@ BOOL ServerDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
 
   FillServiceCombo();
 
-  bind_combo_.SetWindowText(base::SysNativeMBToWide(config_->bind_).c_str());
+  bind_combo_.SetWindowText(bind_.c_str());
   listen_edit_.SetLimitText(5);
   listen_spin_.SetRange32(0, 65535);
   type_combo_.SetCurSel(config_->type_ - 1);
@@ -153,7 +155,7 @@ void ServerDialog::OnOk(UINT /*notify_code*/, int /*id*/, CWindow /*control*/) {
 
   DoDataExchange(DDX_SAVE);
 
-  if (bind_.IsEmpty()) {
+  if (bind_.empty()) {
     ShowBalloonTip(bind_combo_, IDS_NOT_SPECIFIED);
     return;
   }
@@ -178,7 +180,7 @@ void ServerDialog::OnOk(UINT /*notify_code*/, int /*id*/, CWindow /*control*/) {
     return;
   }
 
-  config_->bind_ = base::SysWideToNativeMB(bind_.GetString());
+  config_->bind_ = base::SysWideToNativeMB(bind_);
 
   auto service = static_cast<service::ServiceConfig*>(
       service_combo_.GetItemDataPtr(service_index));

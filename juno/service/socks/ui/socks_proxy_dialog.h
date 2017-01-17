@@ -4,16 +4,15 @@
 #define JUNO_SERVICE_SOCKS_UI_SOCKS_PROXY_DIALOG_H_
 
 #include <atlbase.h>
-#include <atlstr.h>
 #include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atlctrls.h>
-#include <atlddx.h>
 #include <atldlgs.h>
 
 #include "res/resource.h"
+#include "ui/data_exchange_ex.h"
 
 namespace juno {
 namespace service {
@@ -24,7 +23,7 @@ namespace socks {
 namespace ui {
 
 class SocksProxyDialog : public CDialogImpl<SocksProxyDialog>,
-                         public CWinDataExchange<SocksProxyDialog> {
+                         public juno::ui::DataExchangeEx<SocksProxyDialog> {
  public:
   static const UINT IDD = IDD_SOCKS_PROXY;
 

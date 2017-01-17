@@ -2,6 +2,8 @@
 
 #include "service/scissors/ui/scissors_dialog.h"
 
+#include <atlstr.h>
+
 #include <base/strings/sys_string_conversions.h>
 
 #include <string>
@@ -15,7 +17,7 @@ ScissorsDialog::ScissorsDialog(ScissorsConfig* config)
     : config_(config), port_(0) {}
 
 BOOL ScissorsDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
-  address_ = base::SysNativeMBToWide(config_->remote_address_).c_str();
+  address_ = base::SysNativeMBToWide(config_->remote_address_);
   port_ = config_->remote_port_;
 
   DoDataExchange();
@@ -60,7 +62,7 @@ void ScissorsDialog::OnOk(UINT /*notify_code*/, int /*id*/,
     return;
   }
 
-  config_->remote_address_ = base::SysWideToNativeMB(address_.GetString());
+  config_->remote_address_ = base::SysWideToNativeMB(address_);
   config_->remote_port_ = port_;
   config_->remote_ssl_ = use_ssl_check_.GetCheck() != FALSE;
   config_->remote_udp_ = use_udp_check_.GetCheck() != FALSE;

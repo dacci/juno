@@ -2,6 +2,8 @@
 
 #include "service/http/ui/http_proxy_dialog.h"
 
+#include <atlstr.h>
+
 #include <base/strings/sys_string_conversions.h>
 
 #include <string>
@@ -49,11 +51,10 @@ void HttpProxyDialog::AddFilterItem(const HttpProxyConfig::HeaderFilter& filter,
 }
 
 BOOL HttpProxyDialog::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
-  address_ = base::SysNativeMBToWide(config_->remote_proxy_host_).c_str();
+  address_ = base::SysNativeMBToWide(config_->remote_proxy_host_);
   port_ = config_->remote_proxy_port_;
-  remote_user_ = base::SysUTF8ToWide(config_->remote_proxy_user_).c_str();
-  remote_password_ =
-      base::SysUTF8ToWide(config_->remote_proxy_password_).c_str();
+  remote_user_ = base::SysUTF8ToWide(config_->remote_proxy_user_);
+  remote_password_ = base::SysUTF8ToWide(config_->remote_proxy_password_);
 
   DoDataExchange();
 
@@ -171,12 +172,11 @@ void HttpProxyDialog::OnOk(UINT /*notify_code*/, int /*id*/,
   }
 
   config_->use_remote_proxy_ = use_remote_proxy_check_.GetCheck() != FALSE;
-  config_->remote_proxy_host_ = base::SysWideToNativeMB(address_.GetString());
+  config_->remote_proxy_host_ = base::SysWideToNativeMB(address_);
   config_->remote_proxy_port_ = port_;
   config_->auth_remote_proxy_ = auth_remote_check_.GetCheck() != FALSE;
-  config_->remote_proxy_user_ = base::SysWideToUTF8(remote_user_.GetString());
-  config_->remote_proxy_password_ =
-      base::SysWideToUTF8(remote_password_.GetString());
+  config_->remote_proxy_user_ = base::SysWideToUTF8(remote_user_);
+  config_->remote_proxy_password_ = base::SysWideToUTF8(remote_password_);
   config_->header_filters_ = std::move(filters_);
 
   EndDialog(IDOK);

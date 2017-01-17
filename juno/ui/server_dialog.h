@@ -4,16 +4,17 @@
 #define JUNO_UI_SERVER_DIALOG_H_
 
 #include <atlbase.h>
-#include <atlstr.h>
 #include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atlctrls.h>
-#include <atlddx.h>
+
+#include <string>
 
 #include "res/resource.h"
 #include "service/server_config.h"
+#include "ui/data_exchange_ex.h"
 #include "ui/dialog_impl_ex.h"
 
 namespace juno {
@@ -22,7 +23,7 @@ namespace ui {
 class PreferenceDialog;
 
 class ServerDialog : public DialogImplEx<ServerDialog>,
-                     public CWinDataExchange<ServerDialog> {
+                     public DataExchangeEx<ServerDialog> {
  public:
   static const UINT IDD = IDD_SERVER;
 
@@ -65,7 +66,7 @@ class ServerDialog : public DialogImplEx<ServerDialog>,
   PreferenceDialog* const parent_;
   service::ServerConfig* const config_;
 
-  CString bind_;
+  std::wstring bind_;
   CComboBox bind_combo_;
   int listen_;
   CEdit listen_edit_;

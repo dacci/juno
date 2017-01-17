@@ -308,6 +308,7 @@
     <ClInclude Include="service\socks\ui\socks_proxy_dialog.h" />
     <ClInclude Include="service\tcp_server.h" />
     <ClInclude Include="service\udp_server.h" />
+    <ClInclude Include="ui\data_exchange_ex.h" />
     <ClInclude Include="ui\dialog_impl_ex.h" />
     <ClInclude Include="ui\main_frame.h" />
     <ClInclude Include="ui\preference_dialog.h" />

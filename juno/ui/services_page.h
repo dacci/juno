@@ -4,18 +4,17 @@
 #define JUNO_UI_SERVICES_PAGE_H_
 
 #include <atlbase.h>
-#include <atlstr.h>
 #include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atlctrls.h>
-#include <atlddx.h>
 #include <atldlgs.h>
 
 #include "res/resource.h"
 #include "service/service_config.h"
 #include "service/service_manager.h"
+#include "ui/data_exchange_ex.h"
 
 namespace juno {
 namespace ui {
@@ -23,7 +22,7 @@ namespace ui {
 class PreferenceDialog;
 
 class ServicesPage : public CPropertyPageImpl<ServicesPage>,
-                     public CWinDataExchange<ServicesPage> {
+                     public DataExchangeEx<ServicesPage> {
  public:
   static const UINT IDD = IDD_SERVICES_PAGE;
 

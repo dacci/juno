@@ -4,16 +4,17 @@
 #define JUNO_SERVICE_HTTP_UI_HTTP_HEADER_FILTER_DIALOG_H_
 
 #include <atlbase.h>
-#include <atlstr.h>
 #include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atlctrls.h>
-#include <atlddx.h>
 #include <atldlgs.h>
 
+#include <string>
+
 #include "res/resource.h"
+#include "ui/data_exchange_ex.h"
 
 #include "service/http/http_proxy_config.h"
 
@@ -22,8 +23,9 @@ namespace service {
 namespace http {
 namespace ui {
 
-class HttpHeaderFilterDialog : public CDialogImpl<HttpHeaderFilterDialog>,
-                               public CWinDataExchange<HttpHeaderFilterDialog> {
+class HttpHeaderFilterDialog
+    : public CDialogImpl<HttpHeaderFilterDialog>,
+      public juno::ui::DataExchangeEx<HttpHeaderFilterDialog> {
  public:
   static const UINT IDD = IDD_HTTP_HEADER_FILTER;
 
@@ -59,11 +61,11 @@ class HttpHeaderFilterDialog : public CDialogImpl<HttpHeaderFilterDialog>,
   CButton request_check_;
   CButton response_check_;
   CComboBox action_combo_;
-  CString name_;
+  std::wstring name_;
   CEdit name_edit_;
-  CString value_;
+  std::wstring value_;
   CEdit value_edit_;
-  CString replace_;
+  std::wstring replace_;
   CEdit replace_edit_;
 
   HttpHeaderFilterDialog(const HttpHeaderFilterDialog&) = delete;

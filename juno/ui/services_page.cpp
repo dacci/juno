@@ -2,6 +2,8 @@
 
 #include "ui/services_page.h"
 
+#include <atlstr.h>
+
 #include <base/logging.h>
 
 #include <memory>

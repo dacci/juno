@@ -4,18 +4,18 @@
 #define JUNO_SERVICE_HTTP_UI_HTTP_PROXY_DIALOG_H_
 
 #include <atlbase.h>
-#include <atlstr.h>
 #include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atlctrls.h>
-#include <atlddx.h>
 #include <atldlgs.h>
 
+#include <string>
 #include <vector>
 
 #include "res/resource.h"
+#include "ui/data_exchange_ex.h"
 
 #include "service/http/http_proxy_config.h"
 
@@ -25,7 +25,7 @@ namespace http {
 namespace ui {
 
 class HttpProxyDialog : public CDialogImpl<HttpProxyDialog>,
-                        public CWinDataExchange<HttpProxyDialog> {
+                        public juno::ui::DataExchangeEx<HttpProxyDialog> {
  public:
   static const UINT IDD = IDD_HTTP_PROXY;
 
@@ -85,15 +85,15 @@ class HttpProxyDialog : public CDialogImpl<HttpProxyDialog>,
   std::vector<HttpProxyConfig::HeaderFilter> filters_;
 
   CButton use_remote_proxy_check_;
-  CString address_;
+  std::wstring address_;
   CEdit address_edit_;
   int port_;
   CEdit port_edit_;
   CUpDownCtrl port_spin_;
   CButton auth_remote_check_;
-  CString remote_user_;
+  std::wstring remote_user_;
   CEdit remote_user_edit_;
-  CString remote_password_;
+  std::wstring remote_password_;
   CEdit remote_password_edit_;
   CListViewCtrl filter_list_;
   CImageList image_list_;

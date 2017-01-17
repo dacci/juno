@@ -4,18 +4,17 @@
 #define JUNO_UI_PROVIDER_DIALOG_H_
 
 #include <atlbase.h>
-#include <atlstr.h>
 #include <atlwin.h>
 
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atlctrls.h>
-#include <atlddx.h>
 
 #include <string>
 #include <vector>
 
 #include "res/resource.h"
+#include "ui/data_exchange_ex.h"
 #include "ui/dialog_impl_ex.h"
 
 namespace juno {
@@ -24,7 +23,7 @@ namespace ui {
 class PreferenceDialog;
 
 class ProviderDialog : public DialogImplEx<ProviderDialog>,
-                       public CWinDataExchange<ProviderDialog> {
+                       public DataExchangeEx<ProviderDialog> {
  public:
   static const UINT IDD = IDD_PROVIDER;
 
@@ -32,8 +31,8 @@ class ProviderDialog : public DialogImplEx<ProviderDialog>,
 
   const std::wstring& GetProviderName() const;
 
-  std::wstring name() const {
-    return name_.GetString();
+  const std::wstring& name() const {
+    return name_;
   }
 
   BEGIN_MSG_MAP(ProviderDialog)
@@ -61,7 +60,7 @@ class ProviderDialog : public DialogImplEx<ProviderDialog>,
 
   std::vector<std::wstring> provider_names_;
 
-  CString name_;
+  std::wstring name_;
   CEdit name_edit_;
   CComboBox provider_combo_;
   int provider_index_;

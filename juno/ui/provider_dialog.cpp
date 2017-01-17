@@ -2,6 +2,8 @@
 
 #include "ui/provider_dialog.h"
 
+#include <atlstr.h>
+
 #include <base/strings/string_util.h>
 
 #include <string>
@@ -42,7 +44,7 @@ void ProviderDialog::OnOk(UINT /*notify_code*/, int /*id*/,
 
   DoDataExchange(DDX_SAVE);
 
-  if (name_.IsEmpty()) {
+  if (name_.empty()) {
     message.LoadString(IDS_NAME_NOT_SPECIFIED);
     balloon.pszText = message;
     name_edit_.ShowBalloonTip(&balloon);

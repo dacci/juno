@@ -2,8 +2,6 @@
 
 #include "ui/main_frame.h"
 
-#include <atlstr.h>
-
 #include <base/command_line.h>
 #include <base/logging.h>
 
