@@ -3,14 +3,13 @@
 #include "service/scissors/scissors_provider.h"
 
 #include <base/strings/sys_string_conversions.h>
-#include <base/values.h>
 
 #include <memory>
 #include <string>
 
 #include "service/scissors/scissors.h"
 #include "service/scissors/scissors_config.h"
-#include "ui/scissors_dialog.h"
+#include "service/scissors/ui/scissors_dialog.h"
 
 namespace juno {
 namespace service {

@@ -8,7 +8,6 @@
 #include <utility>
 
 #include "misc/string_util.h"
-#include "service/service_config.h"
 #include "service/service_provider.h"
 #include "ui/preference_dialog.h"
 #include "ui/provider_dialog.h"

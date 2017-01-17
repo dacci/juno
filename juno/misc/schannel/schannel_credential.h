@@ -26,7 +26,7 @@ class SchannelCredential {
     auth_data_.dwVersion = SCHANNEL_CRED_VERSION;
   }
 
-  virtual ~SchannelCredential() {
+  ~SchannelCredential() {
     for (auto& certificate : certificates_)
       CertFreeCertificateContext(certificate);
 

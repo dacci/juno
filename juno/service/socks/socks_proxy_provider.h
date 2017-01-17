@@ -10,7 +10,7 @@ namespace juno {
 namespace service {
 namespace socks {
 
-class SocksProxyConfig : public ServiceConfig {};
+struct SocksProxyConfig : ServiceConfig {};
 
 class SocksProxyProvider : public ServiceProvider {
  public:

@@ -25,22 +25,12 @@ PreferenceDialog::PreferenceDialog()
   AddPage(*new ServersPage(this, &server_configs_));
 }
 
-CString PreferenceDialog::GetServiceName(const std::wstring& id) const {
-  for (auto& pair : service_configs_) {
-    if (pair.second->id_ == id)
-      return pair.second->name_.c_str();
-  }
+const wchar_t* PreferenceDialog::GetServiceName(const std::wstring& id) const {
+  auto iter = service_configs_.find(id);
+  if (iter == service_configs_.end())
+    return nullptr;
 
-  return CString();
-}
-
-const std::wstring& PreferenceDialog::GetServiceId(const CString& name) const {
-  for (auto& pair : service_configs_) {
-    if (pair.second->name_.c_str() == name)
-      return pair.second->id_;
-  }
-
-  return base::EmptyString16();
+  return iter->second->name_.c_str();
 }
 
 void PreferenceDialog::OnShowWindow(BOOL show, UINT /*status*/) {

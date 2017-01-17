@@ -17,7 +17,6 @@ namespace service {
 namespace socks {
 
 class SocksProxy;
-class SocksProxyConfig;
 
 class __declspec(novtable) SocksSession {
  public:

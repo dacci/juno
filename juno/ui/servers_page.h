@@ -14,15 +14,10 @@
 #include <atldlgs.h>
 
 #include "res/resource.h"
+#include "service/server_config.h"
 #include "service/service_manager.h"
 
 namespace juno {
-namespace service {
-
-struct ServerConfig;
-
-}  // namespace service
-
 namespace ui {
 
 class PreferenceDialog;

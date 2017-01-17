@@ -19,12 +19,6 @@
 #include "ui/dialog_impl_ex.h"
 
 namespace juno {
-namespace service {
-
-class ServiceProvider;
-
-}  // namespace service
-
 namespace ui {
 
 class PreferenceDialog;
@@ -52,8 +46,8 @@ class ProviderDialog : public DialogImplEx<ProviderDialog>,
   END_MSG_MAP()
 
   BEGIN_DDX_MAP(ProviderDialog)
-    DDX_CONTROL_HANDLE(IDC_NAME, name_edit_)
     DDX_TEXT(IDC_NAME, name_)
+    DDX_CONTROL_HANDLE(IDC_NAME, name_edit_)
     DDX_CONTROL_HANDLE(IDC_PROVIDER, provider_combo_)
   END_DDX_MAP()
 
@@ -67,8 +61,8 @@ class ProviderDialog : public DialogImplEx<ProviderDialog>,
 
   std::vector<std::wstring> provider_names_;
 
-  CEdit name_edit_;
   CString name_;
+  CEdit name_edit_;
   CComboBox provider_combo_;
   int provider_index_;
 

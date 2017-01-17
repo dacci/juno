@@ -46,7 +46,7 @@ class SocksProxyDialog : public CDialogImpl<SocksProxyDialog>,
   void OnOk(UINT notify_code, int id, CWindow control);
   void OnCancel(UINT notify_code, int id, CWindow control);
 
-  ServiceConfig* config_;
+  ServiceConfig* const config_;
 
   SocksProxyDialog(const SocksProxyDialog&) = delete;
   SocksProxyDialog& operator=(const SocksProxyDialog&) = delete;

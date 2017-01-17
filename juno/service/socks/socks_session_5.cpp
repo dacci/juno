@@ -17,7 +17,7 @@ namespace service {
 namespace socks {
 
 SocksSession5::SocksSession5(SocksProxy* proxy, const io::ChannelPtr& channel)
-    : SocksSession(proxy, channel), state_(State::Init), end_point_(nullptr) {}
+    : SocksSession(proxy, channel), state_(State::kInit), end_point_(nullptr) {}
 
 SocksSession5::~SocksSession5() {
   SocksSession5::Stop();
@@ -29,7 +29,7 @@ HRESULT SocksSession5::Start(std::unique_ptr<char[]>&& request, int length) {
     return E_ILLEGAL_METHOD_CALL;
   }
 
-  state_ = State::Negotiation;
+  state_ = State::kNegotiation;
   message_.assign(request.get(), length);
 
   return ProcessRequest();
@@ -76,10 +76,10 @@ HRESULT SocksSession5::EnsureRead(size_t min_length) {
 
 HRESULT SocksSession5::ProcessRequest() {
   switch (state_) {
-    case State::Negotiation:
+    case State::kNegotiation:
       return ProcessNegotiation();
 
-    case State::Command:
+    case State::kCommand:
       return ProcessCommand();
 
     default:
@@ -333,8 +333,8 @@ void SocksSession5::OnWritten(io::Channel* channel, HRESULT result,
     }
 
     switch (state_) {
-      case State::Negotiation:
-        state_ = State::Command;
+      case State::kNegotiation:
+        state_ = State::kCommand;
         message_.clear();
 
         result = ReadRequest();
@@ -344,7 +344,7 @@ void SocksSession5::OnWritten(io::Channel* channel, HRESULT result,
         }
         return;
 
-      case State::Command: {
+      case State::kCommand: {
         auto response = static_cast<SOCKS5::RESPONSE*>(buffer);
         if (response->code == SOCKS5::SUCCEEDED) {
           client_.reset();

@@ -10,7 +10,6 @@
 #include <string>
 
 #include "misc/certificate_store.h"
-#include "service/server_config.h"
 #include "ui/preference_dialog.h"
 
 namespace juno {

@@ -18,7 +18,7 @@ class SchannelContext {
     SecInvalidateHandle(&handle_);
   }
 
-  virtual ~SchannelContext() {
+  ~SchannelContext() {
     if (SecIsValidHandle(&handle_)) {
       DeleteSecurityContext(&handle_);
       SecInvalidateHandle(&handle_);

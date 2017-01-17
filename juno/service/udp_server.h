@@ -16,14 +16,6 @@
 #include "service/server.h"
 
 namespace juno {
-namespace io {
-namespace net {
-
-struct Datagram;
-
-}  // namespace net
-}  // namespace io
-
 namespace service {
 
 class Service;
@@ -33,7 +25,7 @@ class UdpServer : public Server,
                   public io::net::DatagramChannel::Listener {
  public:
   UdpServer();
-  virtual ~UdpServer();
+  ~UdpServer();
 
   bool Setup(const char* address, int port) override;
   bool Start() override;

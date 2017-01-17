@@ -30,7 +30,7 @@ class TcpServer : public Server, private AsyncServerSocket::Listener {
   };
 
   TcpServer();
-  virtual ~TcpServer();
+  ~TcpServer();
 
   bool Setup(const char* address, int port) override;
   bool Start() override;

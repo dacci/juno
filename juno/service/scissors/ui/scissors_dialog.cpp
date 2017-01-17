@@ -6,8 +6,6 @@
 
 #include <string>
 
-#include "service/scissors/scissors_config.h"
-
 namespace juno {
 namespace service {
 namespace scissors {

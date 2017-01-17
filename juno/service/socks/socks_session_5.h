@@ -28,9 +28,9 @@ class SocksSession5 : public SocksSession,
   static const int kBufferSize = 1024;
 
   enum class State {
-    Init,
-    Negotiation,
-    Command,
+    kInit,
+    kNegotiation,
+    kCommand,
   };
 
   HRESULT ReadRequest();

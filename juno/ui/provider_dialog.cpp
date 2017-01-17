@@ -42,7 +42,7 @@ void ProviderDialog::OnOk(UINT /*notify_code*/, int /*id*/,
 
   DoDataExchange(DDX_SAVE);
 
-  if (name_edit_.GetWindowTextLength() <= 0) {
+  if (name_.IsEmpty()) {
     message.LoadString(IDS_NAME_NOT_SPECIFIED);
     balloon.pszText = message;
     name_edit_.ShowBalloonTip(&balloon);

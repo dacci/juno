@@ -8,14 +8,13 @@
 
 #include <base/strings/string_number_conversions.h>
 #include <base/strings/sys_string_conversions.h>
-#include <base/values.h>
 
 #include <memory>
 #include <string>
 
 #include "service/http/http_proxy.h"
 #include "service/http/http_proxy_config.h"
-#include "ui/http_proxy_dialog.h"
+#include "service/http/ui/http_proxy_dialog.h"
 
 namespace juno {
 namespace service {

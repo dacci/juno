@@ -16,12 +16,11 @@
 #include "res/resource.h"
 #include "ui/preference_dialog.h"
 
+#include "service/scissors/scissors_config.h"
+
 namespace juno {
 namespace service {
 namespace scissors {
-
-struct ScissorsConfig;
-
 namespace ui {
 
 class ScissorsDialog : public CDialogImpl<ScissorsDialog>,

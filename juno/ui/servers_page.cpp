@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "misc/string_util.h"
-#include "service/server_config.h"
 #include "ui/preference_dialog.h"
 #include "ui/server_dialog.h"
 

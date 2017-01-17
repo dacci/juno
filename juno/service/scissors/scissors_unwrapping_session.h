@@ -23,8 +23,6 @@ class DatagramChannel;
 namespace service {
 namespace scissors {
 
-class Scissors;
-
 class ScissorsUnwrappingSession : public Scissors::Session,
                                   public io::Channel::Listener,
                                   public misc::TimerService::Callback {

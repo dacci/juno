@@ -8,7 +8,6 @@
 
 #include "misc/string_util.h"
 
-#include "service/http/http_proxy_config.h"
 #include "service/http/ui/http_header_filter_dialog.h"
 
 namespace juno {

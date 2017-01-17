@@ -9,7 +9,6 @@
 #include <string>
 #include <utility>
 
-#include "service/http/http_proxy_config.h"
 #include "service/http/http_proxy_session.h"
 
 namespace juno {

@@ -14,6 +14,7 @@
 #include <atldlgs.h>
 
 #include "res/resource.h"
+
 #include "service/http/http_proxy_config.h"
 
 namespace juno {

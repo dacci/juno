@@ -3,6 +3,8 @@
 #ifndef JUNO_SERVICE_SERVICE_PROVIDER_H_
 #define JUNO_SERVICE_SERVICE_PROVIDER_H_
 
+#include <base/values.h>
+
 #pragma warning(push, 3)
 #pragma warning(disable : 4244)
 #include <base/win/registry.h>
@@ -16,12 +18,6 @@
 #ifdef CreateService
 #undef CreateService
 #endif
-
-namespace base {
-
-class DictionaryValue;
-
-}  // namespace base
 
 namespace juno {
 namespace service {

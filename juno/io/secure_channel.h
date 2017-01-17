@@ -22,7 +22,7 @@ class SecureChannel : public Channel, private Channel::Listener {
  public:
   SecureChannel(misc::schannel::SchannelCredential* credential,
                 const std::shared_ptr<Channel>& channel, bool inbound);
-  virtual ~SecureChannel();
+  ~SecureChannel();
 
   void Close() override;
   HRESULT ReadAsync(void* buffer, int length,

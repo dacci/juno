@@ -14,12 +14,11 @@
 #include "service/service.h"
 
 #include "service/http/http_digest.h"
+#include "service/http/http_proxy_config.h"
 
 namespace juno {
 namespace service {
 namespace http {
-
-struct HttpProxyConfig;
 
 class HttpHeaders;
 class HttpProxySession;

@@ -30,7 +30,7 @@ typedef std::map<std::wstring, std::unique_ptr<ServerConfig>> ServerConfigMap;
 class ServiceManager {
  public:
   ServiceManager();
-  virtual ~ServiceManager();
+  ~ServiceManager();
 
   static ServiceManager* GetInstance() {
     return instance_;

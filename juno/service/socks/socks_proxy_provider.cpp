@@ -2,8 +2,6 @@
 
 #include "service/socks/socks_proxy_provider.h"
 
-#include <base/values.h>
-
 #include "service/socks/socks_proxy.h"
 
 namespace juno {

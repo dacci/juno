@@ -10,7 +10,7 @@
 #include "io/net/socket_channel.h"
 #include "io/secure_channel.h"
 #include "misc/schannel/schannel_credential.h"
-#include "service/scissors/scissors_config.h"
+
 #include "service/scissors/scissors_tcp_session.h"
 #include "service/scissors/scissors_udp_session.h"
 #include "service/scissors/scissors_unwrapping_session.h"

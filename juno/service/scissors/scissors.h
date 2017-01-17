@@ -19,6 +19,8 @@
 #include "io/net/socket_resolver.h"
 #include "service/service.h"
 
+#include "service/scissors/scissors_config.h"
+
 namespace juno {
 namespace io {
 namespace net {
@@ -37,12 +39,7 @@ class SchannelCredential;
 }  // namespace misc
 
 namespace service {
-
-struct ServiceConfig;
-
 namespace scissors {
-
-struct ScissorsConfig;
 
 class Scissors : public Service, private io::net::SocketChannel::Listener {
  public:
