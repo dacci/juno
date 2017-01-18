@@ -127,6 +127,8 @@ void HttpProxySession::ProcessRequest() {
     request_chunked_ = false;
   }
 
+  request_version_ = request_.minor_version();
+
   if (request_.method().compare("CONNECT") == 0) {
     if (request_chunked_ || request_length_ > 0) {
       close_client_ = true;
@@ -135,11 +137,24 @@ void HttpProxySession::ProcessRequest() {
     }
 
     tunnel_ = true;
+  } else {
+    if (request_version_ == 0)
+      close_client_ = true;
+
+    if (request_.HeaderExists(kConnection)) {
+      auto connection = request_.GetAllHeaders(kConnection);
+      for (const auto& value : connection) {
+        if (request_version_ == 1 && _stricmp(value.c_str(), "close") == 0)
+          close_client_ = true;
+        else if (request_version_ == 0 &&
+                 _stricmp(value.c_str(), "keep-alive") == 0)
+          close_client_ = false;
+      }
+    }
   }
 
-  if (http_util::ProcessHopByHopHeaders(&request_))
-    close_client_ = true;
-
+  request_.set_minor_version(1);
+  http_util::ProcessHopByHopHeaders(&request_);
   proxy_->FilterHeaders(&request_, true);
   proxy_->ProcessAuthorization(&request_);
 
@@ -291,6 +306,12 @@ void HttpProxySession::ProcessResponse() {
       response_chunked_ = true;
       response_length_ =
           http_util::ParseChunk(remote_buffer_, &last_chunk_size_);
+
+      // HTTP/1.0: notify response end by connection close.
+      if (request_version_ == 0) {
+        close_client_ = true;
+        response_.RemoveHeader(kTransferEncoding);
+      }
     } else {
       response_chunked_ = false;
     }
@@ -303,6 +324,8 @@ void HttpProxySession::ProcessResponse() {
 
   if (http_util::ProcessHopByHopHeaders(&response_))
     close_remote_ = true;
+
+  response_.set_minor_version(request_version_);
 
   switch (status) {
     case PROXY_AUTHENTICATION_REQUIRED:
@@ -356,8 +379,10 @@ void HttpProxySession::ProcessResponse() {
   if (!tunnel_) {
     proxy_->FilterHeaders(&response_, false);
 
-    if (close_client_)
+    if (request_version_ == 1 && close_client_)
       response_.SetHeader(kConnection, "close");
+    else if (request_version_ == 0 && !close_client_)
+      response_.SetHeader(kConnection, "keep-alive");
   }
 
   SendResponse();
@@ -369,6 +394,12 @@ void HttpProxySession::ProcessResponseChunk() {
     if (retry_) {
       OnResponseBodySent(0, static_cast<int>(response_length_));
     } else {
+      if (request_version_ == 0) {
+        // As HTTP/1.0 does not support chunked encoding, send raw bytes only.
+        response_length_ =
+            http_util::MergeChunks(&remote_buffer_, response_length_);
+      }
+
       auto result = client_->WriteAsync(
           remote_buffer_.data(), static_cast<int>(response_length_), this);
       if (FAILED(result)) {

@@ -76,6 +76,43 @@ int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size) {
   return end - start;
 }
 
+int64_t MergeChunks(std::string* buffer, int64_t length) {
+  auto merged = length;
+  auto offset = 0LL;
+
+  for (auto left = &(*buffer)[0]; offset < merged;) {
+    char* right;
+    auto chunk_length = _strtoi64(left, &right, 16);
+    if (*right == '\x0D')
+      ++right;
+    if (*right == '\x0A')
+      ++right;
+    else
+      return -1;
+
+    auto purge = right - left;
+    buffer->erase(static_cast<size_t>(offset), purge);
+    merged -= purge;
+
+    offset += chunk_length;
+    left += chunk_length;
+
+    right = left;
+    if (*right == '\x0D')
+      ++right;
+    if (*right == '\x0A')
+      ++right;
+    else
+      return -1;
+
+    purge = right - left;
+    buffer->erase(static_cast<size_t>(offset), purge);
+    merged -= purge;
+  }
+
+  return merged;
+}
+
 bool ProcessHopByHopHeaders(HttpHeaders* headers) {
   auto has_close = false;
 

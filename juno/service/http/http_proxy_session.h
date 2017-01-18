@@ -107,6 +107,7 @@ class HttpProxySession : private io::Channel::Listener,
   HttpRequest request_;
   int64_t request_length_;
   bool request_chunked_;
+  int request_version_;
   bool close_client_;
 
   std::shared_ptr<io::net::SocketChannel> remote_;

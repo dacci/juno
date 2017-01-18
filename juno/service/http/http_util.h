@@ -32,6 +32,8 @@ int64_t GetContentLength(const HttpHeaders& headers);
 // -2 if the chunk is partial or -1 on error.
 int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size);
 
+int64_t MergeChunks(std::string* buffer, int64_t length);
+
 bool ProcessHopByHopHeaders(HttpHeaders* headers);
 
 }  // namespace http_util
