@@ -12,6 +12,16 @@
 namespace juno {
 namespace service {
 namespace http {
+
+extern const std::string kConnection;
+extern const std::string kContentLength;
+extern const std::string kExpect;
+extern const std::string kKeepAlive;
+extern const std::string kProxyAuthenticate;
+extern const std::string kProxyAuthorization;
+extern const std::string kProxyConnection;
+extern const std::string kTransferEncoding;
+
 namespace http_util {
 
 // returns the value of Content-Length header if any,

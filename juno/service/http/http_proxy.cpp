@@ -10,16 +10,11 @@
 #include <utility>
 
 #include "service/http/http_proxy_session.h"
+#include "service/http/http_util.h"
 
 namespace juno {
 namespace service {
 namespace http {
-namespace {
-
-const std::string kProxyAuthenticate("Proxy-Authenticate");
-const std::string kProxyAuthorization("Proxy-Authorization");
-
-}  // namespace
 
 HttpProxy::HttpProxy()
     : config_(nullptr),
