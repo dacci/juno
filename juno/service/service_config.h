@@ -9,6 +9,8 @@ namespace juno {
 namespace service {
 
 struct ServiceConfig {
+  virtual ~ServiceConfig() {}
+
   std::wstring id_;
   std::wstring name_;
   std::wstring provider_;
