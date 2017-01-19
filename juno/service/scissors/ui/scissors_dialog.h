@@ -9,13 +9,11 @@
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atlctrls.h>
-#include <atldlgs.h>
 
 #include <string>
 
 #include "res/resource.h"
 #include "ui/data_exchange_ex.h"
-#include "ui/preference_dialog.h"
 
 #include "service/scissors/scissors_config.h"
 

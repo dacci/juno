@@ -26,13 +26,8 @@ const wchar_t* kTypeNames[] = {
 
 using ::juno::service::ServerConfig;
 
-ServersPage::ServersPage(PreferenceDialog* parent,
-                         service::ServerConfigMap* configs)
-    : parent_(parent), configs_(configs), initialized_() {}
-
-void ServersPage::OnPageRelease() {
-  delete this;
-}
+ServersPage::ServersPage(PreferenceDialog* parent)
+    : parent_(parent), initialized_() {}
 
 void ServersPage::AddServerItem(const ServerConfig* config, int index) {
   if (index < 0)
@@ -71,7 +66,7 @@ BOOL ServersPage::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   server_list_.AddColumn(caption, 3);
   server_list_.SetColumnWidth(3, 100);
 
-  for (auto& config : *configs_)
+  for (auto& config : parent_->server_configs_)
     AddServerItem(config.second.get(), -1);
 
   edit_button_.EnableWindow(FALSE);
@@ -94,7 +89,7 @@ void ServersPage::OnAddServer(UINT /*notify_code*/, int /*id*/,
   config->id_ = misc::GenerateGUID16();
 
   AddServerItem(config.get(), -1);
-  configs_->insert({config->id_, std::move(config)});
+  parent_->server_configs_.insert({config->id_, std::move(config)});
 
   server_list_.SelectItem(server_list_.GetItemCount());
 }
@@ -126,7 +121,7 @@ void ServersPage::OnDeleteServer(UINT /*notify_code*/, int /*id*/,
       reinterpret_cast<ServerConfig*>(server_list_.GetItemData(index));
 
   server_list_.DeleteItem(index);
-  configs_->erase(config->id_);
+  parent_->server_configs_.erase(config->id_);
 
   server_list_.SelectItem(index);
 }

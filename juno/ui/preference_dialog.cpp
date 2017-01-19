@@ -7,22 +7,22 @@
 #include <string>
 #include <utility>
 
-#include "ui/servers_page.h"
-#include "ui/services_page.h"
-
 namespace juno {
 namespace ui {
 
 PreferenceDialog::PreferenceDialog()
-    : CPropertySheetImpl(ID_FILE_NEW), centered_() {
+    : CPropertySheetImpl(ID_FILE_NEW),
+      services_page_(this),
+      servers_page_(this),
+      centered_() {
   m_psh.dwFlags |= PSH_NOAPPLYNOW | PSH_NOCONTEXTHELP;
 
   auto service_manager = service::ServiceManager::GetInstance();
   service_manager->CopyServiceConfigs(&service_configs_);
   service_manager->CopyServerConfigs(&server_configs_);
 
-  AddPage(*new ServicesPage(this, &service_configs_));
-  AddPage(*new ServersPage(this, &server_configs_));
+  AddPage(services_page_);
+  AddPage(servers_page_);
 }
 
 const wchar_t* PreferenceDialog::GetServiceName(const std::wstring& id) const {

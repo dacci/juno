@@ -13,6 +13,8 @@
 #include <string>
 
 #include "service/service_manager.h"
+#include "ui/servers_page.h"
+#include "ui/services_page.h"
 
 namespace juno {
 namespace ui {
@@ -35,6 +37,8 @@ class PreferenceDialog : public CPropertySheetImpl<PreferenceDialog> {
  private:
   void OnShowWindow(BOOL show, UINT status);
 
+  ServicesPage services_page_;
+  ServersPage servers_page_;
   bool centered_;
 
   PreferenceDialog(const PreferenceDialog&) = delete;

@@ -17,13 +17,8 @@
 namespace juno {
 namespace ui {
 
-ServicesPage::ServicesPage(PreferenceDialog* parent,
-                           service::ServiceConfigMap* configs)
-    : parent_(parent), configs_(configs), initialized_() {}
-
-void ServicesPage::OnPageRelease() {
-  delete this;
-}
+ServicesPage::ServicesPage(PreferenceDialog* parent)
+    : parent_(parent), initialized_() {}
 
 void ServicesPage::AddServiceItem(const service::ServiceConfig* config,
                                   int index) {
@@ -50,7 +45,7 @@ BOOL ServicesPage::OnInitDialog(CWindow /*focus*/, LPARAM /*init_param*/) {
   service_list_.AddColumn(caption, 1);
   service_list_.SetColumnWidth(1, 90);
 
-  for (auto& pair : *configs_)
+  for (auto& pair : parent_->service_configs_)
     AddServiceItem(pair.second.get(), -1);
 
   edit_button_.EnableWindow(FALSE);
@@ -82,7 +77,7 @@ void ServicesPage::OnAddService(UINT /*notify_code*/, int /*id*/,
   config->provider_ = provider_dialog.GetProviderName();
 
   AddServiceItem(config.get(), -1);
-  configs_->insert({config->id_, std::move(config)});
+  parent_->service_configs_.insert({config->id_, std::move(config)});
 
   service_list_.SelectItem(service_list_.GetItemCount());
 }
@@ -118,7 +113,7 @@ void ServicesPage::OnDeleteService(UINT /*notify_code*/, int /*id*/,
   DCHECK(config != nullptr);
 
   service_list_.DeleteItem(index);
-  configs_->erase(config->id_);
+  parent_->service_configs_.erase(config->id_);
 
   service_list_.SelectItem(index);
 }

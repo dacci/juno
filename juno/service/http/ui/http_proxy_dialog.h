@@ -9,7 +9,6 @@
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atlctrls.h>
-#include <atldlgs.h>
 
 #include <string>
 #include <vector>

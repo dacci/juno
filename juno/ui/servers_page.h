@@ -13,7 +13,6 @@
 
 #include "res/resource.h"
 #include "service/server_config.h"
-#include "service/service_manager.h"
 #include "ui/data_exchange_ex.h"
 
 namespace juno {
@@ -26,9 +25,7 @@ class ServersPage : public CPropertyPageImpl<ServersPage>,
  public:
   static const UINT IDD = IDD_SERVERS_PAGE;
 
-  ServersPage(PreferenceDialog* parent, service::ServerConfigMap* configs);
-
-  void OnPageRelease();
+  explicit ServersPage(PreferenceDialog* parent);
 
   BEGIN_MSG_MAP(ServersPage)
     MSG_WM_INITDIALOG(OnInitDialog)
@@ -63,7 +60,6 @@ class ServersPage : public CPropertyPageImpl<ServersPage>,
   LRESULT OnServerListDoubleClicked(LPNMHDR header);
 
   PreferenceDialog* const parent_;
-  service::ServerConfigMap* const configs_;
   bool initialized_;
 
   CListViewCtrl server_list_;

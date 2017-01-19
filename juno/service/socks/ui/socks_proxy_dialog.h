@@ -9,7 +9,6 @@
 #include <atlapp.h>
 #include <atlcrack.h>
 #include <atlctrls.h>
-#include <atldlgs.h>
 
 #include "res/resource.h"
 #include "ui/data_exchange_ex.h"
