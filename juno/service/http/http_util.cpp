@@ -33,24 +33,25 @@ int64_t GetContentLength(const HttpHeaders& headers) {
 }
 
 int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size) {
+  if (buffer.empty())
+    return -2;
+
   auto start = const_cast<char*>(buffer.c_str());
   auto end = start;
   *chunk_size = _strtoi64(start, &end, 16);
 
-  while (*end) {
-    if (*end != '\x0D' && *end != '\x0A' && *end != ' ')
-      return -1;
-
-    if (*end == '\x0A')
-      break;
-
+  if (*end == '\0')
+    return -2;
+  if (*end == '\x0D')
     ++end;
-  }
 
   if (*end == '\0')
     return -2;
+  if (*end != '\x0A')
+    return -1;
 
-  ++end;
+  if (*++end == '\0')
+    return -2;
 
   auto length = *chunk_size + (end - start);
   if (buffer.size() < static_cast<size_t>(length))
@@ -58,18 +59,15 @@ int64_t ParseChunk(const std::string& buffer, int64_t* chunk_size) {
 
   end = start + length;
 
-  while (*end) {
-    if (*end != '\x0D' && *end != '\x0A')
-      return -1;
-
-    if (*end == '\x0A')
-      break;
-
+  if (*end == '\0')
+    return -2;
+  if (*end == '\x0D')
     ++end;
-  }
 
   if (*end == '\0')
     return -2;
+  if (*end != '\x0A')
+    return -1;
 
   ++end;
 
