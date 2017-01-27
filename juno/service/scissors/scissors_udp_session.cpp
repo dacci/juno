@@ -81,7 +81,12 @@ void ScissorsUdpSession::OnRead(io::Channel* /*channel*/, HRESULT result,
     if (sent == length) {
       DLOG(INFO) << this << " " << sent << " bytes sent to the source";
       timer_->Start(kTimeout, 0);
-      source_->ReadAsync(buffer_, sizeof(buffer_), this);
+      result = sink_->ReadAsync(buffer_, sizeof(buffer_), this);
+      if (FAILED(result)) {
+        LOG(ERROR) << this << " failed to received from the sink: 0x"
+                   << std::hex << result;
+        Stop();
+      }
     } else {
       LOG(ERROR) << this
                  << " failed to send to the source: " << WSAGetLastError();
