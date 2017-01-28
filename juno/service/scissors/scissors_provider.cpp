@@ -4,7 +4,6 @@
 
 #include <base/strings/sys_string_conversions.h>
 
-#include <memory>
 #include <string>
 
 #include "service/scissors/scissors.h"

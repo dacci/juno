@@ -30,7 +30,7 @@ class ScissorsUdpSession : public Scissors::UdpSession,
   static const size_t kBufferSize = 64 * 1024;  // 64 KiB
   static const int kTimeout = 15 * 1000;        // 15 sec
 
-  void OnReceived(const io::net::DatagramPtr& datagram) override;
+  void OnReceived(std::unique_ptr<io::net::Datagram>&& datagram) override;
 
   void OnRead(io::Channel* channel, HRESULT result, void* buffer,
               int length) override;
@@ -44,7 +44,7 @@ class ScissorsUdpSession : public Scissors::UdpSession,
   sockaddr_storage address_;
   int address_length_;
   char buffer_[kBufferSize];
-  misc::TimerService::TimerObject timer_;
+  std::unique_ptr<misc::TimerService::Timer> timer_;
 
   ScissorsUdpSession(const ScissorsUdpSession&) = delete;
   ScissorsUdpSession& operator=(const ScissorsUdpSession&) = delete;

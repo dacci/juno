@@ -55,7 +55,7 @@ class ScissorsUnwrappingSession : public Scissors::Session,
   bool OnDatagramReceived(io::Channel* channel, HRESULT result, void* buffer,
                           int length);
 
-  misc::TimerService::TimerObject timer_;
+  std::unique_ptr<misc::TimerService::Timer> timer_;
 
   std::shared_ptr<io::Channel> stream_;
   char stream_buffer_[4096];

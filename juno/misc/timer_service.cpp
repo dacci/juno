@@ -18,7 +18,7 @@ TimerService TimerService::default_instance_(nullptr);
 TimerService::TimerService(PTP_CALLBACK_ENVIRON environment)
     : environment_(environment) {}
 
-TimerService::TimerObject TimerService::Create(Callback* callback) {
+std::unique_ptr<TimerService::Timer> TimerService::Create(Callback* callback) {
   auto timer = CreateThreadpoolTimer(TimerCallback, callback, environment_);
   if (timer == nullptr)
     return nullptr;
@@ -27,11 +27,11 @@ TimerService::TimerObject TimerService::Create(Callback* callback) {
     Wrapper(PTP_TIMER timer, Callback* callback) : Timer(timer, callback) {}
   };
 
-  auto timer_object = std::make_shared<Wrapper>(timer, callback);
+  auto timer_object = std::make_unique<Wrapper>(timer, callback);
   if (timer_object == nullptr)
     CloseThreadpoolTimer(timer);
 
-  return timer_object;
+  return std::move(timer_object);
 }
 
 TimerService::Timer::~Timer() {

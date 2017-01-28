@@ -10,14 +10,13 @@ namespace juno {
 namespace misc {
 
 using ::juno::io::Channel;
-using ::juno::io::ChannelPtr;
 
 TunnelingService* TunnelingService::instance_ = nullptr;
 
 class TunnelingService::Session : public Channel::Listener {
  public:
-  Session(TunnelingService* service, const ChannelPtr& from,
-          const ChannelPtr& to);
+  Session(TunnelingService* service, const std::shared_ptr<Channel>& from,
+          const std::shared_ptr<Channel>& to);
   ~Session();
 
   HRESULT Start();
@@ -28,8 +27,8 @@ class TunnelingService::Session : public Channel::Listener {
                  int length) override;
 
   TunnelingService* service_;
-  ChannelPtr from_;
-  ChannelPtr to_;
+  std::shared_ptr<Channel> from_;
+  std::shared_ptr<Channel> to_;
   char buffer_[65535];
 
  private:
@@ -54,7 +53,8 @@ void TunnelingService::Term() {
   }
 }
 
-bool TunnelingService::Bind(const ChannelPtr& a, const ChannelPtr& b) {
+bool TunnelingService::Bind(const std::shared_ptr<Channel>& a,
+                            const std::shared_ptr<Channel>& b) {
   if (instance_ == nullptr)
     return false;
 
@@ -82,8 +82,8 @@ TunnelingService::~TunnelingService() {
     empty_.Wait();
 }
 
-bool TunnelingService::BindSocket(const ChannelPtr& from,
-                                  const ChannelPtr& to) {
+bool TunnelingService::BindSocket(const std::shared_ptr<Channel>& from,
+                                  const std::shared_ptr<Channel>& to) {
   CHECK(!stopped_);
   lock_.AssertAcquired();
 
@@ -138,7 +138,8 @@ void TunnelingService::EndSessionImpl(Session* session) {
 }
 
 TunnelingService::Session::Session(TunnelingService* service,
-                                   const ChannelPtr& from, const ChannelPtr& to)
+                                   const std::shared_ptr<Channel>& from,
+                                   const std::shared_ptr<Channel>& to)
     : service_(service), from_(from), to_(to) {}
 
 TunnelingService::Session::~Session() {

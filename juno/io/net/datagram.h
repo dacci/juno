@@ -21,10 +21,6 @@ struct Datagram {
   sockaddr_storage from;
 };
 
-#ifndef JUNO_NO_DATAGRAM_PTR
-typedef std::shared_ptr<Datagram> DatagramPtr;
-#endif  // JUNO_NO_DATAGRAM_PTR
-
 }  // namespace net
 }  // namespace io
 }  // namespace juno

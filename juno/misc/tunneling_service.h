@@ -21,7 +21,8 @@ class TunnelingService {
  public:
   static HRESULT Init();
   static void Term();
-  static bool Bind(const io::ChannelPtr& a, const io::ChannelPtr& b);
+  static bool Bind(const std::shared_ptr<io::Channel>& a,
+                   const std::shared_ptr<io::Channel>& b);
 
  private:
   class Session;
@@ -31,7 +32,8 @@ class TunnelingService {
   TunnelingService();
   ~TunnelingService();
 
-  bool BindSocket(const io::ChannelPtr& from, const io::ChannelPtr& to);
+  bool BindSocket(const std::shared_ptr<io::Channel>& from,
+                  const std::shared_ptr<io::Channel>& to);
 
   void EndSession(Session* session);
   static void CALLBACK EndSessionImpl(PTP_CALLBACK_INSTANCE instance,

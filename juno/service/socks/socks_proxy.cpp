@@ -59,6 +59,11 @@ void SocksProxy::OnAccepted(const io::ChannelPtr& client) {
   }
 }
 
+void SocksProxy::OnReceivedFrom(
+    std::unique_ptr<io::net::Datagram>&& /*datagram*/) {
+  // do nothing
+}
+
 void SocksProxy::CheckEmpty() {
   if (candidates_.empty() && sessions_.empty())
     empty_.Broadcast();

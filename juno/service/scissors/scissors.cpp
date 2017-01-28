@@ -189,7 +189,7 @@ void Scissors::OnAccepted(const io::ChannelPtr& client) {
     StartSession(std::make_unique<ScissorsTcpSession>(this, client));
 }
 
-void Scissors::OnReceivedFrom(const io::net::DatagramPtr& datagram) {
+void Scissors::OnReceivedFrom(std::unique_ptr<io::net::Datagram>&& datagram) {
   if (stopped_)
     return;
 
@@ -229,7 +229,7 @@ void Scissors::OnReceivedFrom(const io::net::DatagramPtr& datagram) {
   }
 
   if (udp_session != nullptr)
-    udp_session->OnReceived(datagram);
+    udp_session->OnReceived(std::move(datagram));
 }
 
 void Scissors::OnConnected(io::net::SocketChannel* socket, HRESULT result) {

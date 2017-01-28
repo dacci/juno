@@ -6,7 +6,6 @@
 
 #include <base/logging.h>
 
-#include <memory>
 #include <utility>
 
 #include "misc/string_util.h"

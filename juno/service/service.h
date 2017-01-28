@@ -5,6 +5,8 @@
 
 #include <winerror.h>
 
+#include <memory>
+
 #include "io/channel.h"
 #include "io/net/datagram.h"
 #include "service/service_config.h"
@@ -20,7 +22,8 @@ class __declspec(novtable) Service {
   virtual void Stop() = 0;
 
   virtual void OnAccepted(const io::ChannelPtr& client) = 0;
-  virtual void OnReceivedFrom(const io::net::DatagramPtr& datagram) = 0;
+  virtual void OnReceivedFrom(
+      std::unique_ptr<io::net::Datagram>&& datagram) = 0;
   virtual void OnError(HRESULT result) = 0;
 };
 

@@ -83,7 +83,7 @@ void UdpServer::OnRead(DatagramChannel* socket, HRESULT result, void* buffer,
                        int length, const void* from, int from_length) {
   if (SUCCEEDED(result)) {
     do {
-      auto datagram = std::make_shared<io::net::Datagram>();
+      auto datagram = std::make_unique<io::net::Datagram>();
       if (datagram == nullptr) {
         result = E_OUTOFMEMORY;
         break;
@@ -109,7 +109,7 @@ void UdpServer::OnRead(DatagramChannel* socket, HRESULT result, void* buffer,
 
       socket->ReadFromAsync(buffer, kBufferSize, this);
 
-      service_->OnReceivedFrom(datagram);
+      service_->OnReceivedFrom(std::move(datagram));
     } while (false);
   }
 

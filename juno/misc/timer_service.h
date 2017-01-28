@@ -49,11 +49,9 @@ class TimerService {
     Callback* const callback_;
   };
 
-  typedef std::shared_ptr<Timer> TimerObject;
-
   explicit TimerService(PTP_CALLBACK_ENVIRON environment);
 
-  TimerObject Create(Callback* callback);
+  std::unique_ptr<Timer> Create(Callback* callback);
 
   static TimerService* GetDefault() {
     return &default_instance_;

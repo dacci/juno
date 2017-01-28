@@ -121,7 +121,8 @@ void HttpProxy::OnAccepted(const io::ChannelPtr& client) {
     sessions_.push_back(std::move(session));
 }
 
-void HttpProxy::OnReceivedFrom(const io::net::DatagramPtr& /*datagram*/) {
+void HttpProxy::OnReceivedFrom(
+    std::unique_ptr<io::net::Datagram>&& /*datagram*/) {
   // Do nothing
 }
 

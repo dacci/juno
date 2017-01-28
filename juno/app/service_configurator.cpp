@@ -4,8 +4,6 @@
 
 #include <base/logging.h>
 
-#include <memory>
-
 #include "app/application.h"
 #include "app/constants.h"
 #include "res/resource.h"

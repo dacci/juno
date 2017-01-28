@@ -74,7 +74,8 @@ void ScissorsWrappingSession::Stop() {
     stream_->Close();
 }
 
-void ScissorsWrappingSession::OnReceived(const io::net::DatagramPtr& datagram) {
+void ScissorsWrappingSession::OnReceived(
+    std::unique_ptr<io::net::Datagram>&& datagram) {
   timer_->Start(kTimeout, 0);
 
   if (datagram->data_length <= kDataSize) {

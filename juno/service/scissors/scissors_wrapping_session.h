@@ -26,7 +26,7 @@ class ScissorsWrappingSession : public Scissors::UdpSession,
   bool Start() override;
   void Stop() override;
 
-  void OnReceived(const io::net::DatagramPtr& datagram) override;
+  void OnReceived(std::unique_ptr<io::net::Datagram>&& datagram) override;
   void OnRead(io::Channel* channel, HRESULT result, void* buffer,
               int length) override;
   void OnWritten(io::Channel* channel, HRESULT result, void* buffer,
@@ -51,9 +51,9 @@ class ScissorsWrappingSession : public Scissors::UdpSession,
   void SendDatagram();
 
   base::Lock lock_;
-  std::list<io::net::DatagramPtr> queue_;
+  std::list<std::unique_ptr<io::net::Datagram>> queue_;
   bool connected_;
-  misc::TimerService::TimerObject timer_;
+  std::unique_ptr<misc::TimerService::Timer> timer_;
 
   std::shared_ptr<io::Channel> stream_;
   char stream_buffer_[4096];

@@ -91,7 +91,7 @@ class HttpProxySession : private io::Channel::Listener,
   base::Lock lock_;
   base::ConditionVariable free_;
 
-  misc::TimerService::TimerObject timer_;
+  std::unique_ptr<misc::TimerService::Timer> timer_;
   char buffer_[kBufferSize];
   State state_;
   int64_t last_chunk_size_;

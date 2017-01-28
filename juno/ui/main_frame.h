@@ -12,8 +12,6 @@
 
 #include <shellapi.h>
 
-#include <memory>
-
 #include "res/resource.h"
 
 namespace juno {

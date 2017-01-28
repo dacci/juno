@@ -59,7 +59,7 @@ class Scissors : public Service, private io::net::SocketChannel::Listener {
     explicit UdpSession(Scissors* service) : Session(service) {}
     virtual ~UdpSession() {}
 
-    virtual void OnReceived(const io::net::DatagramPtr& datagram) = 0;
+    virtual void OnReceived(std::unique_ptr<io::net::Datagram>&& datagram) = 0;
   };
 
   Scissors();
@@ -106,7 +106,7 @@ class Scissors : public Service, private io::net::SocketChannel::Listener {
   void EndSessionImpl(Session* session);
 
   void OnAccepted(const io::ChannelPtr& client) override;
-  void OnReceivedFrom(const io::net::DatagramPtr& datagram) override;
+  void OnReceivedFrom(std::unique_ptr<io::net::Datagram>&& datagram) override;
   void OnError(HRESULT /*result*/) override {}
 
   void OnConnected(io::net::SocketChannel* socket, HRESULT result) override;

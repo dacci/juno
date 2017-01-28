@@ -51,7 +51,8 @@ void ScissorsUdpSession::Stop() {
   service_->EndSession(this);
 }
 
-void ScissorsUdpSession::OnReceived(const io::net::DatagramPtr& datagram) {
+void ScissorsUdpSession::OnReceived(
+    std::unique_ptr<io::net::Datagram>&& datagram) {
   DLOG(INFO) << this << " " << datagram->data_length
              << " bytes receved from the source";
 
