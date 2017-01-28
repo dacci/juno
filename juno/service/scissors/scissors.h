@@ -107,7 +107,6 @@ class Scissors : public Service, private io::net::SocketChannel::Listener {
 
   void OnAccepted(const io::ChannelPtr& client) override;
   void OnReceivedFrom(std::unique_ptr<io::net::Datagram>&& datagram) override;
-  void OnError(HRESULT /*result*/) override {}
 
   void OnConnected(io::net::SocketChannel* socket, HRESULT result) override;
   void OnClosed(io::net::SocketChannel* /*channel*/,

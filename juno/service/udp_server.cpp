@@ -113,10 +113,8 @@ void UdpServer::OnRead(DatagramChannel* socket, HRESULT result, void* buffer,
     } while (false);
   }
 
-  if (FAILED(result)) {
-    service_->OnError(HRESULT_CODE(result));
+  if (FAILED(result))
     DeleteServer(socket);
-  }
 }
 
 void UdpServer::OnWritten(io::Channel* /*channel*/, HRESULT /*result*/,

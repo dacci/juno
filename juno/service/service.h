@@ -24,7 +24,6 @@ class __declspec(novtable) Service {
   virtual void OnAccepted(const io::ChannelPtr& client) = 0;
   virtual void OnReceivedFrom(
       std::unique_ptr<io::net::Datagram>&& datagram) = 0;
-  virtual void OnError(HRESULT result) = 0;
 };
 
 }  // namespace service

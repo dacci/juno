@@ -127,10 +127,8 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, HRESULT result,
     result = server->AcceptAsync(this);
   } while (false);
 
-  if (FAILED(result)) {
-    service_->OnError(HRESULT_CODE(result));
+  if (FAILED(result))
     DeleteServer(server);
-  }
 }
 
 }  // namespace service

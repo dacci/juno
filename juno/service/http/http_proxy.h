@@ -41,7 +41,6 @@ class HttpProxy : public Service {
 
   void OnAccepted(const io::ChannelPtr& client) override;
   void OnReceivedFrom(std::unique_ptr<io::net::Datagram>&& datagram) override;
-  void OnError(HRESULT /*result*/) override {}
 
  private:
   typedef std::pair<HttpProxy*, HttpProxySession*> ServiceSessionPair;
