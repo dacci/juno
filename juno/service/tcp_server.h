@@ -26,7 +26,8 @@ class TcpServer : public Server, private AsyncServerSocket::Listener {
    public:
     virtual ~ChannelCustomizer() {}
 
-    virtual io::ChannelPtr Customize(const io::ChannelPtr& channel) = 0;
+    virtual std::unique_ptr<io::Channel> Customize(
+        std::unique_ptr<io::Channel>&& channel) = 0;
   };
 
   TcpServer();

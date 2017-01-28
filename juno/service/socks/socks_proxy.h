@@ -47,7 +47,7 @@ class SocksProxy : public Service, private io::Channel::Listener {
   void Stop() override;
   void EndSession(SocksSession* session);
 
-  void OnAccepted(const io::ChannelPtr& client) override;
+  void OnAccepted(std::unique_ptr<io::Channel>&& client) override;
   void OnReceivedFrom(std::unique_ptr<io::net::Datagram>&& datagram) override;
 
  private:

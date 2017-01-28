@@ -110,7 +110,7 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, HRESULT result,
     if (FAILED(result))
       break;
 
-    std::shared_ptr<io::Channel> channel =
+    std::unique_ptr<io::Channel> channel =
         server->EndAccept<io::net::SocketChannel>(context, &result);
     if (channel == nullptr)
       break;
@@ -119,10 +119,10 @@ void TcpServer::OnAccepted(AsyncServerSocket* server, HRESULT result,
       base::AutoLock guard(lock_);
 
       if (channel_customizer_ != nullptr)
-        channel = channel_customizer_->Customize(channel);
+        channel = channel_customizer_->Customize(std::move(channel));
     }
 
-    service_->OnAccepted(channel);
+    service_->OnAccepted(std::move(channel));
 
     result = server->AcceptAsync(this);
   } while (false);

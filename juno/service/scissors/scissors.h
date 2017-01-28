@@ -71,9 +71,10 @@ class Scissors : public Service, private io::net::SocketChannel::Listener {
   bool StartSession(std::unique_ptr<Session>&& session);
   void EndSession(Session* session);
 
-  std::shared_ptr<io::net::DatagramChannel> CreateSocket();
+  std::unique_ptr<io::net::DatagramChannel> CreateSocket();
 
-  io::ChannelPtr CreateChannel(const io::ChannelPtr& channel);
+  std::unique_ptr<io::Channel> CreateChannel(
+      std::unique_ptr<io::Channel>&& channel);
   HRESULT ConnectSocket(io::net::SocketChannel* channel,
                         io::net::SocketChannel::Listener* listener);
 
@@ -105,7 +106,7 @@ class Scissors : public Service, private io::net::SocketChannel::Listener {
                                       void* param);
   void EndSessionImpl(Session* session);
 
-  void OnAccepted(const io::ChannelPtr& client) override;
+  void OnAccepted(std::unique_ptr<io::Channel>&& client) override;
   void OnReceivedFrom(std::unique_ptr<io::net::Datagram>&& datagram) override;
 
   void OnConnected(io::net::SocketChannel* socket, HRESULT result) override;

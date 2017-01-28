@@ -21,7 +21,7 @@ class __declspec(novtable) Service {
   virtual bool UpdateConfig(const ServiceConfig* config) = 0;
   virtual void Stop() = 0;
 
-  virtual void OnAccepted(const io::ChannelPtr& client) = 0;
+  virtual void OnAccepted(std::unique_ptr<io::Channel>&& client) = 0;
   virtual void OnReceivedFrom(
       std::unique_ptr<io::net::Datagram>&& datagram) = 0;
 };

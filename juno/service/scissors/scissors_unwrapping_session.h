@@ -27,7 +27,8 @@ class ScissorsUnwrappingSession : public Scissors::Session,
                                   public io::Channel::Listener,
                                   public misc::TimerService::Callback {
  public:
-  ScissorsUnwrappingSession(Scissors* service, const io::ChannelPtr& source);
+  ScissorsUnwrappingSession(Scissors* service,
+                            std::unique_ptr<io::Channel>&& source);
   ~ScissorsUnwrappingSession();
 
   bool Start() override;
@@ -57,11 +58,11 @@ class ScissorsUnwrappingSession : public Scissors::Session,
 
   std::unique_ptr<misc::TimerService::Timer> timer_;
 
-  std::shared_ptr<io::Channel> stream_;
+  std::unique_ptr<io::Channel> stream_;
   char stream_buffer_[4096];
   std::string stream_message_;
 
-  std::shared_ptr<io::net::DatagramChannel> datagram_;
+  std::unique_ptr<io::net::DatagramChannel> datagram_;
   char datagram_buffer_[kDataSize];
 
   ScissorsUnwrappingSession(const ScissorsUnwrappingSession&) = delete;

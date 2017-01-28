@@ -99,8 +99,8 @@ void Scissors::EndSession(Session* session) {
     EndSessionImpl(session);
 }
 
-std::shared_ptr<io::net::DatagramChannel> Scissors::CreateSocket() {
-  auto socket = std::make_shared<io::net::DatagramChannel>();
+std::unique_ptr<io::net::DatagramChannel> Scissors::CreateSocket() {
+  auto socket = std::make_unique<io::net::DatagramChannel>();
   if (socket == nullptr)
     return nullptr;
 
@@ -117,23 +117,24 @@ std::shared_ptr<io::net::DatagramChannel> Scissors::CreateSocket() {
   return socket;
 }
 
-io::ChannelPtr Scissors::CreateChannel(const io::ChannelPtr& channel) {
+std::unique_ptr<io::Channel> Scissors::CreateChannel(
+    std::unique_ptr<io::Channel>&& channel) {
   if (channel == nullptr)
-    return channel;
+    return nullptr;
 
   base::AutoLock guard(lock_);
 
   if (!config_->remote_ssl_)
-    return channel;
+    return std::move(channel);
 
-  auto secure_channel =
-      std::make_shared<io::SecureChannel>(credential_.get(), channel, false);
+  auto secure_channel = std::make_unique<io::SecureChannel>(
+      credential_.get(), std::move(channel), false);
   if (secure_channel == nullptr)
-    return channel;
+    return nullptr;
 
   secure_channel->context()->set_target_name(config_->remote_address_);
 
-  return secure_channel;
+  return std::move(secure_channel);
 }
 
 HRESULT Scissors::ConnectSocket(io::net::SocketChannel* channel,
@@ -179,14 +180,15 @@ void Scissors::EndSessionImpl(Session* session) {
   removed.reset();
 }
 
-void Scissors::OnAccepted(const io::ChannelPtr& client) {
+void Scissors::OnAccepted(std::unique_ptr<io::Channel>&& client) {
   if (stopped_)
     return;
 
   if (config_->remote_udp_)
-    StartSession(std::make_unique<ScissorsUnwrappingSession>(this, client));
+    StartSession(
+        std::make_unique<ScissorsUnwrappingSession>(this, std::move(client)));
   else
-    StartSession(std::make_unique<ScissorsTcpSession>(this, client));
+    StartSession(std::make_unique<ScissorsTcpSession>(this, std::move(client)));
 }
 
 void Scissors::OnReceivedFrom(std::unique_ptr<io::net::Datagram>&& datagram) {

@@ -53,8 +53,10 @@ const std::string kCertificateJson = "certificate";
 
 class SecureChannelCustomizer : public TcpServer::ChannelCustomizer {
  public:
-  io::ChannelPtr Customize(const io::ChannelPtr& channel) override {
-    return std::make_shared<io::SecureChannel>(&credential_, channel, true);
+  std::unique_ptr<io::Channel> Customize(
+      std::unique_ptr<io::Channel>&& channel) override {
+    return std::make_unique<io::SecureChannel>(&credential_, std::move(channel),
+                                               true);
   }
 
   misc::schannel::SchannelCredential credential_;

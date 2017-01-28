@@ -31,7 +31,7 @@ enum class HttpProxySession::State {
 
 HttpProxySession::HttpProxySession(HttpProxy* proxy,
                                    const HttpProxyConfig* config,
-                                   const io::ChannelPtr& client)
+                                   std::unique_ptr<io::Channel>&& client)
     : proxy_(proxy),
       config_(config),
       ref_count_(0),
@@ -41,7 +41,7 @@ HttpProxySession::HttpProxySession(HttpProxy* proxy,
       tunnel_(),
       last_port_(-1),
       retry_(),
-      client_(client),
+      client_(std::move(client)),
       close_remote_() {
   DLOG(INFO) << this << " session created";
 }
@@ -662,7 +662,6 @@ void HttpProxySession::OnConnected(io::net::SocketChannel* socket,
       if (misc::TunnelingService::Bind(client_, remote_)) {
         response_.Clear();
         response_.SetStatus(OK, "Connection Established");
-        response_.SetHeader(kContentLength, "0");
         SendResponse();
       } else {
         SendError(INTERNAL_SERVER_ERROR);

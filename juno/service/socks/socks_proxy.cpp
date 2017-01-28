@@ -38,7 +38,7 @@ void SocksProxy::EndSession(SocksSession* session) {
   }
 }
 
-void SocksProxy::OnAccepted(const io::ChannelPtr& client) {
+void SocksProxy::OnAccepted(std::unique_ptr<io::Channel>&& client) {
   base::AutoLock guard(lock_);
 
   if (stopped_)
@@ -52,7 +52,7 @@ void SocksProxy::OnAccepted(const io::ChannelPtr& client) {
 
   auto result = client->ReadAsync(buffer.get(), kBufferSize, this);
   if (SUCCEEDED(result)) {
-    candidates_.push_back(client);
+    candidates_.push_back(std::move(client));
     buffer.release();
   } else {
     LOG(ERROR) << "Failed to receive: 0x" << std::hex << result;

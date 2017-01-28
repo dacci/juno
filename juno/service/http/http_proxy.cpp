@@ -107,8 +107,9 @@ void HttpProxy::ProcessAuthorization(HttpRequest* request) {
   DoProcessAuthorization(request);
 }
 
-void HttpProxy::OnAccepted(const io::ChannelPtr& client) {
-  auto session = std::make_unique<HttpProxySession>(this, config_, client);
+void HttpProxy::OnAccepted(std::unique_ptr<io::Channel>&& client) {
+  auto session =
+      std::make_unique<HttpProxySession>(this, config_, std::move(client));
   if (session == nullptr)
     return;
 

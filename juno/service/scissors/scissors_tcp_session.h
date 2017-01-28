@@ -12,15 +12,14 @@ namespace scissors {
 class ScissorsTcpSession : public Scissors::Session,
                            private io::net::SocketChannel::Listener {
  public:
-  ScissorsTcpSession(Scissors* service, const io::ChannelPtr& source);
+  ScissorsTcpSession(Scissors* service, std::unique_ptr<io::Channel>&& source);
   ~ScissorsTcpSession();
 
   bool Start() override;
   void Stop() override;
 
   void OnConnected(io::net::SocketChannel* channel, HRESULT result) override;
-  void OnClosed(io::net::SocketChannel* /*channel*/,
-                HRESULT /*result*/) override {}
+  void OnClosed(io::net::SocketChannel* channel, HRESULT result) override;
 
  private:
   static const size_t kBufferSize = 8192;

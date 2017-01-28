@@ -45,19 +45,21 @@ bool ScissorsWrappingSession::Start() {
     return false;
   }
 
-  auto remote = std::make_shared<io::net::SocketChannel>();
+  auto remote = std::make_unique<io::net::SocketChannel>();
   if (remote == nullptr) {
     LOG(ERROR) << "Failed to create socket.";
     return false;
   }
 
-  stream_ = service_->CreateChannel(remote);
+  auto socket = remote.get();
+
+  stream_ = service_->CreateChannel(std::move(remote));
   if (stream_ == nullptr) {
     LOG(ERROR) << "Failed to create channel.";
     return false;
   }
 
-  auto result = service_->ConnectSocket(remote.get(), this);
+  auto result = service_->ConnectSocket(socket, this);
   if (FAILED(result)) {
     LOG(ERROR) << "Failed to connect: 0x" << std::hex << result;
     return false;

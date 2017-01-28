@@ -13,9 +13,11 @@ namespace juno {
 namespace service {
 namespace scissors {
 
+using ::juno::io::net::SocketChannel;
+
 ScissorsTcpSession::ScissorsTcpSession(Scissors* service,
-                                       const io::ChannelPtr& source)
-    : Session(service), source_(source) {
+                                       std::unique_ptr<io::Channel>&& source)
+    : Session(service), source_(std::move(source)) {
   DLOG(INFO) << this << " session created";
 }
 
@@ -26,16 +28,16 @@ ScissorsTcpSession::~ScissorsTcpSession() {
 }
 
 bool ScissorsTcpSession::Start() {
-  auto socket = std::make_shared<io::net::SocketChannel>();
+  auto socket = std::make_unique<SocketChannel>();
   if (socket == nullptr) {
     LOG(ERROR) << this << " failed to create socket";
     return false;
   }
 
-  sink_ = socket;
-
   auto result = service_->ConnectSocket(socket.get(), this);
-  if (FAILED(result)) {
+  if (SUCCEEDED(result)) {
+    socket.release();
+  } else {
     LOG(ERROR) << this << " failed to connect: 0x" << std::hex << result;
     return false;
   }
@@ -54,15 +56,16 @@ void ScissorsTcpSession::Stop() {
     source_->Close();
 }
 
-void ScissorsTcpSession::OnConnected(io::net::SocketChannel* /*channel*/,
-                                     HRESULT result) {
+void ScissorsTcpSession::OnConnected(SocketChannel* channel, HRESULT result) {
+  std::unique_ptr<SocketChannel> socket(channel);
+
   do {
     if (FAILED(result)) {
       LOG(ERROR) << this << " failed to connect: 0x" << std::hex << result;
       break;
     }
 
-    sink_ = service_->CreateChannel(sink_);
+    sink_ = service_->CreateChannel(std::move(socket));
     if (sink_ == nullptr) {
       LOG(ERROR) << this << " failed to customize channel.";
       break;
@@ -79,6 +82,9 @@ void ScissorsTcpSession::OnConnected(io::net::SocketChannel* /*channel*/,
 
   service_->EndSession(this);
 }
+
+void ScissorsTcpSession::OnClosed(SocketChannel* /*channel*/,
+                                  HRESULT /*result*/) {}
 
 }  // namespace scissors
 }  // namespace service

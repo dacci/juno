@@ -13,10 +13,10 @@ namespace scissors {
 using ::juno::io::Channel;
 
 ScissorsUnwrappingSession::ScissorsUnwrappingSession(
-    Scissors* service, const io::ChannelPtr& source)
+    Scissors* service, std::unique_ptr<Channel>&& source)
     : Session(service),
       timer_(misc::TimerService::GetDefault()->Create(this)),
-      stream_(source) {}
+      stream_(std::move(source)) {}
 
 ScissorsUnwrappingSession::~ScissorsUnwrappingSession() {
   ScissorsUnwrappingSession::Stop();

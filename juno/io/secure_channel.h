@@ -21,7 +21,7 @@ namespace io {
 class SecureChannel : public Channel, private Channel::Listener {
  public:
   SecureChannel(misc::schannel::SchannelCredential* credential,
-                const std::shared_ptr<Channel>& channel, bool inbound);
+                std::unique_ptr<Channel>&& channel, bool inbound);
   ~SecureChannel();
 
   void Close() override;
@@ -68,7 +68,7 @@ class SecureChannel : public Channel, private Channel::Listener {
   void OnWrite();
 
   misc::schannel::SchannelContext context_;
-  std::shared_ptr<Channel> channel_;
+  std::unique_ptr<Channel> channel_;
   const bool inbound_;
 
   base::Lock lock_;

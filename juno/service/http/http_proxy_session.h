@@ -33,7 +33,7 @@ class HttpProxySession : private io::Channel::Listener,
                          private misc::TimerService::Callback {
  public:
   HttpProxySession(HttpProxy* proxy, const HttpProxyConfig* config,
-                   const io::ChannelPtr& client);
+                   std::unique_ptr<io::Channel>&& client);
   ~HttpProxySession();
 
   bool Start();
@@ -102,7 +102,7 @@ class HttpProxySession : private io::Channel::Listener,
   bool retry_;
   int status_code_;
 
-  io::ChannelPtr client_;
+  std::shared_ptr<io::Channel> client_;
   std::string client_buffer_;
   HttpRequest request_;
   int64_t request_length_;

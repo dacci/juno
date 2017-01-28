@@ -64,10 +64,9 @@ enum class SecureChannel::Status {
 };
 
 SecureChannel::SecureChannel(misc::schannel::SchannelCredential* credential,
-                             const std::shared_ptr<Channel>& channel,
-                             bool inbound)
+                             std::unique_ptr<Channel>&& channel, bool inbound)
     : context_(credential),
-      channel_(channel),
+      channel_(std::move(channel)),
       inbound_(inbound),
       deletable_(&lock_),
       ref_count_(0),

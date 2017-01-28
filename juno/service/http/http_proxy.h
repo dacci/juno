@@ -39,7 +39,7 @@ class HttpProxy : public Service {
   void ProcessAuthenticate(HttpResponse* response, HttpRequest* request);
   void ProcessAuthorization(HttpRequest* request);
 
-  void OnAccepted(const io::ChannelPtr& client) override;
+  void OnAccepted(std::unique_ptr<io::Channel>&& client) override;
   void OnReceivedFrom(std::unique_ptr<io::net::Datagram>&& datagram) override;
 
  private:
