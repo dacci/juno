@@ -372,8 +372,8 @@ void SocketChannel::OnRequested(PTP_WORK work) {
         static_cast<Monitor*>(request.get())->Reset();
         base::AutoLock guard(lock_);
         auto result = DispatchRequest(std::move(request));
-        LOG_IF(FATAL, FAILED(result)) << "Unrecoverable Error: 0x" << std::hex
-                                      << result;
+        LOG_IF(WARNING, FAILED(result)) << "Unrecoverable Error: 0x" << std::hex
+                                        << result;
       } else {
         request->listener->OnClosed(this, request->result);
       }
