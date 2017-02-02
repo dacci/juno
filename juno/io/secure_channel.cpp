@@ -56,9 +56,10 @@ struct SecureChannel::Request {
 };
 
 enum class SecureChannel::Status {
+  kError = -1,
+  kInit = 0,
   kNegotiate,
   kData,
-  kError,
   kClosing,
   kClosed
 };
@@ -70,33 +71,14 @@ SecureChannel::SecureChannel(misc::schannel::SchannelCredential* credential,
       inbound_(inbound),
       deletable_(&lock_),
       ref_count_(0),
-      status_(Status::kNegotiate),
+      status_(Status::kInit),
       stream_sizes_(),
       reads_(0),
       read_work_(CreateThreadpoolWork(OnRead, this, nullptr)),
       write_work_(CreateThreadpoolWork(OnWrite, this, nullptr)) {
-  HRESULT result;
-
-  do {
-    if (read_work_ == nullptr || write_work_ == nullptr) {
-      result = E_HANDLE;
-      break;
-    }
-
-    if (!inbound) {
-      result = Negotiate();
-      if (FAILED(result))
-        break;
-    }
-
-    result = EnsureReading();
-  } while (false);
-
-  if (SUCCEEDED(result))
-    return;
-
-  status_ = Status::kError;
-  channel_->Close();
+  if (credential == nullptr || channel_ == nullptr || read_work_ == nullptr ||
+      write_work_ == nullptr)
+    status_ = Status::kError;
 }
 
 SecureChannel::~SecureChannel() {
@@ -133,34 +115,43 @@ SecureChannel::~SecureChannel() {
 }
 
 void SecureChannel::Close() {
-  auto result = S_OK;
+  if (status_ == Status::kClosed)
+    return;
 
   do {
     base::AutoLock guard(lock_);
 
-    if (status_ == Status::kError || status_ == Status::kClosed)
+    auto result = context_.ApplyControlToken(SCHANNEL_SHUTDOWN);
+    if (FAILED(result)) {
+      status_ = Status::kError;
+      LOG(ERROR) << "ApplyControlToken() failed: 0x" << std::hex << result;
       break;
-
-    result = context_.ApplyControlToken(SCHANNEL_SHUTDOWN);
-    if (FAILED(result))
-      break;
+    }
 
     status_ = Status::kClosing;
     message_.clear();
 
     result = Negotiate();
-    if (FAILED(result))
+    if (FAILED(result)) {
+      status_ = Status::kError;
+      LOG(ERROR) << "Failed to begin negotiation: 0x" << std::hex << result;
       break;
+    }
+
+    result = EnsureReading();
+    if (FAILED(result)) {
+      status_ = Status::kError;
+      LOG(ERROR) << "Failed to begin reading: 0x" << std::hex << result;
+      break;
+    }
+
+    while (!base::AtomicRefCountIsZero(&ref_count_))
+      deletable_.Wait();
+
+    status_ = Status::kClosed;
   } while (false);
 
-  if (SUCCEEDED(result))
-    result = EnsureReading();
-
-  if (FAILED(result)) {
-    base::AutoLock guard(lock_);
-    status_ = Status::kError;
-    channel_->Close();
-  }
+  channel_->Close();
 }
 
 HRESULT SecureChannel::ReadAsync(void* buffer, int length,
@@ -224,6 +215,8 @@ HRESULT SecureChannel::WriteAsync(const void* buffer, int length,
 HRESULT SecureChannel::CheckMessage() const {
   static const uint16_t kMaxLength = 16384;
 
+  lock_.AssertAcquired();
+
   if (message_.size() < sizeof(TLS_RECORD))
     return SEC_E_INCOMPLETE_MESSAGE;
 
@@ -250,7 +243,36 @@ HRESULT SecureChannel::CheckMessage() const {
   return S_OK;
 }
 
+HRESULT SecureChannel::EnsureInitialized() {
+  lock_.AssertAcquired();
+
+  if (status_ != Status::kInit)
+    return S_FALSE;
+
+  status_ = Status::kNegotiate;
+
+  if (!inbound_) {
+    message_.clear();
+
+    auto result = Negotiate();
+    if (FAILED(result)) {
+      LOG(ERROR) << "Failed to begin negotiation: 0x" << std::hex << result;
+      return result;
+    }
+  }
+
+  auto result = EnsureReading();
+  if (FAILED(result)) {
+    LOG(ERROR) << "Failed to begin reading: 0x" << std::hex << result;
+    return result;
+  }
+
+  return S_OK;
+}
+
 HRESULT SecureChannel::Negotiate() {
+  lock_.AssertAcquired();
+
   HRESULT result;
   std::string response;
 
@@ -278,8 +300,6 @@ HRESULT SecureChannel::Negotiate() {
               ISC_REQ_EXTENDED_ERROR | ISC_REQ_STREAM,
           inputs.get(), outputs.get());
 
-    message_.erase(0, message_.size() - inputs[1].cbBuffer);
-
     for (auto& output : outputs) {
       if (output.pvBuffer == nullptr)
         continue;
@@ -290,6 +310,8 @@ HRESULT SecureChannel::Negotiate() {
 
     if (result == SEC_E_INCOMPLETE_MESSAGE)
       break;
+
+    message_.erase(0, message_.size() - inputs[1].cbBuffer);
 
     if (result == SEC_E_OK) {
       if (status_ == Status::kClosing)
@@ -319,6 +341,8 @@ HRESULT SecureChannel::Negotiate() {
 }
 
 HRESULT SecureChannel::Decrypt() {
+  lock_.AssertAcquired();
+
   while (!message_.empty()) {
     SecurityBuffer buffers{
         {static_cast<DWORD>(message_.size()), SECBUFFER_DATA, &message_[0]},
@@ -355,8 +379,8 @@ HRESULT SecureChannel::Decrypt() {
 
   if (message_.size() > kBufferSize * 2)
     return S_FALSE;
-  else
-    return S_OK;
+
+  return S_OK;
 }
 
 HRESULT SecureChannel::Encrypt(const void* input, int length,
@@ -368,7 +392,6 @@ HRESULT SecureChannel::Encrypt(const void* input, int length,
     return E_POINTER;
 
   auto cursor = static_cast<const char*>(input);
-  auto remaining = length;
   auto memory = std::make_unique<char[]>(stream_sizes_.cbHeader +
                                          stream_sizes_.cbMaximumMessage +
                                          stream_sizes_.cbTrailer);
@@ -378,9 +401,8 @@ HRESULT SecureChannel::Encrypt(const void* input, int length,
       {0, SECBUFFER_STREAM_TRAILER, nullptr},
   };
 
-  do {
-    auto block_size =
-        std::min<DWORD>(stream_sizes_.cbMaximumMessage, remaining);
+  for (DWORD remaining = length; remaining > 0;) {
+    auto block_size = std::min(stream_sizes_.cbMaximumMessage, remaining);
     auto pointer = memory.get();
 
     buffers[0].cbBuffer = stream_sizes_.cbHeader;
@@ -399,34 +421,41 @@ HRESULT SecureChannel::Encrypt(const void* input, int length,
     if (FAILED(result))
       return result;
 
-    for (auto& buffer : buffers)
+    for (const auto& buffer : buffers)
       output->append(static_cast<char*>(buffer.pvBuffer), buffer.cbBuffer);
 
     remaining -= block_size;
     cursor += block_size;
-  } while (remaining > 0);
+  }
 
   return S_OK;
 }
 
 HRESULT SecureChannel::EnsureReading() {
-  base::AutoLock guard(lock_);
+  lock_.AssertAcquired();
+
+  if (status_ == Status::kError || status_ == Status::kClosed)
+    return S_FALSE;
 
   if (!base::AtomicRefCountIsZero(&reads_))
     return S_FALSE;
 
   auto buffer = std::make_unique<char[]>(kBufferSize);
+  if (buffer == nullptr)
+    return E_OUTOFMEMORY;
+
   auto result = channel_->ReadAsync(buffer.get(), kBufferSize, this);
-  if (SUCCEEDED(result)) {
-    buffer.release();
-    base::AtomicRefCountInc(&ref_count_);
-    base::AtomicRefCountInc(&reads_);
-  } else {
+  if (FAILED(result)) {
     status_ = Status::kError;
-    channel_->Close();
+    LOG(ERROR) << "Failed to read: 0x" << std::hex << result;
+    return result;
   }
 
-  return result;
+  buffer.release();
+  base::AtomicRefCountInc(&ref_count_);
+  base::AtomicRefCountInc(&reads_);
+
+  return S_OK;
 }
 
 HRESULT SecureChannel::WriteAsyncImpl(const std::string& message,
@@ -444,17 +473,20 @@ HRESULT SecureChannel::WriteAsyncImpl(std::unique_ptr<char[]>&& buffer,
                                       size_t length, Request* request) {
   auto result =
       channel_->WriteAsync(buffer.get(), static_cast<int>(length), this);
-  if (SUCCEEDED(result)) {
-    base::AtomicRefCountInc(&ref_count_);
-    if (request != nullptr)
-      writes_.insert(std::make_pair(buffer.get(), request));
-    buffer.release();
-  } else {
-    channel_->Close();
+  if (FAILED(result)) {
     status_ = Status::kError;
+    LOG(ERROR) << "Failed to write: 0x" << std::hex << result;
+    return result;
   }
 
-  return result;
+  base::AtomicRefCountInc(&ref_count_);
+
+  if (request != nullptr)
+    writes_.insert(std::make_pair(buffer.get(), request));
+
+  buffer.release();
+
+  return S_OK;
 }
 
 void SecureChannel::OnRead(Channel* /*channel*/, HRESULT result,
@@ -486,12 +518,12 @@ void SecureChannel::OnRead(Channel* /*channel*/, HRESULT result,
   }
 
   if (FAILED(result) || length <= 0) {
-    if (FAILED(result))
+    if (FAILED(result)) {
       status_ = Status::kError;
-    else
+      LOG(ERROR) << "Failed to read: 0x" << std::hex << result;
+    } else {
       status_ = Status::kClosed;
-
-    channel_->Close();
+    }
 
     if (!base::AtomicRefCountDec(&ref_count_))
       deletable_.Broadcast();
@@ -510,12 +542,12 @@ void SecureChannel::OnWritten(Channel* /*channel*/, HRESULT result,
   base::AutoLock guard(lock_);
 
   if (FAILED(result) || length <= 0) {
-    if (FAILED(result))
+    if (FAILED(result)) {
       status_ = Status::kError;
-    else
+      LOG(ERROR) << "Failed to write: 0x" << std::hex << result;
+    } else {
       status_ = Status::kClosed;
-
-    channel_->Close();
+    }
   }
 
   auto found = writes_.find(raw_buffer);
@@ -544,18 +576,22 @@ void SecureChannel::OnRead(PTP_CALLBACK_INSTANCE callback, void* instance,
 
 void SecureChannel::OnRead() {
   while (true) {
-    lock_.Acquire();
+    base::AutoLock guard(lock_);
+
+    auto result = EnsureInitialized();
+    if (FAILED(result)) {
+      LOG(ERROR) << "Failed to initialize session: 0x" << std::hex << result;
+      status_ = Status::kError;
+    }
 
     if (pending_reads_.empty() || status_ == Status::kNegotiate ||
-        status_ == Status::kData && decrypted_.empty()) {
-      lock_.Release();
+        status_ == Status::kData && decrypted_.empty())
       break;
-    }
 
     auto request = std::move(pending_reads_.front());
     pending_reads_.pop();
 
-    auto result = S_OK;
+    result = S_OK;
     if (!decrypted_.empty()) {
       auto size = std::min<size_t>(request->length, decrypted_.size());
       memcpy(request->buffer, decrypted_.data(), size);
@@ -568,15 +604,15 @@ void SecureChannel::OnRead() {
       request->length = 0;
     }
 
-    lock_.Release();
-
+    base::AutoUnlock unlock(lock_);
     request->listener->OnRead(this, result, request->buffer, request->length);
   }
 
+  base::AutoLock guard(lock_);
   auto result = EnsureReading();
   if (FAILED(result)) {
     status_ = Status::kError;
-    channel_->Close();
+    LOG(ERROR) << "Failed to begin reading: 0x" << std::hex << result;
   }
 }
 
@@ -590,13 +626,19 @@ void SecureChannel::OnWrite() {
   while (true) {
     base::AutoLock guard(lock_);
 
+    auto result = EnsureInitialized();
+    if (FAILED(result)) {
+      LOG(ERROR) << "Failed to initialize session: 0x" << std::hex << result;
+      status_ = Status::kError;
+    }
+
     if (status_ == Status::kNegotiate || pending_writes_.empty())
       return;
 
     auto request = std::move(pending_writes_.front());
     pending_writes_.pop();
 
-    auto result = E_UNEXPECTED;
+    result = E_UNEXPECTED;
 
     switch (status_) {
       case Status::kData: {
@@ -627,11 +669,9 @@ void SecureChannel::OnWrite() {
         break;
     }
 
-    {
-      base::AutoUnlock unlock(lock_);
-      request->listener->OnWritten(this, result, request->buffer,
-                                   request->length);
-    }
+    base::AutoUnlock unlock(lock_);
+    request->listener->OnWritten(this, result, request->buffer,
+                                 request->length);
   }
 }
 

@@ -45,7 +45,10 @@ class SecureChannel : public Channel, private Channel::Listener {
   static const size_t kBufferSize = 16 * 1024;
 
   HRESULT CheckMessage() const;
+
+  HRESULT EnsureInitialized();
   HRESULT Negotiate();
+
   HRESULT Decrypt();
   HRESULT Encrypt(const void* input, int length, std::string* output);
 
