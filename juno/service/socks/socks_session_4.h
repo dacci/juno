@@ -19,7 +19,7 @@ class SocksSession4 : public SocksSession,
                       private io::Channel::Listener,
                       private io::net::SocketChannel::Listener {
  public:
-  SocksSession4(SocksProxy* proxy, const io::ChannelPtr& channel);
+  SocksSession4(SocksProxy* proxy, std::unique_ptr<io::Channel>&& channel);
   ~SocksSession4();
 
   HRESULT Start(std::unique_ptr<char[]>&& request, int length) override;

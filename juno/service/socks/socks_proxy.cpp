@@ -77,7 +77,7 @@ void SocksProxy::WaitEmpty() {
 void SocksProxy::OnRead(io::Channel* channel, HRESULT result, void* buffer,
                         int length) {
   std::unique_ptr<char[]> message(static_cast<char*>(buffer));
-  io::ChannelPtr candidate;
+  std::unique_ptr<io::Channel> candidate;
 
   base::AutoLock guard(lock_);
 

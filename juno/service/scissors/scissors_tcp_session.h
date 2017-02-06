@@ -24,8 +24,8 @@ class ScissorsTcpSession : public Scissors::Session,
  private:
   static const size_t kBufferSize = 8192;
 
-  io::ChannelPtr source_;
-  io::ChannelPtr sink_;
+  std::shared_ptr<io::Channel> source_;
+  std::shared_ptr<io::Channel> sink_;
 
   ScissorsTcpSession(const ScissorsTcpSession&) = delete;
   ScissorsTcpSession& operator=(const ScissorsTcpSession&) = delete;

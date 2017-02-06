@@ -20,8 +20,8 @@ class SocksProxy;
 
 class __declspec(novtable) SocksSession {
  public:
-  SocksSession(SocksProxy* proxy, const io::ChannelPtr& channel)
-      : proxy_(proxy), client_(channel) {}
+  SocksSession(SocksProxy* proxy, std::unique_ptr<io::Channel>&& channel)
+      : proxy_(proxy), client_(std::move(channel)) {}
   virtual ~SocksSession() {}
 
   virtual HRESULT Start(std::unique_ptr<char[]>&& request, int length) = 0;
@@ -29,7 +29,7 @@ class __declspec(novtable) SocksSession {
 
  protected:
   SocksProxy* const proxy_;
-  io::ChannelPtr client_;
+  std::shared_ptr<io::Channel> client_;
 
   SocksSession(const SocksSession&) = delete;
   SocksSession& operator=(const SocksSession&) = delete;
@@ -69,7 +69,7 @@ class SocksProxy : public Service, private io::Channel::Listener {
 
   base::Lock lock_;
   base::ConditionVariable empty_;
-  std::list<io::ChannelPtr> candidates_;
+  std::list<std::unique_ptr<io::Channel>> candidates_;
   std::list<std::unique_ptr<SocksSession>> sessions_;
   bool stopped_;
 

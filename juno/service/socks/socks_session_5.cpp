@@ -16,8 +16,11 @@ namespace juno {
 namespace service {
 namespace socks {
 
-SocksSession5::SocksSession5(SocksProxy* proxy, const io::ChannelPtr& channel)
-    : SocksSession(proxy, channel), state_(State::kInit), end_point_(nullptr) {}
+SocksSession5::SocksSession5(SocksProxy* proxy,
+                             std::unique_ptr<io::Channel>&& channel)
+    : SocksSession(proxy, std::move(channel)),
+      state_(State::kInit),
+      end_point_(nullptr) {}
 
 SocksSession5::~SocksSession5() {
   SocksSession5::Stop();
