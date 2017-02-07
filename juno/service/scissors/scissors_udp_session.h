@@ -8,7 +8,6 @@
 #include "io/net/datagram_channel.h"
 #include "misc/timer_service.h"
 #include "service/service.h"
-
 #include "service/scissors/scissors.h"
 
 namespace juno {

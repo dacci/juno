@@ -10,6 +10,7 @@
 #include <memory>
 #include <utility>
 
+#include "io/channel.h"
 #include "service/service.h"
 
 namespace juno {

@@ -5,9 +5,10 @@
 
 #pragma warning(push, 3)
 #include <base/hash.h>
+#pragma warning(pop)
+
 #include <base/synchronization/condition_variable.h>
 #include <base/synchronization/lock.h>
-#pragma warning(pop)
 
 #include <map>
 #include <memory>
@@ -18,7 +19,6 @@
 #include "io/net/socket_channel.h"
 #include "io/net/socket_resolver.h"
 #include "service/service.h"
-
 #include "service/scissors/scissors_config.h"
 
 namespace juno {

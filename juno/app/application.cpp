@@ -19,9 +19,9 @@
 #include "app/constants.h"
 #include "app/service_configurator.h"
 #include "misc/tunneling_service.h"
-#include "service/rpc/rpc_service.h"
 #include "service/service_manager.h"
 #include "ui/main_frame.h"
+#include "service/rpc/rpc_service.h"
 
 namespace juno {
 namespace app {

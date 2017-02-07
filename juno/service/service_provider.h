@@ -12,15 +12,15 @@
 
 #include <memory>
 
-#include "service/service.h"
-#include "service/service_config.h"
-
 #ifdef CreateService
 #undef CreateService
 #endif
 
 namespace juno {
 namespace service {
+
+struct ServiceConfig;
+class Service;
 
 class __declspec(novtable) ServiceProvider {
  public:

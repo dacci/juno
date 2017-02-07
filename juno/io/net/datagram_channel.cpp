@@ -3,7 +3,6 @@
 #include "io/net/datagram_channel.h"
 
 #include <base/logging.h>
-
 #include <base/memory/ptr_util.h>
 
 namespace juno {

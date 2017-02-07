@@ -12,7 +12,6 @@
 #include <vector>
 
 #include "service/service.h"
-
 #include "service/http/http_digest.h"
 #include "service/http/http_proxy_config.h"
 

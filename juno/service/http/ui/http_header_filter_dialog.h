@@ -14,7 +14,6 @@
 
 #include "res/resource.h"
 #include "ui/data_exchange_ex.h"
-
 #include "service/http/http_proxy_config.h"
 
 namespace juno {

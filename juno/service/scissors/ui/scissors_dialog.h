@@ -14,7 +14,6 @@
 
 #include "res/resource.h"
 #include "ui/data_exchange_ex.h"
-
 #include "service/scissors/scissors_config.h"
 
 namespace juno {

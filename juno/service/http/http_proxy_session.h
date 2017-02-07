@@ -16,7 +16,6 @@
 #include "io/net/socket_resolver.h"
 #include "misc/timer_service.h"
 #include "service/service.h"
-
 #include "service/http/http_request.h"
 #include "service/http/http_response.h"
 

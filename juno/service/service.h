@@ -7,12 +7,21 @@
 
 #include <memory>
 
-#include "io/channel.h"
-#include "io/net/datagram.h"
-#include "service/service_config.h"
-
 namespace juno {
+namespace io {
+
+class Channel;
+
+namespace net {
+
+struct Datagram;
+
+}  // namespace net
+}  // namespace io
+
 namespace service {
+
+struct ServiceConfig;
 
 class __declspec(novtable) Service {
  public:

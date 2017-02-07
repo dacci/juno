@@ -5,8 +5,8 @@
 
 #include <memory>
 
-#include "service/rpc/rpc_client.h"
 #include "service/service_manager.h"
+#include "service/rpc/rpc_client.h"
 
 namespace juno {
 namespace app {

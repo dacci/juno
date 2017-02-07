@@ -3,7 +3,6 @@
 #include "service/http/http_proxy.h"
 
 #include <windows.h>
-
 #include <wincrypt.h>
 
 #include <string>

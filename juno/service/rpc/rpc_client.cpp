@@ -3,7 +3,6 @@
 #include "service/rpc/rpc_client.h"
 
 #include <base/logging.h>
-
 #include <base/json/json_reader.h>
 #include <base/json/json_writer.h>
 

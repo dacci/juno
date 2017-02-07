@@ -3,7 +3,6 @@
 #include "io/named_pipe_channel.h"
 
 #include <base/logging.h>
-
 #include <base/memory/ptr_util.h>
 
 #include <string>

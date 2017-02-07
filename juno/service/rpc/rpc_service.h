@@ -4,7 +4,6 @@
 #define JUNO_SERVICE_RPC_RPC_SERVICE_H_
 
 #include <base/values.h>
-
 #include <base/synchronization/lock.h>
 
 #include <map>

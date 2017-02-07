@@ -11,7 +11,6 @@
 
 #include "io/net/socket_channel.h"
 #include "misc/tunneling_service.h"
-
 #include "service/http/http_proxy.h"
 #include "service/http/http_proxy_config.h"
 #include "service/http/http_util.h"

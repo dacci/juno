@@ -5,12 +5,18 @@
 
 #include <base/values.h>
 
+#pragma warning(push, 3)
+#pragma warning(disable : 4244)
+#include <base/win/registry.h>
+#pragma warning(pop)
+
 #include <map>
 #include <memory>
 #include <string>
 
-#include "service/server_config.h"
-#include "service/service_provider.h"
+#ifdef CreateService
+#undef CreateService
+#endif
 
 namespace juno {
 namespace app {
@@ -21,6 +27,10 @@ class ServiceConfigurator;
 
 namespace service {
 
+class ServiceProvider;
+struct ServiceConfig;
+class Service;
+struct ServerConfig;
 class Server;
 
 typedef std::map<std::wstring, std::unique_ptr<ServiceProvider>> ProviderMap;
