@@ -112,7 +112,7 @@ void ServiceConfigurator::OnReturned(const char* method,
                                      const base::Value* result,
                                      const base::DictionaryValue* /*error*/) {
   if (strcmp(method, kConfigGetMethod) == 0) {
-    if (result != nullptr && result->IsType(base::Value::TYPE_DICTIONARY)) {
+    if (result != nullptr && result->IsType(base::Value::Type::DICTIONARY)) {
       const base::DictionaryValue* object = nullptr;
       result->GetAsDictionary(&object);
 
@@ -127,7 +127,7 @@ void ServiceConfigurator::OnReturned(const char* method,
       }
     }
   } else if (strcmp(method, kConfigSetMethod) == 0) {
-    if (result != nullptr && result->IsType(base::Value::TYPE_BOOLEAN))
+    if (result != nullptr && result->IsType(base::Value::Type::BOOLEAN))
       result->GetAsBoolean(&saved_);
   }
 

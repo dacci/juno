@@ -405,7 +405,7 @@ std::unique_ptr<base::DictionaryValue> ServiceManager::ConvertServerConfig(
   value->SetInteger(kEnabledJson, config->enabled_);
 
   if (!config->cert_hash_.empty()) {
-    auto cert_hash = base::BinaryValue::CreateWithCopiedBuffer(
+    auto cert_hash = base::Value::CreateWithCopiedBuffer(
         config->cert_hash_.data(), config->cert_hash_.size());
     if (cert_hash != nullptr)
       value->Set(kCertificateJson, std::move(cert_hash));
@@ -450,7 +450,7 @@ std::unique_ptr<ServerConfig> ServiceManager::ConvertServerConfig(
   value->GetString(kServiceJson, &config->service_);
   value->GetInteger(kEnabledJson, &config->enabled_);
 
-  const base::BinaryValue* cert_hash;
+  const base::Value* cert_hash;
   if (value->GetBinary(kCertificateJson, &cert_hash) &&
       cert_hash->GetSize() > 0)
     config->cert_hash_.assign(cert_hash->GetBuffer(), cert_hash->GetSize());
@@ -699,7 +699,7 @@ void ServiceManager::SetConfig(void* context, const base::Value* params,
     return;
   }
 
-  if (params == nullptr || !params->IsType(base::Value::TYPE_DICTIONARY)) {
+  if (params == nullptr || !params->IsType(base::Value::Type::DICTIONARY)) {
     response->SetInteger(rpc::properties::kErrorCode,
                          rpc::codes::kInvalidParams);
     response->SetString(rpc::properties::kErrorMessage,

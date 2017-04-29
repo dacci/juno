@@ -17,7 +17,7 @@ std::unique_ptr<base::DictionaryValue> CreateErrorObject(
   auto object = CreateObject();
   object->SetInteger(properties::kErrorCode, code);
   object->SetString(properties::kErrorMessage, message.as_string());
-  object->Set(properties::kId, base::Value::CreateNullValue());
+  object->Set(properties::kId, std::make_unique<base::Value>());
   return std::move(object);
 }
 

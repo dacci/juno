@@ -257,7 +257,7 @@ std::unique_ptr<ServiceConfig> HttpProxyProvider::ConvertConfig(
   if (value->GetList(kHeaderFiltersJson, &filters)) {
     for (const auto& item : *filters) {
       const base::DictionaryValue* filter;
-      if (!item->GetAsDictionary(&filter))
+      if (!item.GetAsDictionary(&filter))
         continue;
 
       HttpProxyConfig::HeaderFilter header_filter{};

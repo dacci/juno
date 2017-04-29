@@ -64,18 +64,18 @@ std::unique_ptr<base::DictionaryValue> RpcService::ProcessRequest(
   auto has_method = request->GetString(properties::kMethod, &method);
   const base::Value* id = nullptr;
   auto has_id = request->Get(properties::kId, &id);
-  auto id_type = has_id ? id->GetType() : base::Value::TYPE_NULL;
+  auto id_type = has_id ? id->GetType() : base::Value::Type::NONE;
   const base::Value* params = nullptr;
   auto has_params = request->Get(properties::kParams, &params);
-  auto params_type = has_params ? params->GetType() : base::Value::TYPE_NULL;
+  auto params_type = has_params ? params->GetType() : base::Value::Type::NONE;
 
   if (!has_jsonrpc || !has_method ||
-      has_id && id_type != base::Value::TYPE_STRING &&
-          id_type != base::Value::TYPE_INTEGER &&
-          id_type != base::Value::TYPE_DOUBLE &&
-          id_type != base::Value::TYPE_NULL ||
-      has_params && params_type != base::Value::TYPE_DICTIONARY &&
-          params_type != base::Value::TYPE_LIST ||
+      has_id && id_type != base::Value::Type::STRING &&
+          id_type != base::Value::Type::INTEGER &&
+          id_type != base::Value::Type::DOUBLE &&
+          id_type != base::Value::Type::NONE ||
+      has_params && params_type != base::Value::Type::DICTIONARY &&
+          params_type != base::Value::Type::LIST ||
       jsonrpc.compare(internal::kVersion2_0) != 0)
     return CreateErrorObject(codes::kInvalidRequest, messages::kInvalidRequest);
 
@@ -112,7 +112,7 @@ std::unique_ptr<base::Value> RpcService::ProcessBatch(
 
   for (auto& entry : *requests) {
     const base::DictionaryValue* request = nullptr;
-    if (entry->GetAsDictionary(&request)) {
+    if (entry.GetAsDictionary(&request)) {
       auto response = ProcessRequest(request);
       if (response != nullptr)
         responses->Append(std::move(response));
@@ -154,14 +154,14 @@ void RpcService::OnRead(io::Channel* channel, HRESULT result, void* memory,
     auto json = base::JSONReader::Read(message);
     if (json != nullptr) {
       switch (json->GetType()) {
-        case base::Value::TYPE_DICTIONARY: {
+        case base::Value::Type::DICTIONARY: {
           const base::DictionaryValue* request = nullptr;
           json->GetAsDictionary(&request);
           response = ProcessRequest(request);
           break;
         }
 
-        case base::Value::TYPE_LIST: {
+        case base::Value::Type::LIST: {
           const base::ListValue* requests = nullptr;
           json->GetAsList(&requests);
           response = ProcessBatch(requests);
