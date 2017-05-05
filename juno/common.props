@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets">
+    <Import Project="..\global.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <IncludePath>$(ProjectDir);$(SolutionDir)third_party\libchromium\src;$(SolutionDir)third_party\picohttpparser;$(SolutionDir)third_party\google-url;$(IncludePath)</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level4</WarningLevel>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>WIN32_LEAN_AND_MEAN;NOMINMAX;SECURITY_WIN32;_ATL_NO_COM_SUPPORT;_ATL_NO_HOSTING;_ATL_CSTRING_EXPLICIT_CONSTRUCTORS;_WTL_NO_CSTRING;_CSTRING_NS=ATL;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ForcedIncludeFiles>sdkddkver.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+    </ClCompile>
+    <Link>
+      <TreatLinkerWarningAsErrors>true</TreatLinkerWarningAsErrors>
+      <CreateHotPatchableImage>Enabled</CreateHotPatchableImage>
+      <AdditionalDependencies>crypt32.lib;cryptui.lib;dbghelp.lib;icuuc.lib;iphlpapi.lib;mswsock.lib;secur32.lib;version.lib;winmm.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
+    </Link>
+    <Manifest>
+      <AssemblyIdentity>Dacci.$(SolutionName).$(ProjectName), version=1.0</AssemblyIdentity>
+      <EnableDpiAwareness>PerMonitorHighDPIAware</EnableDpiAwareness>
+    </Manifest>
+    <ResourceCompile>
+      <Culture>0x0411</Culture>
+    </ResourceCompile>
+    <PostBuildEvent>
+      <Command>signtool sign /fd SHA256 /n dacci.org "$(TargetPath)"</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup />
+</Project>
